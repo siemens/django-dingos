@@ -30,6 +30,7 @@ class EditSavedSearchesForm(forms.Form):
                             max_length=100,
                             widget=widgets.TextInput(attrs={'size':'100','class':'vTextField'}))
     parameter = forms.CharField(max_length=1024,widget=widgets.TextInput(attrs={'class':'vTextField'}))
+    custom_query = forms.CharField(required=False,max_length=4096,widget=widgets.Textarea(attrs={'class':'vTextField'}))
     view = forms.CharField(max_length=256,widget=widgets.HiddenInput)
     new_entry = forms.BooleanField(widget=widgets.HiddenInput,required=False)
 

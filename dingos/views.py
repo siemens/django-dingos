@@ -415,14 +415,17 @@ class CustomSearchesEditView(BasicTemplateView):
                             'position' : counter,
                             'title': saved_search['title'],
                             'view' : saved_search['view'],
-                            'parameter' : saved_search['parameter']})
+                            'parameter' : saved_search['parameter'],
+                            'custom_query': saved_search.get('custom_query','')})
             counter +=1
         if self.request.session.get('new_search'):
             initial.append({'position' : counter,
                             'new_entry' : True,
                             'title': "",
                             'view' : self.request.session['new_search']['view'],
-                            'parameter' : self.request.session['new_search']['parameter']})
+                            'parameter' : self.request.session['new_search']['parameter'],
+                            'custom_query' : self.request.session['new_search'].get('custom_query','')
+            })
             del(self.request.session['new_search'])
             self.request.session.modified = True
 
@@ -453,6 +456,7 @@ class CustomSearchesEditView(BasicTemplateView):
                 if (search['title'] != '' or not search['new_entry']) and not search['DELETE']:
                     dingos_saved_searches.append( { 'view' : search['view'],
                                                     'parameter' : search['parameter'],
+                                                    'custom_query' : search.get('custom_query',''),
                                                     'title' : search['title'],
                                                     }
                     )

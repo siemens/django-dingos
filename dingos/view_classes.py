@@ -291,7 +291,7 @@ class ViewMethodMixin(object):
                                          user_data=DINGOS_DEFAULT_SAVED_SEARCHES,
                                          iobject_name = "Saved searches of user '%s'" % user_name)
                 saved_searches = UserData.get_user_data(user=self.request.user, data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
-
+            print saved_searches
 
             self.request.session['customization'] = settings
             self.request.session['saved_searches'] = saved_searches
@@ -427,7 +427,7 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
             # write data into session
             request.session['new_search'] = { 
                 # do the whole magic within a single line (strip empty elements + action, urlencode, creating GET string
-                "parameter" : "&".join(list( "%s=%s" % (urlquote_plus(k),urlquote_plus(v)) for k, v in request.GET.iteritems() if v and k != "action")),
+                "parameter" : "&".join(list( "%s=%s" % (k,v) for k, v in request.GET.iteritems() if v and k != "action")),
                 "view" : match.url_name,
             }
 
@@ -523,8 +523,25 @@ class BasicCustomQueryView(BasicListView):
         else:
             distinct = self.distinct
 
-        if 'execute_query' in request.GET and self.form.is_valid():
-            if request.GET['query'] == "":
+        if request.GET.get('action','Submit Query') == 'Save Search':
+            match = urlresolvers.resolve(request.path_info)
+
+            # write data into session
+            request.session['new_search'] = {
+                # do the whole magic within a single line (strip empty elements + action, urlencode, creating GET string
+                "parameter" : "&".join(list( "%s=%s" % (urlquote_plus(k),urlquote_plus(v))
+                                              for k, v in request.GET.iteritems() if v and k not in  ["action",
+                                                                                                      "csrfmiddlewaretoken",
+                                                                                                      "query"])),
+                "view" : match.url_name,
+                "custom_query" : request.GET.get('query','')
+                }
+
+            # Redirect to edit view as this takes care of the rest
+            return HttpResponseRedirect(urlresolvers.reverse('url.dingos.admin.edit.savedsearches'))
+
+        if self.form.is_valid(): # 'execute_query' in request.GET and self.form.is_valid():
+            if request.GET.get('query','') == "":
                 messages.error(self.request, "Please enter a query.")
             else:
                 try:
