@@ -173,84 +173,65 @@ DINGOS_DEFAULT_USER_PREFS = {
 
 DINGOS_DEFAULT_SAVED_SEARCHES = {'dingos': []}
 
-# Replacements for queries (order of processing: top-down)
-DINGOS_QUERY_ALIAS_LIST = (("object","iobject"),
-                           ("^fact_term$", "fact.fact_term.term"),
-                           ("^value$", "fact.fact_values.value"),
-                           ("^iobject_family", "iobject_family.name"),
-                           ("^iobject_type.namespace", "iobject_type.namespace.uri"),
-                           ("^attribute", "fact.fact_term.attribute"),
-                           ("^identifier\.namespace$", "identifier.namespace.uri"),
-                           ("^import_timestamp$", "create_timestamp"),
-                           ("^fact_term_with_attribute$", "fact.fact_term")
-                           )
 
 # Allowed keys for query conditions
+
 DINGOS_QUERY_ALLOWED_KEYS = {}
 
+
+
+
 DINGOS_QUERY_ALLOWED_KEYS['object'] = (
-    "^import_timestamp$",
-    "^timestamp$",
-    "^identifier\.namespace$",
-    "^name$",
-    "^object_type\.name$",
-    "^object_type\.namespace$",
-    "^identifier\.uid$",
-    "^object_family$",)
+    ("^import_timestamp$","create_timestamp"),
+    ("^timestamp$","timestamp"),
+    ("^identifier\.namespace$","identifier.namespace.uri"),
+    ("^name$","name"),
+    ("^object_type\.name$","iobject_type.name"),
+    ("^object_type\.namespace$","iobject_type.namespace.uri"),
+    ("^identifier\.uid$","identifier.uid"),
+    ("^object_family$","iobject_family.name")
+   )
 
 DINGOS_QUERY_ALLOWED_KEYS['fact'] = (
-    "^@\[.*\]$",
-    "^\[.*\]",
-    "^fact_term$",
-    "^value$",
-    "^attribute$",
+    ("^@\[.*\]$","\g<0>"),
+    ("^\[.*\]","\g<0>"),
+    ("^fact_term$","fact_term.term"),
+    ("^value$","fact_values.value"),
+    ("^attribute$","fact_term.attribute")
     )
 
 # Allowed columns for query result formatting
 DINGOS_QUERY_ALLOWED_COLUMNS = {}
 
 DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject'] = {
-    "import_timestamp": [],
-    "timestamp": [],
-    "name": [],
-    "identifier": ['identifier','identifier__namespace'],
-    "identifier.uid": ['identifier'],
-    "identifier.namespace": ['identifier__namespace'],
-    "object_type": ['iobject_type','iobject_type__namespace'],
-    "object_type.name": ['iobject_type'],
-    "object_type.namespace": ['iobject_type__namespace'],
-    "object_family": ['iobject_family'],
+    "import_timestamp": ("create_timestamp",[]),
+    "timestamp": (None,[]),
+    "name": (None,[]),
+    "identifier": (None,['identifier','identifier__namespace']),
+    "identifier.uid": (None,['identifier']),
+    "identifier.namespace": ("identifier.namespace.uri",['identifier__namespace']),
+    "object_type": ("iobject_type",['iobject_type','iobject_type__namespace']),
+    "object_type.name": ("iobject_type.name",['iobject_type']),
+    "object_type.namespace": ("iobject_type.namespace.uri",['iobject_type__namespace']),
+    "object_family": ("iobject_family.name",['iobject_family']),
 }
 
 DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject2Fact'] = {
-    "fact_term": ['fact__fact_term'],
-    "fact_term_with_attribute": ['fact__fact_term'],
-    "value": ["fact__fact_values"],
-    "attribute": ['fact__fact_term'],
-    "object.import_timestamp": ['iobject'],
-    "object.timestamp": ['iobject'],
-    "object.identifier.namespace": ['iobject__identifier__namespace'],
-    "object.name": ['iobject'],
-    "object.object_type.name": ['iobject__iobject_type'],
-    "object.object_type.namespace": ['iobject__iobject_type.namespace'],
-    "object.identifier.uid": ['iobject__identifier'],
-    "object.object_family": ['iobject__iobject_family'],
-    "object.identifier": ['iobject__identifier','iobject__identifier__namespace'],
-    "object.object_type": ['iobject__iobject_type','iobject__iobject_type__namespace'],
+    "fact_term": ("fact.fact_term.term",['fact__fact_term']),
+    "fact_term_with_attribute": ("fact.fact_term",['fact__fact_term']),
+    "value": ("fact.fact_values.value",["fact__fact_values"]),
+    "attribute": ("fact.fact_term.attribute",['fact__fact_term']),
+    "object.import_timestamp": ("iobject.create_timestamp",['iobject']),
+    "object.timestamp": ("iobject.timestamp",['iobject']),
+    "object.identifier.namespace": ("iobject.identifier.namspace.uri",['iobject__identifier__namespace']),
+    "object.name": ("iobject.name",['iobject']),
+    "object.object_type.name": ("iobject.iobject_type.name",['iobject__iobject_type']),
+    "object.object_type.namespace": ("iobject.iobject_type.namespace.uri",['iobject__iobject_type.namespace']),
+    "object.identifier.uid": ("iobject.identifier.uid",['iobject__identifier']),
+    "object.object_family": ("iobject.iobject_family",['iobject__iobject_family']),
+    "object.identifier": ("iobject.identifier",['iobject__identifier','iobject__identifier__namespace']),
+    "object.object_type": ("iobject.iobject_type",['iobject__iobject_type','iobject__iobject_type__namespace']),
 }
 
 
 
-
-# Mapping for columns which cannot be prefetched (needed because not every attribute is ready for prefetch)
-DINGOS_QUERY_PREFETCH_RELATED_MAPPING = (("^name$", ""),
-                                         ("^timestamp$", ""),
-                                         ("^iobject_type\.name$", "iobject_type"),
-                                         ("^fact\.fact_term$", "fact"),
-                                         ("^iobject\.iobject_type$", "iobject"),
-                                         ("^iobject\.identifier\.namespace\.uri$", "iobject"),
-                                         ("^iobject\.iobject_family$", "iobject"),
-                                         ("^iobject\.iobject_type\.name$", "iobject"),
-                                         ("^iobject\.identifier\.uid$", "iobject"),
-                                         ("^identifier\.namespace\.uri$", "identifier"),
-                                         ("^iobject_family\.name", "iobject_family"),)
