@@ -43,6 +43,7 @@ class CustomQueryForm(forms.Form):
 class EditInfoObjectFieldForm(forms.Form):
     value = forms.CharField(required=True, widget=widgets.TextInput(attrs={'size':10,'class':'vTextField'}))
 
+
 class SimpleMarkingAdditionForm(forms.Form):
     def __init__(self, request, *args, **kwargs):
         marking_choices = kwargs['markings']
@@ -57,10 +58,6 @@ class SimpleMarkingAdditionForm(forms.Form):
         self.fields['checked_objects'] = forms.MultipleChoiceField(choices=(map(lambda x: (x,x),checked_objects)),
                                                                    widget=forms.CheckboxSelectMultiple)
         self.fields['checked_objects_choices'] = forms.CharField(initial=",".join(checked_objects),widget=forms.HiddenInput)
-
-
-    def checkbox_for_pk(self,pk):
-        return self.fields['checked_objects']
 
 
 

@@ -24,7 +24,9 @@ import json
 
 from django import http
 
-from forms import SimpleMarkingAdditionForm
+from django import forms
+
+
 
 from django.views.generic.base import ContextMixin
 from django.views.generic import DetailView, ListView, TemplateView, View
@@ -61,7 +63,7 @@ from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedM
 
 from dingos.models import UserData, Marking2X
 
-from dingos.forms import CustomQueryForm
+from dingos.forms import CustomQueryForm, SimpleMarkingAdditionForm
 
 from dingos.queryparser.result_formatting import to_csv
 
@@ -349,6 +351,15 @@ class ViewMethodMixin(object):
         kwargs['data_kind']='saved_searches'
         return self._lookup_user_data(*args,**kwargs)
 
+    def obj_by_pk(self,pk):
+        """
+        This is a hack for accessing objects from a template by pk.
+        """
+        for o in self.object_list:
+            if "%s" % o.pk == "%s" % pk:
+                return o
+        return None
+
 
 class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
     """
@@ -552,7 +563,7 @@ class BasicCustomQueryView(BasicListView):
                     # Filter selected columns for export
                     formatting_arguments = formatted_filter_collection.build_format_arguments(query_mode=self.query_base.model.__name__)
 
-                    print "Formatting %s" % formatting_arguments
+
                     col_specs = formatting_arguments['columns']
                     misc_args = formatting_arguments['kwargs']
                     prefetch = formatting_arguments['prefetch_related']
@@ -653,132 +664,168 @@ class BasicView(CommonContextMixin,
 
 class SimpleMarkingAdditionView(BasicListView):
 
-    counting_paginator = True
+    # Override the following parameters in views inheriting from this view.
 
-    paginate_by = 100
+    title = 'Mark objects'
 
-    marked_object_class = InfoObject
-
-    marking_queryset = InfoObject.objects.filter(iobject_type__name__contains='Marking')
-    marking_query = """object: object_type.name = 'Marking' && identifier.namespace contains 'cert.siemens.com'"""
-
-
-    form = None
-
-    @property
-    def m_queryset(self):
-        if self.marking_queryset:
-            return self.marking_queryset.values_list('pk','name')[0:20]
-        else:
-            raise StandardError("Not yet implemented")
-
-    marked_class = InfoObject
-
-    queryset = None#InfoObject.objects.all()[0:20]
+    description = """Provide here a brief description for the user of what to do -- this will be displayed
+                     in the view."""
 
     template_name = 'dingos/%s/actions/SimpleMarkingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
 
-    def obj_by_pk(self,pk):
-        for o in self.object_list:
-            if "%s" % o.pk == "%s" % pk:
-                return o
-        return None
+    marked_model_class = InfoObject
+
+    # Specify either a Django queryset or a DINGOS custom query
+
+    marking_queryset = None
+
+    marking_query = """object: object_type.name = 'Marking' && identifier.namespace contains 'cert.siemens.com'"""
+
+    # The query with which possible marking objects are selected may potentially return many objects;
+    # specify below, how many should be displayed.
+
+    max_marking_choices=20
+
+
+    ### Class code below
+
+    # We do not paginate: there should be no need, because all objects that are displayed
+    # have been selected by the user via a checkbox, which limits the numbers.
+    # Also, with the current implementation of the Template, which iterates through the
+    # checkboxes in the form rather than the object list, pagination by simply inheriting
+    # from the basic list view template dos not work.
+
+    paginate_by = False
+    form = None
+
+
+
+    @property
+    def m_queryset(self):
+        """
+        Queryset for selecting possible markings, either taken directly from self.marking_queryset
+        or created from self.marking_query
+        """
+        if self.marking_queryset:
+            return self.marking_queryset.values_list('pk','name')[0:self.max_marking_choices]
+        elif self.marking_query:
+            parser = QueryParser()
+            formatted_filter_collection = parser.parse(self.marking_query)
+            filter_collection = formatted_filter_collection.filter_collection
+
+            base_query = InfoObject.objects.all()
+            self.marking_queryset = filter_collection.build_query(base=base_query)
+
+            return self.marking_queryset.values_list('pk','name')[0:self.max_marking_choices]
+        else:
+            raise StandardError("You must provide a queryset or query.")
+
+    # The queryset (required for the BasicListView) will be filled in the post-method
+    # below, but we need to declare it here.
+
+    queryset = None
+
+
+
 
     def get_context_data(self, **kwargs):
+        """
+        Adds the form to the context for access in the template.
+        """
         context = super(SimpleMarkingAdditionView, self).get_context_data(**kwargs)
 
         context['form'] = self.form
 
         return context
 
-    def get(self, request, *args, **kwargs):
-        # for testing
-        return self.post(request,*args,**kwargs)
-
     def post(self, request, *args, **kwargs):
+
+        # If this is the first time, the view is rendered, it has been
+        # called as action from another view; in that case, there must be
+        # the result of the multiple-choice field with which objects
+        # to perform the action on were selected in the POST request.
+        # So we use the presence of 'action_objects' to see whether
+        # this is indeed the first call.
 
         if 'action_objects' in self.request.POST:
 
             self.request.POST.getlist('action_objects')
-            selected_objects= request.POST.getlist('action_objects')
-            self.queryset = self.marked_object_class.objects.filter(pk__in = selected_objects)
-            self.form = SimpleMarkingAdditionForm({'checked_objects_choices': ','.join(selected_objects)},
+            object_set= request.POST.getlist('action_objects')
+            self.queryset = self.marked_model_class.objects.filter(pk__in = object_set)
+            # We create the form
+            self.form = SimpleMarkingAdditionForm({# We need a way to remember all objects that can be selected;
+                                                   # for this, we abuse a hidden field in which we collect a list
+                                                   # of object pks.
+                                                   'checked_objects_choices': ','.join(object_set),
+                                                   # We also preset all objects as checked
+                                                   'checked_objects' : object_set},
+                                                  # The parameters below are used to create the field for
+                                                  # selecting marking objects and the multiple choice field
+                                                  # for selecting objects.
                                                   markings= self.m_queryset,
-                                                  checked_objects_choices=selected_objects)
-            #print help(self.form.fields['checked_objects'].widget.subwidgets)
-            #print self.form.fields['checked_objects'].widget.render()
+                                                  checked_objects_choices=object_set)
+
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
         else:
+            # So the view has been called a second time by submitting the form in the view
+            # rather than from a different view. So we need to process the data in the form
 
-            selected_objects =  request.POST.dict().get('checked_objects_choices').split(',')
+            # Retrieve the list of all objects that had been communicated to this view
+            object_set =  request.POST.dict().get('checked_objects_choices').split(',')
 
-            self.queryset = self.marked_object_class.objects.filter(pk__in = selected_objects)
+            # Set the queryset for redisplaying the view with these objects
+
+            self.queryset = self.marked_model_class.objects.filter(pk__in = object_set)
+
+            # Create the form object, this time from the POST data
             self.form = SimpleMarkingAdditionForm(request.POST,
                                                   markings = self.m_queryset,
-                                                  checked_objects_choices=selected_objects)
+                                                  checked_objects_choices=object_set)
 
 
-
+            # React on a valid form
             if self.form.is_valid():
                 form_data = self.form.cleaned_data
-                content_type = ContentType.objects.get_for_model(self.marked_class)
 
+                # For creating markings, we need to use the Django Content-Type mechanism
+
+                content_type = ContentType.objects.get_for_model(self.marked_model_class)
+
+                # Read out object with which marking is to be carried out
                 marking_obj = InfoObject.objects.get(pk=int(form_data['marking_to_add']))
 
+
+                # Create the markings
+                marked = []
+                skipped = []
+
                 for obj_pk in form_data['checked_objects']:
-                    Marking2X.objects.get_or_create(object_id=obj_pk,
+
+                    marking2x, created = Marking2X.objects.get_or_create(object_id=obj_pk,
                                                     content_type = content_type,
                                                     marking=marking_obj)
+                    marked_obj = InfoObject.objects.get(pk=obj_pk)
+                    if created:
+                        marked.append((obj_pk,marked_obj.identifier,marked_obj.name))
+                    else:
+                        skipped.append((obj_pk,marked_obj.identifier,marked_obj.name))
 
-                messages.info(self.request,"Marked selected objects.")
+                return_message = """%s info objects were marked with marking '%s'.""" % (len(marked),marking_obj.name)
+
+                if skipped:
+                    return_message += """ %s info objects were skipped, because the marking already existed.""" % len(skipped)
+
+
+                messages.info(self.request,return_message)
+
+                #Clear checkboxes by emptying the corresponding parameter in the form data and
+                #recreating the form object from this data
+
                 form_data['checked_objects'] = []
                 self.form = SimpleMarkingAdditionForm(form_data,
                                                       markings = self.m_queryset,
-                                                      checked_objects_choices=selected_objects)
+                                                      checked_objects_choices=object_set)
 
                 return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
 
-
-
-        user_data = self.get_user_data()
-
-        saved_searches = user_data['saved_searches']
-
-        if self.formset.is_valid() and request.user.is_authenticated():
-            dingos_saved_searches = []
-
-            for form in self.formset.ordered_forms:
-                search = form.cleaned_data
-                # Search has the following form::
-                #
-                #     {'view': u'url.dingos.list.infoobject.generic',
-                #      'parameter': u'iobject_type=72',
-                #      u'ORDER': None,
-                #      u'DELETE': False,
-                #     'title': u'Filter for STIX Packages'
-                #     }
-                #
-
-                if (search['title'] != '' or not search['new_entry']) and not search['DELETE']:
-                    dingos_saved_searches.append( { 'view' : search['view'],
-                                                    'parameter' : search['parameter'],
-                                                    'title' : search['title'],
-                                                    }
-                    )
-
-            saved_searches['dingos'] = dingos_saved_searches
-            UserData.store_user_data(user=request.user,
-                                     data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
-                                     user_data=saved_searches,
-                                     iobject_name = "Saved searches of user '%s'" % request.user.username)
-
-            # enforce reload of session
-            del request.session['customization']
-            request.session.modified = True
-
-        else:
-            # Form was not valid, we return the form as is
-
-            return super(BasicTemplateView,self).get(request, *args, **kwargs)
-        return self.get(request, *args, **kwargs)
