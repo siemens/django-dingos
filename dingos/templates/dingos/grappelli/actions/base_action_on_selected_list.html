@@ -29,7 +29,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% block content_frontmatter %}
 <form action="{% url "url.dingos.action.add_marking" %}" method="POST">
     {% csrf_token %}
-    {{form.checked_objects_choices}}
+    {{view.form.checked_objects_choices}}
 {% endblock %}
 
 {% block list_title %} Selected Objects {% endblock %}
@@ -79,7 +79,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
         <div id="id_checked_objects">
        <tbody>
 
-       {% for checkbox in form.checked_objects %}
+       {% for checkbox in view.form.checked_objects %}
          {% with pk=checkbox.choice_label %}
          {% obj_by_pk pk as instance %}
 

@@ -843,7 +843,7 @@ class BasicListActionView(BasicListView):
 
     template_name = 'dingos/%s/actions/SimpleMarkingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
 
-    marked_model_class = InfoObject
+    action_model_class = InfoObject
 
     form_class = BasicListActionForm
 
@@ -865,20 +865,9 @@ class BasicListActionView(BasicListView):
 
     queryset = None
 
-
-    def get_context_data(self, **kwargs):
-        """
-        Adds the form to the context for access in the template.
-        """
-        context = super(BasicListActionView, self).get_context_data(**kwargs)
-
-        context['form'] = self.form
-
-        return context
-
     def _set_initial_form(self,*args,**kwargs):
         object_set= self.request.POST.getlist('action_objects')
-        self.queryset = self.marked_model_class.objects.filter(pk__in = object_set)
+        self.queryset = self.action_model_class.objects.filter(pk__in = object_set)
         # We create the form
         kwargs['checked_objects_choices'] = object_set
         self.form = SimpleMarkingAdditionForm({# We need a way to remember all objects that can be selected;
@@ -899,7 +888,7 @@ class BasicListActionView(BasicListView):
 
         # Set the queryset for redisplaying the view with these objects
 
-        self.queryset = self.marked_model_class.objects.filter(pk__in = object_set)
+        self.queryset = self.action_model_class.objects.filter(pk__in = object_set)
 
         kwargs['checked_objects_choices'] = object_set
 
@@ -922,7 +911,7 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
     template_name = 'dingos/%s/actions/SimpleMarkingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
 
-    marked_model_class = InfoObject
+    action_model_class = InfoObject
 
 
 
@@ -985,7 +974,7 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
                 # For creating markings, we need to use the Django Content-Type mechanism
 
-                content_type = ContentType.objects.get_for_model(self.marked_model_class)
+                content_type = ContentType.objects.get_for_model(self.action_model_class)
 
                 # Read out object with which marking is to be carried out
                 marking_obj = InfoObject.objects.get(pk=int(form_data['marking_to_add']))
