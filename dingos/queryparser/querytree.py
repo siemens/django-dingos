@@ -110,7 +110,7 @@ class FilterCollection:
                 query_repr = expr_or_query
 
                 #print "\t%s: negation=%s {" % (filter_type, negation)
-                sub_query = query_repr.build_query(base=InfoObject.objects.exclude(latest_of=None))
+                sub_query = query_repr.build_query(base=InfoObject.objects.all())
 
                 q_key = ''
                 if query_mode == self.INFO_OBJECT_2_FACT:
