@@ -925,6 +925,7 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
     max_marking_choices=20
 
+    allow_multiple_markings=False
 
     # The form inherits from the BasicListActionForm: we have added
     # the field for selecting marking objects
@@ -962,7 +963,7 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
         if 'action_objects' in self.request.POST:
             self._set_initial_form(markings= self.m_queryset,
-                                   allow_multiple_markings=True)
+                                   allow_multiple_markings=self.allow_multiple_markings)
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
         else:
             # So the view has been called a second time by submitting the form in the view
@@ -971,7 +972,7 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
             self._set_post_form(request.POST,
                                 markings = self.m_queryset,
-                                allow_multiple_markings = True)
+                                allow_multiple_markings = self.allow_multiple_markings)
 
             # React on a valid form
             if self.form.is_valid():
@@ -1012,7 +1013,7 @@ class SimpleMarkingAdditionView(BasicListActionView):
                         return_message += """ %s info objects were skipped, because the marking already existed.""" % len(skipped)
 
 
-                    messages.info(self.request,return_message)
+                    messages.success(self.request,return_message)
 
                 #Clear checkboxes by emptying the corresponding parameter in the form data and
                 #recreating the form object from this data
@@ -1020,7 +1021,7 @@ class SimpleMarkingAdditionView(BasicListActionView):
                 form_data['checked_objects'] = []
                 self._set_post_form(form_data,
                                      markings = self.m_queryset,
-                                     allow_multiple_markings= True)
+                                     allow_multiple_markings= self.allow_multiple_markings)
 
 
                 return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
