@@ -1,7 +1,7 @@
 {% extends "dingos/grappelli/lists/base_lists_two_column.html" %}
 
 {% comment %}
-Copyright (c) Siemens AG, 2013
+Copyright (c) Siemens AG, 2014
 
 This file is part of MANTIS.  MANTIS is free software: you can
 redistribute it and/or modify it under the terms of the GNU General Public
@@ -27,7 +27,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
 {% block content_frontmatter %}
-<form action="{% url "url.dingos.action.add_marking" %}" method="POST">
+<form  method="POST">
     {% csrf_token %}
     {{view.form.checked_objects_choices}}
 {% endblock %}

@@ -74,11 +74,7 @@ urlpatterns = patterns('',
     #    views.InfoObjectsEditView.as_view(),
     #    name="url.dingos.admin.edit.infoobject"),
 
-    # !! DELETE THIS BEFORE SHIPPING !!
-    url(r'^ImJustSomeView$', 'dingos.views.demo_action',
-        name="url.dingos.action_demo"),
-    # !! END DELETE !!
-    
+
 
     # Detail-view with highlight and anchor on certain node
     # solved below with a redirect, because with the 'url' template

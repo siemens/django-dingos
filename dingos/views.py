@@ -45,14 +45,6 @@ from queryparser.querylexer import QueryLexerException
 from queryparser.querytree import FilterCollection, QueryParserException
 
 
-# JUST FOR DEMONSTRATING ISSUES - DELETE THIS BEFORE SHIPPING OUT!
-# ...don't forget to remove the url.py entry as well
-def demo_action(request):
-    output = "<ul>"
-    for key, value in request.POST.iteritems():
-        output += "<li><b>%s</b>: <i>%s</i></li>" % (key, request.POST.getlist(key))
-    output +="</ul>"
-    return(http.HttpResponse(output,status=201))
 
 class InfoObjectList(BasicFilterView):
 
@@ -70,12 +62,6 @@ class InfoObjectList(BasicFilterView):
     filterset_class= InfoObjectFilter
 
     title = 'List of Info Objects (generic filter)'
-
-    ## 0 : standard request | 1 : async. ajax | 2 : async. ajax + dialoge
-    list_actions = [ ('dummy0', 'url.dingos.action_demo', 0),
-                     ('Mark', 'url.dingos.action.add_marking', 0),
-                     ('dummy1', 'url.dingos.action_demo', 1),
-                     ('dummy2', 'url.dingos.action_demo', 2) ]
 
 
     queryset = InfoObject.objects.\
