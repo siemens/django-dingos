@@ -913,9 +913,8 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
     action_model_class = InfoObject
 
-
-
-    # Specify either a Django queryset or a DINGOS custom query
+    # Specify either a Django queryset or a DINGOS custom query that selects the marking objects
+    # that will be offered in the view
 
     marking_queryset = None
 
@@ -925,6 +924,10 @@ class SimpleMarkingAdditionView(BasicListActionView):
     # specify below, how many should be displayed.
 
     max_marking_choices=20
+
+
+    # The form inherits from the BasicListActionForm: we have added
+    # the field for selecting marking objects
 
     form_class = SimpleMarkingAdditionForm
 
@@ -958,7 +961,8 @@ class SimpleMarkingAdditionView(BasicListActionView):
         # this is indeed the first call.
 
         if 'action_objects' in self.request.POST:
-            self._set_initial_form(markings= self.m_queryset)
+            self._set_initial_form(markings= self.m_queryset,
+                                   allow_multiple_markings=True)
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
         else:
             # So the view has been called a second time by submitting the form in the view
@@ -966,7 +970,8 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
 
             self._set_post_form(request.POST,
-                                markings = self.m_queryset)
+                                markings = self.m_queryset,
+                                allow_multiple_markings = True)
 
             # React on a valid form
             if self.form.is_valid():
@@ -976,39 +981,46 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
                 content_type = ContentType.objects.get_for_model(self.action_model_class)
 
-                # Read out object with which marking is to be carried out
-                marking_obj = InfoObject.objects.get(pk=int(form_data['marking_to_add']))
+                if isinstance(form_data['marking_to_add'],list):
+                    markings_to_add = form_data['marking_to_add']
+                else:
+                    markings_to_add = [form_data['marking_to_add']]
+
+                for marking_pk in markings_to_add:
+
+                    # Read out object with which marking is to be carried out
+                    marking_obj = InfoObject.objects.get(pk=marking_pk)
+
+                    # Create the markings
+                    marked = []
+                    skipped = []
+
+                    for obj_pk in form_data['checked_objects']:
+
+                        marking2x, created = Marking2X.objects.get_or_create(object_id=obj_pk,
+                                                                             content_type = content_type,
+                                                                             marking=marking_obj)
+                        marked_obj = InfoObject.objects.get(pk=obj_pk)
+                        if created:
+                            marked.append((obj_pk,marked_obj.identifier,marked_obj.name))
+                        else:
+                            skipped.append((obj_pk,marked_obj.identifier,marked_obj.name))
+
+                    return_message = """%s info objects were marked with marking '%s'.""" % (len(marked),marking_obj.name)
+
+                    if skipped:
+                        return_message += """ %s info objects were skipped, because the marking already existed.""" % len(skipped)
 
 
-                # Create the markings
-                marked = []
-                skipped = []
-
-                for obj_pk in form_data['checked_objects']:
-
-                    marking2x, created = Marking2X.objects.get_or_create(object_id=obj_pk,
-                                                                         content_type = content_type,
-                                                                         marking=marking_obj)
-                    marked_obj = InfoObject.objects.get(pk=obj_pk)
-                    if created:
-                        marked.append((obj_pk,marked_obj.identifier,marked_obj.name))
-                    else:
-                        skipped.append((obj_pk,marked_obj.identifier,marked_obj.name))
-
-                return_message = """%s info objects were marked with marking '%s'.""" % (len(marked),marking_obj.name)
-
-                if skipped:
-                    return_message += """ %s info objects were skipped, because the marking already existed.""" % len(skipped)
-
-
-                messages.info(self.request,return_message)
+                    messages.info(self.request,return_message)
 
                 #Clear checkboxes by emptying the corresponding parameter in the form data and
                 #recreating the form object from this data
 
                 form_data['checked_objects'] = []
                 self._set_post_form(form_data,
-                                     markings = self.m_queryset)
+                                     markings = self.m_queryset,
+                                     allow_multiple_markings= True)
 
 
                 return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)

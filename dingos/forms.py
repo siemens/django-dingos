@@ -60,10 +60,15 @@ class BasicListActionForm(forms.Form):
 
 class SimpleMarkingAdditionForm(BasicListActionForm):
     def __init__(self, request, *args, **kwargs):
-        marking_choices = kwargs['markings']
-        del(kwargs['markings'])
+
+        marking_choices = kwargs.pop('markings')
+        allow_multiple_markings = kwargs.pop('allow_multiple_markings',None)
+
         super(SimpleMarkingAdditionForm, self).__init__(request,*args, **kwargs)
-        self.fields['marking_to_add'] = forms.ChoiceField(choices=marking_choices)
+        if allow_multiple_markings:
+            self.fields['marking_to_add'] = forms.MultipleChoiceField(choices=marking_choices)
+        else:
+            self.fields['marking_to_add'] = forms.ChoiceField(choices=marking_choices)
 
 
 
