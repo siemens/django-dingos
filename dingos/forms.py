@@ -45,8 +45,6 @@ class EditInfoObjectFieldForm(forms.Form):
 
 class SimpleMarkingAdditionForm(forms.Form):
     def __init__(self, request, *args, **kwargs):
-        print "Form request"
-        print request
         marking_choices = kwargs['markings']
         del(kwargs['markings'])
         if 'checked_objects_choices' in kwargs:
@@ -61,7 +59,8 @@ class SimpleMarkingAdditionForm(forms.Form):
         self.fields['checked_objects_choices'] = forms.CharField(initial=",".join(checked_objects),widget=forms.HiddenInput)
 
 
-
+    def checkbox_for_pk(self,pk):
+        return self.fields['checked_objects']
 
 
 

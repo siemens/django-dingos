@@ -63,6 +63,13 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {# Below, fill out the #} 
 
 {% block objects %}
+    {% for checkbox in form.checked_objects %}
+        {% with pk=checkbox.choice_label %}
+        {% get_via_view_method "obj_by_pk" pk as obj %}
+          {{ pk }}
+          {{ obj.name }}
+        {% endwith %}
+    {% endfor %}
    <div class="grp-module grp-changelist-results">
 
     <table id="result_list" cellspacing="0" class="grp-sortable">

@@ -39,6 +39,8 @@ from django.db import DataError
 
 from django.shortcuts import render_to_response
 
+from django.contrib.contenttypes.models import ContentType
+
 from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
 
 from  django.core import urlresolvers
@@ -57,7 +59,7 @@ from django_filters.views import FilterView
 
 from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
 
-from dingos.models import UserData
+from dingos.models import UserData, Marking2X
 
 from dingos.forms import CustomQueryForm
 
@@ -676,6 +678,12 @@ class SimpleMarkingAdditionView(BasicListView):
 
     template_name = 'dingos/%s/actions/SimpleMarkingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
 
+    def obj_by_pk(self,pk):
+        for o in self.object_list:
+            if "%s" % o.pk == "%s" % pk:
+                return o
+        return None
+
     def get_context_data(self, **kwargs):
         context = super(SimpleMarkingAdditionView, self).get_context_data(**kwargs)
 
@@ -690,31 +698,43 @@ class SimpleMarkingAdditionView(BasicListView):
     def post(self, request, *args, **kwargs):
 
         if 'action_objects' in self.request.POST:
-            print "Found"
+
             self.request.POST.getlist('action_objects')
             selected_objects= request.POST.getlist('action_objects')
             self.queryset = self.marked_object_class.objects.filter(pk__in = selected_objects)
             self.form = SimpleMarkingAdditionForm({'checked_objects_choices': ','.join(selected_objects)},
                                                   markings= self.m_queryset,
                                                   checked_objects_choices=selected_objects)
+            #print help(self.form.fields['checked_objects'].widget.subwidgets)
+            #print self.form.fields['checked_objects'].widget.render()
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
         else:
-            print request.POST.dict()
+
             selected_objects =  request.POST.dict().get('checked_objects_choices').split(',')
-            print "Found %s" % selected_objects
+
             self.queryset = self.marked_object_class.objects.filter(pk__in = selected_objects)
             self.form = SimpleMarkingAdditionForm(request.POST,
                                                   markings = self.m_queryset,
                                                   checked_objects_choices=selected_objects)
-            print "Valid?"
-            print self.form.is_valid()
+
+
 
             if self.form.is_valid():
                 form_data = self.form.cleaned_data
-                print form_data
+                content_type = ContentType.objects.get_for_model(self.marked_class)
 
+                marking_obj = InfoObject.objects.get(pk=int(form_data['marking_to_add']))
 
+                for obj_pk in form_data['checked_objects']:
+                    Marking2X.objects.get_or_create(object_id=obj_pk,
+                                                    content_type = content_type,
+                                                    marking=marking_obj)
 
+                messages.info(self.request,"Marked selected objects.")
+                form_data['checked_objects'] = []
+                self.form = SimpleMarkingAdditionForm(form_data,
+                                                      markings = self.m_queryset,
+                                                      checked_objects_choices=selected_objects)
 
                 return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)

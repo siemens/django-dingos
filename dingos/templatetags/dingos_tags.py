@@ -369,3 +369,8 @@ def show_InfoObjectField(oneObject, field):
         return result
 
 
+@register.assignment_tag(takes_context=True)
+def get_via_view_method(context, view_method,*args,**kwargs):
+    return getattr(context['view'],view_method)(*args,**kwargs)
+
+
