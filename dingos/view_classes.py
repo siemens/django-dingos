@@ -63,7 +63,7 @@ from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedM
 
 from dingos.models import UserData, Marking2X
 
-from dingos.forms import CustomQueryForm, SimpleMarkingAdditionForm
+from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm
 
 from dingos.queryparser.result_formatting import to_csv
 
@@ -81,6 +81,175 @@ from dingos.core.utilities import get_dict, replace_by_list
 from dingos.models import InfoObject
 
 from queryparser.queryparser import QueryParser
+
+#
+# class SimpleMarkingAdditionView(BasicListView):
+#
+#     # Override the following parameters in views inheriting from this view.
+#
+#     title = 'Mark objects'
+#
+#     description = """Provide here a brief description for the user of what to do -- this will be displayed
+#                      in the view."""
+#
+#     template_name = 'dingos/%s/actions/SimpleMarkingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
+#
+#     marked_model_class = InfoObject
+#
+#     # Specify either a Django queryset or a DINGOS custom query
+#
+#     marking_queryset = None
+#
+#     marking_query = """object: object_type.name = 'Marking' && identifier.namespace contains 'cert.siemens.com'"""
+#
+#     # The query with which possible marking objects are selected may potentially return many objects;
+#     # specify below, how many should be displayed.
+#
+#     max_marking_choices=20
+#
+#
+#     ### Class code below
+#
+#     # We do not paginate: there should be no need, because all objects that are displayed
+#     # have been selected by the user via a checkbox, which limits the numbers.
+#     # Also, with the current implementation of the Template, which iterates through the
+#     # checkboxes in the form rather than the object list, pagination by simply inheriting
+#     # from the basic list view template dos not work.
+#
+#     paginate_by = False
+#     form = None
+#
+#
+#
+#     @property
+#     def m_queryset(self):
+#         """
+#         Queryset for selecting possible markings, either taken directly from self.marking_queryset
+#         or created from self.marking_query
+#         """
+#         if self.marking_queryset:
+#             return self.marking_queryset.values_list('pk','name')[0:self.max_marking_choices]
+#         elif self.marking_query:
+#             parser = QueryParser()
+#             formatted_filter_collection = parser.parse(self.marking_query)
+#             filter_collection = formatted_filter_collection.filter_collection
+#
+#             base_query = InfoObject.objects.all()
+#             self.marking_queryset = filter_collection.build_query(base=base_query)
+#
+#             return self.marking_queryset.values_list('pk','name')[0:self.max_marking_choices]
+#         else:
+#             raise StandardError("You must provide a queryset or query.")
+#
+#     # The queryset (required for the BasicListView) will be filled in the post-method
+#     # below, but we need to declare it here.
+#
+#     queryset = None
+#
+#
+#
+#
+#     def get_context_data(self, **kwargs):
+#         """
+#         Adds the form to the context for access in the template.
+#         """
+#         context = super(SimpleMarkingAdditionView, self).get_context_data(**kwargs)
+#
+#         context['form'] = self.form
+#
+#         return context
+#
+#     def post(self, request, *args, **kwargs):
+#
+#         # If this is the first time, the view is rendered, it has been
+#         # called as action from another view; in that case, there must be
+#         # the result of the multiple-choice field with which objects
+#         # to perform the action on were selected in the POST request.
+#         # So we use the presence of 'action_objects' to see whether
+#         # this is indeed the first call.
+#
+#         if 'action_objects' in self.request.POST:
+#
+#             self.request.POST.getlist('action_objects')
+#             object_set= request.POST.getlist('action_objects')
+#             self.queryset = self.marked_model_class.objects.filter(pk__in = object_set)
+#             # We create the form
+#             self.form = SimpleMarkingAdditionForm({# We need a way to remember all objects that can be selected;
+#                                                    # for this, we abuse a hidden field in which we collect a list
+#                                                    # of object pks.
+#                                                    'checked_objects_choices': ','.join(object_set),
+#                                                    # We also preset all objects as checked
+#                                                    'checked_objects' : object_set},
+#                                                   # The parameters below are used to create the field for
+#                                                   # selecting marking objects and the multiple choice field
+#                                                   # for selecting objects.
+#                                                   markings= self.m_queryset,
+#                                                   checked_objects_choices=object_set)
+#
+#             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
+#         else:
+#             # So the view has been called a second time by submitting the form in the view
+#             # rather than from a different view. So we need to process the data in the form
+#
+#             # Retrieve the list of all objects that had been communicated to this view
+#             object_set =  request.POST.dict().get('checked_objects_choices').split(',')
+#
+#             # Set the queryset for redisplaying the view with these objects
+#
+#             self.queryset = self.marked_model_class.objects.filter(pk__in = object_set)
+#
+#             # Create the form object, this time from the POST data
+#             self.form = SimpleMarkingAdditionForm(request.POST,
+#                                                   markings = self.m_queryset,
+#                                                   checked_objects_choices=object_set)
+#
+#
+#             # React on a valid form
+#             if self.form.is_valid():
+#                 form_data = self.form.cleaned_data
+#
+#                 # For creating markings, we need to use the Django Content-Type mechanism
+#
+#                 content_type = ContentType.objects.get_for_model(self.marked_model_class)
+#
+#                 # Read out object with which marking is to be carried out
+#                 marking_obj = InfoObject.objects.get(pk=int(form_data['marking_to_add']))
+#
+#
+#                 # Create the markings
+#                 marked = []
+#                 skipped = []
+#
+#                 for obj_pk in form_data['checked_objects']:
+#
+#                     marking2x, created = Marking2X.objects.get_or_create(object_id=obj_pk,
+#                                                     content_type = content_type,
+#                                                     marking=marking_obj)
+#                     marked_obj = InfoObject.objects.get(pk=obj_pk)
+#                     if created:
+#                         marked.append((obj_pk,marked_obj.identifier,marked_obj.name))
+#                     else:
+#                         skipped.append((obj_pk,marked_obj.identifier,marked_obj.name))
+#
+#                 return_message = """%s info objects were marked with marking '%s'.""" % (len(marked),marking_obj.name)
+#
+#                 if skipped:
+#                     return_message += """ %s info objects were skipped, because the marking already existed.""" % len(skipped)
+#
+#
+#                 messages.info(self.request,return_message)
+#
+#                 #Clear checkboxes by emptying the corresponding parameter in the form data and
+#                 #recreating the form object from this data
+#
+#                 form_data['checked_objects'] = []
+#                 self.form = SimpleMarkingAdditionForm(form_data,
+#                                                       markings = self.m_queryset,
+#                                                       checked_objects_choices=object_set)
+#
+#                 return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
+#             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
+
 
 
 class UncountingPaginator(Paginator):
@@ -662,11 +831,12 @@ class BasicView(CommonContextMixin,
         raise NotImplementedError("No render_to_response method implemented!")
 
 
-class SimpleMarkingAdditionView(BasicListView):
+
+class BasicListActionView(BasicListView):
 
     # Override the following parameters in views inheriting from this view.
 
-    title = 'Mark objects'
+    title = 'Carry out actions on model instances'
 
     description = """Provide here a brief description for the user of what to do -- this will be displayed
                      in the view."""
@@ -675,17 +845,7 @@ class SimpleMarkingAdditionView(BasicListView):
 
     marked_model_class = InfoObject
 
-    # Specify either a Django queryset or a DINGOS custom query
-
-    marking_queryset = None
-
-    marking_query = """object: object_type.name = 'Marking' && identifier.namespace contains 'cert.siemens.com'"""
-
-    # The query with which possible marking objects are selected may potentially return many objects;
-    # specify below, how many should be displayed.
-
-    max_marking_choices=20
-
+    form_class = BasicListActionForm
 
     ### Class code below
 
@@ -699,6 +859,85 @@ class SimpleMarkingAdditionView(BasicListView):
     form = None
 
 
+
+    # The queryset (required for the BasicListView) will be filled in the post-method
+    # below, but we need to declare it here.
+
+    queryset = None
+
+
+    def get_context_data(self, **kwargs):
+        """
+        Adds the form to the context for access in the template.
+        """
+        context = super(BasicListActionView, self).get_context_data(**kwargs)
+
+        context['form'] = self.form
+
+        return context
+
+    def _set_initial_form(self,*args,**kwargs):
+        object_set= self.request.POST.getlist('action_objects')
+        self.queryset = self.marked_model_class.objects.filter(pk__in = object_set)
+        # We create the form
+        kwargs['checked_objects_choices'] = object_set
+        self.form = SimpleMarkingAdditionForm({# We need a way to remember all objects that can be selected;
+                                               # for this, we abuse a hidden field in which we collect a list
+                                               # of object pks.
+                                               'checked_objects_choices': ','.join(object_set),
+                                               # We also preset all objects as checked
+                                               'checked_objects' : object_set},
+                                              # The parameters below are used to create the field for
+                                              # selecting marking objects and the multiple choice field
+                                              # for selecting objects.
+                                              *args,
+                                              **kwargs)
+
+
+    def _set_post_form(self,*args,**kwargs):
+        object_set =  self.request.POST.dict().get('checked_objects_choices').split(',')
+
+        # Set the queryset for redisplaying the view with these objects
+
+        self.queryset = self.marked_model_class.objects.filter(pk__in = object_set)
+
+        kwargs['checked_objects_choices'] = object_set
+
+        # Create the form object, this time from the POST data
+        self.form = self.form_class(
+                                    *args,
+                                    **kwargs)
+
+
+
+
+class SimpleMarkingAdditionView(BasicListActionView):
+
+    # Override the following parameters in views inheriting from this view.
+
+    title = 'Mark objects'
+
+    description = """Provide here a brief description for the user of what to do -- this will be displayed
+                     in the view."""
+
+    template_name = 'dingos/%s/actions/SimpleMarkingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
+
+    marked_model_class = InfoObject
+
+
+
+    # Specify either a Django queryset or a DINGOS custom query
+
+    marking_queryset = None
+
+    marking_query = """object: object_type.name = 'Marking' && identifier.namespace contains 'cert.siemens.com'"""
+
+    # The query with which possible marking objects are selected may potentially return many objects;
+    # specify below, how many should be displayed.
+
+    max_marking_choices=20
+
+    form_class = SimpleMarkingAdditionForm
 
     @property
     def m_queryset(self):
@@ -720,24 +959,6 @@ class SimpleMarkingAdditionView(BasicListView):
         else:
             raise StandardError("You must provide a queryset or query.")
 
-    # The queryset (required for the BasicListView) will be filled in the post-method
-    # below, but we need to declare it here.
-
-    queryset = None
-
-
-
-
-    def get_context_data(self, **kwargs):
-        """
-        Adds the form to the context for access in the template.
-        """
-        context = super(SimpleMarkingAdditionView, self).get_context_data(**kwargs)
-
-        context['form'] = self.form
-
-        return context
-
     def post(self, request, *args, **kwargs):
 
         # If this is the first time, the view is rendered, it has been
@@ -748,40 +969,15 @@ class SimpleMarkingAdditionView(BasicListView):
         # this is indeed the first call.
 
         if 'action_objects' in self.request.POST:
-
-            self.request.POST.getlist('action_objects')
-            object_set= request.POST.getlist('action_objects')
-            self.queryset = self.marked_model_class.objects.filter(pk__in = object_set)
-            # We create the form
-            self.form = SimpleMarkingAdditionForm({# We need a way to remember all objects that can be selected;
-                                                   # for this, we abuse a hidden field in which we collect a list
-                                                   # of object pks.
-                                                   'checked_objects_choices': ','.join(object_set),
-                                                   # We also preset all objects as checked
-                                                   'checked_objects' : object_set},
-                                                  # The parameters below are used to create the field for
-                                                  # selecting marking objects and the multiple choice field
-                                                  # for selecting objects.
-                                                  markings= self.m_queryset,
-                                                  checked_objects_choices=object_set)
-
+            self._set_initial_form(markings= self.m_queryset)
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
         else:
             # So the view has been called a second time by submitting the form in the view
             # rather than from a different view. So we need to process the data in the form
 
-            # Retrieve the list of all objects that had been communicated to this view
-            object_set =  request.POST.dict().get('checked_objects_choices').split(',')
 
-            # Set the queryset for redisplaying the view with these objects
-
-            self.queryset = self.marked_model_class.objects.filter(pk__in = object_set)
-
-            # Create the form object, this time from the POST data
-            self.form = SimpleMarkingAdditionForm(request.POST,
-                                                  markings = self.m_queryset,
-                                                  checked_objects_choices=object_set)
-
+            self._set_post_form(request.POST,
+                                markings = self.m_queryset)
 
             # React on a valid form
             if self.form.is_valid():
@@ -802,8 +998,8 @@ class SimpleMarkingAdditionView(BasicListView):
                 for obj_pk in form_data['checked_objects']:
 
                     marking2x, created = Marking2X.objects.get_or_create(object_id=obj_pk,
-                                                    content_type = content_type,
-                                                    marking=marking_obj)
+                                                                         content_type = content_type,
+                                                                         marking=marking_obj)
                     marked_obj = InfoObject.objects.get(pk=obj_pk)
                     if created:
                         marked.append((obj_pk,marked_obj.identifier,marked_obj.name))
@@ -822,10 +1018,11 @@ class SimpleMarkingAdditionView(BasicListView):
                 #recreating the form object from this data
 
                 form_data['checked_objects'] = []
-                self.form = SimpleMarkingAdditionForm(form_data,
-                                                      markings = self.m_queryset,
-                                                      checked_objects_choices=object_set)
+                self._set_post_form(form_data,
+                                     markings = self.m_queryset)
+
 
                 return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
+
 

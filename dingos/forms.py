@@ -44,20 +44,27 @@ class EditInfoObjectFieldForm(forms.Form):
     value = forms.CharField(required=True, widget=widgets.TextInput(attrs={'size':10,'class':'vTextField'}))
 
 
-class SimpleMarkingAdditionForm(forms.Form):
+class BasicListActionForm(forms.Form):
     def __init__(self, request, *args, **kwargs):
-        marking_choices = kwargs['markings']
-        del(kwargs['markings'])
         if 'checked_objects_choices' in kwargs:
             checked_objects = kwargs['checked_objects_choices']
             del(kwargs['checked_objects_choices'])
         else:
             checked_objects = []
-        super(SimpleMarkingAdditionForm, self).__init__(request,*args, **kwargs)
-        self.fields['marking_to_add'] = forms.ChoiceField(choices=marking_choices)
+        super(BasicListActionForm, self).__init__(request,*args, **kwargs)
+
         self.fields['checked_objects'] = forms.MultipleChoiceField(choices=(map(lambda x: (x,x),checked_objects)),
                                                                    widget=forms.CheckboxSelectMultiple)
-        self.fields['checked_objects_choices'] = forms.CharField(initial=",".join(checked_objects),widget=forms.HiddenInput)
+        self.fields['checked_objects_choices'] = forms.CharField(widget=forms.HiddenInput)
+
+
+class SimpleMarkingAdditionForm(BasicListActionForm):
+    def __init__(self, request, *args, **kwargs):
+        marking_choices = kwargs['markings']
+        del(kwargs['markings'])
+        super(SimpleMarkingAdditionForm, self).__init__(request,*args, **kwargs)
+        self.fields['marking_to_add'] = forms.ChoiceField(choices=marking_choices)
+
 
 
 

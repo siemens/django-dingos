@@ -1,0 +1,113 @@
+{% extends "dingos/grappelli/lists/base_lists_two_column.html" %}
+
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+
+
+
+{% load dingos_tags %}
+
+{# Below, we fill out the form that queries the search parameters #}
+
+
+{% block content_frontmatter %}
+<form action="{% url "url.dingos.action.add_marking" %}" method="POST">
+    {% csrf_token %}
+    {{form.checked_objects_choices}}
+{% endblock %}
+
+{% block list_title %} Selected Objects {% endblock %}
+
+
+
+{% block right_column %}
+
+<div class="grp-module">
+    <h2>{% block tool_title %} Action {% endblock %}</h2>
+
+
+  <div class="grp-module">
+      {% block action_form_fields %}show fields of action form here
+    <table class="grp-full-width">
+
+        <tbody>
+
+                   <tr>
+                       <th>[Field-Tag]</th>
+                    <td>[Field-Errors] [Field]</td>
+                   </tr>
+
+
+        </tbody>
+    </table>
+      {% endblock %}
+  </div>
+    <input type="submit" value="{% block action_form_button_label %}Do it!{% endblock %}" />
+</div>
+
+
+{% endblock %}
+
+{# Below, fill out the #}
+
+{% block frontmatter %}
+{{view.description}} <br/>
+{% endblock %}
+
+{% block objects %}
+
+   <div class="grp-module grp-changelist-results">
+
+    <table id="result_list" cellspacing="0" class="grp-sortable">
+
+        <div id="id_checked_objects">
+       <tbody>
+
+       {% for checkbox in form.checked_objects %}
+         {% with pk=checkbox.choice_label %}
+         {% obj_by_pk pk as instance %}
+
+
+           <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+               <td> {{ checkbox.tag }}</td>
+               {% block instance_columns %}
+               <td>
+                   <a href="{%url 'url.dingos.view.infoobject' pk=instance.pk %}">{{ instance.identifier }}</a>
+               </td>
+               <td>
+                   {{instance.name | insert_wbr }}
+               </td>
+               {% endblock %}
+
+           </tr>
+         {% endwith %}
+       {% endfor %}
+       </tbody>
+     </div>
+ </table>
+
+</div>
+{% endblock %}
+
+
+{% block content_backmatter %}
+</form>
+{% endblock %}
+
+
