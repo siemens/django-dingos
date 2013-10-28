@@ -1,0 +1,68 @@
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+<div class="grp-module grp-collapse grp-open">
+    <h2 class="grp-collapse-handler">The following revisions of this information object are embedded in  other object
+        (only considering the latest revision of each object, {{object.embedded_in.count}} objects found)</h2>
+
+    <table>
+
+        {% for k in  object.embedded_in%}
+            {% if forloop.first %}
+                <tr >
+                    <th>Referenced timestamp</th>
+                    <th >
+                        Embedding Information Object
+                    </th>
+                    <th>Time Stamp</th>
+                    <th>Name</th>
+
+                    <th >
+                        Fact Term
+                    </th>
+
+                </tr>
+            {% endif %}
+            <tr >
+            <td >
+                {% if k.5 %}
+                    {{ k.5 | date:"c"}}
+                {% else %}
+                    Latest revision
+                {% endif %}
+            </td>
+            <td >
+                <a href={% url 'url.dingos.view.infoobject' k.0 %}>{{k.1}}:{{ k.2 }}</a>
+            </td>
+            <td>{{ k.3 | date:"c"}}</td>
+            <td>
+                {{ k.4 }}
+            </td>
+
+            <td >
+                {{ k.6}}
+            </td>
+
+
+        {% endfor %}
+    </table>
+
+
+</div>
+
+

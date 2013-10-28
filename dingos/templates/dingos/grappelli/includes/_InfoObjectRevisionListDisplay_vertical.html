@@ -1,0 +1,54 @@
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+{% block revisions %}
+
+
+    <div class ="grp-module grp-collapse grp-closed">
+<h2 class="grp-collapse-handler">
+    {% if object.identifier.infoobject_set.all.0.timestamp == object.timestamp %}
+       Current revision of {{ object.identifier.infoobject_set.count }} revision{% if object.identifier.infoobject_set.count != 1 %}s{% endif %}<br/>
+        (click to view all revisions)
+    {% else %}
+       NOT current revision (there are {{  object.identifier.infoobject_set.count }} revisions} <br/>
+        (click to view all revisions)
+    {% endif %}</h2>
+
+
+                {% for k in object.identifier.infoobject_set.all %}
+
+
+                    <div class="grp-row">
+
+                        <a href={% url 'url.dingos.view.infoobject' k.pk %}>{{k.timestamp | date:"c"}}</a>
+                        {%  if k.timestamp == object.timestamp %}
+                            (this revision)
+                        {% endif %}
+                    </div>
+
+                {% endfor %}
+
+
+    </div>
+
+
+
+{% endblock %}
+
+
+

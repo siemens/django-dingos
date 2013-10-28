@@ -1,0 +1,89 @@
+
+
+
+
+{% extends "dingos/grappelli/base.html" %}
+
+
+{% block content %}
+
+
+{% block search_options %}
+<form action="{% url "basic_search" %}" method="GET">
+  <div class="grp-module">
+    <h2 class="grp-collapse-handler">Search Options </h2>
+
+    <table class="grp-full-width">
+      <tr class="grp-row">
+	<th >
+	  <label for="id_q">Value</label>
+	</th>
+	<td >
+           <div class="c-2"><input type="text" class="vTextField" name = "q" id="id_q" value="{{request.GET.q}}"/></div>
+	</td>
+      </tr>
+    </table>
+    </div>
+  <div>
+    <input style="display:none" id="id_page" name="page" value="1"></input>
+  </div>
+  <div class="grp-module grp-submit-row">
+    <header style="display:none"><h1>Submit Options</h1></header>
+    <ul>
+      <li class="grp-float-left"><button value = "Submit" class="grp-button" type="submit" onClick="{{ the_url }}">Search</button></li>
+    </ul>
+  </div>
+
+</form>
+
+{% endblock %}
+
+{% if object_list %}
+<div class="grp-module">
+  <h2 class="grp-collapse-handler">Object List</h2>
+
+
+  <div class="grp-row">
+    <table>
+
+
+  {% block header_row %}
+      <tr >
+	<th >
+	  Id
+	</th>
+	<th >
+	  __unicode__
+	</th>
+      </tr>
+   {% endblock %}
+
+
+   {% block rows %}
+
+   {% for obj in object_list %}
+    <tr >
+      <td >
+	{{obj.id}}
+      </td>
+      <td >
+	{{obj}}
+      </td>
+      {% endfor %}
+    </tr>
+   {% endblock %}
+   </table>
+</div>
+
+
+
+
+</div>
+{% endif %}
+
+
+
+
+{% endblock %}
+
+

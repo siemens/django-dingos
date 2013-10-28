@@ -1,0 +1,70 @@
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+
+
+<div class="grp-module">
+    <h2 class="grp-collapse-handler">
+        {% if show_title %}
+          Name: {{ object.name }}
+        {% else %}
+           Identifying data
+         {% endif %}</h2>
+    <table class="grp-full-width">
+        <tr class="grp-row">
+            <th >
+                <label>Identifier</label>
+            </th>
+            <td >
+                {% if show_hyperlink %}
+                <a href="{%url 'url.dingos.view.infoobject' pk=object.pk %}">
+                    {{object.identifier.namespace.uri}}<b>:</b>{{ object.identifier.uid }}
+                </a>
+                {% else %}
+                    {{object.identifier.namespace.uri}}<b>:</b>{{ object.identifier.uid }}
+                {% endif %}
+            </td>
+            <th >
+                <label>Timestamp</label>
+            </th>
+            <td >
+                {{object.timestamp | date:"c"}}
+            </td>
+        </tr>
+        <tr>
+            <th >
+                <label>Type</label>
+            </th>
+            <td >
+               {{object.iobject_type}} {{ object.iobject_type_revision }}
+                ({{ object.iobject_type.namespace.uri }})
+            </td>
+            <th >
+                <label>InfoObject Family</label>
+            </th>
+            <td>
+                {{ object.iobject_family }} {{ object.iobject_family_revision }}
+            </td>
+
+        </tr>
+
+    </table>
+
+
+</div>
+

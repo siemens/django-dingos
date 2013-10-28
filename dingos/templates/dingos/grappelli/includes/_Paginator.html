@@ -1,0 +1,71 @@
+
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+{% comment %}
+The paginator code below requires the context to contain the following: %}
+
+- 'object_list': objects to be displayed
+- 'query_string': query string of search query w/o 'page' argument
+
+If the view is not paginated, nothing happens.
+
+The html code uses Grappelli CCS classes.
+{% endcomment %}
+
+
+<div class="grp-module">
+
+    <div class="grp-row pagination">
+        {% spaceless %}
+            <div class="c-2">
+                <nav class="grp-pagination grp-navigator">
+	  <span class="step-links">
+	    <ul>
+            <li class="grp-results"><span>{{paginator.count}} results</span></li>
+
+            {% if page_obj.has_previous %}
+                {% if page_obj.previous_page_number != 1 %}
+                    <li><a href="{{request_string}}&page=1"> 1 </a></li>
+                    <li class="grp-separator"><span>...</span></li>
+                {% endif %}
+                <li><a href="{{request_string}}&page={{ page_obj.previous_page_number }}">{{page_obj.previous_page_number}} </a></li>
+            {% endif %}
+
+
+		     <li class="grp-result">
+		       <span class="current">
+		       {{ page_obj.number }}
+		       </span>
+             </li>
+
+            {% if page_obj.has_next %}
+                <li><a href="{{request_string}}&page={{ page_obj.next_page_number }}">{{ page_obj.next_page_number }} </a></li>
+                {% if page_obj.next_page_number != paginator.num_pages %}
+                    <li class="grp-separator"><span>...</span></li>
+                    <li><a href="{{request_string}}&page={{ paginator.num_pages }}">{{ paginator.num_pages }}</a></li>
+                {% endif %}
+            {% endif %}
+        </ul>
+	  </span>
+                </nav>
+            </div>
+        {% endspaceless %}
+    </div>
+</div>
+

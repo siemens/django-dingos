@@ -1,0 +1,170 @@
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+
+{% load dingos_tags %}
+
+
+{% block fact %}
+    <div class="grp-module grp-collapse grp-open">
+        <h2 class="grp-collapse-handler">Facts</h2>
+
+
+        <div class="grp-module grp-collapse grp-open">
+
+            <table>
+
+
+                {% for k in object.fact_thru.all %}
+                    {% if forloop.first %}
+                        <tr >
+                        {% if show_NodeID %}
+                        <td></td>
+                        {% endif %}
+                            {%    node_indent "th"  k.node_id.name "" "" %}
+                                Value
+                            {%    node_indent_end "th"  k.node_id.name "" "" %}
+                            <th >
+                                Datatype
+                            </th>
+                        </tr>
+                    {% endif %}
+
+                    <tr >
+                    {% if show_NodeID%}
+                    <td>{{k.node_id}}</td>
+                    {% endif %}
+                    {%     node_indent "td"  k.node_id.name k.fact.fact_term.term k.fact.fact_term.attribute highlight %}
+
+                            <a name="{{ k.node_id }}"> </a>
+                        {% if k.fact.value_iobject_id %}
+                            <a href={% url 'url.dingos.view.infoobject' k.fact.value_iobject_id.latest.pk %}>{{k.fact.value_iobject_id.latest.name}}</a>
+                        {% elif k.fact.value_on_disk %}
+                            Value on disk ({{ k.fact.fact_values.all.0 }})
+                        {% else %}
+                            {{k.fact.fact_values.all|join:", "}}
+                        {% endif %}
+
+                    {%     node_indent_end "td"  k.node_id.name k.fact.fact_term.term k.fact.fact_term.attribute %}
+                    <td >
+                         {{k.fact.fact_values.all.0.fact_data_type.name}}
+                    </td>
+                {% endfor %}
+            </table>
+        </div>
+
+
+
+    </div>
+
+{% endblock %}
+
+
+
+<div class="grp-module">
+    <h2 class="grp-collapse-handler">Related InfoObjects where this is the source</h2>
+
+    <table>
+
+
+        {% for k in object.yields_via.all %}
+            {% if forloop.first %}
+                <tr >
+                    <th >
+                        Reason
+                    </th>
+                    <th >
+                        Related Observable
+                    </th>
+                    <th >
+                        Date
+                    </th>
+
+
+                </tr>
+            {% endif %}
+
+            <tr >
+            <td >
+                <p><em>This </em>{{ k.relation_type.fact_values.all|join:"</p><p><em>This </em></p>"|lower }} </p>
+            </td>
+            <td >
+                <a href={% url 'url.dingos.view.infoobject' k.target_id.latest.pk %}>{{k.target_id.latest}}</a>
+            </td>
+
+
+
+        {% endfor %}
+    </table>
+
+
+</div>
+
+<div class="grp-module">
+    <h2 class="grp-collapse-handler">Related Observables where this is the target</h2>
+
+    <table>
+
+        {% for k in object.identifier.yielded_by_via.all %}
+            {% if forloop.first %}
+                <tr >
+                    <th >
+                        Related Observable
+                    </th>
+
+                    <th >
+                        Reason
+                    </th>
+
+                    <th >
+                        Date
+                    </th>
+                    <th >
+                        Relating Investigation Step
+                    </th>
+                    <th >
+                        Investigation-Step Metadata
+                    </th>
+
+
+                </tr>
+            {% endif %}
+            <tr >
+            <td >
+                <a href={% url 'url.dingos.view.infoobject' k.source_iobject.pk %}>{{k.source_iobject.name}}</a>
+            </td>
+            <td >
+                <p>{{ k.relation_type.fact_values.all|join:"<em> this</em></p><p>"|lower }} <em>this</em></p>
+            </td>
+
+            <td>{{k.investigation_step_thru.all.0.investigation_step.date|date}}</td>
+            <td>{{k.investigation_step_thru.all.0.investigation_step.name}}</td>
+            {% for e in k.investigation_step_thru.all.0.investigation_step.metadata.object_set.all %}
+                <td >
+                    <p>{{ e.facts.all|join:"</p><p>" }}</p>
+                </td>
+            {% endfor %}
+
+        {% endfor %}
+    </table>
+
+
+</div>
+
+
+

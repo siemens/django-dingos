@@ -1,0 +1,31 @@
+django>=1.5.1
+
+## For testing
+
+# Uncomment below for tox tests to run through successfully.
+
+#coverage
+#mock>=1.0.1
+#nose>=1.3.0
+#django-nose>=1.2
+
+
+# Additional requirements go here
+
+
+## Django apps for templates and views used by Dingos
+django-grappelli==2.4.7
+django-braces==1.0.0
+
+## XML libraries
+
+#libxml2-python==2.6.9
+ftp://xmlsoft.org/libxml2/python/libxml2-python-2.6.9.tar.gz 
+
+#lxml==3.2.1
+https://pypi.python.org/packages/source/l/lxml/lxml-3.1.2.tar.gz#md5=6f2173f4fd5b13fbc9f8a5096d23d524    
+
+
+
+
+

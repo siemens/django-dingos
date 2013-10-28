@@ -1,0 +1,97 @@
+{% extends "dingos/grappelli/lists/base_lists_two_column.html" %}
+
+
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+{% load dingos_tags %}
+
+{% block extrahead %}
+
+{% endblock %}
+
+{% block objects %}
+
+    {% if object_list %}
+
+        <div class="grp-row">
+            <table>
+
+
+                {% block header_row %}
+                    <tr >
+                        <th >
+                            Identifier
+                        </th>
+                        <th >
+                            Timestamp
+                        </th>
+                        <th >
+                            Created
+                        </th>
+                        <th >
+                            Name
+                        </th>
+                        <th >
+                            Obj. Type
+                        </th>
+                        <th >
+                            Family
+                        </th>
+                    </tr>
+                {% endblock %}
+
+
+                {% block rows %}
+
+                    {% for obj in object_list %}
+                        <tr >
+                        <td>
+                            <a href="{%url 'url.dingos.view.infoobject' pk=obj.pk %}">{{ obj.identifier }}</a>
+                        </td>
+                        <td >
+                            {{obj.timestamp | date:"Y-m-d H:i:s O"}}
+                        </td>
+                        <td >
+                            {{obj.create_timestamp | date:"Y-m-d H:i:s O"}}
+                        </td>
+                        <td >
+                            {{obj.name}}
+                        </td>
+                        <td >
+                            {{obj.iobject_type.name}}
+                        </td>
+                        <td >
+                            {{obj.iobject_family.name}}  {{obj.iobject_family_revision.name}}
+                        </td>
+
+                    {% endfor %}
+                </tr>
+                {% endblock %}
+            </table>
+        </div>
+
+
+{%  endif %}
+
+
+
+
+{% endblock %}
+
+

@@ -1,0 +1,64 @@
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+{% load dingos_tags %}
+
+<div class="grp-module {% if object.embedded_in.count > 0 %}grp-collapse grp-open{% endif %}">
+    <h2 class="grp-collapse-handler">Embedded in {{ object.embedded_in.count }} object{% if object.embedded_in.count != 1 %}s{% endif %}</h2>
+
+    <table>
+        {% for k in  object.embedded_in|sliceupto:max_embedded %}
+            <div class="grp-module">
+                <h3>
+                    {{ k.4 }}
+                </h3>
+
+                <div class="grp-row">
+
+                        <a href={% url 'url.dingos.view.infoobject.redirect2highlight' pk=k.0 node=k.7 %}>{{ k.1 }}:{{ k.2 }}</a>
+                </div>
+                <div class="grp-row">
+                        {{ k.3 | date:"c" }}
+                </div>
+            </div>
+                <div class="grp-row">
+
+                  Referenced revision:
+                        {% if k.5 %}
+                            {{ k.5 | date:"c" }}
+                        {% else %}
+                            Latest revision
+                        {% endif %}
+
+
+                </div>
+                <div class="grp-row">
+
+                        as {{ k.6 }}
+
+                </div>
+         
+        {% endfor %}
+    </table>
+        {% if object.embedded_in.count > 0 %}
+            <h2><a href={% url 'url.dingos.view.infoobject.embedded' object.id %}>Click for list of all embedding objects</a></h2>
+        {% endif  %}
+
+</div>
+
+

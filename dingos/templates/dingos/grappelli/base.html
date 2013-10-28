@@ -1,0 +1,63 @@
+{% extends "admin/base_site.html" %}
+
+
+
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+
+
+
+
+{% block userlinks %}
+{% endblock %}
+
+{%  load dingos_tags %}
+
+{% block content_title %}
+    <h1>{{ title }}</h1>
+{% endblock %}
+
+{% block title %}{% create_title title %}{% endblock %}
+
+{% block breadcrumbs %}
+
+
+    <ul xmlns="http://www.w3.org/1999/html">
+   {% if view.breadcrumbs %}
+    {% for breadcrumb in view.breadcrumbs %}
+        <li>
+          {% if forloop.last %}
+	   {% block last_crumb %}
+             <a href={{request.get_full_path}}>{{breadcrumb.0}}</a>
+           {% endblock %}
+          {% elif breadcrumb.1 %}
+           <a href="{% url breadcrumb.1 %}">{{breadcrumb.0}}</a>
+          {% else %}
+	   {{breadcrumb.0}}
+	  {% endif %}
+        </li>
+    {% endfor %}
+   {% else %}
+	<li>
+           <a href={{request.get_full_path}}>RELOAD</a>
+	</li>
+   {% endif %}
+    </ul>
+
+{% endblock %}

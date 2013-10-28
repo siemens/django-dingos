@@ -1,0 +1,90 @@
+
+
+
+
+{% extends "dingos/grappelli/lists/base_lists_two_column.html" %}
+
+{# Below, we fill out the form that queries the search parameters #}
+
+{% block list_title %} Fact Search {% endblock %}
+{% block search_options %}
+
+
+
+<form action="{% url "url.dingos.search.fact" %}" method="GET">
+  <div class="grp-module">   
+    <h2 class="grp-collapse-handler">Search Options</h2>  
+    <table class="grp-full-width">
+      <tr class="grp-row">
+	<th >
+	  <label for="id_q">Value</label>
+	</th>
+	<td >
+           <div class="c-2"><input type="text" class="vTextField" name = "q" id="id_q" value="{{request.GET.q}}"/></div>
+	</td>
+      </tr>
+    </table>
+    </div>
+  <div>
+    <input style="display:none" id="id_page" name="page" value="1"/>
+  </div>
+  <div class="grp-module grp-submit-row">
+    <header style="display:none"><h1>Submit Options</h1></header>
+    <ul>
+      <li class="grp-float-left"><button value = "Submit" class="grp-button" type="submit" onClick="{{ the_url }}">Search</button></li>
+    </ul>
+  </div>
+</form>
+
+{% endblock %}
+
+{# Below, fill out the 
+
+{% block objects %}
+
+
+    <div class="grp-row">
+    <table>
+
+
+       <tr>
+	<th >
+	  Info Object
+	</th>
+	<th >
+	  IO-Type
+	</th>
+	<th >
+	  Fact Term
+	</th>
+	<th >
+	  Value
+	</th>
+       </tr>
+
+
+ {% for enrich2fact in object_list %}
+  <tr >
+    <td >
+	<a href="{%url 'url.dingos.view.infoobject.redirect2highlight' pk=enrich2fact.iobject.id node=enrich2fact.node_id %}"> {{enrich2fact.iobject.name}} </a>
+    </td>
+    <td >
+	{{enrich2fact.iobject.iobject_type.name}}
+    </td>
+    <td >
+	{{ enrich2fact.fact.fact_term }}
+    </td>
+    <td >
+	{{ enrich2fact.fact.fact_values.all|join:", " }}
+    </td>
+  </tr >
+    {% endfor %}
+</table>
+</div>
+{% endblock %}
+
+
+
+
+
+

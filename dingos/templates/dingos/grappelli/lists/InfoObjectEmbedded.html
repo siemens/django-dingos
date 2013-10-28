@@ -1,0 +1,101 @@
+{% extends "dingos/grappelli/lists/base_lists_two_column.html" %}
+
+
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+{% load dingos_tags %}
+
+{% block extrahead %}
+
+{% endblock %}
+
+{% block frontmatter %}
+    This page shows the objects that embed the following object:
+    {% show_InfoObjectIDData iobject show_title=True show_hyperlink=True%}
+{% endblock frontmatter %}
+
+{% block list_title %}List of objects that embed the above{% endblock %}
+
+
+
+{% block objects %}
+
+
+    {% if object_list %}
+
+        <div class="grp-row">
+            <table>
+
+
+                {% block header_row %}
+                    <tr >
+                        <th >
+                            Identifier
+                        </th>
+                        <th >
+                            Timestamp
+                        </th>
+                        <th >
+                            Name
+                        </th>
+                        <th >
+                            Obj. Type
+                        </th>
+                        <th >
+                            Family
+                        </th>
+                    </tr>
+                {% endblock %}
+
+
+                {% block rows %}
+
+                    {% for obj in object_list %}
+                        <tr >
+                        <td>
+                            <a href="{%url 'url.dingos.view.infoobject.redirect2highlight' pk=obj.iobject.pk node=obj.node_id.name %}">{{ obj.iobject.identifier }}</a>
+                        </td>
+                        <td >
+                            {{obj.iobject.timestamp}}
+                        </td>
+                        <td >
+                            {{obj.iobject.name}}
+                        </td>
+                        <td >
+                            {{obj.iobject.iobject_type.name}}
+                        </td>
+                        <td >
+                            {{obj.iobject.iobject_family.name}}  {{obj.iobject.iobject_family_revision.name}}
+                        </td>
+
+                    {% endfor %}
+                </tr>
+                {% endblock %}
+            </table>
+        </div>
+
+
+{%  endif %}
+
+
+
+
+{% endblock %}
+
+

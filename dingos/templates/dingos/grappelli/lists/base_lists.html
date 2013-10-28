@@ -1,0 +1,112 @@
+{% extends "dingos/grappelli/base.html" %}
+
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+
+
+
+
+
+{% load dingos_tags %}
+
+
+{% block extrahead %}
+
+{% endblock %}
+
+
+
+
+{% block content %}
+    {% block frontmatter %}
+    {% endblock frontmatter %}
+    <div class="grp-module">
+        <h2 class="grp-collapse-handler">{% block list_title %}Object List {% endblock %}</h2>
+        {%  block list-tools %}
+            {% if filter.form %}
+            <div class="grp-row">
+
+                <form action="" method="get">
+                    <table>
+                    {{ filter.form.as_table }}
+                    </table>
+                    <input type="submit" />
+                </form>
+            </div>
+            {% endif %}
+        {% endblock %}
+
+        {%  if is_paginated %}
+            {%  render_paginator view paginator page_obj %}
+        {% endif %}
+
+        {% block objects %}
+
+            {% if object_list %}
+
+
+
+                <div class="grp-row">
+                    <table>
+
+
+                        {% block header_row %}
+                            <tr >
+                                <th >
+                                    Id
+                                </th>
+                                <th >
+                                    __unicode__
+                                </th>
+                            </tr>
+                        {% endblock %}
+
+
+                        {% block rows %}
+
+                            {% for obj in object_list %}
+                                <tr >
+                                <td >
+                                    {{obj.id}}
+                                </td>
+                                <td >
+                                    {{obj}}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        {% endblock %}
+                    </table>
+                </div>
+
+
+                </div>
+
+
+            {% endif %}
+
+        {% endblock %}
+
+    {%  if is_paginated %}
+        {%  render_paginator view paginator page_obj %}
+    {% endif %}
+
+
+
+
+{% endblock %}
