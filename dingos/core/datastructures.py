@@ -314,7 +314,7 @@ class DingoObjDict(ExtendedSortedDict):
 
             """
 
-            return "%s%03d" % (n[0], n[1])
+            return "%s%04d" % (n[0], n[1])
 
         if not attr_ignore_predicate:
             attr_ignore_predicate = (lambda x: '@' in x['attribute'])

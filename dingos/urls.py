@@ -25,7 +25,7 @@ urlpatterns = patterns('',
     # Detail-view with highlight and anchor on certain node
     # solved below with a redirect, because with the 'url' template
     # tag we cannot set an anchor.
-    url(r'^View/InfoObject/(?P<pk>\d*)/(?P<node>([A-Z]\d{3})(:[A-Z]\d{3})*)/',
+    url(r'^View/InfoObject/(?P<pk>\d*)/(?P<node>([A-Z]\d{3,4})(:[A-Z]\d{3,4})*)/',
         lambda *args, **kwargs: redirect( 
             reverse( 'url.dingos.view.infoobject',
                       kwargs = { 'pk' : int(kwargs['pk']) } ) + '?highlight=%(node)s#%(node)s' % kwargs,

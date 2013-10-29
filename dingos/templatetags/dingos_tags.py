@@ -18,6 +18,7 @@
 
 from django import template
 from django.utils.html import strip_tags
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
 from dingos import DINGOS_TEMPLATE_FAMILY
 
@@ -202,8 +203,37 @@ def render_paginator(view,paginator,page_obj):
 # certain aspects of an InformationObject.
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectFactsDisplay.html'% DINGOS_TEMPLATE_FAMILY)
-def show_InfoObject(iobject, highlight,show_NodeID=False):
-    return {'object': iobject, 'highlight' : highlight, 'show_NodeID' : show_NodeID }
+def show_InfoObject(iobject, iobject2facts, view=None, highlight=None,show_NodeID=False):
+    page = view.request.GET.get('page')
+
+
+    #iobject2facts_paginator = Paginator(iobject.fact_thru.all(),100)
+    iobject2facts_paginator = Paginator(iobject2facts,200)
+    if iobject2facts_paginator.num_pages == 1:
+        is_paginated = False
+    else:
+        is_paginated = True
+    try:
+        iobject2facts = iobject2facts_paginator.page(page)
+        is_paginated=True
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        iobject2facts = iobject2facts_paginator.page(1)
+
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        iobject2facts = iobject2facts_paginator.page(iobject2facts_paginator.num_pages)
+
+
+    return {'object': iobject,
+            'view' : view,
+            'is_paginated' : is_paginated,
+            'paginator' : iobject2facts_paginator,
+            'page_obj' :iobject2facts,
+            'highlight' : highlight,
+            'show_NodeID' : show_NodeID,
+            'iobject2facts_paginator':iobject2facts_paginator,
+            'iobject2facts': iobject2facts}
 
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectRevisionListDisplay.html'% DINGOS_TEMPLATE_FAMILY)

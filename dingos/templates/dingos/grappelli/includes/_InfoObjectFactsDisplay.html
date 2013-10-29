@@ -24,13 +24,15 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     <div class="grp-module grp-collapse grp-open">
         <h2 class="grp-collapse-handler">Facts</h2>
 
-
+        {%  if is_paginated %}
+            {%  render_paginator view paginator page_obj %}
+        {% endif %}
         <div class="grp-module grp-collapse grp-open">
 
             <table>
 
 
-                {% for k in object.fact_thru.all %}
+                {% for k in iobject2facts %}
                     {% if forloop.first %}
                         <tr >
                         {% if show_NodeID %}
@@ -68,6 +70,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             </table>
         </div>
 
+        {%  if is_paginated %}
+            {%  render_paginator view paginator page_obj %}
+        {% endif %}
 
 
     </div>

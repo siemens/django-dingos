@@ -26,7 +26,7 @@ from dingos.filter import InfoObjectFilter, InfoObjectEmbeddedFilter, FactTermVa
 
 from dingos import DINGOS_TEMPLATE_FAMILY
 
-from view_classes import BasicListView, BasicFilterView, BasicDetailView, CommonContextMixin, ViewMethodMixin
+from view_classes import BasicListView, BasicFilterView, BasicDetailView, BasicTemplateView, CommonContextMixin, ViewMethodMixin
 
 class InfoObjectsEmbedded(BasicFilterView):
     template_name = 'dingos/%s/lists/InfoObjectEmbedded.html' % DINGOS_TEMPLATE_FAMILY
@@ -125,16 +125,27 @@ class SimpleFactSearch(BasicFilterView):
 
 
 
-class InfoObjectView(BasicDetailView):
+class InfoObjectView_SUPERSEDED(BasicDetailView):
+    """
+    We do not use this view any more to view InfoObjects, but the view
+    below. We need to use a template view and explicitly query the
+    InfoObject and the facts in it, because we may need to paginate
+    the facts. When using the DetailView, the way the prefetch_related
+    is treated leads to a prefetching of *all* facts, even though
+    pagination only displays 100 or 200 or so.
+    """
 
     # Config for Prefetch/SelectRelated Mixins_
     select_related = ()
     prefetch_related = ('fact_thru__fact__fact_term',
                         'fact_thru__fact__fact_values',
                         'fact_thru__fact__fact_values__fact_data_type',
+                        'fact_thru__fact__value_iobject_id',
+                        'fact_thru__fact__value_iobject_id__latest',
                         'fact_thru__node_id',
                         'iobject_type',
-                        'iobject_type__namespace')
+                        'iobject_type__namespace',
+                        )
 
     
     breadcrumbs = (('Dingo',None),
@@ -156,10 +167,51 @@ class InfoObjectView(BasicDetailView):
 
         context['show_NodeID'] = False
         try:
-          context['highlight'] = self.request.GET['highlight']
+            context['highlight'] = self.request.GET['highlight']
         except KeyError:
-          context['highlight'] = None
+            context['highlight'] = None
 
         return context
 
+
+class InfoObjectView(BasicTemplateView):
+
+    breadcrumbs = (('Dingo',None),
+                   ('View',None),
+                   ('InfoObject','url.dingos.list.infoobject.generic'),
+                   ('[RELOAD]',None)
+    )
+
+    @property
+    def iobject(self):
+        return InfoObject.objects.get(pk=int(self.kwargs['pk']))#.prefetch_related('iobject_type',
+                                                                #               'iobject_type__namespace',)
+    @property
+    def iobject2facts(self):
+        return self.iobject.fact_thru.all().prefetch_related('fact__fact_term',
+                                                          'fact__fact_values',
+                                                          'fact__fact_values__fact_data_type',
+                                                              'fact__value_iobject_id',
+                                                          'fact__value_iobject_id__latest',
+                                                          'node_id')
+
+
+    max_embedded = 5
+
+    template_name = 'dingos/%s/details/InfoObjectDetails.html' % DINGOS_TEMPLATE_FAMILY
+
+    title = 'Info Object Details'
+    def get_context_data(self, **kwargs):
+        context = super(InfoObjectView, self).get_context_data(**kwargs)
+        context['max_embedded'] = self.max_embedded
+
+        context['show_NodeID'] = False
+        context['object'] = self.iobject
+        context['iobject2facts'] = self.iobject2facts
+        try:
+            context['highlight'] = self.request.GET['highlight']
+        except KeyError:
+            context['highlight'] = None
+
+        return context
 

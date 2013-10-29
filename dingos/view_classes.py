@@ -16,7 +16,7 @@
 #
 
 from django.views.generic.base import ContextMixin
-from django.views.generic import DetailView, ListView
+from django.views.generic import DetailView, ListView, TemplateView
 
 from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
 from core.http_helpers import get_query_string
@@ -68,7 +68,12 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
 
     paginate_by = 20
 
-class BasicDetailView(CommonContextMixin,LoginRequiredMixin,SelectRelatedMixin,PrefetchRelatedMixin,DetailView):
+class BasicDetailView(CommonContextMixin,
+                      ViewMethodMixin,
+                      LoginRequiredMixin,
+                      SelectRelatedMixin,
+                      PrefetchRelatedMixin,
+                      DetailView):
 
     login_url = "/admin"
 
@@ -78,4 +83,18 @@ class BasicDetailView(CommonContextMixin,LoginRequiredMixin,SelectRelatedMixin,P
     breadcrumbs = (('Dingo',None),
                    ('View',None),
     )
+
+
+class BasicTemplateView(CommonContextMixin,
+                       ViewMethodMixin,
+                       LoginRequiredMixin,
+                       TemplateView):
+
+    login_url = "/admin"
+
+
+    breadcrumbs = (('Dingo',None),
+                   ('View',None),
+    )
+
 
