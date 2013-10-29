@@ -16,13 +16,11 @@
 #
 
 
-from django.conf import settings
+
 
 __version__ = '0.1.0'
 
 REVISION = __version__
-
-
 
 
 # Below, default values used in DINGO are defined.
@@ -36,18 +34,11 @@ REVISION = __version__
 
 DINGOS_TEMPLATE_FAMILY  = 'grappelli'
 
-if settings.configured and 'DINGOS' in dir(settings):
-    DINGOS_TEMPLATE_FAMILY = settings.DINGOS.get('TEMPLATE_FAMILY', DINGOS_TEMPLATE_FAMILY)
-
-
 # The namespace uri should be used for qualifying identifiers if
 # neither namespace nor namespace uri is explicitly provided for an identifier.
 
 DINGOS_DEFAULT_ID_NAMESPACE_URI = 'enter.a.value.in.settings'
 
-if settings.configured and 'DINGOS' in dir(settings):
-    DINGOS_DEFAULT_ID_NAMESPACE_URI = settings.DINGOS.get('OWN_ORGANIZATION_ID_NAMESPACE',
-                                                          DINGOS_DEFAULT_ID_NAMESPACE_URI)
 
 # The DINGOS_MISSING_ID_NAMESPACE_URI_PREFIX should be used s prefix for namespace
 # information used in identifiers for which no namespace uri can be determined.

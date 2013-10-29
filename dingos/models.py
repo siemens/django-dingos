@@ -20,6 +20,8 @@
 import logging
 import pprint
 
+from django.conf import settings
+
 from django.db import models
 from django.db.models import Count, F
 from django.contrib.contenttypes.models import ContentType
@@ -35,6 +37,15 @@ logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=2)
 
 dingos_class_map = {}
+
+# First of all, get configuration settings
+
+if settings.configured and 'DINGOS' in dir(settings):
+    DINGOS_TEMPLATE_FAMILY = settings.DINGOS.get('TEMPLATE_FAMILY', DINGOS_TEMPLATE_FAMILY)
+
+if settings.configured and 'DINGOS' in dir(settings):
+    DINGOS_DEFAULT_ID_NAMESPACE_URI = settings.DINGOS.get('OWN_ORGANIZATION_ID_NAMESPACE',
+                                                          DINGOS_DEFAULT_ID_NAMESPACE_URI)
 
 
 class DingoModel(models.Model):

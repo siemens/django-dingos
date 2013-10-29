@@ -343,8 +343,6 @@ class DingoImportCommand(BaseCommand):
         return None
 
     def handle(self, *args, **options):
-        print args
-        print options
         # The function create_import_marking inherited from
         # DingoImport command is able to create a dictionary
         # structure for a marking with object resulting
@@ -360,17 +358,21 @@ class DingoImportCommand(BaseCommand):
         #if len(args) > 1 and options['identifier']:
         #    raise CommandError('Option --identifier not supported for more than one file per import.')
 
-        for arg in args:
-            logger.info("Starting processing")
-            for filename in glob.glob(arg):
-                try:
+        if len(args) == 0:
+            logger.warning("No files for import found!")
+        else:
+            for arg in args:
+                logger.info("Starting processing")
+
+                for filename in glob.glob(arg):
+                    #try:
                     logger.info("Starting import of %s" % filename)
 
                     self.Importer.xml_import(filepath = filename,
                                              markings = markings,
                                              **options)
-                except Exception, err:
-                    logger.exception("An error occurred")
-                    raise CommandError('Error %s occurred for %s' % (err,filename))
+                    #except Exception, err:
+                    #    logger.exception("An error occurred")
+                    #    raise CommandError('Error %s occurred for %s' % (err,filename))
 
 

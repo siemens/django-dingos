@@ -615,7 +615,7 @@ class DingoImportHandling(object):
                 'embedded_objects': embedded_objects,
                 'file_content': xml_content}
 
-        pp.pprint(result)
+
 
         return result
 
