@@ -3,7 +3,7 @@
 # This file is part of MANTIS.  MANTIS is free software: you can
 # redistribute it and/or modify it under the terms of the GNU General Public
 # License as published by the Free Software Foundation; either version 2
-# of the License, or(at your option) any later version.
+# of the License, or (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
@@ -265,7 +265,8 @@ class DingoImportHandling(object):
         are as follows:
 
         - xml_fname: Filename of the XML file to be read
-        - xml_content: Alternatively, the xml_content can be provided as string.
+        - xml_content: Alternatively, the xml_content can be provided as string
+          or as XMLNode (i.e., a piece of XML that has already been parsed)
         - ns_mapping: A dictionary that may already contain mappings of namespaces
           to namespace URIs. Attention: this dictionary will be enriched with namespace
           information found in the XML file!!!
@@ -328,7 +329,7 @@ class DingoImportHandling(object):
             """
 
             if not inherited_id_and_rev_info:
-                inherited_id_and_rev_info = main_id_and_rev_info
+                inherited_id_and_rev_info = main_id_and_rev_info.copy()
             if element.name == 'comment':
                 return None
 
@@ -452,6 +453,7 @@ class DingoImportHandling(object):
                             else:
                                 id_and_revision_info = id_and_revision_extractor(child)
 
+
                             if not id_and_revision_info.get('timestamp', None):
                                 if inherited_id_and_rev_info and 'timestamp' in inherited_id_and_rev_info:
                                     id_and_revision_info['timestamp'] = inherited_id_and_rev_info['timestamp']
@@ -459,14 +461,16 @@ class DingoImportHandling(object):
                             else:
                                 inherited_id_and_rev_info['timestamp'] = id_and_revision_info['timestamp']
 
+
                             if 'id' in id_and_revision_info:
                                 # If the identifier has no namespace info (this may occur, e.g. for
                                 # embedded OpenIOC in STIX, we take the namespace inherited from  the
                                 # embedding object
-                                if not ':' in id_and_revision_info['id']:
-                                    id_and_revision_info['id'] = "%s:%s" % (inherited_id_and_rev_info.split(':')[0],
+                                if not ':' in id_and_revision_info['id'] and ':' in inherited_id_and_rev_info['id']:
+                                    id_and_revision_info['id'] = "%s:%s" % (inherited_id_and_rev_info['id'].split(':')[0],
                                                                             id_and_revision_info['id'])
                                 inherited_id_and_rev_info['id'] = id_and_revision_info['id']
+
 
 
                             if keep_attrs_in_created_reference:
@@ -476,6 +480,7 @@ class DingoImportHandling(object):
                                 reference_dict = DingoObjDict()
 
                             reference_dict['@idref'] = id_and_revision_info['id']
+
                             reference_dict['@@timestamp'] = id_and_revision_info['timestamp']
 
                             try:
@@ -484,6 +489,7 @@ class DingoImportHandling(object):
                                 reference_dict['@@ns'] = None
                             if embedded_ns == True:
                                 embedded_ns = None
+                            logger.debug("Setting embedded type info to %s" % embedded_ns)
                             reference_dict['@@embedded_type_info'] = embedded_ns
 
                             element_dicts.append((child.name, reference_dict))
@@ -573,17 +579,24 @@ class DingoImportHandling(object):
 
 
         if xml_content:
-            doc = libxml2.parseDoc(xml_content)
+
+            if isinstance(xml_content,libxml2.xmlNode):
+                root = xml_content
+            else:
+                doc = libxml2.parseDoc(xml_content)
+                root = doc.getRootElement()
 
         else:
             doc = libxml2.recoverFile(xml_fname)
+            root = doc.getRootElement()
             with open(xml_fname, 'r') as content_file:
                 xml_content = content_file.read()
 
 
 
 
-        root = doc.getRootElement()
+
+
 
         # Extract namespace information (if any)
         try:
@@ -597,6 +610,7 @@ class DingoImportHandling(object):
         # Extract ID and timestamp for root element
 
         main_id_and_rev_info = id_and_revision_extractor(root)
+
 
         # Call the internal recursive function. This returns
         # - name of the top-level element
@@ -620,26 +634,26 @@ class DingoImportHandling(object):
 
         while _import_pending_stack != []:
             (id_and_revision_info, type_info, elt) = _import_pending_stack.pop()
-            if 'do_not_process' in id_and_revision_info:
+            if 'defer_processing' in id_and_revision_info:
                 do_not_process_list.append((id_and_revision_info,type_info,elt))
-
-            (elt_name, elt_dict) = xml_import_(elt, 0,
-                                               type_info=type_info,
-                                               inherited_id_and_rev_info=id_and_revision_info.get('timestamp',
-                                                                                     None))
-            embedded_objects.append({'id_and_rev_info': id_and_revision_info,
-                                     'elt_name': elt_name,
-                                     'dict_repr': elt_dict})
+            else:
+                (elt_name, elt_dict) = xml_import_(elt, 0,
+                                                   type_info=type_info,
+                                                   inherited_id_and_rev_info=id_and_revision_info.copy())
+                embedded_objects.append({'id_and_rev_info': id_and_revision_info,
+                                         'elt_name': elt_name,
+                                         'dict_repr': elt_dict})
 
 
         result= {'id_and_rev_info': main_id_and_rev_info,
                 'elt_name': main_elt_name,
                 'dict_repr': main_elt_dict,
                 'embedded_objects': embedded_objects,
-                'do_not_process_list' : do_not_process_list,
+                'unprocessed' : do_not_process_list,
                 'file_content': xml_content}
 
 
+        #pp.pprint(result)
 
         return result
 
