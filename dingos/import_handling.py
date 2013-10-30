@@ -438,7 +438,18 @@ class DingoImportHandling(object):
                             # containing an idref (and, since we might need them,
                             # all attributes of the embedded element)
 
-                            id_and_revision_info = id_and_revision_extractor(child)
+                            if type(embedded_ns) == type({}):
+                                # If necessary, the embedded_predicate can return more information
+                                # than namespace information, namely we can can hand down
+                                # id and revision info that has been derived wenn the embedding
+                                # was detected. For backward compatibility,
+                                # we further allow returning of a string; if, however,
+                                # a dictionary is returned, there is id_and_revision_info.
+                                id_and_revision_info = embedded_ns.get('id_and_revision_info',
+                                                                       id_and_revision_extractor(child))
+                                embedded_ns = embedded_ns.get('embedded_ns',None)
+                            else:
+                                id_and_revision_info = id_and_revision_extractor(child)
 
                             if not id_and_revision_info.get('timestamp', None):
                                 if inherited_ts:
