@@ -150,7 +150,8 @@ class DingoImportHandling(object):
 
         if existing_iobject:
 
-            if existing_iobject.iobject_type.name == DINGOS_PLACEHOLDER_TYPE_NAME and existing_iobject.iobject_family.name == DINGOS_IOBJECT_FAMILY_NAME:
+            if existing_iobject.iobject_type.name == DINGOS_PLACEHOLDER_TYPE_NAME \
+                and existing_iobject.iobject_family.name == DINGOS_IOBJECT_FAMILY_NAME:
 
                 overwrite = True
                 exists = EXIST_PLACEHOLDER
@@ -321,13 +322,13 @@ class DingoImportHandling(object):
         # We collect the read embedded objects in the following list
         embedded_objects = []
 
-        def xml_import_(element, depth=0, type_info=None, inherited_ts=None):
+        def xml_import_(element, depth=0, type_info=None, inherited_id_and_rev_info=None):
             """
             Recursive import function
             """
 
-            if not inherited_ts:
-                inherited_ts = main_id_and_rev_info.get('timestamp', None)
+            if not inherited_id_and_rev_info:
+                inherited_id_and_rev_info = main_id_and_rev_info
             if element.name == 'comment':
                 return None
 
@@ -452,20 +453,27 @@ class DingoImportHandling(object):
                                 id_and_revision_info = id_and_revision_extractor(child)
 
                             if not id_and_revision_info.get('timestamp', None):
-                                if inherited_ts:
-                                    id_and_revision_info['timestamp'] = inherited_ts
+                                if inherited_id_and_rev_info and 'timestamp' in inherited_id_and_rev_info:
+                                    id_and_revision_info['timestamp'] = inherited_id_and_rev_info['timestamp']
                                     id_and_revision_info['ts_inherited'] = True
                             else:
-                                inherited_ts = id_and_revision_info['timestamp']
+                                inherited_id_and_rev_info['timestamp'] = id_and_revision_info['timestamp']
+
+                            if 'id' in id_and_revision_info:
+                                # If the identifier has no namespace info (this may occur, e.g. for
+                                # embedded OpenIOC in STIX, we take the namespace inherited from  the
+                                # embedding object
+                                if not ':' in id_and_revision_info['id']:
+                                    id_and_revision_info['id'] = "%s:%s" % (inherited_id_and_rev_info.split(':')[0],
+                                                                            id_and_revision_info['id'])
+                                inherited_id_and_rev_info['id'] = id_and_revision_info['id']
+
 
                             if keep_attrs_in_created_reference:
                                 reference_dict = extract_attributes(child, prefix_key_char='@',
                                                                     dict_constructor=DingoObjDict)
                             else:
                                 reference_dict = DingoObjDict()
-                                #if '@id' in reference_dict:
-                            #    del(reference_dict['@id'])
-
 
                             reference_dict['@idref'] = id_and_revision_info['id']
                             reference_dict['@@timestamp'] = id_and_revision_info['timestamp']
@@ -494,11 +502,11 @@ class DingoImportHandling(object):
                                     "Not adding element %s with type info %s to pending stack because element is empty." % (
                                     id_and_revision_info, embedded_ns))
                         else:
-                            child_import = xml_import_(child, depth + 1, inherited_ts=inherited_ts)
+                            child_import = xml_import_(child, depth + 1, inherited_id_and_rev_info=inherited_id_and_rev_info)
                             if child_import:
                                 element_dicts.append(child_import)
                     else:
-                        child_import = xml_import_(child, depth + 1, inherited_ts=inherited_ts)
+                        child_import = xml_import_(child, depth + 1, inherited_id_and_rev_info=inherited_id_and_rev_info)
                         if child_import:
                             element_dicts.append(child_import)
 
@@ -527,7 +535,7 @@ class DingoImportHandling(object):
             elif double_occurrance: # distinct_child_count >1 and (distinct_child_count) < element_child_count:
                 # We have a structure our dictionary representation cannot
                 # deal with -- so we dump it
-                #TODO: replace printing with logging
+
                 logger.warning("Cannot deal with XML structure of %s (children %s, count %s): will dump to value" % (
                 element.name, name_set.keys(), element_child_count))
                 sub_child = element.children
@@ -608,12 +616,16 @@ class DingoImportHandling(object):
         #   embedded object (can be None)
         # - the XML node that describes the embedded object
 
+        do_not_process_list = []
+
         while _import_pending_stack != []:
             (id_and_revision_info, type_info, elt) = _import_pending_stack.pop()
+            if 'do_not_process' in id_and_revision_info:
+                do_not_process_list.append((id_and_revision_info,type_info,elt))
 
             (elt_name, elt_dict) = xml_import_(elt, 0,
                                                type_info=type_info,
-                                               inherited_ts=id_and_revision_info.get('timestamp',
+                                               inherited_id_and_rev_info=id_and_revision_info.get('timestamp',
                                                                                      None))
             embedded_objects.append({'id_and_rev_info': id_and_revision_info,
                                      'elt_name': elt_name,
@@ -624,6 +636,7 @@ class DingoImportHandling(object):
                 'elt_name': main_elt_name,
                 'dict_repr': main_elt_dict,
                 'embedded_objects': embedded_objects,
+                'do_not_process_list' : do_not_process_list,
                 'file_content': xml_content}
 
 
