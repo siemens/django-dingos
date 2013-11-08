@@ -288,7 +288,7 @@ class DingoImportCommand(BaseCommand):
         marking_json = None
         placeholder_dict = {}
 
-        if options['marking_json']:
+        if options.get('marking_json'):
             # Open json
             with open(options['marking_json'], 'r') as content_file:
                 marking_json = content_file.read()
@@ -308,10 +308,11 @@ class DingoImportCommand(BaseCommand):
                     placeholder_dict[placeholder] = 'EMPTY'
 
         # Read in command-line specified placeholder values.
-        for (placeholder, value) in options['placeholder_fillers']:
-            placeholder_dict[placeholder] = value
+        if options.get('placeholder_fillers'):
+            for (placeholder, value) in options['placeholder_fillers']:
+                placeholder_dict[placeholder] = value
 
-        del(options['placeholder_fillers'])
+            del(options['placeholder_fillers'])
 
         # Add standard values (this list may grow in future)
         placeholder_dict['_username'] = getpass.getuser()
