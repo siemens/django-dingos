@@ -27,6 +27,68 @@ from dingos.models import get_user_settings
 from dingos import DINGOS_TEMPLATE_FAMILY
 
 
+class ConfigDict(object):
+    """
+    A helper class for using customized 
+    configurations within django views
+    """
+
+    _orig_dict =  None
+    _stack = []
+
+    def __init__(self, orig_dict):
+        """
+        Needs to receive a dict-like object for init.
+        Note that it works with all dict-like objects WITHOUT a boolean as key!
+        """
+        self._orig_dict = orig_dict
+        
+    def get(self, key):
+        """ Just a wrapper for __getitem__() """
+        return self.__getitem__(key)
+
+    def _clear_stack(self):
+        """ Just clears the stack (centralized method) """
+        self._stack = []
+
+    def to_dict(self):
+        return self._orig_dict
+
+    def __getitem__(self, key):
+        """
+        Returns itself until a bool is given as key.
+        In this very case all the former called keys are being tried.
+        If the path turns out to return a valid object it is returned.
+        Otherwise the SECOND LAST key argument (the one BEFORE bool) will
+        be returned as it represents the default value. 
+
+        Example usage:
+          this_dict = ConfigDict({ 'first' : { 'second' : 20 } })
+          this_dict.get('first').get('second').get(1).get(True)
+          returns 20 instead of the 1 (which represents the default value)
+        """
+
+        # no bool? just append element and return yourself
+        if not isinstance(key,bool):
+            self._stack.append(key) 
+            return self
+
+        print self._stack
+        # time to create an output by going along stack (last element of stack is DEFAULT value!)
+        current_element = self._orig_dict
+        for i in range(0, len(self._stack)-1):
+            try:
+                current_element = current_element[self._stack[i]]
+
+            # exception raised (TypeError or KeyError)? Return default value
+            except Exception as e:
+                self._clear_stack()
+                return self._stack[len(self._stack)-1]
+
+        # return element (no matter which object it is)
+        self._clear_stack()
+
+
 class CommonContextMixin(ContextMixin):
     def get_context_data(self, **kwargs):
         context = super(CommonContextMixin, self).get_context_data(**kwargs)
@@ -55,8 +117,9 @@ class CommonContextMixin(ContextMixin):
         else:
             load_new_settings = True
 
-        if load_new_settings:
-            self.request.session['customization'] = get_user_settings(self.request.user)
+        if True: #load_new_settings:
+            self.request.session['customization'] = ConfigDict(get_user_settings(self.request.user))
+            print type(self.request.session['customization'])
 
         return context
 

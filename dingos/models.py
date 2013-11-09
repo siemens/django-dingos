@@ -1742,7 +1742,14 @@ class UserConfiguration(DingoModel):
 
         settings = { 'anonymous' : True,      # signal to CommonContextMixin that the anonymous settings are used
                      'epp' : 150,             # elements per page: number of elements on one page
-                     'foo' : 'bar',           # testing values
+
+                     'searches' : [           # testing searches
+                                      { 'priority' : 0, 
+                                        'title' : 'Testing', 
+                                        'view' : 'url.dingos.view.infoobject.redirect2highlight', 
+                                        'parameter' : 'iobject_type=17&iobject_type__iobject_family=3&identifier__namespace=3',
+                                      }
+                                  ],
         }
 
         return settings

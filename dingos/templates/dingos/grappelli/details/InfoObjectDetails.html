@@ -43,7 +43,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endblock %}
 
 {% block content_title %}
-    <h1>Info Object: <a href={% url 'url.dingos.view.infoobject' object.id %}>
+    <h1>{{ request.session.customization.foo.bar.True }} Info Object: <a href={% url 'url.dingos.view.infoobject' object.id %}>
         {% if object.name == 'PLACEHOLDER' %}
             {{object.iobject_type.name}}
         {% else %}
