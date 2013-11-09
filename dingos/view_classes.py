@@ -23,6 +23,7 @@ from core.http_helpers import get_query_string
 
 from django_filters.views import FilterView
 
+from dingos.models import get_user_settings
 from dingos import DINGOS_TEMPLATE_FAMILY
 
 
@@ -30,6 +31,33 @@ class CommonContextMixin(ContextMixin):
     def get_context_data(self, **kwargs):
         context = super(CommonContextMixin, self).get_context_data(**kwargs)
         context['title'] = self.title if hasattr(self, 'title') else '[TITLE MISSING]'
+
+        ######## user customization
+        # there are four cases if settings exist within session scope:
+        # 1.) unauthenticated user && non-anonymous settings --> load
+        # 2.) unauthenticated user && anonymous settings --> pass
+        # 3.) authenticated user && non-anonymous settings --> pass
+        # 4.) authenticated user && anonymous settings --> load
+
+        settings = self.request.session.get('customization')
+        load_new_settings = False
+
+        if settings:
+
+            # case 1.)
+            if not self.request.user.is_authenticated() and not settings.get('anonymous'):
+                load_new_settings = True
+
+            # case 4.)
+            elif self.request.user.is_authenticated() and settings.get('anonymous'):
+                load_new_settings = True
+
+        else:
+            load_new_settings = True
+
+        if load_new_settings:
+            self.request.session['customization'] = get_user_settings(self.request.user)
+
         return context
 
 class ViewMethodMixin(object):
@@ -47,6 +75,8 @@ class ViewMethodMixin(object):
         query and change around the 'page' part of the query string.
         """
         return get_query_string(self.request,*args,**kwargs)
+    def read_config(self,*args,**kwargs):
+	return "%s with default %s" % (','.join(args),kwargs.get('default',None))  
 
 class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
 

@@ -26,12 +26,14 @@ import base64
 
 from django.db import models
 from django.db.models import Count, F
+from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core import urlresolvers
 from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.core.files.base import ContentFile
+from django.core.exceptions import ObjectDoesNotExist
 
 import dingos.read_settings
 
@@ -1699,4 +1701,71 @@ def write_large_value(value,storage_location=dingos.DINGOS_LARGE_VALUE_DESTINATI
         dingos_class_map['BlobStorage'].objects.get_or_create(sha256=value_hash,
                                                               content=value)
     return (value_hash,storage_location)
+
+class UserConfiguration(DingoModel):
+    """
+    Model for binding settings to a django user model.
+    All settings are stored internally within InfoObbjects
+    that are referenced by Identifier.
+    """
+
+    user = models.ForeignKey(User)
+    identifier = models.ForeignKey(Identifier)
+
+
+    @staticmethod
+    def store(currentuser, settings):
+        """
+        Stores given dict settings to the database and
+        connects it with a given user. If user is not
+        an instance of class User, no persistation will
+        be done. If the settings were stored the return
+        value is True and otherwise it'll be False.
+        """
+
+        if not type(currentuser) == User:
+
+            # make sure no anonymous settings are possible within user context
+            if settings.get('anonymous'):
+                del settings['anonymous']
+
+            return False
+
+        return True
+
+    @staticmethod
+    def get_default_settings():
+        """
+        This is where the default settings are stored (and can be modified).
+        The method returns a static dict representing the default settings.
+        """
+
+        settings = { 'anonymous' : True,      # signal to CommonContextMixin that the anonymous settings are used
+                     'epp' : 150,             # elements per page: number of elements on one page
+                     'foo' : 'bar',           # testing values
+        }
+
+        return settings
+
+dingos_class_map["UserConfiguration"] = UserConfiguration
+
+def get_user_settings(currentuser):
+    """
+    Returns either stored settings of a given user or default settings.
+    This behavior reflects the need for views to have some settings at 
+    hand when running. The settings are returned as dict object.
+    """
+
+    if currentuser.is_authenticated():
+        try:
+            identifier = UserConfiguration.objects.get(user=currentuser.id)
+            return identifier.latest.to_dict()
+
+        # user is logged in but has no custom settings: strip anonymous flag of default settings
+        except ObjectDoesNotExist as e:
+            settings = UserConfiguration.get_default_settings()
+            del settings['anonymous']
+            return settings
+
+    return UserConfiguration.get_default_settings() 
 
