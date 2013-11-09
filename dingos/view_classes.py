@@ -48,15 +48,14 @@ class ConfigDict(object):
         return self.__getitem__(key)
 
     def _clear_stack(self):
-        """ Just clears the stack (centralized method) """
+        """ Just clears the stack and returns it's last value (centralized method) """
+        out = self._stack[len(self._stack)-1]
         self._stack = []
-
-    def to_dict(self):
-        return self._orig_dict
+        return out
 
     def __getitem__(self, key):
         """
-        Returns itself until a bool is given as key.
+        Returns itself until a "True" is given as key (as String instance).
         In this very case all the former called keys are being tried.
         If the path turns out to return a valid object it is returned.
         Otherwise the SECOND LAST key argument (the one BEFORE bool) will
@@ -64,12 +63,12 @@ class ConfigDict(object):
 
         Example usage:
           this_dict = ConfigDict({ 'first' : { 'second' : 20 } })
-          this_dict.get('first').get('second').get(1).get(True)
+          this_dict.get('first').get('second').get(1).get("True")
           returns 20 instead of the 1 (which represents the default value)
         """
 
         # no bool? just append element and return yourself
-        if not isinstance(key,bool):
+        if not key == "True":
             self._stack.append(key) 
             return self
 
@@ -82,11 +81,9 @@ class ConfigDict(object):
 
             # exception raised (TypeError or KeyError)? Return default value
             except Exception as e:
-                self._clear_stack()
-                return self._stack[len(self._stack)-1]
+                return self._clear_stack()
 
-        # return element (no matter which object it is)
-        self._clear_stack()
+        return self._clear_stack()
 
 
 class CommonContextMixin(ContextMixin):
@@ -118,8 +115,8 @@ class CommonContextMixin(ContextMixin):
             load_new_settings = True
 
         if True: #load_new_settings:
-            self.request.session['customization'] = ConfigDict(get_user_settings(self.request.user))
-            print type(self.request.session['customization'])
+            context['customization'] = ConfigDict(get_user_settings(self.request.user))
+            print(context['customization']._orig_dict)
 
         return context
 
