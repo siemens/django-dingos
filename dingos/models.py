@@ -167,7 +167,7 @@ class FactDataType(DingoModel):
                      (NO_VOCAB, "Not vocabulary!!"),
                      (VOCAB_SINGLE, "Vocabulary value (single choice)"),
                      (VOCAB_MULTIPLE, "Vocabulary value (multiple choice)"),
-                     (REFERENCE, "Reference to OutdatedInfoObject"),
+                     (REFERENCE, "Reference to InfoObject"),
     )
 
     kind = models.SmallIntegerField(choices=DATATYPE_KIND,
