@@ -19,6 +19,7 @@
 
 import logging
 import pprint
+import re
 
 from django.conf import settings
 
@@ -46,6 +47,8 @@ if settings.configured and 'DINGOS' in dir(settings):
 if settings.configured and 'DINGOS' in dir(settings):
     DINGOS_DEFAULT_ID_NAMESPACE_URI = settings.DINGOS.get('OWN_ORGANIZATION_ID_NAMESPACE',
                                                           DINGOS_DEFAULT_ID_NAMESPACE_URI)
+
+RE_SEARCH_PLACEHOLDERS = re.compile(r"\[(?P<bla>[^\]]+)\]")
 
 
 class DingoModel(models.Model):
@@ -1098,28 +1101,38 @@ class InfoObject(DingoModel):
         # We retrieve all facts of the object
 
         fact_list = self._DCM['Fact'].objects.filter(iobject_thru__iobject=self).order_by(
-            '-iobject_thru__node_id__name').values_list('iobject_thru__node_id__name', 'fact_term__term',
-                                                        'fact_term__attribute', 'fact_values__value')
+            'iobject_thru__node_id__name').values_list('iobject_thru__node_id__name',
+                                                        'fact_term__term',
+                                                        'fact_term__attribute',
+                                                        'fact_values__value',
+                                                        'value_iobject_id__latest__name')
 
         # We build a dictionary that will then be used for the format string
 
         fact_dict = {}
         counter = 0
-        for (node_id, fact_term, attribute, value) in fact_list:
+        for (node_id, fact_term, attribute, value, related_obj_name) in fact_list:
+            if type(value)==type([]):
+                value = "%s,..." % value
+            if related_obj_name:
+                value = related_obj_name
 
             if attribute:
                 fact_term = "%s@%s" % (fact_term, attribute)
 
-            fact_dict[fact_term] = value
+            if not fact_term in fact_dict:
+                fact_dict[fact_term] = value
 
             # In addition to the mapping of fact term to (first) value,
             # we add a way to refer to fact terms and values by their
             # node id
 
-            fact_dict["T_node_%s" % node_id] = fact_term
-            fact_dict["V_node_%s" % node_id] = value
-            fact_dict["T_num_%03d" % counter] = fact_term
-            fact_dict["V_num_%03d" % counter] = value
+            fact_dict["term_of_node_%s" % node_id] = fact_term
+            fact_dict["value_of_node_%s" % node_id] = value
+            if counter < 10:
+                fact_dict["term_of_fact_num_%01d" % counter] = fact_term
+                fact_dict["value_of_fact_num_%01d" % counter] = value
+            counter += 1
 
         name_found = False
 
@@ -1127,6 +1140,16 @@ class InfoObject(DingoModel):
         # is successfully instantiated via the fact dictionary
 
         for format_string in name_schemas:
+            # Massage the format string such that we can use it as Python format string
+
+            # Escape possible '%'
+            format_string = format_string.replace('%','\%')
+            # Replace placeholder definitions with python string formatting
+            format_string = RE_SEARCH_PLACEHOLDERS.sub("%(\\1)s", format_string)
+
+
+
+
             try:
                 name = format_string % fact_dict
                 name_found = True
