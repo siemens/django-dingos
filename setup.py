@@ -39,7 +39,7 @@ setup(
                       'django>=1.5.5',
                       'django-grappelli>=2.4.7',
                       'django-braces>=1.0.0',
-                      'lxml==3.2.1',
+                      'lxml>=3.2.1',
                       'django-filter>=0.7'
     ],
     license="GPLv2+",
