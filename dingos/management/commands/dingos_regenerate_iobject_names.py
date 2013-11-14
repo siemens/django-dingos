@@ -32,9 +32,17 @@ class Command(BaseCommand):
     help = """Regenerates names for all information objects. Use for testing purposes with few objects
               in database rather than for a full database -- otherwise the running time might be rather longish."""
 
-    option_list = BaseCommand.option_list
+    option_list = BaseCommand.option_list + (
+        make_option('-r', '--restrict-to-type-name',
+                action='store',
+                dest='restrict_by',
+                default=None,
+                help='String according to which the InfoObjects for which the name is to be generated'
+                     'are restricted: only those InfoObjects are touched '
+                     'types whose type name contains the provided expression.'),
+    )
+
 
     def handle(self, *args, **options):
-        for io in InfoObject.objects.all():
+        for io in InfoObject.objects.filter(iobject_type__name__icontains=options['restrict_by']):
             io.set_name()
-            io.save()

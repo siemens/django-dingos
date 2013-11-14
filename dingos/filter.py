@@ -17,7 +17,10 @@
 
 
 import django_filters
-from dingos.models import InfoObject, InfoObject2Fact
+from dingos.models import InfoObject, InfoObject2Fact, InfoObjectType
+from django.db.models import Count
+
+from django.forms.models import ModelChoiceField
 
 from django.utils.translation import ugettext_lazy as _
 
@@ -57,6 +60,14 @@ class InfoObjectFilter(django_filters.FilterSet):
     identifier__uid = django_filters.CharFilter(lookup_type='icontains',
                                                 label='ID contains')
 
+
+    iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('infoobject')).\
+        filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
+
+    iobject_type = django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
+                                                    required=None,
+                                                    label="InfoObject Type",
+                                                    to_field_name='id')
     timestamp = ExtendedDateRangeFilter()
 
     class Meta:

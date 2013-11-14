@@ -447,11 +447,11 @@ class InfoObjectFamily(DingoModel):
 
     name = models.SlugField(max_length=256,
                             unique=True,
-                            help_text="Identifier for enrichment type")
+                            help_text="Identifier for InfoObject Family")
 
     title = models.CharField(max_length=1024,
                              blank=True,
-                             help_text="""A human-readable title for the enrichment type""")
+                             help_text="""A human-readable title for the InfoObject Family""")
 
     description = models.TextField(blank=True)
 
@@ -1079,6 +1079,7 @@ class InfoObject(DingoModel):
                 continue
             else:
                 e2f_obj = handler_return_value
+        self.set_name()
 
 
 
@@ -1133,6 +1134,8 @@ class InfoObject(DingoModel):
                 fact_dict["term_of_fact_num_%01d" % counter] = fact_term
                 fact_dict["value_of_fact_num_%01d" % counter] = value
             counter += 1
+        fact_dict["fact_count_equal_%s?" % counter] = ""
+        fact_dict["fact_count"] = "%s" % counter
 
         name_found = False
 
@@ -1158,7 +1161,10 @@ class InfoObject(DingoModel):
                 continue
 
         if not name_found:
-            return self.iobject_type.name
+            if self.iobject_type.name == 'PLACEHOLDER':
+                return "PLACEHOLDER"
+            else:
+                return "%s (%s facts)" % (self.iobject_type.name,counter)
         else:
             return name
 
