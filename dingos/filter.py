@@ -17,7 +17,7 @@
 
 
 import django_filters
-from dingos.models import InfoObject, InfoObject2Fact, InfoObjectType
+from dingos.models import InfoObject, InfoObject2Fact, InfoObjectType, InfoObjectFamily,IdentifierNameSpace
 from django.db.models import Count
 
 from django.forms.models import ModelChoiceField
@@ -57,9 +57,6 @@ class ExtendedDateRangeFilter(django_filters.DateRangeFilter):
 
 class InfoObjectFilter(django_filters.FilterSet):
 
-    identifier__uid = django_filters.CharFilter(lookup_type='icontains',
-                                                label='ID contains')
-
 
     iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('infoobject')).\
         filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
@@ -68,22 +65,30 @@ class InfoObjectFilter(django_filters.FilterSet):
                                                     required=None,
                                                     label="InfoObject Type",
                                                     to_field_name='id')
-    timestamp = ExtendedDateRangeFilter()
+
+    iobject_type__iobject_family = django_filters.ModelChoiceFilter(
+                                                    queryset= InfoObjectFamily.objects.all(),
+                                                    required=None,
+                                                    label="InfoObject Family",
+                                                    to_field_name='id')
+
+    identifier__namespace = django_filters.ModelChoiceFilter(
+        queryset= IdentifierNameSpace.objects.all(),
+        required=None,
+        label="ID Namespace",
+        to_field_name='id')
+
+    identifier__uid = django_filters.CharFilter(lookup_type='icontains',
+                                                label='ID contains')
+
+    timestamp = ExtendedDateRangeFilter(label="Object Timestamp")
+
+    create_timestamp = ExtendedDateRangeFilter(label="Create/Import Timestamp")
 
     class Meta:
         model = InfoObject
-        fields = ['iobject_type','iobject_type__iobject_family','identifier__namespace','identifier__uid','timestamp']
-
-class InfoObjectEmbeddedFilter(django_filters.FilterSet):
-
-    iobject__identifier__uid = django_filters.CharFilter(lookup_type='icontains',
-                                                label='ID contains')
-
-    iobject__timestamp = ExtendedDateRangeFilter()
-
-    class Meta:
-        model = InfoObject2Fact
-        fields = ['iobject__iobject_type','iobject__iobject_type__iobject_family','iobject__identifier__namespace','iobject__identifier__uid','iobject__timestamp']
+        fields = ['iobject_type','iobject_type__iobject_family',
+                  'identifier__namespace','identifier__uid','timestamp', 'create_timestamp']
 
 
 class IdSearchFilter(django_filters.FilterSet):
@@ -107,14 +112,25 @@ class FactTermValueFilter(django_filters.FilterSet):
     fact__fact_term__term = django_filters.CharFilter(lookup_type='icontains',
                                                      label='Fact term contains')
 
-    iobject__timestamp = ExtendedDateRangeFilter()
+    iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('infoobject')). \
+        filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
+
+    iobject__iobject_type = django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
+                                                required=None,
+                                                label="InfoObject Type",
+                                                to_field_name='id')
+
+    iobject__timestamp = ExtendedDateRangeFilter(label='Object Timestamp')
+
+    iobject__created_timestamp = ExtendedDateRangeFilter(label='Create/Import Timestamp')
 
     #iobject__iobject_type = django_filters.ModelMultipleChoiceFilter()
 
     class Meta:
         model = InfoObject2Fact
 
-        fields = ['fact__fact_term__term','fact__fact_values__value','iobject__timestamp','iobject__identifier__namespace','iobject__iobject_type',]
+        fields = ['fact__fact_term__term','fact__fact_values__value','iobject__timestamp','iobject__created_timestamp',
+                  'iobject__identifier__namespace','iobject__iobject_type',]
 
 
 

@@ -21,51 +21,14 @@
 
 from django.db.models import F
 
-from dingos.models import Identifier, InfoObject2Fact, InfoObject, InfoObjectType
-from dingos.filter import InfoObjectFilter, InfoObjectEmbeddedFilter, FactTermValueFilter, IdSearchFilter
+from dingos.models import Identifier, InfoObject2Fact, InfoObject
+from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter
 
 from dingos import DINGOS_TEMPLATE_FAMILY
 
-from view_classes import BasicListView, BasicFilterView, BasicDetailView, BasicTemplateView, CommonContextMixin, ViewMethodMixin
-
-class InfoObjectsEmbedded(BasicFilterView):
-    template_name = 'dingos/%s/lists/InfoObjectEmbedded.html' % DINGOS_TEMPLATE_FAMILY
-
-    breadcrumbs = (('Dingo',None),
-                   ('List',None),
-                   ('InfoObject',None))
-
-    paginate_by = 15
-
-    filterset_class = InfoObjectEmbeddedFilter
-
-    @property
-    def title(self):
-        return 'Objects that embed object "%s" (id %s)' % (self.iobject.name,
-                                                           self.iobject.identifier)
-    @property
-    def iobject(self):
-        return InfoObject.objects.get(pk=int(self.kwargs['pk']))
-
-    def get_queryset(self):
-        #iobject=InfoObject.objects.get(pk=int(self.kwargs['pk']))
-
-        queryset = InfoObject2Fact.objects.exclude(iobject__latest_of=None).\
-            filter(fact__value_iobject_id__id=self.iobject.identifier.id).\
-            filter(iobject__timestamp=F('iobject__identifier__latest__timestamp')). \
-            order_by('-iobject__timestamp')
-        return queryset
-
-    #def get_context_data(self, **kwargs):
-    #    context = super(InfoObjectsEmbedded, self).get_context_data(**kwargs)
-    #    context['iobject'] = self.iobject
-    #
-    #    return context
+from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView
 
 
-    #filter(fact__value_iobject_id=self.identifier). \
-    #filter(iobject__timestamp=F('iobject__identifier__latest__timestamp')). \
-    #order_by('-iobject__timestamp') \
 
 class InfoObjectList(BasicFilterView):
 
@@ -109,12 +72,46 @@ class InfoObjectList_Id_filtered(BasicFilterView):
         'iobject_family_revision',
         'identifier').select_related().distinct().order_by('-latest_of__pk')
 
+class InfoObjectsEmbedded(BasicFilterView):
+    template_name = 'dingos/%s/lists/InfoObjectEmbedded.html' % DINGOS_TEMPLATE_FAMILY
+
+    breadcrumbs = (('Dingo',None),
+                   ('List',None),
+                   ('InfoObject',None))
+
+    paginate_by = 15
+
+    filterset_class = InfoObjectFilter
+
+    @property
+    def title(self):
+        return 'Objects that embed object "%s" (id %s)' % (self.iobject.name,
+                                                           self.iobject.identifier)
+    @property
+    def iobject(self):
+        return InfoObject.objects.get(pk=int(self.kwargs['pk']))
+
+    def get_queryset(self):
+
+        queryset = InfoObject2Fact.objects.exclude(iobject__latest_of=None). \
+            filter(fact__value_iobject_id__id=self.iobject.identifier.id). \
+            filter(iobject__timestamp=F('iobject__identifier__latest__timestamp')). \
+            order_by('-iobject__timestamp')
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super(InfoObjectsEmbedded, self).get_context_data(**kwargs)
+        context['iobject'] = self.iobject
+        return context
+
+
 class SimpleFactSearch(BasicFilterView):
     template_name = 'dingos/%s/searches/SimpleFactSearch.html' % DINGOS_TEMPLATE_FAMILY
 
     paginate_by = 15
 
     title = 'Fact-based filtering'
+
 
     filterset_class = FactTermValueFilter
 
@@ -176,6 +173,7 @@ class InfoObjectView_SUPERSEDED(BasicDetailView):
 
 class InfoObjectView(BasicTemplateView):
 
+
     breadcrumbs = (('Dingo',None),
                    ('View',None),
                    ('InfoObject','url.dingos.list.infoobject.generic'),
@@ -184,8 +182,9 @@ class InfoObjectView(BasicTemplateView):
 
     @property
     def iobject(self):
-        return InfoObject.objects.get(pk=int(self.kwargs['pk']))#.prefetch_related('iobject_type',
-                                                                #               'iobject_type__namespace',)
+
+        return InfoObject.objects.get(pk=int(self.kwargs['pk']))
+
     @property
     def iobject2facts(self):
         return self.iobject.fact_thru.all().prefetch_related('fact__fact_term',

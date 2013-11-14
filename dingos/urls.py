@@ -10,7 +10,10 @@ from django_filters.views import FilterView
 
 
 urlpatterns = patterns('',
-    url(r'^View/InfoObject/(?P<pk>\d*)/$',
+    url(r'^View/InfoObject/?$',
+        views.InfoObjectList.as_view(),
+        name="url.dingos.list.infoobject.generic"),
+    url(r'^View/InfoObject/(?P<pk>\d+)/$',
         views.InfoObjectView.as_view(),
         name= "url.dingos.view.infoobject"),
     url(r'^Search/SimpleFactSearch$',
@@ -19,9 +22,7 @@ urlpatterns = patterns('',
     url(r'^Search/IdSearch$',
         views.InfoObjectList_Id_filtered.as_view(),
         name="url.dingos.list.infoobject.by_id"),
-    url(r'^View/InfoObject$',
-        views.InfoObjectList.as_view(),
-        name="url.dingos.list.infoobject.generic"),
+
     # Detail-view with highlight and anchor on certain node
     # solved below with a redirect, because with the 'url' template
     # tag we cannot set an anchor.
