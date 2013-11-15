@@ -115,7 +115,7 @@ class InfoObject_InfoObject2Fact_Inline(admin.TabularInline):
 #
 
 class FactValueAdmin(admin.ModelAdmin):
-    list_display = ('value','fact_data_type')
+    list_display = ('value','fact_data_type','value_on_disk')
     raw_id_fields = ('fact_data_type',)
     autocomplete_lookup_fields = {
         'fk': ['fact_data_type'],
@@ -190,7 +190,7 @@ class InfoObjectFamilyAdmin(admin.ModelAdmin):
 class FactAdmin(admin.ModelAdmin):
     list_display = ('fact_term',)
 
-    fields = ('fact_term','fact_values','value_iobject_id','value_iobject_ts','value_on_disk')
+    fields = ('fact_term','fact_values','value_iobject_id','value_iobject_ts')
 
 class Enrichment2FactAdmin(admin.ModelAdmin):
     pass

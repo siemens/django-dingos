@@ -20,8 +20,9 @@
 import logging
 import pprint
 import re
+import hashlib
 
-from django.conf import settings
+
 
 from django.db import models
 from django.db.models import Count, F
@@ -30,11 +31,14 @@ from django.contrib.contenttypes import generic
 from django.core import urlresolvers
 from django.utils.safestring import mark_safe
 from django.utils import timezone
-from django.core.files.storage import FileSystemStorage
+from django.core.files.base import ContentFile
+
+import dingos.read_settings
 
 import dingos
 
 from dingos import *
+
 from dingos.core.datastructures import ExtendedSortedDict
 
 logger = logging.getLogger(__name__)
@@ -44,31 +48,6 @@ dingos_class_map = {}
 
 # First of all, get configuration settings
 
-if settings.configured and 'DINGOS' in dir(settings):
-    dingos.DINGOS_TEMPLATE_FAMILY = settings.DINGOS.get('TEMPLATE_FAMILY', dingos.DINGOS_TEMPLATE_FAMILY)
-
-if settings.configured and 'DINGOS' in dir(settings):
-    dingos.DINGOS_DEFAULT_ID_NAMESPACE_URI = settings.DINGOS.get('OWN_ORGANIZATION_ID_NAMESPACE',
-                                                          dingos.DINGOS_DEFAULT_ID_NAMESPACE_URI)
-
-if settings.configured and 'DINGOS' in dir(settings):
-    dingos.DINGOS_BLOB_ROOT = settings.DINGOS.get('BLOB_ROOT',None)
-
-if not dingos.DINGOS_BLOB_ROOT:
-    raise NotImplementedError("Please configure a BLOB_ROOT  directory in the DINGOS settings (look "
-                              "at how the MEDIA directory is defined and define an appropriate directory "
-                              "for storing stuff that does not got into the database (usually very large "
-                              "values) on the filesystem.")
-else:
-
-    dingos.DINGOS_BLOB_STORAGE = FileSystemStorage(location=dingos.DINGOS_BLOB_ROOT)
-    # We do not want the blobs to be directly available via URL.
-    # Reading the code it seems that setting 'base_url=None' in
-    # the __init__ arguments does not help, because __init__
-    # then choses the media URL as default url. So we have
-    # to set it explicitly after __init__ is done.
-
-    dingos.DINGOS_BLOB_STORAGE.base_url=None
 
 
 
@@ -153,12 +132,16 @@ class FactValue(DingoModel):
 
     fact_data_type = models.ForeignKey("FactDataType")
 
+    value_on_disk = models.BooleanField(help_text="""True, if value is stored on file system If that is the case,
+                                                     then the value field contains the SHA256 of the value.""",
+                                        default=False)
+
 
     class Meta:
         # The constraint below can cause problems if the entries in FactValue become to large:
         # Uniqueness forces the creation of a index on values
         # for testing uniqueness.
-        unique_together = ('value', 'fact_data_type',)
+        unique_together = ('value', 'fact_data_type','value_on_disk')
 
     def __unicode__(self):
         return ("%s" % self.value)
@@ -716,17 +699,10 @@ class Fact(DingoModel):
     """
     In facts, we associate fact terms with one or more fact values.
 
-    Rather than storing a value in the database, the value may
-    be stored in the filesystem: this is useful, e.g., for
-    raw data. In that case, the flag 'value_on_disk' is
-    set and the associated fact value contains the SHA256
-    hash of the data, which is also used as filename for
-    the file.
-
-    Alternatively, a fact may contain a reference to another
+    A fact may contain a (single) reference to another
     information object. Note that the reference occurs via the
     identifier rather than the information object directly: the semantics
-    is that always the latest revision is refered to. If the reference
+    is that always the latest revision is referred to. If the reference
     to a specific revision is required, the time stamp of that
     revision must also be specified.
 
@@ -755,8 +731,6 @@ class Fact(DingoModel):
                                             help_text="""Used to reference a specific revision of an information
                                                          object rather than the latest revision.""")
 
-    value_on_disk = models.BooleanField(help_text="""True, if data for this fact is stored on file system.""",
-                                        default=False)
 
     class Meta:
         # Here, we cannot have database-enforced uniqueness, because we need
@@ -926,7 +900,6 @@ class InfoObject(DingoModel):
                  values=None,
                  value_iobject_id=None,
                  value_iobject_ts=None,
-                 value_on_disk=False,
                  node_id_name='',
                  is_attribute=False):
         """
@@ -960,7 +933,7 @@ class InfoObject(DingoModel):
                                                values=values,
                                                value_iobject_id=value_iobject_id,
                                                value_iobject_ts=value_iobject_ts,
-                                               value_on_disk=value_on_disk)
+                                               )
 
 
         # get or create node identifier
@@ -1246,7 +1219,7 @@ class InfoObject(DingoModel):
                                                          values=relation_types,
                                                          value_iobject_id=None,
                                                          value_iobject_ts=None,
-                                                         value_on_disk=False)
+                                                         )
 
         rel_target_id = target_id
         rel_source_id = self.identifier
@@ -1478,7 +1451,7 @@ def get_or_create_fact(fact_term,
                        values=None,
                        value_iobject_id=None,
                        value_iobject_ts=None,
-                       value_on_disk=False):
+                       ):
     """
     Get or create a fact object.
     """
@@ -1498,11 +1471,34 @@ def get_or_create_fact(fact_term,
     value_objects = []
 
     for value in values:
+        value_on_disk=False
         # collect (create or get) the required value objects
         if value == None:
             value = ''
+        if isinstance(value,tuple):
+            # We signal that a value is written to disk by wrapping it in a tuple
+            # where the second component should be 'True' if the value is located on disk
+            value, value_on_disk = value
+
+        if not value_on_disk:
+            # If the value is larger than a given size, the value is written to disk, instead.
+            # We use this to keep too large values out of the database. Depending on how the
+            # database is set up, this may be necessary to allow indexing, which in turn is
+            # required to check uniqueness on values.
+            if len(value) > dingos.DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB:
+                value_on_disk=True
+                value_hash = hashlib.sha256(value).hexdigest()
+                file_name = '%s.blob' % (value_hash)
+
+                if dingos.DINGOS_BLOB_STORAGE.exists(file_name):
+                    dingos.DINGOS_BLOB_STORAGE.delete(file_name)
+
+                dingos.DINGOS_BLOB_STORAGE.save(file_name, ContentFile(value))
+                value = value_hash
+
         fact_value, created = dingos_class_map['FactValue'].objects.get_or_create(value=value,
-                                                                                 fact_data_type=fact_data_type)
+                                                                                 fact_data_type=fact_data_type,
+                                                                                 value_on_disk=value_on_disk)
         value_objects.append(fact_value)
 
 
@@ -1512,14 +1508,12 @@ def get_or_create_fact(fact_term,
     # For understanding the query below better, see https://groups.google.com/forum/#!topic/django-users/X9TCSrBn57Y.
     # The double query is necessary, because the first count counts the number of selected
     # fact_value objects, not the number of total objects for each fact.
-    # Can this be simplified by first querying for all facts with exactly three fact values?
 
     matching_facts = Fact.objects.filter(fact_values__in=value_objects). \
         annotate(num_values=Count('fact_values')). \
         filter(num_values=len(value_objects)). \
         filter(value_iobject_id=value_iobject_id). \
         filter(value_iobject_ts=value_iobject_ts). \
-        filter(value_on_disk=value_on_disk). \
         filter(fact_term=fact_term). \
         exclude(id__in= \
         Fact.objects.annotate(total_values=Count('fact_values')). \
@@ -1534,7 +1528,7 @@ def get_or_create_fact(fact_term,
         fact_obj = dingos_class_map['Fact'].objects.create(fact_term=fact_term,
                                                           value_iobject_id=value_iobject_id,
                                                           value_iobject_ts=value_iobject_ts,
-                                                          value_on_disk=value_on_disk)
+                                                           )
 
         fact_obj.fact_values.add(*value_objects)
         fact_obj.save()
