@@ -330,8 +330,12 @@ class DingoImportHandling(object):
 
             if not inherited_id_and_rev_info:
                 inherited_id_and_rev_info = main_id_and_rev_info.copy()
+
+            original_inherited_id_and_rev_info = inherited_id_and_revision_info.copy()
+
             if element.name == 'comment':
                 return None
+
 
             #try:
             #    namespace = element.ns()
@@ -499,6 +503,7 @@ class DingoImportHandling(object):
                                 logger.debug(
                                     "Adding XML subtree starting with element %s and type info %s to pending stack." % (
                                     id_and_revision_info, embedded_ns))
+                                id_and_revision_info['inherited_id_and_rev_info'] = original_inherited_id_and_rev_info
                                 _import_pending_stack.append((id_and_revision_info, embedded_ns, child))
                             else:
                                 # For example, in cybox 1.0, the following occurs::
@@ -612,7 +617,6 @@ class DingoImportHandling(object):
         # Extract ID and timestamp for root element
 
         main_id_and_rev_info = id_and_revision_extractor(root)
-
 
         # Call the internal recursive function. This returns
         # - name of the top-level element
