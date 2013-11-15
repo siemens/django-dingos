@@ -309,6 +309,9 @@ class DingoImportHandling(object):
         of libxml2 is http://mikekneller.com/kb/python/libxml2python/part1.
         """
 
+        generated_id_count = {}
+
+
 
         # Fill defaults
         if not ns_mapping:
@@ -331,7 +334,8 @@ class DingoImportHandling(object):
             if not inherited_id_and_rev_info:
                 inherited_id_and_rev_info = main_id_and_rev_info.copy()
 
-            original_inherited_id_and_rev_info = inherited_id_and_revision_info.copy()
+            fresh_inherited_id_and_rev_info = inherited_id_and_rev_info.copy()
+
 
             if element.name == 'comment':
                 return None
@@ -349,6 +353,7 @@ class DingoImportHandling(object):
 
             if element.properties:
                 for prop in element.properties:
+
                     if not prop:
                         break
                     if prop.type == 'attribute':
@@ -439,6 +444,7 @@ class DingoImportHandling(object):
                         logger.debug("Embedded ns is %s" % embedded_ns)
 
                         if embedded_ns:
+                            inherited_id_and_rev_info = fresh_inherited_id_and_rev_info.copy()
                             # There is an embedded object. We therefore
                             # replace the contents of the element with an element
                             # containing an idref (and, since we might need them,
@@ -458,6 +464,26 @@ class DingoImportHandling(object):
                                 id_and_revision_info = id_and_revision_extractor(child)
 
 
+                            # See whether stuff needs to be inherited
+                            if not 'id' in id_and_revision_info or not id_and_revision_info['id']:
+                                if 'id' in inherited_id_and_rev_info:
+                                    parent_id = inherited_id_and_rev_info['id']
+                                    if parent_id in generated_id_count:
+                                        gen_counter = generated_id_count[parent_id]
+                                        gen_counter +=1
+                                    else:
+                                        gen_counter = 0
+                                    generated_id_count[parent_id] = gen_counter
+                                    (parent_namespace, parent_uid) = parent_id.split(':')
+                                    generated_id = "%s:emb%s-in-%s" % (parent_namespace,gen_counter,parent_uid)
+                                    logger.warning("Found embedded object without id in object %s and generated id %s" % (parent_uid,generated_id))
+                                    id_and_revision_info['id'] = generated_id
+                                    id_and_revision_info['id_inherited'] = True
+                                else:
+                                    logger.error("Attempt to import object (element name %s) without id -- object is ignored" % elt_name)
+
+                                    #cybox_id = gen_cybox_id(iobject_type_name)
+
                             if not id_and_revision_info.get('timestamp', None):
                                 if inherited_id_and_rev_info and 'timestamp' in inherited_id_and_rev_info:
                                     id_and_revision_info['timestamp'] = inherited_id_and_rev_info['timestamp']
@@ -470,9 +496,13 @@ class DingoImportHandling(object):
                                 # If the identifier has no namespace info (this may occur, e.g. for
                                 # embedded OpenIOC in STIX, we take the namespace inherited from  the
                                 # embedding object
-                                if not ':' in id_and_revision_info['id'] and ':' in inherited_id_and_rev_info['id']:
+                                if (not ':' in id_and_revision_info['id']
+                                    and inherited_id_and_rev_info['id']
+                                    and ':' in inherited_id_and_rev_info['id']):
                                     id_and_revision_info['id'] = "%s:%s" % (inherited_id_and_rev_info['id'].split(':')[0],
                                                                             id_and_revision_info['id'])
+                                    id_and_revision_info['ns_inherited'] = True
+
                                 inherited_id_and_rev_info['id'] = id_and_revision_info['id']
 
 
@@ -503,7 +533,6 @@ class DingoImportHandling(object):
                                 logger.debug(
                                     "Adding XML subtree starting with element %s and type info %s to pending stack." % (
                                     id_and_revision_info, embedded_ns))
-                                id_and_revision_info['inherited_id_and_rev_info'] = original_inherited_id_and_rev_info
                                 _import_pending_stack.append((id_and_revision_info, embedded_ns, child))
                             else:
                                 # For example, in cybox 1.0, the following occurs::

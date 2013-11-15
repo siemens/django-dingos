@@ -32,7 +32,8 @@ from models import DataTypeNameSpace,\
     InfoObject,\
     Identifier,\
     NodeID,\
-    InfoObjectNaming
+    InfoObjectNaming,\
+    BlobStorage
 
 
 
@@ -234,6 +235,7 @@ admin.site.register(Identifier,IdentifierAdmin)
 admin.site.register(Fact,FactAdmin)
 admin.site.register(InfoObject2Fact,InfoObject2FactAdmin)
 admin.site.register(Revision)
+admin.site.register(BlobStorage)
 
 
 

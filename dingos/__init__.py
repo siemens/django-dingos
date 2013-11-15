@@ -83,22 +83,34 @@ DINGOS_PLACEHOLDER_TYPE_NAME = 'PLACEHOLDER'
 DINGOS_DEFAULT_IMPORT_MARKING_TYPE_NAME = "ImportInfo"
 
 
+
+
+# Values larger than DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB are
+# not written to the data base but stored on the file system or
+# written to a special blob table
+
+DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_VALUE_TABLE = 4096
+
+
+# values for the LARGE_VALUE_DESTINATION are 'BLOB_TABLE' and 'FILE_SYSTEM'
+
+DINGOS_VALUES_TABLE = 0
+DINGOS_FILE_SYSTEM = 1
+DINGOS_BLOB_TABLE = 2
+
+DINGOS_LARGE_VALUE_DESTINATION = DINGOS_BLOB_TABLE
+
+
+
 # The DINGOS_BLOB_ROOT absolutely has to be set in the DINGOS settings.
 # If that is not the case, the attempt to read the value from the settings
-# in models.py will throw an exception. When it is set, models.py
-# will instantiate the DINGOS_BLOB_STORAGE with a file storage handler
-# that can also be used by importers to write file content to disk.
 
 DINGOS_BLOB_ROOT = None
 
+# read_settings.py will instantiate the DINGOS_BLOB_STORAGE with a file storage handler
+# that can also be used by importers to write file content to disk.
+
 DINGOS_BLOB_STORAGE = None
-
-# Values larger than DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB are
-# not written to the data base but stored on the file system
-
-DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB = 4096
-
-
 
 
 

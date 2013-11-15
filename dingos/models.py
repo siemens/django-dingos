@@ -21,7 +21,7 @@ import logging
 import pprint
 import re
 import hashlib
-
+import base64
 
 
 from django.db import models
@@ -45,8 +45,6 @@ logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=2)
 
 dingos_class_map = {}
-
-# First of all, get configuration settings
 
 
 
@@ -133,13 +131,12 @@ class FactValue(DingoModel):
     fact_data_type = models.ForeignKey("FactDataType")
 
 
-    VALUES_TABLE = 0
-    FILE_SYSTEM = 1
 
 
-    storage_location = models.SmallIntegerField(choices=((VALUES_TABLE, "in FactValues table"),
-                                                          (FILE_SYSTEM, "On Filesystem")),
-                                                default=VALUES_TABLE,
+    storage_location = models.SmallIntegerField(choices=((dingos.DINGOS_VALUES_TABLE, "in FactValues table"),
+                                                         (dingos.DINGOS_FILE_SYSTEM, "in Filesystem"),
+                                                         (dingos.DINGOS_BLOB_TABLE, "in BLOB table" )),
+                                                default=dingos.DINGOS_VALUES_TABLE,
                                                 help_text="""Governs storage location of value""")
 
 
@@ -1360,6 +1357,19 @@ class Relation(DingoModel):
 
 dingos_class_map["Relation"] = Relation
 
+class BlobStorage(models.Model):
+    """
+    A table for storing large values.
+    """
+
+    sha256 = models.CharField(unique=True,
+                              max_length=64
+                              )
+
+    content = models.TextField(blank=True)
+
+
+dingos_class_map["BlobStorage"] = BlobStorage
 
 class Marking2X(models.Model):
     """
@@ -1477,7 +1487,7 @@ def get_or_create_fact(fact_term,
     value_objects = []
 
     for value in values:
-        storage_location=FactValue.VALUES_TABLE
+        storage_location=dingos.DINGOS_VALUES_TABLE
         # collect (create or get) the required value objects
         if value == None:
             value = ''
@@ -1486,23 +1496,16 @@ def get_or_create_fact(fact_term,
             # specifies the storage location of the value.
             value, storage_location = value
 
-        if storage_location == FactValue.VALUES_TABLE:
+        if storage_location == dingos.DINGOS_VALUES_TABLE:
             # If the value is larger than a given size, the value is written to disk, instead.
             # We use this to keep too large values out of the database. Depending on how the
             # database is set up, this may be necessary to allow indexing, which in turn is
             # required to check uniqueness on values.
 
-            if len(value) > dingos.DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB:
-
-                storage_location = FactValue.FILE_SYSTEM
-                value_hash = hashlib.sha256(value).hexdigest()
-                file_name = '%s.blob' % (value_hash)
-
-                if dingos.DINGOS_BLOB_STORAGE.exists(file_name):
-                    dingos.DINGOS_BLOB_STORAGE.delete(file_name)
-
-                dingos.DINGOS_BLOB_STORAGE.save(file_name, ContentFile(value))
+            if len(value) > dingos.DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_VALUE_TABLE:
+                (value_hash,storage_location) = write_large_value(value)
                 value = value_hash
+
 
         fact_value, created = dingos_class_map['FactValue'].objects.get_or_create(value=value,
                                                                                  fact_data_type=fact_data_type,
@@ -1605,4 +1608,23 @@ def get_or_create_fact_term(iobject_family_name,
     fact_term_2_type.save()
 
     return fact_term, created
+
+
+def write_large_value(value,storage_location=dingos.DINGOS_LARGE_VALUE_DESTINATION):
+    value_hash = hashlib.sha256(value).hexdigest()
+    if storage_location == dingos.DINGOS_FILE_SYSTEM:
+
+        file_name = '%s.blob' % (value_hash)
+
+        if dingos.DINGOS_BLOB_STORAGE.exists(file_name):
+            dingos.DINGOS_BLOB_STORAGE.delete(file_name)
+
+        dingos.DINGOS_BLOB_STORAGE.save(file_name, ContentFile(value))
+
+    else:
+        storage_location = dingos.DINGOS_BLOB_TABLE
+        # The blob storage table is default
+        dingos_class_map['BlobStorage'].objects.get_or_create(sha256=value_hash,
+                                                              content=value)
+    return (value_hash,storage_location)
 

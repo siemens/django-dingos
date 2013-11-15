@@ -47,5 +47,11 @@ else:
     dingos.DINGOS_BLOB_STORAGE.base_url=None
 
 if settings.configured and 'DINGOS' in dir(settings):
-    dingos.DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB = settings.DINGOS.get('DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB',
-                                                                     dingos.DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB)
+    dingos.DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_VALUE_TABLE = settings.DINGOS.get('DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_VALUE_TABLE',
+                                                                             dingos.DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_VALUE_TABLE)
+
+if settings.configured and 'DINGOS' in dir(settings):
+    dingos.DINGOS_LARGE_VALUE_DESTINATION = settings.DINGOS.get('LARGE_VALUE_DESTINATION',
+                                            dingos.DINGOS_LARGE_VALUE_DESTINATION)
+
+
