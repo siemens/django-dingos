@@ -83,6 +83,13 @@ DINGOS_PLACEHOLDER_TYPE_NAME = 'PLACEHOLDER'
 DINGOS_DEFAULT_IMPORT_MARKING_TYPE_NAME = "ImportInfo"
 
 
+# The DINGOS_BLOB_ROOT absolutely has to be set in the DINGOS settings.
+# If that is not the case, the attempt to read the value from the settings
+# in models.py will throw an exception.
+
+DINGOS_BLOB_ROOT = None
+
+DINGOS_BLOB_STORAGE = None
 
 
 

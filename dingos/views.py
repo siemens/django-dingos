@@ -191,7 +191,8 @@ class InfoObjectView(BasicTemplateView):
                                                           'fact__fact_values',
                                                           'fact__fact_values__fact_data_type',
                                                               'fact__value_iobject_id',
-                                                          'fact__value_iobject_id__latest',
+                                                              'fact__value_iobject_id__latest',
+                                                              'fact__value_iobject_id__latest__iobject_type',
                                                           'node_id')
 
 

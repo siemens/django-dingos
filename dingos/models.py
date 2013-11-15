@@ -30,6 +30,9 @@ from django.contrib.contenttypes import generic
 from django.core import urlresolvers
 from django.utils.safestring import mark_safe
 from django.utils import timezone
+from django.core.files.storage import FileSystemStorage
+
+import dingos
 
 from dingos import *
 from dingos.core.datastructures import ExtendedSortedDict
@@ -42,11 +45,32 @@ dingos_class_map = {}
 # First of all, get configuration settings
 
 if settings.configured and 'DINGOS' in dir(settings):
-    DINGOS_TEMPLATE_FAMILY = settings.DINGOS.get('TEMPLATE_FAMILY', DINGOS_TEMPLATE_FAMILY)
+    dingos.DINGOS_TEMPLATE_FAMILY = settings.DINGOS.get('TEMPLATE_FAMILY', dingos.DINGOS_TEMPLATE_FAMILY)
 
 if settings.configured and 'DINGOS' in dir(settings):
-    DINGOS_DEFAULT_ID_NAMESPACE_URI = settings.DINGOS.get('OWN_ORGANIZATION_ID_NAMESPACE',
-                                                          DINGOS_DEFAULT_ID_NAMESPACE_URI)
+    dingos.DINGOS_DEFAULT_ID_NAMESPACE_URI = settings.DINGOS.get('OWN_ORGANIZATION_ID_NAMESPACE',
+                                                          dingos.DINGOS_DEFAULT_ID_NAMESPACE_URI)
+
+if settings.configured and 'DINGOS' in dir(settings):
+    dingos.DINGOS_BLOB_ROOT = settings.DINGOS.get('BLOB_ROOT',None)
+
+if not dingos.DINGOS_BLOB_ROOT:
+    raise NotImplementedError("Please configure a BLOB_ROOT  directory in the DINGOS settings (look "
+                              "at how the MEDIA directory is defined and define an appropriate directory "
+                              "for storing stuff that does not got into the database (usually very large "
+                              "values) on the filesystem.")
+else:
+
+    dingos.DINGOS_BLOB_STORAGE = FileSystemStorage(location=dingos.DINGOS_BLOB_ROOT)
+    # We do not want the blobs to be directly available via URL.
+    # Reading the code it seems that setting 'base_url=None' in
+    # the __init__ arguments does not help, because __init__
+    # then choses the media URL as default url. So we have
+    # to set it explicitly after __init__ is done.
+
+    dingos.DINGOS_BLOB_STORAGE.base_url=None
+
+
 
 RE_SEARCH_PLACEHOLDERS = re.compile(r"\[(?P<bla>[^\]]+)\]")
 
@@ -926,6 +950,8 @@ class InfoObject(DingoModel):
                                                      fact_dt_namespace_name=fact_dt_namespace_name,
                                                      fact_dt_namespace_uri=fact_dt_namespace_uri,
                                                      dingos_class_map=self._DCM)
+
+
         # get or create fact object
 
         fact_obj, created = get_or_create_fact(fact_term,
@@ -1113,6 +1139,7 @@ class InfoObject(DingoModel):
         fact_dict = {}
         counter = 0
         for (node_id, fact_term, attribute, value, related_obj_name) in fact_list:
+            #print fact_list[counter]
             if type(value)==type([]):
                 value = "%s,..." % value
             if related_obj_name:
@@ -1141,6 +1168,7 @@ class InfoObject(DingoModel):
 
         # Now, we go through the format strings and see whether one of them
         # is successfully instantiated via the fact dictionary
+        #print fact_dict
 
         for format_string in name_schemas:
             # Massage the format string such that we can use it as Python format string

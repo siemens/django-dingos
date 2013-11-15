@@ -55,7 +55,12 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                             <a name="{{ k.node_id }}"> </a>
                         {% if k.fact.value_iobject_id %}
-                            <a href={% url 'url.dingos.view.infoobject' k.fact.value_iobject_id.latest.pk %}>{{k.fact.value_iobject_id.latest.name}}</a>
+                            <a href={% url 'url.dingos.view.infoobject' k.fact.value_iobject_id.latest.pk %}>
+                                {% if k.fact.value_iobject_id.latest.name == 'PLACEHOLDER' %}
+                                    {{k.fact.value_iobject_id.latest.iobject_type.name}}
+                                {% else %}
+                                    {{k.fact.value_iobject_id.latest.name}}
+                                {% endif %}</a>
                         {% elif k.fact.value_on_disk %}
                             Value on disk ({{ k.fact.fact_values.all.0 }})
                         {% else %}
