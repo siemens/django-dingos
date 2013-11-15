@@ -675,8 +675,7 @@ class DingoImportHandling(object):
                 (elt_name, elt_dict) = xml_import_(elt, 0,
                                                    type_info=type_info,
                                                    inherited_id_and_rev_info=id_and_revision_info.copy())
-                print {'id_and_rev_info': id_and_revision_info,
-                       'elt_name': elt_name}
+                
                 embedded_objects.append({'id_and_rev_info': id_and_revision_info,
                                          'elt_name': elt_name,
                                          'dict_repr': elt_dict})
