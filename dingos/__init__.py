@@ -96,7 +96,7 @@ DINGOS_BLOB_STORAGE = None
 # Values larger than DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB are
 # not written to the data base but stored on the file system
 
-DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB = 2048
+DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB = 4096
 
 
 

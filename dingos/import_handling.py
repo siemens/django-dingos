@@ -493,7 +493,9 @@ class DingoImportHandling(object):
                             reference_dict['@@embedded_type_info'] = embedded_ns
 
                             element_dicts.append((child.name, reference_dict))
-                            if (child.children or child.content) or extract_empty_embedded:
+                            if (child.children or child.content) \
+                                or extract_empty_embedded \
+                                or 'extract_empty_embedded' in id_and_revision_info:
                                 logger.debug(
                                     "Adding XML subtree starting with element %s and type info %s to pending stack." % (
                                     id_and_revision_info, embedded_ns))
@@ -504,7 +506,7 @@ class DingoImportHandling(object):
                                 # This is only a reference and may not be confused with the definition of the object,
                                 # which occurs someplace else -- otherwise, the (almost) empty reference is created as object
                                 # and may overwrite the object resulting from the real definition.
-                                logger.debug(
+                                logger.info(
                                     "Not adding element %s with type info %s to pending stack because element is empty." % (
                                     id_and_revision_info, embedded_ns))
                         else:
@@ -640,6 +642,8 @@ class DingoImportHandling(object):
                 (elt_name, elt_dict) = xml_import_(elt, 0,
                                                    type_info=type_info,
                                                    inherited_id_and_rev_info=id_and_revision_info.copy())
+                print {'id_and_rev_info': id_and_revision_info,
+                       'elt_name': elt_name}
                 embedded_objects.append({'id_and_rev_info': id_and_revision_info,
                                          'elt_name': elt_name,
                                          'dict_repr': elt_dict})

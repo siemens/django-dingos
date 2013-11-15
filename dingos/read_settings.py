@@ -47,5 +47,5 @@ else:
     dingos.DINGOS_BLOB_STORAGE.base_url=None
 
 if settings.configured and 'DINGOS' in dir(settings):
-    dingos.DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB = settings.DINGOS.get('BLOB_ROOT',
+    dingos.DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB = settings.DINGOS.get('DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB',
                                                                      dingos.DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB)

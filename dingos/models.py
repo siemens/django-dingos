@@ -132,16 +132,22 @@ class FactValue(DingoModel):
 
     fact_data_type = models.ForeignKey("FactDataType")
 
-    value_on_disk = models.BooleanField(help_text="""True, if value is stored on file system If that is the case,
-                                                     then the value field contains the SHA256 of the value.""",
-                                        default=False)
+
+    VALUES_TABLE = 0
+    FILE_SYSTEM = 1
+
+
+    storage_location = models.SmallIntegerField(choices=((VALUES_TABLE, "in FactValues table"),
+                                                          (FILE_SYSTEM, "On Filesystem")),
+                                                default=VALUES_TABLE,
+                                                help_text="""Governs storage location of value""")
 
 
     class Meta:
         # The constraint below can cause problems if the entries in FactValue become to large:
         # Uniqueness forces the creation of a index on values
         # for testing uniqueness.
-        unique_together = ('value', 'fact_data_type','value_on_disk')
+        unique_together = ('value', 'fact_data_type','storage_location')
 
     def __unicode__(self):
         return ("%s" % self.value)
@@ -1471,22 +1477,24 @@ def get_or_create_fact(fact_term,
     value_objects = []
 
     for value in values:
-        value_on_disk=False
+        storage_location=FactValue.VALUES_TABLE
         # collect (create or get) the required value objects
         if value == None:
             value = ''
         if isinstance(value,tuple):
-            # We signal that a value is written to disk by wrapping it in a tuple
-            # where the second component should be 'True' if the value is located on disk
-            value, value_on_disk = value
+            # If a value is wrapped in a tuple, the second component of the tuple
+            # specifies the storage location of the value.
+            value, storage_location = value
 
-        if not value_on_disk:
+        if storage_location == FactValue.VALUES_TABLE:
             # If the value is larger than a given size, the value is written to disk, instead.
             # We use this to keep too large values out of the database. Depending on how the
             # database is set up, this may be necessary to allow indexing, which in turn is
             # required to check uniqueness on values.
+
             if len(value) > dingos.DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB:
-                value_on_disk=True
+
+                storage_location = FactValue.FILE_SYSTEM
                 value_hash = hashlib.sha256(value).hexdigest()
                 file_name = '%s.blob' % (value_hash)
 
@@ -1498,7 +1506,7 @@ def get_or_create_fact(fact_term,
 
         fact_value, created = dingos_class_map['FactValue'].objects.get_or_create(value=value,
                                                                                  fact_data_type=fact_data_type,
-                                                                                 value_on_disk=value_on_disk)
+                                                                                 storage_location=storage_location)
         value_objects.append(fact_value)
 
 
