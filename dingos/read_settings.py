@@ -31,10 +31,12 @@ if settings.configured and 'DINGOS' in dir(settings):
     dingos.DINGOS_BLOB_ROOT = settings.DINGOS.get('BLOB_ROOT',None)
 
 if not dingos.DINGOS_BLOB_ROOT:
-    raise NotImplementedError("Please configure a BLOB_ROOT  directory in the DINGOS settings (look "
-                              "at how the MEDIA directory is defined and define an appropriate directory "
-                              "for storing stuff that does not got into the database (usually very large "
-                              "values) on the filesystem.")
+
+    dingos.DINGOS_BLOB_STORAGE=None
+    #raise NotImplementedError("Please configure a BLOB_ROOT  directory in the DINGOS settings (look "
+    #                          "at how the MEDIA directory is defined and define an appropriate directory "
+    #                          "for storing stuff that does not got into the database (usually very large "
+    #                          "values) on the filesystem.")
 else:
 
     dingos.DINGOS_BLOB_STORAGE = FileSystemStorage(location=dingos.DINGOS_BLOB_ROOT)
@@ -43,7 +45,6 @@ else:
     # the __init__ arguments does not help, because __init__
     # then choses the media URL as default url. So we have
     # to set it explicitly after __init__ is done.
-
     dingos.DINGOS_BLOB_STORAGE.base_url=None
 
 if settings.configured and 'DINGOS' in dir(settings):
