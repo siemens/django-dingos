@@ -77,7 +77,6 @@ Dingos further offers:
   of data occurs several times (e.g., in several imports), then
   it is only stored once and referenced at all occurrences.
 
-
 Contents:
 
 .. toctree::

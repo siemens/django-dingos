@@ -1,5 +1,5 @@
 =============================
-Djangos
+Dingos
 =============================
 
 
@@ -13,10 +13,4 @@ The full documentation is at http://django-dingos.rtfd.org.
 Quickstart
 ----------
 
-Install Djangos::
-
-    pip install django-dingos
-
-Then use it in a project::
-
-	import django-dingos
+Please refer to the quickstart information of MANTIS, available at http://django-mantis.rtfd.org.

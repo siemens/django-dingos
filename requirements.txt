@@ -1,7 +1,6 @@
-django>=1.5.1
+django>=1.5.5
 
 ## For testing
-
 # Uncomment below for tox tests to run through successfully.
 
 #coverage
@@ -14,8 +13,9 @@ django>=1.5.1
 
 
 ## Django apps for templates and views used by Dingos
-django-grappelli==2.4.7
-django-braces==1.0.0
+
+django-grappelli>=2.4.7
+django-braces>=1.0.0
 django-filter>=0.7
 
 ## XML libraries
@@ -24,7 +24,7 @@ django-filter>=0.7
 ftp://xmlsoft.org/libxml2/python/libxml2-python-2.6.9.tar.gz 
 
 lxml>=3.2.1
-#https://pypi.python.org/packages/source/l/lxml/lxml-3.1.2.tar.gz#md5=6f2173f4fd5b13fbc9f8a5096d23d524    
+
 
 
 
