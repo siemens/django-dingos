@@ -125,10 +125,10 @@ class FactValueAdmin(admin.ModelAdmin):
 
 
 class FactDataTypeAdmin(admin.ModelAdmin):
-    list_display = ('name','kind','name_space')
-    raw_id_fields = ('name_space',)
+    list_display = ('name','kind','namespace')
+    raw_id_fields = ('namespace',)
     autocomplete_lookup_fields = {
-        'fk': ['name_space'],
+        'fk': ['namespace'],
         'm2m': [],
     }
 

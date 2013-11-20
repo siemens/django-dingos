@@ -165,10 +165,10 @@ class FactDataType(DingoModel):
 
     description = models.TextField(blank=True)
 
-    name_space = models.ForeignKey("DataTypeNameSpace")
+    namespace = models.ForeignKey("DataTypeNameSpace")
 
     class Meta:
-        unique_together = ('name', 'name_space',)
+        unique_together = ('name', 'namespace',)
 
     UNKNOWN_KIND = 0
     NO_VOCAB = 1
@@ -193,7 +193,7 @@ class FactDataType(DingoModel):
         return ("name__icontains",)
 
     def __unicode__(self):
-        ns_name = self.name_space.name
+        ns_name = self.namespace.name
         if ns_name:
             return "%s (%s)" % (self.name, ns_name)
         else:
@@ -1476,10 +1476,10 @@ def get_or_create_fact(fact_term,
         values = []
 
 
-    vocab_name_space, created = dingos_class_map['DataTypeNameSpace'].objects.get_or_create(uri=fact_dt_namespace_uri)
+    vocab_namespace, created = dingos_class_map['DataTypeNameSpace'].objects.get_or_create(uri=fact_dt_namespace_uri)
 
     fact_data_type, created = dingos_class_map['FactDataType'].objects.get_or_create(name=fact_dt_name,
-                                                                                    name_space=vocab_name_space)
+                                                                                    namespace=vocab_namespace)
 
     # Maybe we already have a fact with exactly the same fact term and the same fact values?
     # We start by looking at the number of values
@@ -1585,7 +1585,7 @@ def get_or_create_fact_term(iobject_family_name,
 
     # create or retrieve the fact-value data type object
     fact_dt, created = dingos_class_map['FactDataType'].objects.get_or_create(name=fact_dt_name,
-                                                                             name_space=fact_dt_namespace)
+                                                                             namespace=fact_dt_namespace)
 
     if created:
         fact_dt.kind = fact_dt_kind
