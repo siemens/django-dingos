@@ -419,6 +419,7 @@ class InfoObjectType(DingoModel):
     description = models.TextField(blank=True)
 
     iobject_family = models.ForeignKey("InfoObjectFamily",
+                                       related_name='iobject_type_set',
                                        help_text='Associated info-object family.')
 
     namespace = models.ForeignKey("DataTypeNamespace",
