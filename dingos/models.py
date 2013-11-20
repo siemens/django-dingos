@@ -128,7 +128,8 @@ class FactValue(DingoModel):
                                    help_text="""A helptext/description of the value; useful for values that
                                                 are part of standard vocabularies""")
 
-    fact_data_type = models.ForeignKey("FactDataType")
+    fact_data_type = models.ForeignKey("FactDataType",
+                                       related_name = 'fact_value_set')
 
 
 
@@ -165,7 +166,8 @@ class FactDataType(DingoModel):
 
     description = models.TextField(blank=True)
 
-    namespace = models.ForeignKey("DataTypeNameSpace")
+    namespace = models.ForeignKey("DataTypeNameSpace",
+                                  related_name = 'fact_data_type_set')
 
     class Meta:
         unique_together = ('name', 'namespace',)
@@ -801,7 +803,9 @@ class InfoObject(DingoModel):
     has been created or updated.
     """
 
-    identifier = models.ForeignKey("Identifier")
+    identifier = models.ForeignKey("Identifier",
+                                   related_name = 'iobject_set'
+                                  )
 
     timestamp = models.DateTimeField()
 
@@ -812,6 +816,7 @@ class InfoObject(DingoModel):
                                    help_text="Facts that are content of this enrichment")
 
     iobject_type = models.ForeignKey(InfoObjectType,
+                                     related_name = 'iobject_set',
                                      help_text="Each enrichment has an information object type.")
 
     iobject_type_revision = models.ForeignKey(Revision,
@@ -819,6 +824,7 @@ class InfoObject(DingoModel):
                                               related_name="+")
 
     iobject_family = models.ForeignKey("InfoObjectFamily",
+                                       related_name = 'iobject_set',
                                        help_text="Type of enrichment, e.g. 'CYBOX'")
 
     iobject_family_revision = models.ForeignKey("Revision",

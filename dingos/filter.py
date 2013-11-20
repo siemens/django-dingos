@@ -58,7 +58,7 @@ class ExtendedDateRangeFilter(django_filters.DateRangeFilter):
 class InfoObjectFilter(django_filters.FilterSet):
 
 
-    iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('infoobject')).\
+    iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('iobject_set')).\
         filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
 
     iobject_type = django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
@@ -112,7 +112,7 @@ class FactTermValueFilter(django_filters.FilterSet):
     fact__fact_term__term = django_filters.CharFilter(lookup_type='icontains',
                                                      label='Fact term contains')
 
-    iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('infoobject')). \
+    iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('iobject_set')). \
         filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
 
     iobject__iobject_type = django_filters.ModelChoiceFilter(queryset= iobject_type_qs,

@@ -21,15 +21,15 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <div class ="grp-module grp-collapse grp-closed">
 <h2 class="grp-collapse-handler">
-    {% if object.identifier.infoobject_set.all.0.timestamp == object.timestamp %}
-       Current revision of {{ object.identifier.infoobject_set.count }} revision{% if object.identifier.infoobject_set.count != 1 %}s{% endif %}
+    {% if object.identifier.iobject_set.all.0.timestamp == object.timestamp %}
+       Current revision of {{ object.identifier.iobject_set.count }} revision{% if object.identifier.iobject_set.count != 1 %}s{% endif %}
     {% else %}
-       NOT current revision (there are {{  object.identifier.infoobject_set.count }} revisions} <br/>
+       NOT current revision (there are {{  object.identifier.iobject_set.count }} revisions} <br/>
         (click to view all revisions)
     {% endif %}</h2>
 
 
-                {% for k in object.identifier.infoobject_set.all %}
+                {% for k in object.identifier.iobject_set.all %}
 
 
                     <div class="grp-row">

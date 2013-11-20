@@ -21,7 +21,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     <div class ="grp-module grp-collapse grp-closed">
 <h2 class="grp-collapse-handler">
-    {% if object.identifier.infoobject_set.all.0.timestamp == object.timestamp %}
+    {% if object.identifier.iobject_set.all.0.timestamp == object.timestamp %}
        This is the most recent revision of {{object.timestamp | date:"c"}} (click to view all revisions)
     {% else %}
        This ({{ object.timestamp| date:"c" }}) is not the most recent revision (click to view all revisions)
@@ -29,7 +29,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
             <table>
 
-                {% for k in object.identifier.infoobject_set.all %}
+                {% for k in object.identifier.iobject_set.all %}
                     {% if forloop.first %}
                         <tr >
 
@@ -45,7 +45,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                     <td>
 
-                        <a href={% url 'url.dingos.view.infoobject' k.pk %}>{{k.timestamp | date:"c"}}</a>
+                        <a href={% url 'url.dingos.view.iobject' k.pk %}>{{k.timestamp | date:"c"}}</a>
                         {%  if k.timestamp == object.timestamp %}
                             (this revision)
                         {% endif %}
