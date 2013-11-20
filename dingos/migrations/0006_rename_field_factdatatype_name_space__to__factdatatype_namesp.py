@@ -9,12 +9,22 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         # Rename
-        db.rename_column(u'dingos_factdatatype', 'name_space_id', 'namespace_id')
-
+        db.start_transaction()
+        try:
+            db.rename_column(u'dingos_factdatatype', 'name_space_id', 'namespace_id')
+            db.commit_transaction()
+        except:
+            db.rollback_transaction()
 
 
     def backwards(self, orm):
-        db.rename_column(u'dingos_factdatatype', 'namespace_id', 'name_space_id')
+        db.start_transaction()
+        try:
+            db.rename_column(u'dingos_factdatatype', 'namespace_id', 'name_space_id')
+            db.commit_transaction()
+        except:
+            db.rollback_transaction()
+
 
     models = {
         u'contenttypes.contenttype': {
