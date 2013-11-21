@@ -291,8 +291,9 @@ class DingoObjDict(ExtendedSortedDict):
         return self._flatten(result_list=[], attr_dict={}, namespace=[], prefix=[],
                              attr_ignore_predicate=attr_ignore_predicate)
 
-
-    def _flatten(self, result_list, attr_dict, namespace, prefix, attr_ignore_predicate=None):
+    def _flatten(self, result_list, attr_dict, namespace, prefix,
+                 attr_ignore_predicate=None,
+                 force_nonleaf_fact_predicate=None):
         """
         Flatten a Dingo dictionary representation of an infomration object into a list
         of fact-term/value pairs and associated information about tree structure (in node_id)
@@ -319,6 +320,10 @@ class DingoObjDict(ExtendedSortedDict):
         if not attr_ignore_predicate:
             attr_ignore_predicate = (lambda x: '@' in x['attribute'])
 
+        if not force_nonleaf_fact_predicate:
+            force_nonleaf_fact_predicate = (lambda x,y: 'Related_Object' in x and '@idref' in y.keys())
+
+
         RE_ELEMENT_MATCHER = re.compile(r"[^@_].*")
 
         attributes = filter(lambda x: x[0] == '@', self.keys())
@@ -332,15 +337,16 @@ class DingoObjDict(ExtendedSortedDict):
 
         elements = filter(lambda x: RE_ELEMENT_MATCHER.match(x), self)
 
-        if elements == []:
+        if elements == [] or force_nonleaf_fact_predicate('/'.join(namespace),self):
             logger.debug("Entered _VALUE branch for %s" % self)
             if '_value' in self.keys() or attributes != []:
-                result_list.append({'term': '/'.join(namespace),
-                                    'value': self.get('_value', ''),
-                                    'attribute': False,
-                                    'node_id': node_id})
-
-        else:
+                fact_data = {'term': '/'.join(namespace),
+                             'value': self.get('_value', ''),
+                             'attribute': False,
+                             'node_id': node_id}
+                result_list.append(fact_data)
+                logger.debug("Appended fact %s" % fact_data)
+        if elements != []:
 
             counter = 0
             for element in elements:
@@ -367,6 +373,7 @@ class DingoObjDict(ExtendedSortedDict):
                                  'value': self[element],
                                  'attribute': False,
                                  'node_id': "%s" % ':'.join(map(node_id_gen, prefix + [('N', counter)]))}
+                    logger.debug("Appended fact %s" % fact_data)
                     result_list.append(fact_data)
                     # clean up namespace
                     namespace = namespace[:-1]
@@ -392,8 +399,10 @@ class DingoObjDict(ExtendedSortedDict):
                     'attribute': attribute[1:]}
             if not attr_ignore_predicate(fact):
                 result_list.append(fact)
+                logger.debug("Appended fact %s" % fact)
                 attr_counter += 1
-
+            else:
+                logger.debug("Ignoring fact %s because of attr_ignore_list" % fact)
         result_list.sort(key=lambda x: x['node_id'])
 
         return (result_list, attr_dict)

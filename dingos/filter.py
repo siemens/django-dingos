@@ -32,24 +32,28 @@ _truncate = lambda dt: dt.replace(hour=0, minute=0, second=0)
 class ExtendedDateRangeFilter(django_filters.DateRangeFilter):
     options = {
         '': (_('Any date'), lambda qs, name: qs.all()),
-        1: (_('Today'), lambda qs, name: qs.filter(**{
+        1: (_('Past 5 minutes'), lambda qs, name: qs.filter(**{
+            '%s__gte' % name: now() - timedelta(minutes=5),
+            '%s__lt' % name: now() + timedelta(minutes=5),
+            })),
+        2: (_('Today'), lambda qs, name: qs.filter(**{
             '%s__year' % name: now().year,
             '%s__month' % name: now().month,
             '%s__day' % name: now().day
         })),
-        2: (_('Past 24 hours'), lambda qs, name: qs.filter(**{
+        3: (_('Past 24 hours'), lambda qs, name: qs.filter(**{
             '%s__gte' % name: now() - timedelta(days=1),
             '%s__lt' % name: now() + timedelta(days=1),
             })),
-        3: (_('Past 7 days'), lambda qs, name: qs.filter(**{
+        4: (_('Past 7 days'), lambda qs, name: qs.filter(**{
             '%s__gte' % name: _truncate(now() - timedelta(days=7)),
             '%s__lt' % name: _truncate(now() + timedelta(days=1)),
             })),
-        4: (_('This month'), lambda qs, name: qs.filter(**{
+        5: (_('This month'), lambda qs, name: qs.filter(**{
             '%s__year' % name: now().year,
             '%s__month' % name: now().month
         })),
-        5: (_('This year'), lambda qs, name: qs.filter(**{
+        6: (_('This year'), lambda qs, name: qs.filter(**{
             '%s__year' % name: now().year,
             })),
         }

@@ -383,7 +383,8 @@ class InfoObjectNaming(DingoModel):
     Information Object after import.
     """
 
-    iobject_type = models.ForeignKey("InfoObjectType")
+    iobject_type = models.ForeignKey("InfoObjectType",
+                                     related_name = 'iobject_type_set')
     format_string = models.TextField(help_text="""Format string for naming the information object. The format
                                                   string can refer to fact terms of facts that should be
                                                   present in an Information Object of the given type.""")
@@ -424,6 +425,7 @@ class InfoObjectType(DingoModel):
 
     namespace = models.ForeignKey("DataTypeNamespace",
                                   blank=True,
+                                  related_name='iobject_type_set',
                                   help_text='Namespace of information object type.')
 
 
@@ -1070,6 +1072,7 @@ class InfoObject(DingoModel):
 
             handler_return_value = True
 
+            logger.debug("Treating fact (before special handler list) %s with attr_info %s and kargs %s" % (fact, attr_info, add_fact_kargs))
             # Below, go through the handlers in the special_ft_handler list --
             # if the predicate returns True for the fact, execute the handler
             # on the fact. If a handler returns False/None, the fact is *not*
@@ -1082,6 +1085,7 @@ class InfoObject(DingoModel):
                         handler_return_value = handler(self, fact, attr_info, add_fact_kargs)
                         if not handler_return_value:
                             break
+            logger.debug("Treating fact (before special handler list) %s with attr_info %s and kargs %s" % (fact, attr_info, add_fact_kargs))
             if (handler_return_value == True):
                 e2f_obj = self.add_fact(**add_fact_kargs)
             elif not handler_return_value:

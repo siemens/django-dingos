@@ -19,5 +19,5 @@ Installation
      python manage.py collectstatic 
 
 
-#. Add ``dingos`` to your ``INSTALLED_APPS`` list in your settings.
+#. Add ``dingos`` and ``grappelli`` to your ``INSTALLED_APPS`` list in your settings.
 

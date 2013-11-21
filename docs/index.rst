@@ -16,6 +16,7 @@ Contents:
    what_dingos_is_still_missing
    installation
    usage
+   developers_guide
    contributing
    authors
    history
