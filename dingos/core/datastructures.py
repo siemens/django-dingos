@@ -197,7 +197,7 @@ class DingoObjDict(ExtendedSortedDict):
 
 
 
-    def flatten(self, attr_ignore_predicate=None):
+    def flatten(self, attr_ignore_predicate=None,force_nonleaf_fact_predicate=None):
         """
         Flatten a Dingo dictionary representation of into a list
         of fact-term/value pairs and associated information about tree structure (in node_id)
@@ -288,20 +288,7 @@ class DingoObjDict(ExtendedSortedDict):
           }
 
         """
-        return self._flatten(result_list=[], attr_dict={}, namespace=[], prefix=[],
-                             attr_ignore_predicate=attr_ignore_predicate)
 
-    def _flatten(self, result_list, attr_dict, namespace, prefix,
-                 attr_ignore_predicate=None,
-                 force_nonleaf_fact_predicate=None):
-        """
-        Flatten a Dingo dictionary representation of an infomration object into a list
-        of fact-term/value pairs and associated information about tree structure (in node_id)
-        and XML attributes.
-
-        Internal function for recursive calls.
-
-        """
 
         def node_id_gen(n):
             """
@@ -317,95 +304,112 @@ class DingoObjDict(ExtendedSortedDict):
 
             return "%s%04d" % (n[0], n[1])
 
+
+
+        RE_ELEMENT_MATCHER = re.compile(r"[^@_].*")
+
+
+        def _flatten(self, result_list, attr_dict, namespace, prefix):
+            """
+            Flatten a Dingo dictionary representation of an infomration object into a list
+            of fact-term/value pairs and associated information about tree structure (in node_id)
+            and XML attributes.
+
+            Internal function for recursive calls.
+
+            """
+
+            attributes = filter(lambda x: x[0] == '@', self.keys())
+
+            node_id = ':'.join(map(node_id_gen, prefix))
+            for attribute in attributes:
+                if node_id not in attr_dict.keys():
+                    attr_dict[node_id] = {attribute[1:]: self[attribute]}
+                else:
+                    attr_dict[node_id][attribute[1:]] = self[attribute]
+
+            elements = filter(lambda x: RE_ELEMENT_MATCHER.match(x), self)
+
+            if elements == [] or force_nonleaf_fact_predicate('/'.join(namespace),self):
+                logger.debug("Entered _VALUE branch for %s" % self)
+                if '_value' in self.keys() or attributes != []:
+                    fact_data = {'term': '/'.join(namespace),
+                                 'value': self.get('_value', ''),
+                                 'attribute': False,
+                                 'node_id': node_id}
+                    result_list.append(fact_data)
+                    logger.debug("Appended fact %s" % fact_data)
+            if elements != []:
+
+                counter = 0
+                for element in elements:
+                    logger.debug("Processing element %s" % element)
+                    if type(self[element]) == type([]):
+                        logger.debug("Entered list branch for %s " % self[element])
+                        for sub_elt in self[element]:
+                            (result_list, attr_dict) = _flatten(sub_elt,
+                                                                result_list=result_list,
+                                                                attr_dict=attr_dict,
+                                                                namespace=namespace + [element],
+                                                                prefix=prefix + [('L', counter)])
+
+
+                            counter += 1
+                    elif type(self[element]) == type("hallo") or type(self[element]) == unicode:
+                        logger.debug("Entered value branch for %s" % self[element])
+                        # added this branch to deal with abbreviated dictionaries
+                        # that provide value direcly rather then via '_value' key in dictionary
+
+                        # temporarily append namespace
+                        namespace.append(element)
+
+                        fact_data = {'term': '/'.join(namespace),
+                                     'value': self[element],
+                                     'attribute': False,
+                                     'node_id': "%s" % ':'.join(map(node_id_gen, prefix + [('N', counter)]))}
+                        logger.debug("Appended fact %s" % fact_data)
+                        result_list.append(fact_data)
+                        # clean up namespace
+                        namespace = namespace[:-1]
+                        counter += 1
+                    else:
+                        logger.debug("Recursing for %s" % self[element])
+                        (result_list, attr_dict) = _flatten(self[element],
+                                                            result_list=result_list,
+                                                            attr_dict=attr_dict,
+                                                            namespace=namespace + [element],
+                                                            prefix=prefix + [('N', counter)])
+                        counter += 1
+
+            attr_counter = 0
+            for attribute in attributes:
+                if node_id == '':
+                    attr_node_id = node_id_gen(('A', attr_counter))
+                else:
+                    attr_node_id = "%s:%s" % (node_id, node_id_gen(('A', attr_counter)))
+                fact = {'term': "%s" % ('/'.join(namespace)),
+                        'value': self[attribute],
+                        'node_id': attr_node_id,
+                        'attribute': attribute[1:]}
+                if not attr_ignore_predicate(fact):
+                    result_list.append(fact)
+                    logger.debug("Appended fact %s" % fact)
+                    attr_counter += 1
+                else:
+                    logger.debug("Ignoring fact %s because of attr_ignore_list" % fact)
+            result_list.sort(key=lambda x: x['node_id'])
+
+            return (result_list, attr_dict)
+
         if not attr_ignore_predicate:
             attr_ignore_predicate = (lambda x: '@' in x['attribute'])
 
         if not force_nonleaf_fact_predicate:
             force_nonleaf_fact_predicate = (lambda x,y: 'Related_Object' in x and '@idref' in y.keys())
 
+        return _flatten(self,result_list=[], attr_dict={}, namespace=[], prefix=[])
 
-        RE_ELEMENT_MATCHER = re.compile(r"[^@_].*")
 
-        attributes = filter(lambda x: x[0] == '@', self.keys())
-
-        node_id = ':'.join(map(node_id_gen, prefix))
-        for attribute in attributes:
-            if node_id not in attr_dict.keys():
-                attr_dict[node_id] = {attribute[1:]: self[attribute]}
-            else:
-                attr_dict[node_id][attribute[1:]] = self[attribute]
-
-        elements = filter(lambda x: RE_ELEMENT_MATCHER.match(x), self)
-
-        if elements == [] or force_nonleaf_fact_predicate('/'.join(namespace),self):
-            logger.debug("Entered _VALUE branch for %s" % self)
-            if '_value' in self.keys() or attributes != []:
-                fact_data = {'term': '/'.join(namespace),
-                             'value': self.get('_value', ''),
-                             'attribute': False,
-                             'node_id': node_id}
-                result_list.append(fact_data)
-                logger.debug("Appended fact %s" % fact_data)
-        if elements != []:
-
-            counter = 0
-            for element in elements:
-                logger.debug("Processing element %s" % element)
-                if type(self[element]) == type([]):
-                    logger.debug("Entered list branch for %s " % self[element])
-                    for sub_elt in self[element]:
-                        (result_list, attr_dict) = sub_elt._flatten(result_list=result_list,
-                                                                    attr_dict=attr_dict,
-                                                                    namespace=namespace + [element],
-                                                                    prefix=prefix + [('L', counter)],
-                                                                    attr_ignore_predicate=attr_ignore_predicate
-                        )
-                        counter += 1
-                elif type(self[element]) == type("hallo") or type(self[element]) == unicode:
-                    logger.debug("Entered value branch for %s" % self[element])
-                    # added this branch to deal with abbreviated dictionaries
-                    # that provide value direcly rather then via '_value' key in dictionary
-
-                    # temporarily append namespace
-                    namespace.append(element)
-
-                    fact_data = {'term': '/'.join(namespace),
-                                 'value': self[element],
-                                 'attribute': False,
-                                 'node_id': "%s" % ':'.join(map(node_id_gen, prefix + [('N', counter)]))}
-                    logger.debug("Appended fact %s" % fact_data)
-                    result_list.append(fact_data)
-                    # clean up namespace
-                    namespace = namespace[:-1]
-                    counter += 1
-                else:
-                    logger.debug("Recursing for %s" % self[element])
-                    (result_list, attr_dict) = self[element]._flatten(result_list=result_list,
-                                                                      attr_dict=attr_dict,
-                                                                      namespace=namespace + [element],
-                                                                      prefix=prefix + [('N', counter)],
-                                                                      attr_ignore_predicate=attr_ignore_predicate)
-                    counter += 1
-
-        attr_counter = 0
-        for attribute in attributes:
-            if node_id == '':
-                attr_node_id = node_id_gen(('A', attr_counter))
-            else:
-                attr_node_id = "%s:%s" % (node_id, node_id_gen(('A', attr_counter)))
-            fact = {'term': "%s" % ('/'.join(namespace)),
-                    'value': self[attribute],
-                    'node_id': attr_node_id,
-                    'attribute': attribute[1:]}
-            if not attr_ignore_predicate(fact):
-                result_list.append(fact)
-                logger.debug("Appended fact %s" % fact)
-                attr_counter += 1
-            else:
-                logger.debug("Ignoring fact %s because of attr_ignore_list" % fact)
-        result_list.sort(key=lambda x: x['node_id'])
-
-        return (result_list, attr_dict)
 
 
 def dict2DingoObjDict(data):
