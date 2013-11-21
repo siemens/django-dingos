@@ -360,20 +360,18 @@ class DingoImportCommand(BaseCommand):
         #    raise CommandError('Option --identifier not supported for more than one file per import.')
 
         if len(args) == 0:
-            logger.warning("No files for import found!")
+            logger.warning("No files for import specified!")
         else:
             for arg in args:
                 logger.info("Starting processing")
 
+                if len(glob.glob(arg)) == 0:
+                    logger.warning("No file(s) %s for import found!" % arg)
+
                 for filename in glob.glob(arg):
-                    #try:
+
                     logger.info("Starting import of %s" % filename)
 
                     self.Importer.xml_import(filepath = filename,
                                              markings = markings,
                                              **options)
-                    #except Exception, err:
-                    #    logger.exception("An error occurred")
-                    #    raise CommandError('Error %s occurred for %s' % (err,filename))
-
-

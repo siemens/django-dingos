@@ -996,6 +996,8 @@ class InfoObject(DingoModel):
 
         attr_ignore_predicate = config_hooks.get('attr_ignore_predicate', None)
 
+        force_nonleaf_fact_predicate = config_hooks.get('force_nonleaf_fact_predicate', None)
+
         if not namespace_dict:
             namespace_dict = {}
 
@@ -1005,7 +1007,8 @@ class InfoObject(DingoModel):
 
         # Flatten the DingoObjDict
 
-        (flat_list, attrs) = dingos_obj_dict.flatten(attr_ignore_predicate=attr_ignore_predicate)
+        (flat_list, attrs) = dingos_obj_dict.flatten(attr_ignore_predicate=attr_ignore_predicate,
+                                                     force_nonleaf_fact_predicate=force_nonleaf_fact_predicate)
 
         for fact in flat_list:
 

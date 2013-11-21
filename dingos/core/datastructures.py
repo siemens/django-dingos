@@ -330,7 +330,12 @@ class DingoObjDict(ExtendedSortedDict):
 
             elements = filter(lambda x: RE_ELEMENT_MATCHER.match(x), self)
 
-            if elements == [] or force_nonleaf_fact_predicate('/'.join(namespace),self):
+            fact_data = {'term': '/'.join(namespace),
+                         'value': self.get('_value', ''),
+                         'attribute': False,
+                         'node_id': node_id}
+
+            if elements == [] or force_nonleaf_fact_predicate(fact_data,attributes):
                 logger.debug("Entered _VALUE branch for %s" % self)
                 if '_value' in self.keys() or attributes != []:
                     fact_data = {'term': '/'.join(namespace),
@@ -405,7 +410,7 @@ class DingoObjDict(ExtendedSortedDict):
             attr_ignore_predicate = (lambda x: '@' in x['attribute'])
 
         if not force_nonleaf_fact_predicate:
-            force_nonleaf_fact_predicate = (lambda x,y: 'Related_Object' in x and '@idref' in y.keys())
+            force_nonleaf_fact_predicate = (lambda x,y: False)
 
         return _flatten(self,result_list=[], attr_dict={}, namespace=[], prefix=[])
 
