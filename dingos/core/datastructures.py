@@ -414,6 +414,114 @@ class DingoObjDict(ExtendedSortedDict):
 
         return _flatten(self,result_list=[], attr_dict={}, namespace=[], prefix=[])
 
+    def from_flat_repr(self,fact_list):
+        """
+        Convert a flat representation of information (consisting of a fact list and a dictionary
+        mapping node ids to attributes into a dictionary representation information.
+
+        Input Example (CybOx)::
+
+
+          { '00': { 'condition': 'Equals', 'datatype': 'String'},
+            '01:L00:00': { 'condition': 'Equals', 'datatype': 'hexBinary'},
+            '01:L00:01': { 'datatype': 'String'},
+            '01:L01:00': { 'condition': 'Equals', 'datatype': 'hexBinary'},
+            '01:L01:01': { 'datatype': 'String'}
+          }
+
+        Output Example::
+
+            {'File_Name': {'@condition': 'Equals', '@datatype': 'String', '_value': u'UNITED NATIONS COMPENSATION SCHEME...pdf'},
+              'Hashes': {'Hash': [{'Simple_Hash_Value':
+                                    {'@condition': 'Equals',
+                                     '@datatype': 'hexBinary',
+                                      '_value': u'576fea79dd23a352a14c3f8bf3dbc9eb732e1d54f804a29160894aec55df4bd5'},
+                                   'Type': {'@datatype': 'String', '_value': 'SHA256'}},
+                                  {'Simple_Hash_Value': {'@condition': 'Equals',
+                                                         '@datatype': 'hexBinary',
+                                                         '_value': u'491809c2092cecd633e43d465409a78c'},
+                                   'Type': {'@datatype': 'String', '_value': 'MD5'}}]
+                        }
+            }
+
+
+
+        """
+
+        def node_id_unpack(n):
+            """
+            Given a node_id, unpack it into list-signifier
+            (if existing) and position information
+            """
+            return (n[0],int(n[1:]))
+
+        fact_list.sort(key=lambda x : x['node_id'])
+
+        result = self
+        for fact in fact_list:
+            fact_path = fact['term'].split('/')
+            del(fact['term'])
+            if fact.get('attribute'):
+                fact_path.append('@%s' % fact['attribute'])
+                del(fact['attribute'])
+            node_path = fact['node_id'].split(':')
+            del(fact['node_id'])
+            walker = result
+            #logger.debug(fact)
+            for i in range(0,len(node_path)):
+                print walker
+                #logger.debug("%s  %s" % (node_path,node_path[i]))
+                (node_kind,counter) = node_id_unpack(node_path[i])
+                element = fact_path[i]
+                node_id = ':'.join(node_path[0:i])
+
+                print "Treating %s:%s%s (%s) for %s" % (node_id,node_kind,counter, element,walker)
+
+                if not (element in walker.keys()):
+
+                    if node_kind == 'L':
+                        walker[element] = []
+                        walker[element].append(DingoObjDict())
+                        walker = walker[element][0]
+                    elif node_kind == 'N':
+                        walker[element] = DingoObjDict()
+                        walker = walker[element]
+
+                else:
+
+                    if node_kind == 'L':
+
+                        if len(walker[element]) == counter:
+                            next_item = DingoObjDict()
+                            walker[element].append(next_item)
+                            walker=walker[element][counter]# next_item
+                        elif len(walker[element]) > counter:
+                            walker = walker[element][counter]
+                        else:
+                            # TODO: introduce error logging
+                            logger.error("ERROR: Structural problem for %s, counter %s and node_id %s" % (element,counter,node_id))
+                            pass
+
+                    else:
+                        walker=walker[element]
+            if node_kind == 'A':
+                if len(fact['value_list']) == 1:
+                    walker[element] = fact['value_list'][0]
+                else:
+                    walker[element] = fact['value_list']
+            else:
+                if len(fact['value_list']) == 1:
+                    walker['_value'] = fact['value_list'][0]
+                else:
+                    walker['_value'] = fact['value_list']
+
+                del(fact['value_list'])
+
+                for key in fact:
+                    if fact[key]:
+                        walker['@@%s' % key] = fact[key]
+
+
 
 
 

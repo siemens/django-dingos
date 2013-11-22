@@ -39,7 +39,7 @@ import dingos
 
 from dingos import *
 
-from dingos.core.datastructures import ExtendedSortedDict
+from dingos.core.datastructures import DingoObjDict,ExtendedSortedDict
 
 logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=2)
@@ -1098,6 +1098,64 @@ class InfoObject(DingoModel):
         self.set_name()
 
 
+    def to_dict(self):
+        flat_result = []
+
+        # # Where to put prefetch_related? Currently, I set it in the view ...
+        fact_thrus = self.fact_thru.all().prefetch_related(
+                                                           'fact__fact_term',
+                                                           'fact__fact_values',
+                                                           'fact__fact_values__fact_data_type',
+                                                           'fact__fact_values__fact_data_type__namespace',
+                                                           'fact__value_iobject_id',
+                                                           'fact__value_iobject_id__namespace',
+                                                           #'fact__value_iobject_id__latest',
+                                                           #'fact__value_iobject_id__latest__iobject_type',
+                                                           'node_id')
+
+        #fact_thrus = self.fact_thru.all()
+        for fact_thru in fact_thrus:
+            value_list = []
+            first = True
+            fact_datatype_name = None
+            fact_datatype_ns = None
+            for fact_value in fact_thru.fact.fact_values.all():
+                if first:
+                    fact_datatype_name = fact_value.fact_data_type.name
+                    fact_datatype_ns = fact_value.fact_data_type.namespace.uri
+                    if (fact_datatype_name == DINGOS_DEFAULT_FACT_DATATYPE and
+                        fact_datatype_ns == DINGOS_NAMESPACE_URI):
+
+                        fact_datatype_name = None
+                        fact_datatype_ns = None
+                    first = False
+                value_list.append(fact_value.value)
+
+            value_iobject_id = None
+            if fact_thru.fact.value_iobject_id:
+                value_iobject_id = "%s:%s" % (fact_thru.fact.value_iobject_id.namespace.uri,
+                                              fact_thru.fact.value_iobject_id.uid)
+            flat_result.append({'node_id': fact_thru.node_id.name,
+                                'term': fact_thru.fact.fact_term.term,
+                                'attribute' : fact_thru.fact.fact_term.attribute,
+                                'value_iobject_id' : value_iobject_id,
+                                'type': fact_datatype_name,
+                                'type_ns': fact_datatype_ns,
+                                'value_list': value_list})
+
+            #print fact_thru.attributes.all()
+            #for attr_link in fact_thru.attributes.all():
+
+            #print "Setting %s: %s: %s" % (attr_link.node_id, attr_link.attribute.key,attr_link.attribute.value)
+            #    attr_dict.chained_set(attr_link.attribute.fact_value.value,
+            #                          'set',
+            #                          attr_link.node_id.name,
+            #                          attr_link.attribute.fact_term.term)
+
+        result = DingoObjDict()
+        result.from_flat_repr(flat_result)
+        #result = result.to_tuple()
+        return result
 
     def extract_name(self):
         """
@@ -1567,7 +1625,7 @@ def get_or_create_fact_term(iobject_family_name,
                             fact_term_attribute,
                             iobject_type_name,
                             iobject_type_namespace_uri,
-                            fact_dt_name='String',
+                            fact_dt_name=DINGOS_DEFAULT_FACT_DATATYPE,
                             fact_dt_namespace_name=None,
                             fact_dt_kind=FactDataType.UNKNOWN_KIND,
                             fact_dt_namespace_uri=DINGOS_NAMESPACE_URI,
@@ -1599,7 +1657,7 @@ def get_or_create_fact_term(iobject_family_name,
 
     # create or retrieve the fact-value data type object
     fact_dt, created = dingos_class_map['FactDataType'].objects.get_or_create(name=fact_dt_name,
-                                                                             namespace=fact_dt_namespace)
+                                                                              namespace=fact_dt_namespace)
 
     if created:
         fact_dt.kind = fact_dt_kind

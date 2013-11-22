@@ -52,6 +52,8 @@ DINGOS_MISSING_ID_NAMESPACE_URI_PREFIX = 'https://github.com/siemens/django-ding
 DINGOS_NAMESPACE_URI = 'https://github.com/siemens/django-dingos/wiki/namespaces_dingos_types'
 DINGOS_NAMESPACE_SLUG = 'DingosDefaultNameSpace'
 
+DINGOS_DEFAULT_FACT_DATATYPE = 'String'
+
 # The DINGOS_ID_NAMESPACE_URI is used as qualifier for identifiers
 # of internal objects created by DINGO, such as information
 # objects containing meta data of relations.
@@ -83,6 +85,7 @@ DINGOS_PLACEHOLDER_TYPE_NAME = 'PLACEHOLDER'
 DINGOS_DEFAULT_IMPORT_MARKING_TYPE_NAME = "ImportInfo"
 
 
+DINGOS_CONFIGURATION_TYPE_NAME = 'USER_CONFIG'
 
 
 # Values larger than DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB are

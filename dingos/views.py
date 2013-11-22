@@ -142,14 +142,14 @@ class InfoObjectView_SUPERSEDED(BasicDetailView):
                         'fact_thru__node_id',
                         'iobject_type',
                         'iobject_type__namespace',
-                        )
+    )
 
-    
+
     breadcrumbs = (('Dingo',None),
                    ('View',None),
                    ('InfoObject','url.dingos.list.infoobject.generic'),
                    ('[RELOAD]',None)
-                   )
+    )
     model = InfoObject
 
     max_embedded = 5
@@ -171,6 +171,23 @@ class InfoObjectView_SUPERSEDED(BasicDetailView):
         return context
 
 
+class InfoObjectJSONView(BasicDetailView):
+    # Config for Prefetch/SelectRelated Mixins_
+    select_related = ()
+    prefetch_related = () # The to_dict function itself defines the necessary prefetch_stuff
+
+    breadcrumbs = (('Dingo',None),
+                   ('View',None),
+                   ('InfoObject','url.dingos.list.infoobject.generic'),
+                   ('[RELOAD]',None)
+    )
+
+    model = InfoObject
+
+    title = 'Info Object Details'
+
+    template_name = 'dingos/%s/details/InfoObjectJSON.html' % DINGOS_TEMPLATE_FAMILY
+
 class InfoObjectView(BasicTemplateView):
 
 
@@ -188,12 +205,12 @@ class InfoObjectView(BasicTemplateView):
     @property
     def iobject2facts(self):
         return self.iobject.fact_thru.all().prefetch_related('fact__fact_term',
-                                                          'fact__fact_values',
-                                                          'fact__fact_values__fact_data_type',
-                                                              'fact__value_iobject_id',
-                                                              'fact__value_iobject_id__latest',
-                                                              'fact__value_iobject_id__latest__iobject_type',
-                                                          'node_id')
+                                                             'fact__fact_values',
+                                                             'fact__fact_values__fact_data_type',
+                                                             'fact__value_iobject_id',
+                                                             'fact__value_iobject_id__latest',
+                                                             'fact__value_iobject_id__latest__iobject_type',
+                                                             'node_id')
 
 
     max_embedded = 5
@@ -201,11 +218,12 @@ class InfoObjectView(BasicTemplateView):
     template_name = 'dingos/%s/details/InfoObjectDetails.html' % DINGOS_TEMPLATE_FAMILY
 
     title = 'Info Object Details'
+
     def get_context_data(self, **kwargs):
         context = super(InfoObjectView, self).get_context_data(**kwargs)
         context['max_embedded'] = self.max_embedded
 
-        context['show_NodeID'] = False
+        context['show_NodeID'] = True
         context['object'] = self.iobject
         context['iobject2facts'] = self.iobject2facts
         try:
