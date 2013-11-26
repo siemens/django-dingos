@@ -195,6 +195,20 @@ class UserPrefsView(InfoObjectView_wo_login):
     def get_object(self):
         return UserData.get_user_data_iobject(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
 
+class CustomSearchesEditView(BasicTemplateView):
+    template_name = 'dingos/%s/edits/SavedSearchesEdit.html' % DINGOS_TEMPLATE_FAMILY
+    title = 'Saved searches'
+
+    def get(self, request, *args, **kwargs):
+
+        # delete new-search from session to avoid polluting session store
+        if request.session.get('new-search'):
+            kwargs['new-search'] = request.session['new-search']
+            print kwargs, args
+            del request.session['new-search']
+            request.session.modified = True
+
+        return super(BasicTemplateView,self).get(request, *args, **kwargs)
 
 class InfoObjectJSONView(BasicDetailView):
     # Config for Prefetch/SelectRelated Mixins_

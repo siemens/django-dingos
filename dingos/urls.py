@@ -8,7 +8,6 @@ from dingos.models import InfoObject
 
 from django_filters.views import FilterView
 
-
 urlpatterns = patterns('',
     url(r'^View/InfoObject/?$',
         views.InfoObjectList.as_view(),
@@ -29,6 +28,9 @@ urlpatterns = patterns('',
     url(r'^Search/IdSearch$',
         views.InfoObjectList_Id_filtered.as_view(),
         name="url.dingos.list.infoobject.by_id"),
+    url(r'^Edit/SavedSearches$',
+        views.CustomSearchesEditView.as_view(),
+        name="url.dingos.edit.savedsearches"),
 
     # Detail-view with highlight and anchor on certain node
     # solved below with a redirect, because with the 'url' template

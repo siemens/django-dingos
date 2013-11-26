@@ -1,0 +1,115 @@
+{% extends "dingos/grappelli/edits/base_edits.html" %}
+
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+
+{% load dingos_tags %}
+
+{% block extrahead %}
+    <script src="Path to your custom javascript" type="text/javascript"></script>
+    <script type="text/javascript" charset="utf-8">
+        (function ($) {
+            $(document).ready(function () {
+
+                (function ($) {
+                    $(document).ready(function () {
+                        $("#grp-content-container .grp-collapse").grp_collapsible();
+                    });
+                })(grp.jQuery);
+
+
+            });
+        })(grp.jQuery);
+    </script>
+{% endblock %}
+
+{% block content_title %}
+    <h1>Saved searches for user {{ user.username }}</h1>
+{% endblock %}
+
+{% block content %}
+
+<form action="" method="post">{% csrf_token %}
+  <div class="grp-group grp-tabular">
+    <h2>Available searches</h2>
+
+    <div class="grp-module grp-table">
+      <div class="grp-module grp-thead">
+        <div class="grp-tr">
+          <div class="grp-th">Name</div>
+          <div class="grp-th">Link</div>
+          <div class="grp-th" style="text-align:right;">Actions</div>
+        </div>
+      </div>
+
+     {% if new_search %}
+       <div class="grp-module grp-tbody">
+         <div class="grp-tr">
+           <div class="grp-td" style="background-color:#FFB6C1;">
+             <input type="text" class="vTextField" value="New search"/>
+             <p class="grp-help">This is a temporary entry and won't be persisted until you press save.</p>
+          </div>
+          <div class="grp-td" style="background-color:#FFB6C1;">
+            <input type="hidden" value="{{ new_search.view }}" name="path">
+            <input type="hidden" value="{{ new_search.parameter }}" name="parameter">
+            <p><a href="{% url new_search.view %}?{{ new_search.parameter }}" target="_blank">{% url new_search.view %}</a></p>
+          </div>
+          <div class="grp-td grp-tools-container" style="background-color:#FFB6C1;">
+            <ul class="grp-tools">
+              <li><a href="#" class="grp-icon grp-drag-handler"></a></li>
+              <li><a href="" class="grp-icon grp-delete-handler"></a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+     {% for search in saved_searches.EmptyList.dingos %}
+       <div class="grp-module grp-tbody">
+         <div class="grp-tr">
+           <div class="grp-td"><input type="text" class="vTextField" value="{{ search.title }}"/></div>
+           <div class="grp-td">
+             <input type="hidden" name="path" value="{{ search.view }}">
+             <input type="hidden" name="parameter" value="{{ search.parameter }}">
+             <p><a href="{% url search.view %}?{{ search.parameter }}" target="_blank">{% url search.view %}</a>
+           </div>
+          <div class="grp-td grp-tools-container">
+            <ul class="grp-tools">
+              <li><a href="#" class="grp-icon grp-drag-handler"></a></li>
+              <li><a href="#" class="grp-icon grp-delete-handler"></a></li>
+            </ul>
+          </div>
+         </div>
+       </div>
+     {% endfor %}
+
+      <div class="grp-module grp-tbody">
+        <div class="grp-tr">
+          <div class="grp-td"></div>
+          <div class="grp-td"></div>
+          <div class="grp-td"><input name="action" value="Save" type="submit" /></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% endblock %}
+
+

@@ -25,9 +25,11 @@ from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedM
 
 from  django.core import urlresolvers
 
+from django.utils.http import urlquote_plus
+
 from core.http_helpers import get_query_string
 
-
+from django.http import HttpResponseRedirect
 
 from django_filters.views import FilterView
 
@@ -236,20 +238,17 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
             print "Forward to super"
             return super(BasicFilterView,self).get(request, *args, **kwargs)
         else:
-            print "Query String: %s " % self.get_query_string()
-            print "Pathinfo %s " % request.path_info
-            # Unclear, why below does not work ... Grr...
-            # Need to get this to work in order to get url_name
-            #print "View name %s" % urlresolvers.reverse(request.path_info).url_name
+            match = urlresolvers.resolve(request.path_info)
+            
+            # write data into session
+            request.session['new-search'] = { 
+                # do the whole magic within a single line (strip empty elements + action, urlencode, creating GET string
+                "parameter" : "&".join(list( "%s=%s" % (urlquote_plus(k),urlquote_plus(v)) for k, v in request.GET.iteritems() if v and k != "action")),
+                "view" : match.url_name,
+            }
 
-            # Instead of going to super, forward to some other view
-            # which asks for input regarding name of the search and then
-            # saves the search using the access functions for UserData as
-            # used in ViewMethodsMixin.get_user_data ...
-            # Be sure to only write the url parameters that actually define
-            # a search, i.e., leave out empty paramters 'this=&...'
-
-            return super(BasicFilterView,self).get(request, *args, **kwargs)
+            # Redirect to edit view as this takes care of the rest
+            return HttpResponseRedirect(urlresolvers.reverse('url.dingos.edit.savedsearches')) 
 
 class BasicDetailView(CommonContextMixin,
                       ViewMethodMixin,
