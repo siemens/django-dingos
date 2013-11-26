@@ -49,9 +49,19 @@ class ConfigDict(object):
 
     def _clear_stack(self):
         """ Just clears the stack and returns it's last value (centralized method) """
+
+        # return valid types to make it easier to use this class in for/if within views
+        data_types = { "True" : True,
+                      "False" : False,
+                      "None": None,
+                      "EmptyDict" : {},
+                      "EmptyList" : [],
+                     }
+                   
         out = self._stack[len(self._stack)-1]
         self._stack = []
-        return out
+
+        return out.get(out,out)
 
     def __getitem__(self, key):
         """
@@ -63,16 +73,15 @@ class ConfigDict(object):
 
         Example usage:
           this_dict = ConfigDict({ 'first' : { 'second' : 20 } })
-          this_dict.get('first').get('second').get(1).get("True")
+          this_dict.get('first').get('second').get(1).get("Default")
           returns 20 instead of the 1 (which represents the default value)
         """
 
-        # no bool? just append element and return yourself
-        if not key == "True":
+        # identifies end of get()-chain
+        if not key == "Default":
             self._stack.append(key) 
             return self
 
-        print self._stack
         # time to create an output by going along stack (last element of stack is DEFAULT value!)
         current_element = self._orig_dict
         for i in range(0, len(self._stack)-1):
@@ -83,7 +92,8 @@ class ConfigDict(object):
             except Exception as e:
                 return self._clear_stack()
 
-        return self._clear_stack()
+        self._clear_stack()
+        return current_element
 
 
 class CommonContextMixin(ContextMixin):
@@ -116,7 +126,6 @@ class CommonContextMixin(ContextMixin):
 
         if True: #load_new_settings:
             context['customization'] = ConfigDict(get_user_settings(self.request.user))
-            print(context['customization']._orig_dict)
 
         return context
 
