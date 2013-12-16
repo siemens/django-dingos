@@ -469,13 +469,12 @@ class DingoObjDict(ExtendedSortedDict):
             walker = result
             #logger.debug(fact)
             for i in range(0,len(node_path)):
-                print walker
+
                 #logger.debug("%s  %s" % (node_path,node_path[i]))
                 (node_kind,counter) = node_id_unpack(node_path[i])
                 element = fact_path[i]
                 node_id = ':'.join(node_path[0:i])
 
-                print "Treating %s:%s%s (%s) for %s" % (node_id,node_kind,counter, element,walker)
 
                 if not (element in walker.keys()):
 
@@ -511,7 +510,8 @@ class DingoObjDict(ExtendedSortedDict):
                     walker[element] = fact['value_list']
             else:
                 if len(fact['value_list']) == 1:
-                    walker['_value'] = fact['value_list'][0]
+                    if fact['value_list'][0] != '':
+                        walker['_value'] = fact['value_list'][0]
                 else:
                     walker['_value'] = fact['value_list']
 
@@ -519,7 +519,7 @@ class DingoObjDict(ExtendedSortedDict):
 
                 for key in fact:
                     if fact[key]:
-                        walker['@@%s' % key] = fact[key]
+                        walker[key] = fact[key]
 
 
 

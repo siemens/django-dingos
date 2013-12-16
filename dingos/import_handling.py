@@ -530,6 +530,14 @@ class DingoImportHandling(object):
                             if (child.children or child.content) \
                                 or extract_empty_embedded \
                                 or 'extract_empty_embedded' in id_and_revision_info:
+
+                                id_and_revision_info['inherited'] = fresh_inherited_id_and_rev_info.copy()
+                                if 'inherited' in id_and_revision_info['inherited']:
+                                    for key in id_and_revision_info['inherited']['inherited']:
+                                        if not key in id_and_revision_info['inherited']:
+                                            id_and_revision_info['inherited'][key] = id_and_revision_info['inherited']['inherited'][key]
+                                    del(id_and_revision_info['inherited']['inherited'])
+
                                 logger.debug(
                                     "Adding XML subtree starting with element %s and type info %s to pending stack." % (
                                     id_and_revision_info, embedded_ns))
@@ -671,14 +679,19 @@ class DingoImportHandling(object):
             (id_and_revision_info, type_info, elt) = _import_pending_stack.pop()
             if 'defer_processing' in id_and_revision_info:
                 do_not_process_list.append((id_and_revision_info,type_info,elt))
+
             else:
                 (elt_name, elt_dict) = xml_import_(elt, 0,
                                                    type_info=type_info,
                                                    inherited_id_and_rev_info=id_and_revision_info.copy())
-
+                #if 'import_first' in id_and_revision_info:
+                #    import_first_list.append({'id_and_rev_info': id_and_revision_info,
+                #                               'elt_name': elt_name,
+                #                               'dict_repr': elt_dict})
+                #else:
                 embedded_objects.append({'id_and_rev_info': id_and_revision_info,
-                                         'elt_name': elt_name,
-                                         'dict_repr': elt_dict})
+                                             'elt_name': elt_name,
+                                             'dict_repr': elt_dict})
 
 
         result= {'id_and_rev_info': main_id_and_rev_info,
@@ -686,6 +699,7 @@ class DingoImportHandling(object):
                 'dict_repr': main_elt_dict,
                 'embedded_objects': embedded_objects,
                 'unprocessed' : do_not_process_list,
+                #'import_first' : process_first_list,
                 'file_content': xml_content}
 
 

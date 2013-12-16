@@ -16,7 +16,9 @@
 #
 
 
+import json
 
+from django import http
 
 
 from django.db.models import F
@@ -171,22 +173,21 @@ class InfoObjectView_SUPERSEDED(BasicDetailView):
         return context
 
 
+
 class InfoObjectJSONView(BasicDetailView):
     # Config for Prefetch/SelectRelated Mixins_
     select_related = ()
     prefetch_related = () # The to_dict function itself defines the necessary prefetch_stuff
 
-    breadcrumbs = (('Dingo',None),
-                   ('View',None),
-                   ('InfoObject','url.dingos.list.infoobject.generic'),
-                   ('[RELOAD]',None)
-    )
-
     model = InfoObject
 
-    title = 'Info Object Details'
+    def render_to_response(self, context):
+        return self.get_json_response(json.dumps(context['object'].to_dict(),indent=2))
 
-    template_name = 'dingos/%s/details/InfoObjectJSON.html' % DINGOS_TEMPLATE_FAMILY
+    def get_json_response(self, content, **httpresponse_kwargs):
+        return http.HttpResponse(content,
+                                 content_type='application/json',
+                                 **httpresponse_kwargs)
 
 class InfoObjectView(BasicTemplateView):
 

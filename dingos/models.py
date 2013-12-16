@@ -1138,9 +1138,9 @@ class InfoObject(DingoModel):
             flat_result.append({'node_id': fact_thru.node_id.name,
                                 'term': fact_thru.fact.fact_term.term,
                                 'attribute' : fact_thru.fact.fact_term.attribute,
-                                'value_iobject_id' : value_iobject_id,
-                                'type': fact_datatype_name,
-                                'type_ns': fact_datatype_ns,
+                                'idref' : value_iobject_id,
+                                '@@type': fact_datatype_name,
+                                '@@type_ns': fact_datatype_ns,
                                 'value_list': value_list})
 
             #print fact_thru.attributes.all()
@@ -1154,6 +1154,8 @@ class InfoObject(DingoModel):
 
         result = DingoObjDict()
         result.from_flat_repr(flat_result)
+        result['@@iobject_type'] = self.iobject_type.name
+        result['@@iobject_type_ns'] = self.iobject_type.namespace.uri
         #result = result.to_tuple()
         return result
 
@@ -1250,9 +1252,9 @@ class InfoObject(DingoModel):
         name is extracted via the extract_name method.
         """
         if name:
-            self.name = name
+            self.name = name[:254]
         else:
-            self.name = self.extract_name()
+            self.name = self.extract_name()[:254]
 
         self.save()
 
