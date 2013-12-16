@@ -53,7 +53,7 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
 
     login_url = "/admin"
 
-    template_name = 'dingos/%s/lists/base_lists.html' % DINGOS_TEMPLATE_FAMILY
+    template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
 
     breadcrumbs = ()
 
@@ -63,7 +63,7 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
 
     login_url = "/admin"
 
-    template_name = 'dingos/%s/lists/base_lists.html' % DINGOS_TEMPLATE_FAMILY
+    template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
 
     breadcrumbs = ()
 

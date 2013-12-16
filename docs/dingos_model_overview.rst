@@ -11,5 +11,5 @@ DINGOS Model Overview
 
    Overview of DINGOS models and their relationships.
 
-Please refer to the the :download:`DINGOS Developers' Overview <reference/dingos_data_model.pdf>` of the DINGOS models.
+Please refer to the :download:`DINGOS Developers' Overview <reference/dingos_data_model.pdf>` of the DINGOS models.
 

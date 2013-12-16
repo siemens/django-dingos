@@ -41,7 +41,8 @@ Please consider the following places for development instead:
   framework is using DINGOS), the right way is probably
   to override one of the DINGOS base templates. Have a look
   at how `django-mantis`_ overrides the
-  ``templates/dingos/grappelli/base.html`` template.
+  ``templates/dingos/grappelli/base.html`` template;
+  see also the `Django documentation on overriding templates`_.
 
 * If you want to change the url paths of DINGOS views,
   do this in the ``url.py`` of your instance rather
@@ -58,3 +59,4 @@ Please consider the following places for development instead:
 .. _django-mantis-core: https://github.com/siemens/django-mantis-core
 .. _django-mantis-stix-importer: https://github.com/siemens/django-mantis-stix-importer
 .. _django-mantis: https://github.com/siemens/django-mantis
+.. _Django documentation on overriding templates: https://docs.djangoproject.com/en/1.6/intro/tutorial02/#ref-customizing-your-projects-templates

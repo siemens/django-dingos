@@ -224,7 +224,7 @@ class InfoObjectView(BasicTemplateView):
         context = super(InfoObjectView, self).get_context_data(**kwargs)
         context['max_embedded'] = self.max_embedded
 
-        context['show_NodeID'] = True
+        context['show_NodeID'] = False
         context['object'] = self.iobject
         context['iobject2facts'] = self.iobject2facts
         try:

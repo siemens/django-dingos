@@ -22,6 +22,8 @@ import uuid
 
 import libxml2
 
+from collections import deque
+
 from django.utils import timezone
 
 from dingos import *
@@ -321,10 +323,10 @@ class DingoImportHandling(object):
 
         # We use the _import_pending_stack to hold extracted embedded objects
         # that still need to be processed
-        _import_pending_stack = []
+        _import_pending_stack = deque()
 
         # We collect the read embedded objects in the following list
-        embedded_objects = []
+        embedded_objects = deque()
 
         def xml_import_(element, depth=0, type_info=None, inherited_id_and_rev_info=None):
             """
@@ -476,7 +478,7 @@ class DingoImportHandling(object):
                                     generated_id_count[parent_id] = gen_counter
                                     (parent_namespace, parent_uid) = parent_id.split(':')
                                     generated_id = "%s:emb%s-in-%s" % (parent_namespace,gen_counter,parent_uid)
-                                    logger.warning("Found embedded object without id in object %s and generated id %s" % (parent_uid,generated_id))
+                                    logger.info("Found embedded %s without id and generated id %s" % (element.name,generated_id))
                                     id_and_revision_info['id'] = generated_id
                                     id_and_revision_info['id_inherited'] = True
                                 else:
@@ -675,7 +677,7 @@ class DingoImportHandling(object):
 
         do_not_process_list = []
 
-        while _import_pending_stack != []:
+        while _import_pending_stack:
             (id_and_revision_info, type_info, elt) = _import_pending_stack.pop()
             if 'defer_processing' in id_and_revision_info:
                 do_not_process_list.append((id_and_revision_info,type_info,elt))
@@ -684,22 +686,16 @@ class DingoImportHandling(object):
                 (elt_name, elt_dict) = xml_import_(elt, 0,
                                                    type_info=type_info,
                                                    inherited_id_and_rev_info=id_and_revision_info.copy())
-                #if 'import_first' in id_and_revision_info:
-                #    import_first_list.append({'id_and_rev_info': id_and_revision_info,
-                #                               'elt_name': elt_name,
-                #                               'dict_repr': elt_dict})
-                #else:
+
                 embedded_objects.append({'id_and_rev_info': id_and_revision_info,
                                              'elt_name': elt_name,
                                              'dict_repr': elt_dict})
-
 
         result= {'id_and_rev_info': main_id_and_rev_info,
                 'elt_name': main_elt_name,
                 'dict_repr': main_elt_dict,
                 'embedded_objects': embedded_objects,
                 'unprocessed' : do_not_process_list,
-                #'import_first' : process_first_list,
                 'file_content': xml_content}
 
 
