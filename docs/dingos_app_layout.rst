@@ -1,6 +1,10 @@
 DINGOS Application Layout
 =========================
 
+.. contents::
+
+Overview of the directory layout
+--------------------------------
 
 The layout of the DINGOS Django application is as follows::
 
@@ -76,6 +80,7 @@ The reason for this nesting is the following:
 In order  to learn how to use the `Django Grappelli`_ CSS, make sure to include
 ``(r'^grappelli/', include('grappelli.urls'))`` in your url patterns in ``url.py``.
 You can then view the Grappelli CSS documentation under ``<your Django server url>/grappelli/grp-doc/``.
+
 
 ``templatetags\dingos_tags.py``
 -------------------------------
@@ -164,18 +169,21 @@ in DINGOS.
 The DINGOS views. Refert to the
 `Django documentation on class-based views`_.
 
+When writing and testing views, do not even start without the excellent `Django Debug Toolbar`_:
+it shows you, for example, how many which SQL queries were executed (which will help you
+to find the right configuration for the `prefetch_related`_ and `select_related`_
 
 
 
 
 
-.. _Django documentation on custom django-admin commands: https://docs.djangoproject.com/en/1.6/howto/custom-management-commands/
+.. _Django documentation on custom django-admin commands: https://docs.djangoproject.com/en/dev/howto/custom-management-commands/
 
 .. _Django documentation on the template language: https://docs.djangoproject.com/en/dev/topics/templates/
 
 .. _Django Grappelli: https://django-grappelli.readthedocs.org/en/latest/
 
-.. _Django documentation on the admin site: https://docs.djangoproject.com/en/1.6/ref/contrib/admin/
+.. _Django documentation on the admin site: https://docs.djangoproject.com/en/dev/ref/contrib/admin/
 
 .. _django-filter: https://django-filter.readthedocs.org/en/latest/
 
@@ -186,3 +194,9 @@ The DINGOS views. Refert to the
 .. _Django documentation on class-based views: https://docs.djangoproject.com/en/dev/topics/class-based-views/
 
 .. _Django documentation on using mixins in class-based views: https://docs.djangoproject.com/en/dev/topics/class-based-views/mixins/
+
+.. _Django Debug Toolbar: https://github.com/django-debug-toolbar/django-debug-toolbar
+
+.. _prefetch_related: https://docs.djangoproject.com/en/dev/ref/models/querysets/#prefetch-related
+
+.. _select_related: https://docs.djangoproject.com/en/dev/ref/models/querysets/#select-related
