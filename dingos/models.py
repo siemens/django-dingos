@@ -1098,10 +1098,9 @@ class InfoObject(DingoModel):
         self.set_name()
 
 
-    def to_dict(self):
+    def to_dict(self,include_node_id=False):
         flat_result = []
 
-        # # Where to put prefetch_related? Currently, I set it in the view ...
         fact_thrus = self.fact_thru.all().prefetch_related(
                                                            'fact__fact_term',
                                                            'fact__fact_values',
@@ -1109,8 +1108,6 @@ class InfoObject(DingoModel):
                                                            'fact__fact_values__fact_data_type__namespace',
                                                            'fact__value_iobject_id',
                                                            'fact__value_iobject_id__namespace',
-                                                           #'fact__value_iobject_id__latest',
-                                                           #'fact__value_iobject_id__latest__iobject_type',
                                                            'node_id')
 
         #fact_thrus = self.fact_thru.all()
@@ -1143,21 +1140,26 @@ class InfoObject(DingoModel):
                                 '@@type_ns': fact_datatype_ns,
                                 'value_list': value_list})
 
-            #print fact_thru.attributes.all()
-            #for attr_link in fact_thru.attributes.all():
-
-            #print "Setting %s: %s: %s" % (attr_link.node_id, attr_link.attribute.key,attr_link.attribute.value)
-            #    attr_dict.chained_set(attr_link.attribute.fact_value.value,
-            #                          'set',
-            #                          attr_link.node_id.name,
-            #                          attr_link.attribute.fact_term.term)
-
         result = DingoObjDict()
-        result.from_flat_repr(flat_result)
+        result.from_flat_repr(flat_result,include_node_id=include_node_id)
         result['@@iobject_type'] = self.iobject_type.name
         result['@@iobject_type_ns'] = self.iobject_type.namespace.uri
         #result = result.to_tuple()
         return result
+
+    def show_fact_terms(self,level):
+        """Returns a list of the fact terms (split in 'term' and 'attribute') that
+         occur in this InfoObject."""
+
+        fact_terms = self._DCM["FactTerm"].objects.filter(fact__infoobject__pk=self.pk). \
+            distinct('term','attribute').values('term','attribute')
+
+
+        #fact_terms = self._DCM["FactTerm"].objects.filter(fact__iobject_thru__iobject__pk=self.pk).\
+        #    filter(fact__iobject_thru__node_id__name__startswith=level).order_by('term','attribute').\
+        #    distinct('term','attribute').values_list('fact__iobject_thru__node_id__name','term','attribute')
+
+        return list(fact_terms)
 
     def extract_name(self):
         """

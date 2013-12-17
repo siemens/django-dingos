@@ -124,28 +124,21 @@ class SimpleFactSearch(BasicFilterView):
 
 
 
-class InfoObjectView_SUPERSEDED(BasicDetailView):
+class InfoObjectView(BasicDetailView):
     """
-    We do not use this view any more to view InfoObjects, but the view
-    below. We need to use a template view and explicitly query the
-    InfoObject and the facts in it, because we may need to paginate
-    the facts. When using the DetailView, the way the prefetch_related
+    Note that below we generate a query set for the facts by hand
+    rather than carrying out the queries through the object-query.
+    This is because the prefetch_related
     is treated leads to a prefetching of *all* facts, even though
     pagination only displays 100 or 200 or so.
     """
 
     # Config for Prefetch/SelectRelated Mixins_
     select_related = ()
-    prefetch_related = ('fact_thru__fact__fact_term',
-                        'fact_thru__fact__fact_values',
-                        'fact_thru__fact__fact_values__fact_data_type',
-                        'fact_thru__fact__value_iobject_id',
-                        'fact_thru__fact__value_iobject_id__latest',
-                        'fact_thru__node_id',
-                        'iobject_type',
+    prefetch_related = ('iobject_type',
                         'iobject_type__namespace',
+                        'identifier__namespace',
     )
-
 
     breadcrumbs = (('Dingo',None),
                    ('View',None),
@@ -160,52 +153,9 @@ class InfoObjectView_SUPERSEDED(BasicDetailView):
 
     title = 'Info Object Details'
 
-    def get_context_data(self, **kwargs):
-        context = super(InfoObjectView, self).get_context_data(**kwargs)
-        context['max_embedded'] = self.max_embedded
-
-        context['show_NodeID'] = False
-        try:
-            context['highlight'] = self.request.GET['highlight']
-        except KeyError:
-            context['highlight'] = None
-
-        return context
-
-
-
-class InfoObjectJSONView(BasicDetailView):
-    # Config for Prefetch/SelectRelated Mixins_
-    select_related = ()
-    prefetch_related = () # The to_dict function itself defines the necessary prefetch_stuff
-
-    model = InfoObject
-
-    def render_to_response(self, context):
-        return self.get_json_response(json.dumps(context['object'].to_dict(),indent=2))
-
-    def get_json_response(self, content, **httpresponse_kwargs):
-        return http.HttpResponse(content,
-                                 content_type='application/json',
-                                 **httpresponse_kwargs)
-
-class InfoObjectView(BasicTemplateView):
-
-
-    breadcrumbs = (('Dingo',None),
-                   ('View',None),
-                   ('InfoObject','url.dingos.list.infoobject.generic'),
-                   ('[RELOAD]',None)
-    )
-
-    @property
-    def iobject(self):
-
-        return InfoObject.objects.get(pk=int(self.kwargs['pk']))
-
     @property
     def iobject2facts(self):
-        return self.iobject.fact_thru.all().prefetch_related('fact__fact_term',
+        return self.object.fact_thru.all().prefetch_related('fact__fact_term',
                                                              'fact__fact_values',
                                                              'fact__fact_values__fact_data_type',
                                                              'fact__value_iobject_id',
@@ -224,8 +174,7 @@ class InfoObjectView(BasicTemplateView):
         context = super(InfoObjectView, self).get_context_data(**kwargs)
         context['max_embedded'] = self.max_embedded
 
-        context['show_NodeID'] = False
-        context['object'] = self.iobject
+        context['show_NodeID'] = True
         context['iobject2facts'] = self.iobject2facts
         try:
             context['highlight'] = self.request.GET['highlight']
@@ -233,4 +182,25 @@ class InfoObjectView(BasicTemplateView):
             context['highlight'] = None
 
         return context
+
+
+
+
+class InfoObjectJSONView(BasicDetailView):
+    # Config for Prefetch/SelectRelated Mixins_
+    select_related = ()
+    prefetch_related = () # The to_dict function itself defines the necessary prefetch_stuff
+
+    model = InfoObject
+
+    def render_to_response(self, context):
+        #return self.get_json_response(json.dumps(context['object'].show_elements(""),indent=2))
+        include_node_id = self.request.GET.get('include_node_id',False)
+
+        return self.get_json_response(json.dumps(context['object'].to_dict(include_node_id=include_node_id),indent=2))
+
+    def get_json_response(self, content, **httpresponse_kwargs):
+        return http.HttpResponse(content,
+                                 content_type='application/json',
+                                 **httpresponse_kwargs)
 

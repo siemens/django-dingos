@@ -17,12 +17,12 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
 {% load dingos_tags %}
-
-<div class="grp-module {% if object.embedded_in.count > 0 %}grp-collapse grp-open{% endif %}">
-    <h2 class="grp-collapse-handler">Embedded in {{ object.embedded_in.count }} object{% if object.embedded_in.count != 1 %}s{% endif %}</h2>
+{%  with embedded_info=object.embedded_in embedded_count=object.embedded_in.count %}
+<div class="grp-module {% if embedded_count > 0 %}grp-collapse grp-open{% endif %}">
+    <h2 class="grp-collapse-handler">Embedded in {{ embedded_count }} object{% if embedded_count != 1 %}s{% endif %}</h2>
 
     <table>
-        {% for k in  object.embedded_in|sliceupto:max_embedded %}
+        {% for k in  embedded_info|sliceupto:max_embedded %}
             <div class="grp-module">
                 <h3>
                     {{ k.4 }}
@@ -52,13 +52,13 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                         as {{ k.6 }}
 
                 </div>
-         
+
         {% endfor %}
     </table>
-        {% if object.embedded_in.count > 0 %}
+        {% if embedded_count > 0 %}
             <h2><a href={% url 'url.dingos.view.infoobject.embedded' object.id %}>Click for list of all embedding objects</a></h2>
         {% endif  %}
 
 </div>
-
+{%  endwith %}
 
