@@ -1515,6 +1515,8 @@ def get_or_create_iobject(identifier_uid,
     if overwrite:
         iobject = overwrite
         created = False
+
+
     else:
         iobject, created = dingos_class_map["InfoObject"].objects.get_or_create(identifier=identifier,
                                                                                timestamp=timestamp,
@@ -1528,7 +1530,8 @@ def get_or_create_iobject(identifier_uid,
         iobject.save()
 
     elif overwrite:
-
+        iobject.timestamp = timestamp
+        iobject.create_timestamp = create_timestamp
         iobject.iobject_family = iobject_family
         iobject.iobject_family_revision = iobject_family_revision
         iobject.iobject_type = iobject_type
