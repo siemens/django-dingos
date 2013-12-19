@@ -148,7 +148,6 @@ class DingoImportHandling(object):
             existing_iobject = self.get_latest_revision_of_iobject_by_uid(identifier_ns_uri, uid)
             if existing_iobject:
                 existing_timestamp = existing_iobject.timestamp
-            # If an essence has been given, then that is the object we want, no matter what the cybox_id says
 
         if existing_iobject:
 
@@ -157,6 +156,7 @@ class DingoImportHandling(object):
 
                 overwrite = True
                 exists = EXIST_PLACEHOLDER
+
 
 
             else:
@@ -180,8 +180,10 @@ class DingoImportHandling(object):
 
         if exists==EXIST_ID_AND_EXACT_TIMESTAMP or (not import_older_ts and exists == EXIST_ID_AND_NEWER_TIMESTAMP):
             return (existing_iobject, exists)
+
         else:
             # Otherwise, we create the object
+
             if not uid:
                 uid = uuid.uuid1()
             logger.info("Creating %s:%s with timestamp %s" % (identifier_ns_uri,
@@ -197,8 +199,9 @@ class DingoImportHandling(object):
                                                      identifier_namespace_name=None,
                                                      timestamp=timestamp,
                                                      create_timestamp=create_timestamp,
-                                                     overwrite=overwrite,
-                                                     dingos_class_map=self._DCM)
+                                                     overwrite=existing_iobject,
+                                                     dingos_class_map=self._DCM,
+                                                    )
 
             # After creating the object, we write the facts to the object.
             # We overwrite in the special case that a PLACEHOLDER was found.

@@ -13,7 +13,7 @@ Types of Contributions
 Report Bugs
 ~~~~~~~~~~~
 
-Report bugs at https://github.com/bgro/django-dingos/issues.
+Report bugs at https://github.com/siemens/django-dingos/issues.
 
 If you are reporting a bug, please include:
 

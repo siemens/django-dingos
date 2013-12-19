@@ -174,7 +174,7 @@ class InfoObjectView(BasicDetailView):
         context = super(InfoObjectView, self).get_context_data(**kwargs)
         context['max_embedded'] = self.max_embedded
 
-        context['show_NodeID'] = True
+        context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
         context['iobject2facts'] = self.iobject2facts
         try:
             context['highlight'] = self.request.GET['highlight']

@@ -1125,20 +1125,22 @@ class InfoObject(DingoModel):
 
                         fact_datatype_name = None
                         fact_datatype_ns = None
-                    first = False
+                        first = False
                 value_list.append(fact_value.value)
 
-            value_iobject_id = None
+            fact_dict = {'node_id': fact_thru.node_id.name,
+                         'term': fact_thru.fact.fact_term.term,
+                         'attribute' : fact_thru.fact.fact_term.attribute,
+                         '@@type': fact_datatype_name,
+                         '@@type_ns': fact_datatype_ns,
+                         'value_list': value_list}
+
             if fact_thru.fact.value_iobject_id:
-                value_iobject_id = "%s:%s" % (fact_thru.fact.value_iobject_id.namespace.uri,
-                                              fact_thru.fact.value_iobject_id.uid)
-            flat_result.append({'node_id': fact_thru.node_id.name,
-                                'term': fact_thru.fact.fact_term.term,
-                                'attribute' : fact_thru.fact.fact_term.attribute,
-                                'idref' : value_iobject_id,
-                                '@@type': fact_datatype_name,
-                                '@@type_ns': fact_datatype_ns,
-                                'value_list': value_list})
+                value_iobject_id_ns = fact_thru.fact.value_iobject_id.namespace.uri
+                value_iobject_id  =fact_thru.fact.value_iobject_id.uid
+                fact_dict['@@idref_ns'] = fact_thru.fact.value_iobject_id.namespace.uri
+                fact_dict['@@idref_id'] = fact_thru.fact.value_iobject_id.uid
+            flat_result.append(fact_dict)
 
         result = DingoObjDict()
         result.from_flat_repr(flat_result,include_node_id=include_node_id)
@@ -1510,18 +1512,20 @@ def get_or_create_iobject(identifier_uid,
     if not timestamp:
         timestamp = create_timestamp
 
-    iobject, created = dingos_class_map["InfoObject"].objects.get_or_create(identifier=identifier,
-                                                                           timestamp=timestamp,
-                                                                           defaults={'iobject_family': iobject_family,
-                                                                                     'iobject_family_revision': iobject_family_revision,
-                                                                                     'iobject_type': iobject_type,
-                                                                                     'iobject_type_revision': iobject_type_revision,
-                                                                                     'create_timestamp': create_timestamp})
+    if overwrite:
+        iobject = overwrite
+        created = False
+    else:
+        iobject, created = dingos_class_map["InfoObject"].objects.get_or_create(identifier=identifier,
+                                                                               timestamp=timestamp,
+                                                                               defaults={'iobject_family': iobject_family,
+                                                                                         'iobject_family_revision': iobject_family_revision,
+                                                                                         'iobject_type': iobject_type,
+                                                                                         'iobject_type_revision': iobject_type_revision,
+                                                                                         'create_timestamp': create_timestamp})
     if created:
         iobject.set_name()
         iobject.save()
-
-
 
     elif overwrite:
 
@@ -1533,7 +1537,7 @@ def get_or_create_iobject(identifier_uid,
         iobject.save()
 
     logger.debug(
-        "Created iobject with %s %s and %s (overwrite %s)" % (iobject.identifier, timestamp, created, overwrite))
+        "Created iobject with %s (created was %s) and %s (overwrite %s)" % (iobject.identifier, timestamp, created, overwrite))
     return iobject, created
 
 
