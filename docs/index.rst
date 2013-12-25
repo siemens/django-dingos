@@ -11,7 +11,6 @@ Contents:
 
 .. toctree::
 
-
    what_dingos_is_all_about
    what_dingos_is_still_missing
    installation

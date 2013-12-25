@@ -8,12 +8,12 @@ A Django app that provides a generic framework for managing structured informati
 Documentation
 -------------
 
-The full documentation is at http://django-dingos.rtfd.org.
+The full documentation is at http://django-dingos.readthedocs.org.
 
 Quickstart
 ----------
 
-Please refer to the quickstart information of MANTIS, available at http://django-mantis.rtfd.org.
+Please refer to the quickstart information of MANTIS, available at http://django-mantis.readthedocs.org.
 
 Acknowledgments
 ---------------

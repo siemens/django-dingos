@@ -30,7 +30,7 @@ setup(
     long_description=readme + '\n\n' + history,
     author='Siemens',
     author_email='mantis.cert@siemens.com',
-    url='https://github.com/bgro/django-dingos',
+    url='https://github.com/siemens/django-dingos',
     packages=[
         'dingos',
     ],

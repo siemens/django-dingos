@@ -2,18 +2,32 @@
 Contributing
 ============
 
+.. contents::
+
 Contributions are welcome, and they are greatly appreciated! Every
 little bit helps, and credit will always be given. 
 
-You can contribute in many ways:
+You can contribute in many ways.
+
+The issue tracker for Django DINGOS
+-----------------------------------
+
+Although django-dingos is generic, in the near future its further development
+will occur mostly within the further development of the 
+`Django Mantis Cyber-Threat Intelligence Management Framework`_. So,
+for the time being, please use
+https://github.com/siemens/django-mantis/issues
+as issue tracker for bugs, feature requests and other feedback regarding
+django-dingos.
 
 Types of Contributions
 ----------------------
 
+
 Report Bugs
 ~~~~~~~~~~~
 
-Report bugs at https://github.com/siemens/django-dingos/issues.
+Report bugs at https://github.com/siemens/django-mantis/issues.
 
 If you are reporting a bug, please include:
 
@@ -24,13 +38,13 @@ If you are reporting a bug, please include:
 Fix Bugs
 ~~~~~~~~
 
-Look through the GitHub issues for bugs. Anything tagged with "bug"
+Look through the GitHub issues (https://github.com/siemens/django-mantis/issues) for bugs. Anything tagged with "bug"
 is open to whoever wants to implement it.
 
 Implement Features
 ~~~~~~~~~~~~~~~~~~
 
-Look through the GitHub issues for features. Anything tagged with "feature"
+Look through the GitHub issues (https://github.com/siemens/django-mantis/issues) for features. Anything tagged with "feature"
 is open to whoever wants to implement it.
 
 Write Documentation
@@ -43,7 +57,7 @@ articles, and such.
 Submit Feedback
 ~~~~~~~~~~~~~~~
 
-The best way to send feedback is to file an issue at https://github.com/bgro/django-dingos/issues.
+The best way to send feedback is to file an issue at https://github.com/siemens/django-mantis/issues.
 
 If you are proposing a feature:
 
@@ -52,20 +66,36 @@ If you are proposing a feature:
 * Remember that this is a volunteer-driven project, and that contributions
   are welcome :)
 
+
 Get Started!
 ------------
 
-Ready to contribute? Here's how to set up `django-dingos` for local development.
+In your contribution, you may want to either modify/add to existing code
+or create a new Django application that interacts with the existing
+applications that are part of the Mantis framework.
 
-1. Fork the `django-dingos` repo on GitHub.
+DINGOS profitted a lot from the advice provided in `Two Scoops of Django`_.
+Unless you are an absolute Django expert (and maybe even then), please
+read Daniel Greenfield's and Audrey Roy's excellent `Two Scoops of Django`_.
+Even though it provides best practices for Django 1.5, most of its
+advice is also valid for Django 1.6, and likely to be very relevant
+for quite a few minor revisions to come.
+
+
+Modifying/adding to existing code
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Here's how to set up a repository for local development.
+
+1. Fork the relevant repository repo on GitHub.
 2. Clone your fork locally::
 
-    $ git clone git@github.com:your_name_here/django-dingos.git
+    $ git clone git@github.com:your_name_here/<repository>.git
 
 3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
 
-    $ mkvirtualenv django-dingos
-    $ cd django-dingos/
+    $ mkvirtualenv <your_mantis_environment>
+    $ cd <repository_folder>
     $ python setup.py develop
 
 4. Create a branch for local development::
@@ -82,6 +112,26 @@ Now you can make your changes locally.
 
 6. Submit a pull request through the GitHub website.
 
+Writing your own Django application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Do yourself a favor and set up the directory structure of your
+Django application in the right way from the very start.
+The easiest way to do so is to use Daniel Greenfield's `cookiecutter-djangopackage`_ template
+(which uses Audrey Roy's excellent `Cookiecutter`_ for creating the directories): this
+layout has a very sensible directory structure  with out-of-the-box configuration of ``setup.py`` for
+easy build, submission to PyPi, etc., as well as the start of a Sphinx documentation tree.
+Once you have the directory structure created, initialize a fresh git repository with it
+and get to work...
+
+
+.. _Cookiecutter: https://github.com/audreyr/cookiecutter
+
+
+.. _cookiecutter-djangopackage: https://github.com/pydanny/cookiecutter-djangopackage
+
+
+
 Pull Request Guidelines
 -----------------------
 
@@ -92,3 +142,7 @@ Before you submit a pull request, check that it meets these guidelines:
    your new functionality into a function with a docstring, and add the
    feature to the list in README.rst.
 3. The pull request should work for Python 2.7.
+
+.. _Django Mantis Cyber-Threat Intelligence Management Framework: https://github.com/siemens/django-mantis
+
+.. _Two Scoops of Django: https://django.2scoops.org/
