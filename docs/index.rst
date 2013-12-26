@@ -10,13 +10,12 @@ Welcome to Django-Dingos's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
 
    what_dingos_is_all_about
    what_dingos_is_still_missing
    installation
    usage
-   developers_guide
    contributing
    authors
    history
+   developers_guide

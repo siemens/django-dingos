@@ -92,7 +92,7 @@ DINGOS_CONFIGURATION_TYPE_NAME = 'USER_CONFIG'
 # not written to the data base but stored on the file system or
 # written to a special blob table
 
-DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_VALUE_TABLE = 4096
+DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_VALUE_TABLE = 2048
 
 
 # values for the LARGE_VALUE_DESTINATION are 'BLOB_TABLE' and 'FILE_SYSTEM'

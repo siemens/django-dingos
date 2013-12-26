@@ -52,7 +52,13 @@ if settings.configured and 'DINGOS' in dir(settings):
                                                                              dingos.DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_VALUE_TABLE)
 
 if settings.configured and 'DINGOS' in dir(settings):
-    dingos.DINGOS_LARGE_VALUE_DESTINATION = settings.DINGOS.get('LARGE_VALUE_DESTINATION',
-                                            dingos.DINGOS_LARGE_VALUE_DESTINATION)
+    configured_large_value_dest = settings.DINGOS.get('LARGE_VALUE_DESTINATION',None)
+    if configured_large_value_dest:
+        if configured_large_value_dest == 'DINGOS_VALUES_TABLE':
+            dingos.DINGOS_LARGE_VALUE_DESTINATION = dingos.DINGOS_VALUES_TABLE
+    elif configured_large_value_dest == 'DINGOS_FILE_SYSTEM':
+        dingos.DINGOS_LARGE_VALUE_DESTINATION = dingos.DINGOS_FILE_SYSTEM
+    elif configured_large_value_dest == 'DINGOS_BLOB_TABLE':
+        dingos.DINGOS_LARGE_VALUE_DESTINATION = dingos.DINGOS_BLOB_TABLE
 
 

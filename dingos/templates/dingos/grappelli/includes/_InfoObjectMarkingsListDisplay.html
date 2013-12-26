@@ -17,17 +17,17 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
 
+{% with marking_count=object.marking_thru.count %}
 
-
-<div class="grp-module {% if object.marking_thru.count > 0 %}grp-collapse grp-closed{% endif %}">
+<div class="grp-module {% if marking_count > 0 %}grp-collapse{% endif %}">
 <h2 class="grp-collapse-handler">
-    {{ object.marking_thru.count }} marking{% if object.marking_thru.count != 1 %}s{% endif %}
+    {{ marking_count }} marking{% if marking_count != 1 %}s{% endif %}
 </h2>
                 {% for k in object.marking_thru.all %}
 
                     <div class='grp-row'>
 
-                        <a href={% url 'url.dingos.view.infoobject' k.marking.pk %}>{{k.marking.name}}</a>
+                        <a href={% url 'url.dingos.view.infoobject' k.marking.pk %}>{{ k.marking.identifier.namespace.uri }}:{{k.marking.name}}</a>
 
                     </div>
 
@@ -36,7 +36,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     </div>
 
-
+{%  endwith %}
 
 
 

@@ -1100,10 +1100,9 @@ class InfoObject(DingoModel):
         self.set_name()
 
 
-    def to_dict(self):
+    def to_dict(self,include_node_id=False):
         flat_result = []
 
-        # # Where to put prefetch_related? Currently, I set it in the view ...
         fact_thrus = self.fact_thru.all().prefetch_related(
                                                            'fact__fact_term',
                                                            'fact__fact_values',
@@ -1111,8 +1110,6 @@ class InfoObject(DingoModel):
                                                            'fact__fact_values__fact_data_type__namespace',
                                                            'fact__value_iobject_id',
                                                            'fact__value_iobject_id__namespace',
-                                                           #'fact__value_iobject_id__latest',
-                                                           #'fact__value_iobject_id__latest__iobject_type',
                                                            'node_id')
 
         #fact_thrus = self.fact_thru.all()
@@ -1130,34 +1127,43 @@ class InfoObject(DingoModel):
 
                         fact_datatype_name = None
                         fact_datatype_ns = None
-                    first = False
+                        first = False
                 value_list.append(fact_value.value)
 
-            value_iobject_id = None
+            fact_dict = {'node_id': fact_thru.node_id.name,
+                         'term': fact_thru.fact.fact_term.term,
+                         'attribute' : fact_thru.fact.fact_term.attribute,
+                         '@@type': fact_datatype_name,
+                         '@@type_ns': fact_datatype_ns,
+                         'value_list': value_list}
+
             if fact_thru.fact.value_iobject_id:
-                value_iobject_id = "%s:%s" % (fact_thru.fact.value_iobject_id.namespace.uri,
-                                              fact_thru.fact.value_iobject_id.uid)
-            flat_result.append({'node_id': fact_thru.node_id.name,
-                                'term': fact_thru.fact.fact_term.term,
-                                'attribute' : fact_thru.fact.fact_term.attribute,
-                                'value_iobject_id' : value_iobject_id,
-                                'type': fact_datatype_name,
-                                'type_ns': fact_datatype_ns,
-                                'value_list': value_list})
-
-            #print fact_thru.attributes.all()
-            #for attr_link in fact_thru.attributes.all():
-
-            #print "Setting %s: %s: %s" % (attr_link.node_id, attr_link.attribute.key,attr_link.attribute.value)
-            #    attr_dict.chained_set(attr_link.attribute.fact_value.value,
-            #                          'set',
-            #                          attr_link.node_id.name,
-            #                          attr_link.attribute.fact_term.term)
+                value_iobject_id_ns = fact_thru.fact.value_iobject_id.namespace.uri
+                value_iobject_id  =fact_thru.fact.value_iobject_id.uid
+                fact_dict['@@idref_ns'] = fact_thru.fact.value_iobject_id.namespace.uri
+                fact_dict['@@idref_id'] = fact_thru.fact.value_iobject_id.uid
+            flat_result.append(fact_dict)
 
         result = DingoObjDict()
-        result.from_flat_repr(flat_result)
+        result.from_flat_repr(flat_result,include_node_id=include_node_id)
+        result['@@iobject_type'] = self.iobject_type.name
+        result['@@iobject_type_ns'] = self.iobject_type.namespace.uri
         #result = result.to_tuple()
         return result
+
+    def show_fact_terms(self,level):
+        """Returns a list of the fact terms (split in 'term' and 'attribute') that
+         occur in this InfoObject."""
+
+        fact_terms = self._DCM["FactTerm"].objects.filter(fact__infoobject__pk=self.pk). \
+            distinct('term','attribute').values('term','attribute')
+
+
+        #fact_terms = self._DCM["FactTerm"].objects.filter(fact__iobject_thru__iobject__pk=self.pk).\
+        #    filter(fact__iobject_thru__node_id__name__startswith=level).order_by('term','attribute').\
+        #    distinct('term','attribute').values_list('fact__iobject_thru__node_id__name','term','attribute')
+
+        return list(fact_terms)
 
     def extract_name(self):
         """
@@ -1252,9 +1258,9 @@ class InfoObject(DingoModel):
         name is extracted via the extract_name method.
         """
         if name:
-            self.name = name
+            self.name = name[:254]
         else:
-            self.name = self.extract_name()
+            self.name = self.extract_name()[:254]
 
         self.save()
 
@@ -1508,21 +1514,26 @@ def get_or_create_iobject(identifier_uid,
     if not timestamp:
         timestamp = create_timestamp
 
-    iobject, created = dingos_class_map["InfoObject"].objects.get_or_create(identifier=identifier,
-                                                                           timestamp=timestamp,
-                                                                           defaults={'iobject_family': iobject_family,
-                                                                                     'iobject_family_revision': iobject_family_revision,
-                                                                                     'iobject_type': iobject_type,
-                                                                                     'iobject_type_revision': iobject_type_revision,
-                                                                                     'create_timestamp': create_timestamp})
+    if overwrite:
+        iobject = overwrite
+        created = False
+
+
+    else:
+        iobject, created = dingos_class_map["InfoObject"].objects.get_or_create(identifier=identifier,
+                                                                               timestamp=timestamp,
+                                                                               defaults={'iobject_family': iobject_family,
+                                                                                         'iobject_family_revision': iobject_family_revision,
+                                                                                         'iobject_type': iobject_type,
+                                                                                         'iobject_type_revision': iobject_type_revision,
+                                                                                         'create_timestamp': create_timestamp})
     if created:
         iobject.set_name()
         iobject.save()
 
-
-
     elif overwrite:
-
+        iobject.timestamp = timestamp
+        iobject.create_timestamp = create_timestamp
         iobject.iobject_family = iobject_family
         iobject.iobject_family_revision = iobject_family_revision
         iobject.iobject_type = iobject_type
@@ -1531,7 +1542,7 @@ def get_or_create_iobject(identifier_uid,
         iobject.save()
 
     logger.debug(
-        "Created iobject with %s %s and %s (overwrite %s)" % (iobject.identifier, timestamp, created, overwrite))
+        "Created iobject with %s (created was %s) and %s (overwrite %s)" % (iobject.identifier, timestamp, created, overwrite))
     return iobject, created
 
 

@@ -22,6 +22,8 @@ import uuid
 
 import libxml2
 
+from collections import deque
+
 from django.utils import timezone
 
 from dingos import *
@@ -146,7 +148,6 @@ class DingoImportHandling(object):
             existing_iobject = self.get_latest_revision_of_iobject_by_uid(identifier_ns_uri, uid)
             if existing_iobject:
                 existing_timestamp = existing_iobject.timestamp
-            # If an essence has been given, then that is the object we want, no matter what the cybox_id says
 
         if existing_iobject:
 
@@ -155,6 +156,7 @@ class DingoImportHandling(object):
 
                 overwrite = True
                 exists = EXIST_PLACEHOLDER
+
 
 
             else:
@@ -178,8 +180,10 @@ class DingoImportHandling(object):
 
         if exists==EXIST_ID_AND_EXACT_TIMESTAMP or (not import_older_ts and exists == EXIST_ID_AND_NEWER_TIMESTAMP):
             return (existing_iobject, exists)
+
         else:
             # Otherwise, we create the object
+
             if not uid:
                 uid = uuid.uuid1()
             logger.info("Creating %s:%s with timestamp %s" % (identifier_ns_uri,
@@ -195,8 +199,9 @@ class DingoImportHandling(object):
                                                      identifier_namespace_name=None,
                                                      timestamp=timestamp,
                                                      create_timestamp=create_timestamp,
-                                                     overwrite=overwrite,
-                                                     dingos_class_map=self._DCM)
+                                                     overwrite=existing_iobject,
+                                                     dingos_class_map=self._DCM,
+                                                    )
 
             # After creating the object, we write the facts to the object.
             # We overwrite in the special case that a PLACEHOLDER was found.
@@ -321,10 +326,10 @@ class DingoImportHandling(object):
 
         # We use the _import_pending_stack to hold extracted embedded objects
         # that still need to be processed
-        _import_pending_stack = []
+        _import_pending_stack = deque()
 
         # We collect the read embedded objects in the following list
-        embedded_objects = []
+        embedded_objects = deque()
 
         def xml_import_(element, depth=0, type_info=None, inherited_id_and_rev_info=None):
             """
@@ -476,7 +481,7 @@ class DingoImportHandling(object):
                                     generated_id_count[parent_id] = gen_counter
                                     (parent_namespace, parent_uid) = parent_id.split(':')
                                     generated_id = "%s:emb%s-in-%s" % (parent_namespace,gen_counter,parent_uid)
-                                    logger.warning("Found embedded object without id in object %s and generated id %s" % (parent_uid,generated_id))
+                                    logger.info("Found embedded %s without id and generated id %s" % (element.name,generated_id))
                                     id_and_revision_info['id'] = generated_id
                                     id_and_revision_info['id_inherited'] = True
                                 else:
@@ -530,6 +535,14 @@ class DingoImportHandling(object):
                             if (child.children or child.content) \
                                 or extract_empty_embedded \
                                 or 'extract_empty_embedded' in id_and_revision_info:
+
+                                id_and_revision_info['inherited'] = fresh_inherited_id_and_rev_info.copy()
+                                if 'inherited' in id_and_revision_info['inherited']:
+                                    for key in id_and_revision_info['inherited']['inherited']:
+                                        if not key in id_and_revision_info['inherited']:
+                                            id_and_revision_info['inherited'][key] = id_and_revision_info['inherited']['inherited'][key]
+                                    del(id_and_revision_info['inherited']['inherited'])
+
                                 logger.debug(
                                     "Adding XML subtree starting with element %s and type info %s to pending stack." % (
                                     id_and_revision_info, embedded_ns))
@@ -667,19 +680,19 @@ class DingoImportHandling(object):
 
         do_not_process_list = []
 
-        while _import_pending_stack != []:
+        while _import_pending_stack:
             (id_and_revision_info, type_info, elt) = _import_pending_stack.pop()
             if 'defer_processing' in id_and_revision_info:
                 do_not_process_list.append((id_and_revision_info,type_info,elt))
+
             else:
                 (elt_name, elt_dict) = xml_import_(elt, 0,
                                                    type_info=type_info,
                                                    inherited_id_and_rev_info=id_and_revision_info.copy())
 
                 embedded_objects.append({'id_and_rev_info': id_and_revision_info,
-                                         'elt_name': elt_name,
-                                         'dict_repr': elt_dict})
-
+                                             'elt_name': elt_name,
+                                             'dict_repr': elt_dict})
 
         result= {'id_and_rev_info': main_id_and_rev_info,
                 'elt_name': main_elt_name,

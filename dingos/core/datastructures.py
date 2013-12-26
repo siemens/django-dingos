@@ -414,7 +414,7 @@ class DingoObjDict(ExtendedSortedDict):
 
         return _flatten(self,result_list=[], attr_dict={}, namespace=[], prefix=[])
 
-    def from_flat_repr(self,fact_list):
+    def from_flat_repr(self,fact_list,include_node_id=False):
         """
         Convert a flat representation of information (consisting of a fact list and a dictionary
         mapping node ids to attributes into a dictionary representation information.
@@ -462,29 +462,37 @@ class DingoObjDict(ExtendedSortedDict):
             fact_path = fact['term'].split('/')
             del(fact['term'])
             if fact.get('attribute'):
+                if fact_path == [""]:
+                    fact_path = []
                 fact_path.append('@%s' % fact['attribute'])
+
                 del(fact['attribute'])
             node_path = fact['node_id'].split(':')
             del(fact['node_id'])
             walker = result
             #logger.debug(fact)
             for i in range(0,len(node_path)):
-                print walker
+
                 #logger.debug("%s  %s" % (node_path,node_path[i]))
                 (node_kind,counter) = node_id_unpack(node_path[i])
                 element = fact_path[i]
-                node_id = ':'.join(node_path[0:i])
+                node_id = ':'.join(node_path[0:i+1])
 
-                print "Treating %s:%s%s (%s) for %s" % (node_id,node_kind,counter, element,walker)
 
                 if not (element in walker.keys()):
 
                     if node_kind == 'L':
                         walker[element] = []
-                        walker[element].append(DingoObjDict())
+                        child_dict = DingoObjDict()
+                        if include_node_id:
+                            child_dict['@@node_id'] = node_id
+                        walker[element].append(child_dict)
                         walker = walker[element][0]
                     elif node_kind == 'N':
-                        walker[element] = DingoObjDict()
+                        child_dict = DingoObjDict()
+                        if include_node_id:
+                            child_dict['@@node_id'] = node_id
+                        walker[element] = child_dict
                         walker = walker[element]
 
                 else:
@@ -493,6 +501,8 @@ class DingoObjDict(ExtendedSortedDict):
 
                         if len(walker[element]) == counter:
                             next_item = DingoObjDict()
+                            if include_node_id:
+                                next_item['@@node_id'] = node_id
                             walker[element].append(next_item)
                             walker=walker[element][counter]# next_item
                         elif len(walker[element]) > counter:
@@ -506,20 +516,28 @@ class DingoObjDict(ExtendedSortedDict):
                         walker=walker[element]
             if node_kind == 'A':
                 if len(fact['value_list']) == 1:
-                    walker[element] = fact['value_list'][0]
+                    value = fact['value_list'][0]
                 else:
-                    walker[element] = fact['value_list']
+                    value = fact['value_list']
+                if include_node_id:
+                    walker[element] = {'@@node_id' : node_id,
+                                       '_value' : value}
+                else:
+                    walker[element] = value
             else:
                 if len(fact['value_list']) == 1:
-                    walker['_value'] = fact['value_list'][0]
+                    if fact['value_list'][0] != '':
+                        walker['_value'] = fact['value_list'][0]
                 else:
                     walker['_value'] = fact['value_list']
+                if include_node_id:
+                    walker['@@node_id'] = node_id
 
                 del(fact['value_list'])
 
                 for key in fact:
                     if fact[key]:
-                        walker['@@%s' % key] = fact[key]
+                        walker[key] = fact[key]
 
 
 

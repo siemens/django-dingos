@@ -1,6 +1,7 @@
-
 Developers' Guide to DINGOS
 ===========================
+
+
 
 
 Contents:
@@ -10,4 +11,5 @@ Contents:
 
    before_starting_to_develop
    dingos_model_overview
+   dingos_app_layout
 
