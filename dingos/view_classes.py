@@ -15,6 +15,8 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import collections
+
 from django.views.generic.base import ContextMixin
 from django.views.generic import DetailView, ListView, TemplateView
 
@@ -86,6 +88,73 @@ class ConfigDict(object):
         return self._clear_stack()
 
 
+
+
+class ConfigDict(collections.Mapping):
+    """
+
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        self.counter =0
+        default = kwargs.get('default')
+        if default == 'Empty_List':
+            self.default=[]
+        elif default == 'None':
+            self.default = None
+        elif default == 'Empty_Dict':
+            self.default = {}
+        else:
+            try:
+                default = int(default)
+            except:
+                pass
+            self.default = default
+        self.walker = kwargs.get('config_dict',dict())
+        print "Initializing with default %s and walker %s" % (self.default,self.walker)
+
+    def __iter__(self):
+        return self.walker.__iter__()
+
+    def __len__(self):
+        return self.walker.__len__()
+
+
+
+    def __getitem__(self, key):
+        if self.counter > 5:
+            print "Schluss"
+            raise TypeError
+        else:
+            self.counter +=1
+        print "Get carried out for %s" % key
+        if key in self.walker:
+            self.walker = self.walker[key]
+            print "Returning self with default %s and walker %s" % (self.default,self.walker)
+            return self
+        else:
+            print "Returning default %s for key %s" % (self.default, key)
+            return self.default
+            return {0:self.default,1:self.default}
+
+
+
+class ConfigDictWrapper(object):
+    """
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.config_dict = kwargs.get('config_dict',dict())
+
+    def __getitem__(self, key):
+        print "Returned config dict with default %s" % key
+        if key in self.config_dict:
+            return ConfigDict(default=[],config_dict=self.config_dict[key])
+        else:
+            return ConfigDict(default=key,config_dict=self.config_dict)
+
 class CommonContextMixin(ContextMixin):
     def get_context_data(self, **kwargs):
         context = super(CommonContextMixin, self).get_context_data(**kwargs)
@@ -115,8 +184,8 @@ class CommonContextMixin(ContextMixin):
             load_new_settings = True
 
         if True: #load_new_settings:
-            context['customization'] = ConfigDict(get_user_settings(self.request.user))
-            print(context['customization']._orig_dict)
+            context['customization'] = ConfigDictWrapper(config_dict=get_user_settings(self.request.user))
+            #context['customization'] = ConfigDictWrapper(config_dict={'searches':{'blah':5}})
 
         return context
 
