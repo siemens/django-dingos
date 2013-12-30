@@ -1757,8 +1757,8 @@ class UserConfiguration(DingoModel):
                      'searches' : [           # testing searches
                                       { 'priority' : 0, 
                                         'title' : 'Testing', 
-                                        'view' : 'url.dingos.view.infoobject.redirect2highlight', 
-                                        'parameter' : 'iobject_type=17&iobject_type__iobject_family=3&identifier__namespace=3',
+                                        'view' : 'url.dingos.list.infoobject.generic',
+                                        'parameter' : 'iobject_type=72&identifier__namespace=1',
                                       }
                                   ],
         }
