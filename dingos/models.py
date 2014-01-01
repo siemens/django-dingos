@@ -1467,6 +1467,107 @@ class Marking2X(models.Model):
 
 dingos_class_map["Marking2X"] = Marking2X
 
+class UserData(DingoModel):
+    """
+    Model for binding settings to a django user model.
+    All settings are stored internally within InfoObjects
+    that are referenced by Identifier.
+    """
+
+    user = models.ForeignKey(User)
+
+    data_kind = models.SlugField(max_length=32)
+
+    identifier = models.ForeignKey(Identifier,
+                                   null=True)
+
+    class Meta:
+        # The constraint below can cause problems if the entries in FactValue become to large:
+        # Uniqueness forces the creation of a index on values
+        # for testing uniqueness.
+        unique_together = ('user', 'data_kind')
+
+    def retrieve(self):
+        logger.debug("Retrieving user configuration for user %s" % self.user.username)
+        settings_iobject = None
+        if self.identifier:
+            print "Identifer %s" % self.identifier.uid
+            settings_iobject = self.identifier.latest
+        if settings_iobject:
+            return settings_iobject.to_dict(no_attributes=True)
+        else:
+            return None
+            logger.debug("Store user settings called")
+            self.store(user_prefs)
+            return user_prefs
+
+    def store(self,settings,iobject_type_name=DINGOS_USER_DATA_TYPE_NAME):
+        """
+        TODO
+        Stores given dict settings to the database and
+        connects it with a given user. If user is not
+        an instance of class User, no persistation will
+        be done. If the settings were stored the return
+        value is True and otherwise it'll be False.
+        """
+
+
+
+        settings_dod = dict2DingoObjDict(settings)
+
+
+        settings_iobject = None
+        if self.identifier:
+            settings_iobject = self.identifier.latest
+
+        if not settings_iobject:
+            settings_iobject,created = get_or_create_iobject("%s_for_%s" % (iobject_type_name,self.user.pk),
+                                                             identifier_namespace_uri = DINGOS_ID_NAMESPACE_URI,
+                                                             iobject_type_name = iobject_type_name,
+                                                             iobject_type_namespace_uri = DINGOS_NAMESPACE_URI,
+                                                             iobject_type_revision_name = REVISION,
+                                                             iobject_family_name = DINGOS_IOBJECT_FAMILY_NAME,
+                                                             iobject_family_revision_name= REVISION,
+                                                             identifier_namespace_name= DINGOS_ID_NAMESPACE_SLUG,
+                                                             timestamp=None,
+                                                             create_timestamp=None,
+                                                             )
+
+        if not self.identifier:
+            self.identifier = settings_iobject.identifier
+            self.save()
+        return settings_iobject.from_dict(settings_dod)
+
+    @staticmethod
+    def get_user_data(user,data_kind):
+        """
+        Returns either stored settings of a given user or default settings.
+        This behavior reflects the need for views to have some settings at
+        hand when running. The settings are returned as dict object.
+        """
+        logger.debug("Get user settings called")
+
+        if user.is_authenticated():
+            user_config,created =  UserData.objects.get_or_create(user=user,data_kind=data_kind)
+            return user_config.retrieve()
+        else:
+            user_prefs = copy.deepcopy(DINGOS_DEFAULT_USER_PREFS)
+            return user_prefs
+
+    @staticmethod
+    def store_user_data(user,data_kind,user_data):
+        """
+        Returns either stored settings of a given user or default settings.
+        This behavior reflects the need for views to have some settings at
+        hand when running. The settings are returned as dict object.
+        """
+        if user.is_authenticated():
+            user_config,created =  UserData.objects.get_or_create(user=user,data_kind=data_kind)
+            return user_config.store(user_data,iobject_type_name=data_kind)
+
+dingos_class_map["UserData"] = UserData
+
+
 
 def get_or_create_iobject(identifier_uid,
                           identifier_namespace_uri,
@@ -1718,98 +1819,6 @@ def write_large_value(value,storage_location=dingos.DINGOS_LARGE_VALUE_DESTINATI
                                                               content=value)
     return (value_hash,storage_location)
 
-class UserConfiguration(DingoModel):
-    """
-    Model for binding settings to a django user model.
-    All settings are stored internally within InfoObjects
-    that are referenced by Identifier.
-    """
-
-    user = models.ForeignKey(User,
-                             unique=True)
-    identifier = models.ForeignKey(Identifier,
-                                   null=True)
-
-    def retrieve(self):
-        logger.debug("Retrieving user configuration for user %s" % self.user.username)
-        settings_iobject = None
-        if self.identifier:
-            print "Identifer %s" % self.identifier.uid
-            settings_iobject = self.identifier.latest
-        if settings_iobject:
-            return settings_iobject.to_dict(no_attributes=True)
-        else:
-            user_prefs = copy.deepcopy(DINGOS_DEFAULT_USER_PREFS)
-            logger.debug("Store user settings called")
-            self.store(user_prefs)
-            return user_prefs
-
-    def store(self,settings):
-        """
-        TODO
-        Stores given dict settings to the database and
-        connects it with a given user. If user is not
-        an instance of class User, no persistation will
-        be done. If the settings were stored the return
-        value is True and otherwise it'll be False.
-        """
-
-
-
-        settings_dod = dict2DingoObjDict(settings)
-
-
-        settings_iobject = None
-        if self.identifier:
-            settings_iobject = self.identifier.latest
-
-        if not settings_iobject:
-            settings_iobject,created = get_or_create_iobject("user_pk_%s" % self.user.pk,
-                                      identifier_namespace_uri = DINGOS_ID_NAMESPACE_URI,
-                                      iobject_type_name = DINGOS_USER_CONFIGURATION_TYPE_NAME,
-                                      iobject_type_namespace_uri = DINGOS_NAMESPACE_URI,
-                                      iobject_type_revision_name = REVISION,
-                                      iobject_family_name = DINGOS_IOBJECT_FAMILY_NAME,
-                                      iobject_family_revision_name= REVISION,
-                                      identifier_namespace_name=DINGOS_ID_NAMESPACE_URI,
-                                      timestamp=None,
-                                      create_timestamp=None,
-                                    )
-
-        if not self.identifier:
-            self.identifier = settings_iobject.identifier
-            self.save()
-        return settings_iobject.from_dict(settings_dod)
-
-    @staticmethod
-    def get_user_settings(currentuser):
-        """
-        Returns either stored settings of a given user or default settings.
-        This behavior reflects the need for views to have some settings at
-        hand when running. The settings are returned as dict object.
-        """
-        logger.debug("Get user settings called")
-
-        if currentuser.is_authenticated():
-            user_config,created =  UserConfiguration.objects.get_or_create(user=currentuser)
-            return user_config.retrieve()
-
-
-        #if not type(currentuser) == User:
-
-            # make sure no anonymous settings are possible within user context
-
-        #    return False
-
-        #if settings.get('anonymous'):
-        #    del settings['anonymous']
-
-
-
-        #return True
-
-
-dingos_class_map["UserConfiguration"] = UserConfiguration
 
 
 

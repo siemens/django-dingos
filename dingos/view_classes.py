@@ -16,6 +16,7 @@
 #
 
 import collections
+import copy
 
 from django.views.generic.base import ContextMixin
 from django.views.generic import DetailView, ListView, TemplateView
@@ -25,8 +26,12 @@ from core.http_helpers import get_query_string
 
 from django_filters.views import FilterView
 
-from dingos.models import UserConfiguration
-from dingos import DINGOS_TEMPLATE_FAMILY
+from dingos.models import UserData
+from dingos import DINGOS_TEMPLATE_FAMILY, \
+    DINGOS_USER_PREFS_TYPE_NAME, \
+    DINGOS_DEFAULT_USER_PREFS, \
+    DINGOS_SAVED_SEARCHES_TYPE_NAME, \
+    DINGOS_DEFAULT_SAVED_SEARCHES
 
 from dingos.core.template_helpers import ConfigDictWrapper
 
@@ -44,6 +49,7 @@ class CommonContextMixin(ContextMixin):
         # 4.) authenticated user && anonymous settings --> load
 
         settings = self.request.session.get('customization')
+        saved_searches = self.request.session.get('saved_searches')
         load_new_settings = False
 
         if settings:
@@ -59,14 +65,37 @@ class CommonContextMixin(ContextMixin):
         else:
             load_new_settings = True
 
-        if True: #load_new_settings:
-            settings = UserConfiguration.get_user_settings(self.request.user)
-            print settings
-            self.request.session['customization']=settings
+        if True:
+            # Load user settings. If for the current user, no user settings have been
+            # stored, retrieve the default settings and store them (for authenticated users)
+
             self.request.session['customization_for_authenticated']=self.request.user.is_authenticated()
+
+            settings = UserData.get_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
+            if not settings:
+                settings = copy.deepcopy(DINGOS_DEFAULT_USER_PREFS)
+                if self.request.user.is_authenticated():
+                    UserData.store_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME,user_data=settings)
+
+            self.request.session['customization']=settings
+
+
+            # Do the same for saved searches
+
+            saved_searches = UserData.get_user_data(user=self.request.user,data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
+            if not saved_searches:
+                saved_searches = copy.deepcopy(DINGOS_DEFAULT_SAVED_SEARCHES)
+                if self.request.user.is_authenticated():
+                    UserData.store_user_data(user=self.request.user,
+                                             data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
+                                             user_data=saved_searches)
+
+            self.request.session['saved_searches']=saved_searches
             #context['customization'] = ConfigDictWrapper(config_dict={'searches':{'blah':5}})
 
         context['customization'] = ConfigDictWrapper(config_dict=settings)
+        context['saved_searches'] = ConfigDictWrapper(config_dict=saved_searches)
+
         return context
 
 class ViewMethodMixin(object):

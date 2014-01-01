@@ -85,7 +85,11 @@ DINGOS_PLACEHOLDER_TYPE_NAME = 'PLACEHOLDER'
 DINGOS_DEFAULT_IMPORT_MARKING_TYPE_NAME = "ImportInfo"
 
 
-DINGOS_USER_CONFIGURATION_TYPE_NAME = 'USER_CONFIG'
+DINGOS_USER_DATA_TYPE_NAME = 'USER_DATA'
+
+DINGOS_USER_PREFS_TYPE_NAME = 'USER_PREFS'
+
+DINGOS_SAVED_SEARCHES_TYPE_NAME = 'SAVED_SEARCHES'
 
 
 # Values larger than DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB are
@@ -115,7 +119,6 @@ DINGOS_BLOB_ROOT = None
 
 DINGOS_BLOB_STORAGE = None
 
-
 DINGOS_DEFAULT_USER_PREFS = {
     'dingos' : { 'widgets' :
                      {'embedded_in_objects' :
@@ -133,9 +136,11 @@ DINGOS_DEFAULT_USER_PREFS = {
                                                           'horizontal'.""",
                                        '_value' : 'vertical'}}
 
-    },
+    }
+}
 
-    'searches' : [           # testing searches
+DINGOS_DEFAULT_SAVED_SEARCHES = {
+    'dingos' : [
                              { 'priority' : "0",
                                'title' : 'Filter for STIX Packages',
                                'view' : 'url.dingos.list.infoobject.generic',

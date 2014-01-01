@@ -8,18 +8,25 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding model 'UserConfiguration'
-        db.create_table(u'dingos_userconfiguration', (
+        # Adding model 'UserData'
+        db.create_table(u'dingos_userdata', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
-            ('identifier', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.Identifier'])),
+            ('data_kind', self.gf('django.db.models.fields.SlugField')(max_length=32)),
+            ('identifier', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.Identifier'], null=True)),
         ))
-        db.send_create_signal(u'dingos', ['UserConfiguration'])
+        db.send_create_signal(u'dingos', ['UserData'])
+
+        # Adding unique constraint on 'UserData', fields ['user', 'data_kind']
+        db.create_unique(u'dingos_userdata', ['user_id', 'data_kind'])
 
 
     def backwards(self, orm):
-        # Deleting model 'UserConfiguration'
-        db.delete_table(u'dingos_userconfiguration')
+        # Removing unique constraint on 'UserData', fields ['user', 'data_kind']
+        db.delete_unique(u'dingos_userdata', ['user_id', 'data_kind'])
+
+        # Deleting model 'UserData'
+        db.delete_table(u'dingos_userdata')
 
 
     models = {
@@ -195,10 +202,11 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '32', 'blank': 'True'})
         },
-        u'dingos.userconfiguration': {
-            'Meta': {'object_name': 'UserConfiguration'},
+        u'dingos.userdata': {
+            'Meta': {'unique_together': "(('user', 'data_kind'),)", 'object_name': 'UserData'},
+            'data_kind': ('django.db.models.fields.SlugField', [], {'max_length': '32'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'identifier': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.Identifier']"}),
+            'identifier': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.Identifier']", 'null': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['auth.User']"})
         }
     }
