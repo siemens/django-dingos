@@ -20,9 +20,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {%  with embedded_info=object.embedded_in embedded_count=object.embedded_in.count %}
 <div class="grp-module {% if embedded_count > 0 %}grp-collapse grp-open{% endif %}">
     <h2 class="grp-collapse-handler">Embedded in {{ embedded_count }} object{% if embedded_count != 1 %}s{% endif %}</h2>
-
     <table>
-        {% for k in  embedded_info|sliceupto:max_embedded %}
+        {% for k in  embedded_info|sliceupto:customization.5.dingos.widgets.embedded_objects.lines %}
             <div class="grp-module">
                 <h3>
                     {{ k.4 }}

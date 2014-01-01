@@ -246,14 +246,18 @@ def show_InfoObjectRevisions_vertical(iobject):
     return {'object': iobject}
 
 
-@register.inclusion_tag('dingos/%s/includes/_InfoObjectEmbeddingDisplay.html'% DINGOS_TEMPLATE_FAMILY)
-def show_InfoObjectEmbeddings(iobject):
-    return {'object': iobject}
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectEmbeddingDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
+def show_InfoObjectEmbeddings(context,iobject):
+    print context
+    return {'object': iobject,
+            'customization' : context.get('customization')}
 
 
-@register.inclusion_tag('dingos/%s/includes/_InfoObjectEmbeddingDisplay_vertical.html'% DINGOS_TEMPLATE_FAMILY)
-def show_InfoObjectEmbeddings_vertical(iobject,max_embedded):
-    return {'object': iobject, 'max_embedded' : max_embedded}
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectEmbeddingDisplay_vertical.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
+def show_InfoObjectEmbeddings_vertical(context,iobject,max_embedded):
+    print "CUSTOM: %s" % context.get('customization')
+    return {'object': iobject, 'max_embedded' : max_embedded,
+            'customization' : context.get('customization')}
 
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectIDDataDisplay.html'% DINGOS_TEMPLATE_FAMILY)

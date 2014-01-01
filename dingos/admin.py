@@ -27,7 +27,8 @@ from models import DataTypeNameSpace,\
     NodeID,\
     InfoObjectNaming,\
     BlobStorage,\
-    IdentifierNameSpace
+    IdentifierNameSpace,\
+    UserConfiguration
 
 
 
@@ -120,6 +121,11 @@ class FactTerm2TypeAdmin(admin.ModelAdmin):
         'm2m': ['fact_data_types',],
         }
 
+class UserConfigurationAdmin(admin.ModelAdmin):
+    list_display = ('user','identifier')
+    raw_id_fields = ('user','identifier')
+
+
 
 
 class InfoObjectFamilyAdmin(admin.ModelAdmin):
@@ -152,6 +158,6 @@ admin.site.register(FactTerm2Type,FactTerm2TypeAdmin)
 admin.site.register(NodeID)
 admin.site.register(Revision)
 admin.site.register(BlobStorage,BlobStorageAdmin)
-
+admin.site.register(UserConfiguration,UserConfigurationAdmin)
 
 

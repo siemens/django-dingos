@@ -25,135 +25,11 @@ from core.http_helpers import get_query_string
 
 from django_filters.views import FilterView
 
-from dingos.models import get_user_settings
+from dingos.models import UserConfiguration
 from dingos import DINGOS_TEMPLATE_FAMILY
 
+from dingos.core.template_helpers import ConfigDictWrapper
 
-class ConfigDict(object):
-    """
-    A helper class for using customized 
-    configurations within django views
-    """
-
-    _orig_dict =  None
-    _stack = []
-
-    def __init__(self, orig_dict):
-        """
-        Needs to receive a dict-like object for init.
-        Note that it works with all dict-like objects WITHOUT a boolean as key!
-        """
-        self._orig_dict = orig_dict
-        
-    def get(self, key):
-        """ Just a wrapper for __getitem__() """
-        return self.__getitem__(key)
-
-    def _clear_stack(self):
-        """ Just clears the stack and returns it's last value (centralized method) """
-        out = self._stack[len(self._stack)-1]
-        self._stack = []
-        return out
-
-    def __getitem__(self, key):
-        """
-        Returns itself until a "True" is given as key (as String instance).
-        In this very case all the former called keys are being tried.
-        If the path turns out to return a valid object it is returned.
-        Otherwise the SECOND LAST key argument (the one BEFORE bool) will
-        be returned as it represents the default value. 
-
-        Example usage:
-          this_dict = ConfigDict({ 'first' : { 'second' : 20 } })
-          this_dict.get('first').get('second').get(1).get("True")
-          returns 20 instead of the 1 (which represents the default value)
-        """
-
-        # no bool? just append element and return yourself
-        if not key == "True":
-            self._stack.append(key) 
-            return self
-
-        print self._stack
-        # time to create an output by going along stack (last element of stack is DEFAULT value!)
-        current_element = self._orig_dict
-        for i in range(0, len(self._stack)-1):
-            try:
-                current_element = current_element[self._stack[i]]
-
-            # exception raised (TypeError or KeyError)? Return default value
-            except Exception as e:
-                return self._clear_stack()
-
-        return self._clear_stack()
-
-
-
-
-class ConfigDict(collections.Mapping):
-    """
-
-    """
-
-    def __init__(self, *args, **kwargs):
-
-        self.counter =0
-        default = kwargs.get('default')
-        if default == 'Empty_List':
-            self.default=[]
-        elif default == 'None':
-            self.default = None
-        elif default == 'Empty_Dict':
-            self.default = {}
-        else:
-            try:
-                default = int(default)
-            except:
-                pass
-            self.default = default
-        self.walker = kwargs.get('config_dict',dict())
-        print "Initializing with default %s and walker %s" % (self.default,self.walker)
-
-    def __iter__(self):
-        return self.walker.__iter__()
-
-    def __len__(self):
-        return self.walker.__len__()
-
-
-
-    def __getitem__(self, key):
-        if self.counter > 5:
-            print "Schluss"
-            raise TypeError
-        else:
-            self.counter +=1
-        print "Get carried out for %s" % key
-        if key in self.walker:
-            self.walker = self.walker[key]
-            print "Returning self with default %s and walker %s" % (self.default,self.walker)
-            return self
-        else:
-            print "Returning default %s for key %s" % (self.default, key)
-            return self.default
-            return {0:self.default,1:self.default}
-
-
-
-class ConfigDictWrapper(object):
-    """
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        self.config_dict = kwargs.get('config_dict',dict())
-
-    def __getitem__(self, key):
-        print "Returned config dict with default %s" % key
-        if key in self.config_dict:
-            return ConfigDict(default=[],config_dict=self.config_dict[key])
-        else:
-            return ConfigDict(default=key,config_dict=self.config_dict)
 
 class CommonContextMixin(ContextMixin):
     def get_context_data(self, **kwargs):
@@ -173,20 +49,24 @@ class CommonContextMixin(ContextMixin):
         if settings:
 
             # case 1.)
-            if not self.request.user.is_authenticated() and not settings.get('anonymous'):
+            if not self.request.user.is_authenticated() and self.request.session.get('customization_for_authenticated'):
                 load_new_settings = True
 
             # case 4.)
-            elif self.request.user.is_authenticated() and settings.get('anonymous'):
+            elif self.request.user.is_authenticated() and not self.request.session.get('customization_for_authenticated'):
                 load_new_settings = True
 
         else:
             load_new_settings = True
 
         if True: #load_new_settings:
-            context['customization'] = ConfigDictWrapper(config_dict=get_user_settings(self.request.user))
+            settings = UserConfiguration.get_user_settings(self.request.user)
+            print settings
+            self.request.session['customization']=settings
+            self.request.session['customization_for_authenticated']=self.request.user.is_authenticated()
             #context['customization'] = ConfigDictWrapper(config_dict={'searches':{'blah':5}})
 
+        context['customization'] = ConfigDictWrapper(config_dict=settings)
         return context
 
 class ViewMethodMixin(object):
@@ -205,7 +85,7 @@ class ViewMethodMixin(object):
         """
         return get_query_string(self.request,*args,**kwargs)
     def read_config(self,*args,**kwargs):
-	return "%s with default %s" % (','.join(args),kwargs.get('default',None))  
+        return "%s with default %s" % (','.join(args),kwargs.get('default',None))
 
 class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
 

@@ -22,7 +22,7 @@ import pprint
 import re
 import hashlib
 import base64
-
+import copy
 
 from django.db import models
 from django.db.models import Count, F
@@ -41,7 +41,7 @@ import dingos
 
 from dingos import *
 
-from dingos.core.datastructures import DingoObjDict,ExtendedSortedDict
+from dingos.core.datastructures import DingoObjDict,ExtendedSortedDict,dict2DingoObjDict
 
 logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=2)
@@ -1100,7 +1100,7 @@ class InfoObject(DingoModel):
         self.set_name()
 
 
-    def to_dict(self,include_node_id=False):
+    def to_dict(self,include_node_id=False,no_attributes=False):
         flat_result = []
 
         fact_thrus = self.fact_thru.all().prefetch_related(
@@ -1145,9 +1145,10 @@ class InfoObject(DingoModel):
             flat_result.append(fact_dict)
 
         result = DingoObjDict()
-        result.from_flat_repr(flat_result,include_node_id=include_node_id)
-        result['@@iobject_type'] = self.iobject_type.name
-        result['@@iobject_type_ns'] = self.iobject_type.namespace.uri
+        result.from_flat_repr(flat_result,include_node_id=include_node_id,no_attributes=no_attributes)
+        if not no_attributes:
+            result['@@iobject_type'] = self.iobject_type.name
+            result['@@iobject_type_ns'] = self.iobject_type.namespace.uri
         #result = result.to_tuple()
         return result
 
@@ -1490,6 +1491,7 @@ def get_or_create_iobject(identifier_uid,
     id_namespace, created = dingos_class_map['IdentifierNameSpace'].objects.get_or_create(uri=identifier_namespace_uri)
 
     if created and identifier_namespace_name:
+        print identifier_namespace_name
         id_namespace.name = identifier_namespace_name
         id_namespace.save()
 
@@ -1530,6 +1532,9 @@ def get_or_create_iobject(identifier_uid,
     if created:
         iobject.set_name()
         iobject.save()
+        identifier.latest = iobject
+        identifier.save()
+
 
     elif overwrite:
         iobject.timestamp = timestamp
@@ -1716,17 +1721,32 @@ def write_large_value(value,storage_location=dingos.DINGOS_LARGE_VALUE_DESTINATI
 class UserConfiguration(DingoModel):
     """
     Model for binding settings to a django user model.
-    All settings are stored internally within InfoObbjects
+    All settings are stored internally within InfoObjects
     that are referenced by Identifier.
     """
 
-    user = models.ForeignKey(User)
-    identifier = models.ForeignKey(Identifier)
+    user = models.ForeignKey(User,
+                             unique=True)
+    identifier = models.ForeignKey(Identifier,
+                                   null=True)
 
+    def retrieve(self):
+        logger.debug("Retrieving user configuration for user %s" % self.user.username)
+        settings_iobject = None
+        if self.identifier:
+            print "Identifer %s" % self.identifier.uid
+            settings_iobject = self.identifier.latest
+        if settings_iobject:
+            return settings_iobject.to_dict(no_attributes=True)
+        else:
+            user_prefs = copy.deepcopy(DINGOS_DEFAULT_USER_PREFS)
+            logger.debug("Store user settings called")
+            self.store(user_prefs)
+            return user_prefs
 
-    @staticmethod
-    def store(currentuser, settings):
+    def store(self,settings):
         """
+        TODO
         Stores given dict settings to the database and
         connects it with a given user. If user is not
         an instance of class User, no persistation will
@@ -1734,56 +1754,62 @@ class UserConfiguration(DingoModel):
         value is True and otherwise it'll be False.
         """
 
-        if not type(currentuser) == User:
 
-            # make sure no anonymous settings are possible within user context
-            if settings.get('anonymous'):
-                del settings['anonymous']
 
-            return False
+        settings_dod = dict2DingoObjDict(settings)
 
-        return True
+
+        settings_iobject = None
+        if self.identifier:
+            settings_iobject = self.identifier.latest
+
+        if not settings_iobject:
+            settings_iobject,created = get_or_create_iobject("user_pk_%s" % self.user.pk,
+                                      identifier_namespace_uri = DINGOS_ID_NAMESPACE_URI,
+                                      iobject_type_name = DINGOS_USER_CONFIGURATION_TYPE_NAME,
+                                      iobject_type_namespace_uri = DINGOS_NAMESPACE_URI,
+                                      iobject_type_revision_name = REVISION,
+                                      iobject_family_name = DINGOS_IOBJECT_FAMILY_NAME,
+                                      iobject_family_revision_name= REVISION,
+                                      identifier_namespace_name=DINGOS_ID_NAMESPACE_URI,
+                                      timestamp=None,
+                                      create_timestamp=None,
+                                    )
+
+        if not self.identifier:
+            self.identifier = settings_iobject.identifier
+            self.save()
+        return settings_iobject.from_dict(settings_dod)
 
     @staticmethod
-    def get_default_settings():
+    def get_user_settings(currentuser):
         """
-        This is where the default settings are stored (and can be modified).
-        The method returns a static dict representing the default settings.
+        Returns either stored settings of a given user or default settings.
+        This behavior reflects the need for views to have some settings at
+        hand when running. The settings are returned as dict object.
         """
+        logger.debug("Get user settings called")
 
-        settings = { 'anonymous' : True,      # signal to CommonContextMixin that the anonymous settings are used
-                     'epp' : 150,             # elements per page: number of elements on one page
+        if currentuser.is_authenticated():
+            user_config,created =  UserConfiguration.objects.get_or_create(user=currentuser)
+            return user_config.retrieve()
 
-                     'searches' : [           # testing searches
-                                      { 'priority' : 0, 
-                                        'title' : 'Testing', 
-                                        'view' : 'url.dingos.list.infoobject.generic',
-                                        'parameter' : 'iobject_type=72&identifier__namespace=1',
-                                      }
-                                  ],
-        }
 
-        return settings
+        #if not type(currentuser) == User:
+
+            # make sure no anonymous settings are possible within user context
+
+        #    return False
+
+        #if settings.get('anonymous'):
+        #    del settings['anonymous']
+
+
+
+        #return True
+
 
 dingos_class_map["UserConfiguration"] = UserConfiguration
 
-def get_user_settings(currentuser):
-    """
-    Returns either stored settings of a given user or default settings.
-    This behavior reflects the need for views to have some settings at 
-    hand when running. The settings are returned as dict object.
-    """
 
-    if currentuser.is_authenticated():
-        try:
-            identifier = UserConfiguration.objects.get(user=currentuser.id)
-            return identifier.latest.to_dict()
-
-        # user is logged in but has no custom settings: strip anonymous flag of default settings
-        except ObjectDoesNotExist as e:
-            settings = UserConfiguration.get_default_settings()
-            del settings['anonymous']
-            return settings
-
-    return UserConfiguration.get_default_settings() 
 
