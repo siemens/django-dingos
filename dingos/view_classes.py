@@ -35,7 +35,6 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
 
 from dingos.core.template_helpers import ConfigDictWrapper
 
-
 class CommonContextMixin(ContextMixin):
     def get_context_data(self, **kwargs):
         context = super(CommonContextMixin, self).get_context_data(**kwargs)
@@ -65,7 +64,7 @@ class CommonContextMixin(ContextMixin):
         else:
             load_new_settings = True
 
-        if True:
+        if load_new_settings:
             # Load user settings. If for the current user, no user settings have been
             # stored, retrieve the default settings and store them (for authenticated users)
 
