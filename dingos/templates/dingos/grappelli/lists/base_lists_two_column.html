@@ -60,13 +60,13 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             <h2 class="grp-collapse-handler">{% block list_title %}Object List {% endblock %}</h2>
 
             {%  if is_paginated %}
-                {%  render_paginator view paginator page_obj %}
+                {%  render_paginator  %}
             {% endif %}
 
             {% block objects %}
         {% endblock %}
             {%  if is_paginated %}
-                {%  render_paginator view paginator page_obj %}
+                {%  render_paginator  %}
             {% endif %}
             </div>
         </div>

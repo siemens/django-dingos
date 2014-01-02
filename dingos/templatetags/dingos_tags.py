@@ -194,20 +194,18 @@ def create_title(*args):
     return strip_tags(seperator.join(args))
 
 
-@register.inclusion_tag('dingos/%s/includes/_Paginator.html' % DINGOS_TEMPLATE_FAMILY)
-def render_paginator(view,paginator,page_obj):
-    request_string = view.get_query_string(remove=['page'])
-    return {'request_string':request_string,'paginator':paginator,'page_obj':page_obj}
+@register.inclusion_tag('dingos/%s/includes/_Paginator.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
+def render_paginator(context):
+    request_string = context['view'].get_query_string(remove=['page'])
+    return {'request_string':request_string,'paginator':context['paginator'],'page_obj':context['page_obj']}
 
 # Below we register template tags that display
 # certain aspects of an InformationObject.
 
-@register.inclusion_tag('dingos/%s/includes/_InfoObjectFactsDisplay.html'% DINGOS_TEMPLATE_FAMILY)
-def show_InfoObject(iobject, iobject2facts, view=None, highlight=None,show_NodeID=False):
-    page = view.request.GET.get('page')
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectFactsDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
+def show_InfoObject(context, iobject, iobject2facts, highlight=None,show_NodeID=False):
+    page = context['view'].request.GET.get('page')
 
-
-    #iobject2facts_paginator = Paginator(iobject.fact_thru.all(),100)
     iobject2facts_paginator = Paginator(iobject2facts,200)
     if iobject2facts_paginator.num_pages == 1:
         is_paginated = False
@@ -226,7 +224,7 @@ def show_InfoObject(iobject, iobject2facts, view=None, highlight=None,show_NodeI
 
 
     return {'object': iobject,
-            'view' : view,
+            'view' : context['view'],
             'is_paginated' : is_paginated,
             'paginator' : iobject2facts_paginator,
             'page_obj' :iobject2facts,
@@ -253,11 +251,11 @@ def show_InfoObjectEmbeddings(context,iobject):
             'customization' : context.get('customization')}
 
 
-@register.inclusion_tag('dingos/%s/includes/_InfoObjectEmbeddingDisplay_vertical.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
-def show_InfoObjectEmbeddings_vertical(context,iobject,max_embedded):
-    print "CUSTOM: %s" % context.get('customization')
-    return {'object': iobject, 'max_embedded' : max_embedded,
-            'customization' : context.get('customization')}
+
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectEmbeddingDisplay_vertical.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_InfoObjectEmbeddings_vertical(context,iobject):
+    return {'object': iobject, 'customization' : context.get('customization')}
+
 
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectIDDataDisplay.html'% DINGOS_TEMPLATE_FAMILY)
