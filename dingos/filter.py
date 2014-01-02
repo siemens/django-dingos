@@ -103,10 +103,15 @@ class InfoObjectFilter(django_filters.FilterSet):
 
 class IdSearchFilter(django_filters.FilterSet):
 
+    identifier__namespace = django_filters.ModelChoiceFilter(
+        queryset= IdentifierNameSpace.objects.exclude(uri__exact=DINGOS_ID_NAMESPACE_URI),
+        required=None,
+        label="ID Namespace",
+        to_field_name='id')
+
+
     identifier__uid = django_filters.CharFilter(lookup_type='icontains',
                                                   label='ID contains')
-
-
 
     class Meta:
         model = InfoObject

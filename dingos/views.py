@@ -48,7 +48,7 @@ class InfoObjectList(BasicFilterView):
 
     queryset = InfoObject.objects.\
         exclude(latest_of=None). \
-        exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME).\
+        exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
         prefetch_related(
         'iobject_type',
         'iobject_type__iobject_family',
@@ -71,7 +71,9 @@ class InfoObjectList_Id_filtered(BasicFilterView):
 
     title = 'ID-based filtering'
 
-    queryset = InfoObject.objects.exclude(latest_of=None).prefetch_related(
+    queryset = InfoObject.objects.exclude(latest_of=None). \
+        exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+        prefetch_related(
         'iobject_type',
         'iobject_family',
         'iobject_family_revision',
@@ -120,12 +122,13 @@ class SimpleFactSearch(BasicFilterView):
 
     filterset_class = FactTermValueFilter
 
-    queryset =  InfoObject2Fact.objects.all().exclude(iobject__latest_of=None).prefetch_related('iobject',
-                                                                                                'iobject__iobject_type',
-                                                                                                'fact__fact_term',
-                                                                                                'fact__fact_values').select_related().distinct().order_by('iobject__id')
-
-
+    queryset =  InfoObject2Fact.objects.all().\
+        exclude(iobject__latest_of=None). \
+        exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+        prefetch_related('iobject',
+            'iobject__iobject_type',
+            'fact__fact_term',
+            'fact__fact_values').select_related().distinct().order_by('iobject__id')
 
 class InfoObjectView(BasicDetailView):
     """
