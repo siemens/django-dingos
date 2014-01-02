@@ -26,7 +26,7 @@ from django.db.models import F
 from dingos.models import Identifier, InfoObject2Fact, InfoObject
 from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter
 
-from dingos import DINGOS_TEMPLATE_FAMILY
+from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME
 
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView
 
@@ -46,7 +46,10 @@ class InfoObjectList(BasicFilterView):
 
     title = 'List of Info Objects (generic filter)'
 
-    queryset = InfoObject.objects.exclude(latest_of=None).prefetch_related(
+    queryset = InfoObject.objects.\
+        exclude(latest_of=None). \
+        exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME).\
+        prefetch_related(
         'iobject_type',
         'iobject_type__iobject_family',
         'iobject_family',

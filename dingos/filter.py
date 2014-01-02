@@ -27,6 +27,8 @@ from django.utils.translation import ugettext_lazy as _
 from datetime import timedelta
 from django.utils.timezone import now
 
+from dingos import DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_ID_NAMESPACE_URI
+
 _truncate = lambda dt: dt.replace(hour=0, minute=0, second=0)
 
 class ExtendedDateRangeFilter(django_filters.DateRangeFilter):
@@ -61,23 +63,26 @@ class ExtendedDateRangeFilter(django_filters.DateRangeFilter):
 
 class InfoObjectFilter(django_filters.FilterSet):
 
+    iobject_type_qs = \
+        InfoObjectType.objects. \
+            exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+            annotate(num_objects=Count('iobject_set')).\
+               filter(num_objects__gt=0).\
+            prefetch_related('iobject_family').order_by('iobject_family__name','name')
 
-    iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('iobject_set')).\
-        filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
-
-    iobject_type = django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
+    iobject_type =  django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
                                                     required=None,
                                                     label="InfoObject Type",
                                                     to_field_name='id')
 
     iobject_type__iobject_family = django_filters.ModelChoiceFilter(
-                                                    queryset= InfoObjectFamily.objects.all(),
-                                                    required=None,
-                                                    label="InfoObject Family",
-                                                    to_field_name='id')
+        queryset= InfoObjectFamily.objects.exclude(name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME),
+        required=None,
+        label="InfoObject Family",
+        to_field_name='id')
 
     identifier__namespace = django_filters.ModelChoiceFilter(
-        queryset= IdentifierNameSpace.objects.all(),
+        queryset= IdentifierNameSpace.objects.exclude(uri__exact=DINGOS_ID_NAMESPACE_URI),
         required=None,
         label="ID Namespace",
         to_field_name='id')
@@ -93,6 +98,7 @@ class InfoObjectFilter(django_filters.FilterSet):
         model = InfoObject
         fields = ['iobject_type','iobject_type__iobject_family',
                   'identifier__namespace','identifier__uid','timestamp', 'create_timestamp']
+
 
 
 class IdSearchFilter(django_filters.FilterSet):
