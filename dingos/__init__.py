@@ -67,10 +67,20 @@ DINGOS_ID_NAMESPACE_SLUG = 'DingosDefaultIdNameSpace'
 DINGOS_GENERIC_FAMILY_NAME = 'generic'
 
 # The DINGOS_IOBJECT_FAMILY_NAME is used as family name for all internally created objects
-# such as PLACEHOLDERS. We Dingo's revision both as revision for families and object types
-# of internally created information objects.
+# such as PLACEHOLDERS that should by default be visible to a normal user.
+
 
 DINGOS_IOBJECT_FAMILY_NAME = 'DINGOS'
+
+# The DINGOS_INTERNAL_IOBJECT_FAMILY_NAME is used as family name for all internally created objects
+# such as USER_CONFIGURATION, SAVED_SEARCHES, etc. that should by default not be visible to a normal user.
+# of internally created information objects.
+
+DINGOS_INTERNAL_IOBJECT_FAMILY_NAME = 'DINGOS_internal'
+
+# We Dingo's revision both as revision for families and object types
+# of internally created information objects.
+
 
 DINGOS_REVISION_NAME = REVISION
 
@@ -129,12 +139,14 @@ DINGOS_DEFAULT_USER_PREFS = {
                           } ,
                       },
                  'view' :
-                     {'lines' : {'@description': """Max. number of lines displayed in
+                     {'pagination':
+                          {'lines' : {'@description': """Max. number of lines displayed in
                                                     paginated views.""",
-                                 '_value' : '50'},
-                      'orientation' : {'@description': """Layout orientation. Possible values are 'vertical' and
+                                      '_value' : '50'},
+                           'orientation' : {'@description': """Layout orientation. Possible values are 'vertical' and
                                                           'horizontal'.""",
-                                       '_value' : 'vertical'}}
+                                            '_value' : 'vertical'}}
+                     }
 
     }
 }

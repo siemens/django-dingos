@@ -26,7 +26,7 @@ import copy
 
 from django.db import models
 from django.db.models import Count, F
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core import urlresolvers
@@ -1469,12 +1469,14 @@ dingos_class_map["Marking2X"] = Marking2X
 
 class UserData(DingoModel):
     """
-    Model for binding settings to a django user model.
-    All settings are stored internally within InfoObjects
-    that are referenced by Identifier.
+    Model for binding user/group-specific data stored in DINGOS InfoObjects to a Django user/group
+    (or combination thereof).
     """
 
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User,
+                             null=True)
+    group = models.ForeignKey(Group,
+                              null=True)
 
     data_kind = models.SlugField(max_length=32)
 
@@ -1482,64 +1484,73 @@ class UserData(DingoModel):
                                    null=True)
 
     class Meta:
-        # The constraint below can cause problems if the entries in FactValue become to large:
-        # Uniqueness forces the creation of a index on values
-        # for testing uniqueness.
-        unique_together = ('user', 'data_kind')
+        unique_together = ('user', 'group','data_kind')
 
     def retrieve(self):
-        logger.debug("Retrieving user configuration for user %s" % self.user.username)
+
         settings_iobject = None
         if self.identifier:
-            print "Identifer %s" % self.identifier.uid
             settings_iobject = self.identifier.latest
         if settings_iobject:
             return settings_iobject.to_dict(no_attributes=True)
         else:
             return None
-            logger.debug("Store user settings called")
-            self.store(user_prefs)
-            return user_prefs
 
-    def store(self,settings,iobject_type_name=DINGOS_USER_DATA_TYPE_NAME):
-        """
-        TODO
-        Stores given dict settings to the database and
-        connects it with a given user. If user is not
-        an instance of class User, no persistation will
-        be done. If the settings were stored the return
-        value is True and otherwise it'll be False.
-        """
-
-
+    def store(self,settings,iobject_type_name=DINGOS_USER_DATA_TYPE_NAME,keep_history=False):
 
         settings_dod = dict2DingoObjDict(settings)
-
 
         settings_iobject = None
         if self.identifier:
             settings_iobject = self.identifier.latest
 
-        if not settings_iobject:
-            settings_iobject,created = get_or_create_iobject("%s_for_%s" % (iobject_type_name,self.user.pk),
+        if (not settings_iobject) or keep_history:
+            # We make a new object
+            if self.identifier:
+                iobject_identifier = self.identifier.uid
+            else:
+                # Actually, the identifier of the information object in which
+                # we store user data is irrelevant, since we will always retrieve
+                # the information object / identifier via the foreign key. But
+                # why not make a speaking identifier?
+
+                if self.user:
+                    user_pk = self.user.pk
+                else:
+                    user_pk = None
+
+                if self.group:
+                    group_pk = self.group.pk
+                else:
+                    group_pk = None
+
+                iobject_identifier = "%s_u%s_g%s" % (iobject_type_name,user_pk,group_pk)
+
+
+                settings_iobject,created = get_or_create_iobject(iobject_identifier,
                                                              identifier_namespace_uri = DINGOS_ID_NAMESPACE_URI,
                                                              iobject_type_name = iobject_type_name,
                                                              iobject_type_namespace_uri = DINGOS_NAMESPACE_URI,
                                                              iobject_type_revision_name = REVISION,
-                                                             iobject_family_name = DINGOS_IOBJECT_FAMILY_NAME,
+                                                             iobject_family_name = DINGOS_INTERNAL_IOBJECT_FAMILY_NAME,
                                                              iobject_family_revision_name= REVISION,
                                                              identifier_namespace_name= DINGOS_ID_NAMESPACE_SLUG,
                                                              timestamp=None,
                                                              create_timestamp=None,
                                                              )
 
+        else:
+            # We are going to overwrite information in an existing information object --
+            # let us therefore adjust the timestamp.
+            settings_iobject.timestamp = timezone.now()
+            settings_iobject.save()
         if not self.identifier:
             self.identifier = settings_iobject.identifier
             self.save()
         return settings_iobject.from_dict(settings_dod)
 
     @staticmethod
-    def get_user_data(user,data_kind):
+    def get_user_data(user=None,group=None,data_kind=DINGOS_USER_DATA_TYPE_NAME):
         """
         Returns either stored settings of a given user or default settings.
         This behavior reflects the need for views to have some settings at
@@ -1547,23 +1558,28 @@ class UserData(DingoModel):
         """
         logger.debug("Get user settings called")
 
-        if user.is_authenticated():
-            user_config,created =  UserData.objects.get_or_create(user=user,data_kind=data_kind)
-            return user_config.retrieve()
-        else:
-            user_prefs = copy.deepcopy(DINGOS_DEFAULT_USER_PREFS)
-            return user_prefs
+        if not user.is_authenticated():
+            user = None
+
+        user_config,created =  UserData.objects.get_or_create(user=user,group=group,data_kind=data_kind)
+        return user_config.retrieve()
 
     @staticmethod
-    def store_user_data(user,data_kind,user_data):
+    def store_user_data(user=None, group=None,data_kind=DINGOS_USER_DATA_TYPE_NAME,user_data=None):
         """
         Returns either stored settings of a given user or default settings.
         This behavior reflects the need for views to have some settings at
         hand when running. The settings are returned as dict object.
         """
-        if user.is_authenticated():
-            user_config,created =  UserData.objects.get_or_create(user=user,data_kind=data_kind)
-            return user_config.store(user_data,iobject_type_name=data_kind)
+
+        if not user_data:
+            user_data = {}
+
+        if not user.is_authenticated():
+            user = None
+
+        user_config,created =  UserData.objects.get_or_create(user=user,group=group,data_kind=data_kind)
+        return user_config.store(user_data,iobject_type_name=data_kind)
 
 dingos_class_map["UserData"] = UserData
 

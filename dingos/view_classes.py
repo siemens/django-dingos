@@ -36,13 +36,27 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
 from dingos.core.template_helpers import ConfigDictWrapper
 
 class CommonContextMixin(ContextMixin):
+    """
+    Each view passes a 'context' to the template with which the view
+    is rendered. By inluding this mixin in a class-based view, the
+    context is enriched with the contents expected by all Dingos
+    templates.
+    """
     def get_context_data(self, **kwargs):
         context = super(CommonContextMixin, self).get_context_data(**kwargs)
+
         context['title'] = self.title if hasattr(self, 'title') else '[TITLE MISSING]'
 
-        ######## user customization
-        # there are four cases if settings exist within session scope:
-        # 1.) unauthenticated user && non-anonymous settings --> load
+        # Below, we include user-specific data (user preferences, saved searches, etc.)
+        # in the context. We take this data from the session -- if it has already been
+        # loaded in the session. If not, then we load the data into the session first.
+        #
+        # Things are a bit tricky, because users can first be unauthenticated,
+        # then log in, then log off again. This must be reflected in the user data
+        # that is loaded into the session.
+        #
+        # There are four cases if settings exist within session scope:
+        # 1.) unauthenticated user && non-anonymous settings exist in session --> load
         # 2.) unauthenticated user && anonymous settings --> pass
         # 3.) authenticated user && non-anonymous settings --> pass
         # 4.) authenticated user && anonymous settings --> load
@@ -54,11 +68,13 @@ class CommonContextMixin(ContextMixin):
         if settings:
 
             # case 1.)
-            if not self.request.user.is_authenticated() and self.request.session.get('customization_for_authenticated'):
+            if (not self.request.user.is_authenticated())\
+                and self.request.session.get('customization_for_authenticated'):
                 load_new_settings = True
 
             # case 4.)
-            elif self.request.user.is_authenticated() and not self.request.session.get('customization_for_authenticated'):
+            elif self.request.user.is_authenticated() \
+                and not self.request.session.get('customization_for_authenticated'):
                 load_new_settings = True
 
         else:
@@ -70,13 +86,14 @@ class CommonContextMixin(ContextMixin):
 
             self.request.session['customization_for_authenticated']=self.request.user.is_authenticated()
 
+
+
             settings = UserData.get_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
             if not settings:
                 settings = copy.deepcopy(DINGOS_DEFAULT_USER_PREFS)
-                if self.request.user.is_authenticated():
-                    UserData.store_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME,user_data=settings)
+                UserData.store_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME,user_data=settings)
 
-            self.request.session['customization']=settings
+            self.request.session['customization'] = settings
 
 
             # Do the same for saved searches
@@ -84,13 +101,24 @@ class CommonContextMixin(ContextMixin):
             saved_searches = UserData.get_user_data(user=self.request.user,data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
             if not saved_searches:
                 saved_searches = copy.deepcopy(DINGOS_DEFAULT_SAVED_SEARCHES)
-                if self.request.user.is_authenticated():
-                    UserData.store_user_data(user=self.request.user,
-                                             data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
-                                             user_data=saved_searches)
+                UserData.store_user_data(user=self.request.user,
+                    data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
+                    user_data=saved_searches)
 
-            self.request.session['saved_searches']=saved_searches
-            #context['customization'] = ConfigDictWrapper(config_dict={'searches':{'blah':5}})
+            self.request.session['saved_searches'] = saved_searches
+
+        # We use the ConfigDictWrapper to wrap the data dictionaries. This allows the
+        # following usage within a template, e.g., for ``customizations``::
+        #
+        #      customizations.<defaut_value>.<path_to_value_in_dict separated by '.'s>
+        #
+        # For example:
+        #
+        #      customizations.5.dingos.widget.embedding_objects.lines
+        #
+        # where 5 is the default value that will be taken if the dictionary lookup
+        # ``customizations['dingos']['widget']['embedding_objects']['lines']`` does
+        # not yield a different value.
 
         context['customization'] = ConfigDictWrapper(config_dict=settings)
         context['saved_searches'] = ConfigDictWrapper(config_dict=saved_searches)
@@ -115,7 +143,8 @@ class ViewMethodMixin(object):
     def read_config(self,*args,**kwargs):
         return "%s with default %s" % (','.join(args),kwargs.get('default',None))
 
-class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
+#class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
+class BasicListView(CommonContextMixin,ViewMethodMixin,ListView):
 
     login_url = "/admin"
 
@@ -125,7 +154,9 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
 
     paginate_by = 20
 
-class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,FilterView):
+#class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,FilterView):
+class BasicFilterView(CommonContextMixin,ViewMethodMixin,FilterView):
+
 
     login_url = "/admin"
 
