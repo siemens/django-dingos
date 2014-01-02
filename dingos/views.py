@@ -40,7 +40,6 @@ class InfoObjectList(BasicFilterView):
                    ('List',None),
                    ('InfoObject',None))
 
-    paginate_by = 15
 
     filterset_class= InfoObjectFilter
 
@@ -65,8 +64,6 @@ class InfoObjectList_Id_filtered(BasicFilterView):
                    ('List',None),
                    ('InfoObject',None))
 
-    paginate_by = 15
-
     filterset_class= IdSearchFilter
 
     title = 'ID-based filtering'
@@ -85,8 +82,6 @@ class InfoObjectsEmbedded(BasicFilterView):
     breadcrumbs = (('Dingo',None),
                    ('List',None),
                    ('InfoObject',None))
-
-    paginate_by = 15
 
     filterset_class = InfoObjectFilter
 
@@ -114,8 +109,6 @@ class InfoObjectsEmbedded(BasicFilterView):
 
 class SimpleFactSearch(BasicFilterView):
     template_name = 'dingos/%s/searches/SimpleFactSearch.html' % DINGOS_TEMPLATE_FAMILY
-
-    paginate_by = 15
 
     title = 'Fact-based filtering'
 
@@ -153,8 +146,6 @@ class InfoObjectView(BasicDetailView):
     )
     model = InfoObject
 
-    max_embedded = 5
-
     template_name = 'dingos/%s/details/InfoObjectDetails.html' % DINGOS_TEMPLATE_FAMILY
 
     title = 'Info Object Details'
@@ -170,7 +161,6 @@ class InfoObjectView(BasicDetailView):
                                                              'node_id')
 
 
-    max_embedded = 5
 
     template_name = 'dingos/%s/details/InfoObjectDetails.html' % DINGOS_TEMPLATE_FAMILY
 
@@ -178,7 +168,6 @@ class InfoObjectView(BasicDetailView):
 
     def get_context_data(self, **kwargs):
         context = super(InfoObjectView, self).get_context_data(**kwargs)
-        context['max_embedded'] = self.max_embedded
 
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
         context['iobject2facts'] = self.iobject2facts

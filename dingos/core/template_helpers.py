@@ -152,6 +152,8 @@ class ConfigDict(collections.Mapping):
             logger.debug("Returning from %s default %s for key %s" % (self,self.default, key))
             return self.default
 
+    def __unicode__(self):
+        return "%s" % self.walker
 
 class ConfigDefaultIntWrapper(int):
     """
@@ -163,6 +165,7 @@ class ConfigDefaultIntWrapper(int):
     """
     def __getitem__(self,key):
         return self
+
 
 class ConfigDefaultListWrapper(list):
     """
@@ -225,3 +228,6 @@ class ConfigDictWrapper(object):
         # else:
         logger.debug("Wrapped config dict with default %s" % key)
         return ConfigDict(default=key,config_dict=self.config_dict)
+
+    def __unicode__(self):
+        return "%s" % self.config_dict

@@ -142,10 +142,11 @@ DINGOS_DEFAULT_USER_PREFS = {
                      {'pagination':
                           {'lines' : {'@description': """Max. number of lines displayed in
                                                     paginated views.""",
-                                      '_value' : '50'},
-                           'orientation' : {'@description': """Layout orientation. Possible values are 'vertical' and
+                                      '_value' : '20'},
+                           },
+                      'orientation' : {'@description': """Layout orientation. Possible values are 'vertical' and
                                                           'horizontal'.""",
-                                            '_value' : 'vertical'}}
+                                       '_value' : 'vertical'}
                      }
 
     }

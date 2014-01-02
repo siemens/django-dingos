@@ -35,6 +35,8 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
 
 from dingos.core.template_helpers import ConfigDictWrapper
 
+from dingos.core.utilities import get_dict
+
 class CommonContextMixin(ContextMixin):
     """
     Each view passes a 'context' to the template with which the view
@@ -47,8 +49,52 @@ class CommonContextMixin(ContextMixin):
 
         context['title'] = self.title if hasattr(self, 'title') else '[TITLE MISSING]'
 
-        # Below, we include user-specific data (user preferences, saved searches, etc.)
-        # in the context. We take this data from the session -- if it has already been
+
+        user_data_dict = self.get_user_data()
+
+        # We use the ConfigDictWrapper to wrap the data dictionaries. This allows the
+        # following usage within a template, e.g., for ``customizations``::
+        #
+        #      customizations.<defaut_value>.<path_to_value_in_dict separated by '.'s>
+        #
+        # For example:
+        #
+        #      customizations.5.dingos.widget.embedding_objects.lines
+        #
+        # where 5 is the default value that will be taken if the dictionary lookup
+        # ``customizations['dingos']['widget']['embedding_objects']['lines']`` does
+        # not yield a different value.
+
+        wrapped_settings = ConfigDictWrapper(config_dict=user_data_dict.get('customization',{}))
+        wrapped_saved_searches = ConfigDictWrapper(config_dict=user_data_dict.get('saved_searches',{}))
+
+        context['customization'] = wrapped_settings
+        context['saved_searches'] = wrapped_saved_searches
+
+
+        return context
+
+class ViewMethodMixin(object):
+    """
+    We use this Mixin to enrich view with methods that are required
+    by certain templates and template tags. In order to use
+    these template tags from a given view, simply add this
+    mixin to the parent classes of the view.
+    """
+    def get_query_string(self,*args,**kwargs):
+        """
+        Allows access to query string (with facilities to manipulate the string,
+        e.g., removing or adding query attributes. We use this, for example,
+        in the paginator, which needs to create a link with the current
+        query and change around the 'page' part of the query string.
+        """
+        return get_query_string(self.request,*args,**kwargs)
+
+    def get_user_data(self):
+        print "Get user data called"
+
+        # Below, we retrieve user-specific data (user preferences, saved searches, etc.)
+        # We take this data from the session -- if it has already been
         # loaded in the session. If not, then we load the data into the session first.
         #
         # Things are a bit tricky, because users can first be unauthenticated,
@@ -68,7 +114,7 @@ class CommonContextMixin(ContextMixin):
         if settings:
 
             # case 1.)
-            if (not self.request.user.is_authenticated())\
+            if (not self.request.user.is_authenticated()) \
                 and self.request.session.get('customization_for_authenticated'):
                 load_new_settings = True
 
@@ -93,7 +139,7 @@ class CommonContextMixin(ContextMixin):
                 settings = copy.deepcopy(DINGOS_DEFAULT_USER_PREFS)
                 UserData.store_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME,user_data=settings)
 
-            self.request.session['customization'] = settings
+
 
 
             # Do the same for saved searches
@@ -102,46 +148,22 @@ class CommonContextMixin(ContextMixin):
             if not saved_searches:
                 saved_searches = copy.deepcopy(DINGOS_DEFAULT_SAVED_SEARCHES)
                 UserData.store_user_data(user=self.request.user,
-                    data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
-                    user_data=saved_searches)
+                                         data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
+                                         user_data=saved_searches)
 
+
+
+
+            self.request.session['customization'] = settings
             self.request.session['saved_searches'] = saved_searches
 
-        # We use the ConfigDictWrapper to wrap the data dictionaries. This allows the
-        # following usage within a template, e.g., for ``customizations``::
-        #
-        #      customizations.<defaut_value>.<path_to_value_in_dict separated by '.'s>
-        #
-        # For example:
-        #
-        #      customizations.5.dingos.widget.embedding_objects.lines
-        #
-        # where 5 is the default value that will be taken if the dictionary lookup
-        # ``customizations['dingos']['widget']['embedding_objects']['lines']`` does
-        # not yield a different value.
+        return {'customization': settings,
+                'saved_searches' : saved_searches}
 
-        context['customization'] = ConfigDictWrapper(config_dict=settings)
-        context['saved_searches'] = ConfigDictWrapper(config_dict=saved_searches)
 
-        return context
-
-class ViewMethodMixin(object):
-    """
-    We use this Mixin to enrich view with methods that are required
-    by certain templates and template tags. In order to use
-    these template tags from a given view, simply add this
-    mixin to the parent classes of the view.
-    """
-    def get_query_string(self,*args,**kwargs):
-        """
-        Allows access to query string (with facilities to manipulate the string,
-        e.g., removing or adding query attributes. We use this, for example,
-        in the paginator, which needs to create a link with the current
-        query and change around the 'page' part of the query string.
-        """
-        return get_query_string(self.request,*args,**kwargs)
-    def read_config(self,*args,**kwargs):
-        return "%s with default %s" % (','.join(args),kwargs.get('default',None))
+    def lookup_customization(self,*args,**kwargs):
+        user_data = self.get_user_data()
+        return get_dict(user_data.get('customization',{}),*args,**kwargs)
 
 #class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
 class BasicListView(CommonContextMixin,ViewMethodMixin,ListView):
@@ -152,11 +174,12 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,ListView):
 
     breadcrumbs = ()
 
-    paginate_by = 20
+    @property
+    def paginate_by(self):
+        return self.lookup_customization('dingos','view','pagination','lines',default=10)
 
 #class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,FilterView):
 class BasicFilterView(CommonContextMixin,ViewMethodMixin,FilterView):
-
 
     login_url = "/admin"
 
@@ -164,7 +187,9 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,FilterView):
 
     breadcrumbs = ()
 
-    paginate_by = 20
+    @property
+    def paginate_by(self):
+        return self.lookup_customization('dingos','view','pagination','lines',default=10)
 
 class BasicDetailView(CommonContextMixin,
                       ViewMethodMixin,

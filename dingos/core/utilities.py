@@ -103,7 +103,7 @@ def set_dict(dictionary, value, command='set', *keys):
             existing[keys[len(keys) - 1]] = [value]
 
 
-def get_dict(dictionary, *keys):
+def get_dict(dictionary, *keys,**kwargs):
     """
     This function allows traversals over several keys to
     be performed by passing a list of keys::
@@ -112,12 +112,20 @@ def get_dict(dictionary, *keys):
 
     """
 
+    if 'default' in kwargs:
+        default = kwargs['default']
+    else:
+        default = None
+
     existing = dictionary
     for i in range(0, len(keys)):
+        print "Trying %s" % keys[i]
         if keys[i] in existing:
+            print 'Found %s is %s ' % (keys[i], existing[keys[i]])
             existing = existing[keys[i]]
         else:
-            return None
+            print "Failed on %s" % keys[i]
+            return default
     return existing
 
 
