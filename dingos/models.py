@@ -1563,8 +1563,30 @@ class UserData(DingoModel):
         if not user.is_authenticated():
             user = None
 
-        user_config,created =  UserData.objects.get_or_create(user=user,group=group,data_kind=data_kind)
-        return user_config.retrieve()
+        try:
+            user_config =  UserData.objects.get(user=user,group=group,data_kind=data_kind)
+            return user_config.retrieve()
+        except:
+            return None
+
+
+    @staticmethod
+    def get_user_data_iobject(user=None,group=None,data_kind=DINGOS_USER_DATA_TYPE_NAME):
+        """
+        Returns either stored settings of a given user or default settings.
+        This behavior reflects the need for views to have some settings at
+        hand when running. The settings are returned as dict object.
+        """
+        logger.debug("Get user settings called")
+
+        if not user.is_authenticated():
+            user = None
+        try:
+            user_config =  UserData.objects.get(user=user,group=group,data_kind=data_kind)
+            return user_config.identifier.latest
+        except:
+            return None
+
 
     @staticmethod
     def store_user_data(user=None, group=None,data_kind=DINGOS_USER_DATA_TYPE_NAME,user_data=None):

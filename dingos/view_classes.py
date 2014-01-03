@@ -144,7 +144,7 @@ class ViewMethodMixin(object):
 
             # Do the same for saved searches
 
-            saved_searches = UserData.get_user_data(user=self.request.user,data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
+            saved_searches = UserData.get_user_data(user=self.request.user, data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
             if not saved_searches:
                 saved_searches = copy.deepcopy(DINGOS_DEFAULT_SAVED_SEARCHES)
                 UserData.store_user_data(user=self.request.user,
@@ -193,7 +193,6 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,FilterView):
 
 class BasicDetailView(CommonContextMixin,
                       ViewMethodMixin,
-                      LoginRequiredMixin,
                       SelectRelatedMixin,
                       PrefetchRelatedMixin,
                       DetailView):
