@@ -234,9 +234,9 @@ class DingoImportHandling(object):
 
             #if not uid:
             #    uid = uuid.uuid1()
-            #logger.info("Creating %s:%s with timestamp %s" % (identifier_ns_uri,
-            #                                                  uid,
-            #                                                  '{:%d-%m-%Y:%H:%M:%S}.{:03d}'.format(timestamp, timestamp.microsecond // 1000)))
+            logger.info("Creating %s:%s with timestamp %s" % (identifier_ns_uri,
+                                                              uid,
+                                                              '{:%d-%m-%Y:%H:%M:%S}.{:03d}'.format(timestamp, timestamp.microsecond // 1000)))
 
             iobject, created = get_or_create_iobject(uid,
                                                      identifier_ns_uri,
