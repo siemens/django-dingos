@@ -1629,8 +1629,8 @@ def get_or_create_iobject(identifier_uid,
 
     # create or retrieve identifier
 
-    if not timestamp:
-        raise StandardError("You must supply a timestamp.")
+    #if not timestamp:
+    #    raise StandardError("You must supply a timestamp.")
 
     id_namespace, created = dingos_class_map['IdentifierNameSpace'].objects.get_or_create(uri=identifier_namespace_uri)
 
