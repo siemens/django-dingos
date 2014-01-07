@@ -87,7 +87,7 @@ class DingoImportHandling(object):
                        config_hooks=None,
                        namespace_dict=None,
                        markings=None,
-                       import_older_ts=False,
+                       import_older_ts=True,
                        iobject_family_name=DINGOS_IOBJECT_FAMILY_NAME,
                        iobject_family_revision_name=DINGOS_REVISION_NAME,
                        iobject_type_name=DINGOS_PLACEHOLDER_TYPE_NAME,
@@ -129,6 +129,16 @@ class DingoImportHandling(object):
 
         """
 
+        if not timestamp:
+            raise StandardError("You must supply a timestamp.")
+
+        if not uid:
+            raise StandardError("You must supply an identifier.")
+
+
+        if not identifier_ns_uri:
+            raise StandardError("You must supply an identifier namespace.")
+
         # Fill in parameter defaults that would be mutable.
 
         if not iobject_data:
@@ -137,38 +147,65 @@ class DingoImportHandling(object):
         if not config_hooks:
             config_hooks = {}
 
+
+
+        latest_existing_iobject = None
+        latest_existing_timestamp = None
         existing_iobject = None
-        existing_timestamp = None
 
         exists = False
         overwrite = False
 
         # Check for existing objects of the given uid
-        if uid:
-            existing_iobject = self.get_latest_revision_of_iobject_by_uid(identifier_ns_uri, uid)
-            if existing_iobject:
-                existing_timestamp = existing_iobject.timestamp
+
+
+        latest_existing_iobject = self.get_latest_revision_of_iobject_by_uid(identifier_ns_uri, uid)
+
+        if latest_existing_iobject:
+            latest_existing_timestamp = latest_existing_iobject.timestamp
+
+        existing_iobjects = self._DCM['InfoObject'].objects.filter(identifier__uid=uid).filter(
+            identifier__namespace__uri=identifier_ns_uri).filter(timestamp=timestamp)
+
+        if existing_iobjects:
+            existing_iobject = existing_iobjects[0]
 
         if existing_iobject:
-
             if existing_iobject.iobject_type.name == DINGOS_PLACEHOLDER_TYPE_NAME \
                 and existing_iobject.iobject_family.name == DINGOS_IOBJECT_FAMILY_NAME:
 
                 overwrite = existing_iobject
+
                 exists = EXIST_PLACEHOLDER
-
-
-
             else:
-                # We found a non-Placeholder object; let us see, what the timestamp says.
-                existing_timestamps = self._DCM['InfoObject'].objects.filter(identifier__uid=uid).filter(
-                    identifier__namespace__uri=identifier_ns_uri).values_list('timestamp', flat=True)
-                if timestamp in existing_timestamps:
-                    exists = EXIST_ID_AND_EXACT_TIMESTAMP
-                elif timestamp < existing_timestamp:
-                    exists = EXIST_ID_AND_NEWER_TIMESTAMP
-                else:
-                    exists = EXIST_ID_AND_OLDER_TIMESTAMP
+                exists = EXIST_ID_AND_EXACT_TIMESTAMP
+        elif latest_existing_iobject:
+            if timestamp < latest_existing_timestamp:
+                exists = EXIST_ID_AND_NEWER_TIMESTAMP
+            else:
+                exists = EXIST_ID_AND_OLDER_TIMESTAMP
+
+        #
+        # if uid:
+        #     latest_existing_iobject = self.get_latest_revision_of_iobject_by_uid(identifier_ns_uri, uid)
+        #
+        # if latest_existing_iobject:
+        #     latest_existing_timestamp = latest_existing_iobject.timestamp
+        #     existing_timestamps = self._DCM['InfoObject'].objects.filter(identifier__uid=uid).filter(
+        #         identifier__namespace__uri=identifier_ns_uri).values_list('timestamp', flat=True)
+        #
+        #     if latest_existing_iobject.iobject_type.name == DINGOS_PLACEHOLDER_TYPE_NAME \
+        #         and latest_existing_iobject.iobject_family.name == DINGOS_IOBJECT_FAMILY_NAME:
+        #
+        #         overwrite = latest_existing_iobject
+        #
+        #         exists = EXIST_PLACEHOLDER
+        #
+        #
+        #
+        #     else:
+        #         # We found a non-Placeholder object; let us see, what the timestamp says.
+
 
         # If we have found an object of the given id with the exact timestamp or
         # a newer object and the parameter 'import_older_ts' is set to False,
@@ -178,17 +215,29 @@ class DingoImportHandling(object):
 
         logger.debug("EXISTS flag for %s:%s is: %s" % (identifier_ns_uri, uid, exists))
 
-        if exists==EXIST_ID_AND_EXACT_TIMESTAMP or (not import_older_ts and exists == EXIST_ID_AND_NEWER_TIMESTAMP):
+        if exists==EXIST_ID_AND_EXACT_TIMESTAMP:
+            if markings:
+            # If markings were given, we create the marking.
+
+                 for marking in markings:
+                     Marking2X.objects.create(marked=existing_iobject,
+                         marking=marking)
+
             return (existing_iobject, exists)
+        elif  (not import_older_ts and exists == EXIST_ID_AND_NEWER_TIMESTAMP):
+            return (latest_existing_iobject, exists)
+
+
 
         else:
-            # Otherwise, we create the object
+            # Otherwise, we create or overwrite the object
 
-            if not uid:
-                uid = uuid.uuid1()
-            logger.info("Creating %s:%s with timestamp %s" % (identifier_ns_uri,
-                                                              uid,
-                                                              '{:%d-%m-%Y:%H:%M:%S}.{:03d}'.format(timestamp, timestamp.microsecond // 1000)))
+            #if not uid:
+            #    uid = uuid.uuid1()
+            #logger.info("Creating %s:%s with timestamp %s" % (identifier_ns_uri,
+            #                                                  uid,
+            #                                                  '{:%d-%m-%Y:%H:%M:%S}.{:03d}'.format(timestamp, timestamp.microsecond // 1000)))
+
             iobject, created = get_or_create_iobject(uid,
                                                      identifier_ns_uri,
                                                      iobject_type_name,
