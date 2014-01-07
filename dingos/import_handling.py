@@ -154,7 +154,7 @@ class DingoImportHandling(object):
             if existing_iobject.iobject_type.name == DINGOS_PLACEHOLDER_TYPE_NAME \
                 and existing_iobject.iobject_family.name == DINGOS_IOBJECT_FAMILY_NAME:
 
-                overwrite = True
+                overwrite = existing_iobject
                 exists = EXIST_PLACEHOLDER
 
 
@@ -199,7 +199,7 @@ class DingoImportHandling(object):
                                                      identifier_namespace_name=None,
                                                      timestamp=timestamp,
                                                      create_timestamp=create_timestamp,
-                                                     overwrite=existing_iobject,
+                                                     overwrite=overwrite,
                                                      dingos_class_map=self._DCM,
                                                     )
 
