@@ -1659,8 +1659,6 @@ def get_or_create_iobject(identifier_uid,
         create_timestamp = timezone.now()
     if not timestamp:
         timestamp = create_timestamp
-
-    if overwrite:
         iobject = overwrite
         created = False
 
