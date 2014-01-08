@@ -92,7 +92,6 @@ class ViewMethodMixin(object):
 
     def get_user_data(self):
 
-
         # Below, we retrieve user-specific data (user preferences, saved searches, etc.)
         # We take this data from the session -- if it has already been
         # loaded in the session. If not, then we load the data into the session first.
@@ -130,13 +129,22 @@ class ViewMethodMixin(object):
             # Load user settings. If for the current user, no user settings have been
             # stored, retrieve the default settings and store them (for authenticated users)
 
+            if self.request.user.is_authenticated():
+                user_name = self.request.user.username
+            else:
+                user_name = "unauthenticated user"
+
             self.request.session['customization_for_authenticated']=self.request.user.is_authenticated()
 
 
 
             settings = UserData.get_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
             if not settings:
-                UserData.store_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME,user_data=DINGOS_DEFAULT_USER_PREFS)
+                UserData.store_user_data(user=self.request.user,
+                                         data_kind=DINGOS_USER_PREFS_TYPE_NAME,
+                                         user_data=DINGOS_DEFAULT_USER_PREFS,
+                                         iobject_name= "User preferences of user '%s'" % user_name)
+
                 settings = UserData.get_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
 
 
@@ -148,7 +156,8 @@ class ViewMethodMixin(object):
 
                 UserData.store_user_data(user=self.request.user,
                                          data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
-                                         user_data=DINGOS_DEFAULT_SAVED_SEARCHES)
+                                         user_data=DINGOS_DEFAULT_SAVED_SEARCHES,
+                                         iobject_name = "Saved searches of user '%s'" % user_name)
                 saved_searches = UserData.get_user_data(user=self.request.user, data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
 
 
@@ -160,11 +169,17 @@ class ViewMethodMixin(object):
                 'saved_searches' : saved_searches}
 
 
-    def lookup_customization(self,*args,**kwargs):
+    def _lookup_user_data(self,*args,**kwargs):
         user_data = self.get_user_data()
+        data_kind = kwargs.get('data_kind','customization')
+        try:
+            del(kwargs['data_kind'])
+        except KeyError, err:
+            pass
         default_value = kwargs['default']
 
-        result =  get_dict(user_data.get('customization',{}),*args,**kwargs)
+
+        result =  get_dict(user_data,data_kind,*args,**kwargs)
         try:
             result = int(result)
         except:
@@ -174,6 +189,14 @@ class ViewMethodMixin(object):
             return default_value
         else:
             return result
+
+    def lookup_customization(self,*args,**kwargs):
+        kwargs['data_kind']='customization'
+        return self._lookup_user_data(*args,**kwargs)
+
+    def lookup_saved_searches(self,*args,**kwargs):
+        kwargs['data_kind']='saved_searches'
+        return self._lookup_user_data(*args,**kwargs)
 
 
 class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):

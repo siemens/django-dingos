@@ -1504,7 +1504,7 @@ class UserData(DingoModel):
         else:
             return None
 
-    def store(self,settings,iobject_type_name=DINGOS_USER_DATA_TYPE_NAME,keep_history=False):
+    def store(self,settings,iobject_type_name=DINGOS_USER_DATA_TYPE_NAME,keep_history=False,iobject_name=None):
 
         settings_dod = dict2DingoObjDict(settings)
 
@@ -1555,7 +1555,11 @@ class UserData(DingoModel):
         if not self.identifier:
             self.identifier = settings_iobject.identifier
             self.save()
-        return settings_iobject.from_dict(settings_dod)
+        result = settings_iobject.from_dict(settings_dod)
+        if iobject_name:
+            settings_iobject.name = iobject_name
+            settings_iobject.save()
+        return result
 
     @staticmethod
     def get_user_data(user=None,group=None,data_kind=DINGOS_USER_DATA_TYPE_NAME):
@@ -1595,7 +1599,7 @@ class UserData(DingoModel):
 
 
     @staticmethod
-    def store_user_data(user=None, group=None,data_kind=DINGOS_USER_DATA_TYPE_NAME,user_data=None):
+    def store_user_data(user=None, group=None,data_kind=DINGOS_USER_DATA_TYPE_NAME,user_data=None,iobject_name=None):
         """
         Returns either stored settings of a given user or default settings.
         This behavior reflects the need for views to have some settings at
@@ -1609,7 +1613,7 @@ class UserData(DingoModel):
             user = None
 
         user_config,created =  UserData.objects.get_or_create(user=user,group=group,data_kind=data_kind)
-        return user_config.store(user_data,iobject_type_name=data_kind)
+        return user_config.store(user_data,iobject_type_name=data_kind,iobject_name=iobject_name)
 
 dingos_class_map["UserData"] = UserData
 
