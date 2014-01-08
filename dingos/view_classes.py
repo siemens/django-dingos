@@ -22,7 +22,12 @@ from django.views.generic.base import ContextMixin
 from django.views.generic import DetailView, ListView, TemplateView
 
 from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
+
+from  django.core import urlresolvers
+
 from core.http_helpers import get_query_string
+
+
 
 from django_filters.views import FilterView
 
@@ -36,6 +41,8 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
 from dingos.core.template_helpers import ConfigDictWrapper
 
 from dingos.core.utilities import get_dict
+
+
 
 class CommonContextMixin(ContextMixin):
     """
@@ -224,6 +231,26 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
     def paginate_by(self):
         return self.lookup_customization('dingos','view','pagination','lines',default=20)
 
+    def get(self, request, *args, **kwargs):
+        if request.GET.get('action','Submit Query') == 'Submit Query':
+            print "Forward to super"
+            return super(BasicFilterView,self).get(request, *args, **kwargs)
+        else:
+            print "Query String: %s " % self.get_query_string()
+            print "Pathinfo %s " % request.path_info
+            # Unclear, why below does not work ... Grr...
+            # Need to get this to work in order to get url_name
+            #print "View name %s" % urlresolvers.reverse(request.path_info).url_name
+
+            # Instead of going to super, forward to some other view
+            # which asks for input regarding name of the search and then
+            # saves the search using the access functions for UserData as
+            # used in ViewMethodsMixin.get_user_data ...
+            # Be sure to only write the url parameters that actually define
+            # a search, i.e., leave out empty paramters 'this=&...'
+
+            return super(BasicFilterView,self).get(request, *args, **kwargs)
+
 class BasicDetailView(CommonContextMixin,
                       ViewMethodMixin,
                       SelectRelatedMixin,
@@ -238,7 +265,7 @@ class BasicDetailView(CommonContextMixin,
     breadcrumbs = (('Dingo',None),
                    ('View',None),
     )
-
+""
 
 class BasicTemplateView(CommonContextMixin,
                        ViewMethodMixin,
