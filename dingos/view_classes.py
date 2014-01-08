@@ -136,9 +136,8 @@ class ViewMethodMixin(object):
 
             settings = UserData.get_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
             if not settings:
-                settings = copy.deepcopy(DINGOS_DEFAULT_USER_PREFS)
-                UserData.store_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME,user_data=settings)
-
+                UserData.store_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME,user_data=DINGOS_DEFAULT_USER_PREFS)
+                settings = UserData.get_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
 
 
 
@@ -146,11 +145,11 @@ class ViewMethodMixin(object):
 
             saved_searches = UserData.get_user_data(user=self.request.user, data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
             if not saved_searches:
-                saved_searches = copy.deepcopy(DINGOS_DEFAULT_SAVED_SEARCHES)
+
                 UserData.store_user_data(user=self.request.user,
                                          data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
-                                         user_data=saved_searches)
-
+                                         user_data=DINGOS_DEFAULT_SAVED_SEARCHES)
+                saved_searches = UserData.get_user_data(user=self.request.user, data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
 
 
 
@@ -163,7 +162,19 @@ class ViewMethodMixin(object):
 
     def lookup_customization(self,*args,**kwargs):
         user_data = self.get_user_data()
-        return get_dict(user_data.get('customization',{}),*args,**kwargs)
+        default_value = kwargs['default']
+        print "User data: %s" % user_data
+        result =  get_dict(user_data.get('customization',{}),*args,**kwargs)
+        try:
+            result = int(result)
+        except:
+            pass
+
+        if not isinstance(result,default_value.__class__):
+            return default_value
+        else:
+            return result
+
 
 #class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
 class BasicListView(CommonContextMixin,ViewMethodMixin,ListView):
@@ -176,7 +187,8 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,ListView):
 
     @property
     def paginate_by(self):
-        return self.lookup_customization('dingos','view','pagination','lines',default=10)
+        item_count = self.lookup_customization('dingos','view','pagination','lines',default=20)
+        return item_count
 
 #class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,FilterView):
 class BasicFilterView(CommonContextMixin,ViewMethodMixin,FilterView):
@@ -189,7 +201,7 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,FilterView):
 
     @property
     def paginate_by(self):
-        return self.lookup_customization('dingos','view','pagination','lines',default=10)
+        return self.lookup_customization('dingos','view','pagination','lines',default=20)
 
 class BasicDetailView(CommonContextMixin,
                       ViewMethodMixin,

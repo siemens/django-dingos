@@ -1537,8 +1537,8 @@ class UserData(DingoModel):
                                                              iobject_family_name = DINGOS_INTERNAL_IOBJECT_FAMILY_NAME,
                                                              iobject_family_revision_name= REVISION,
                                                              identifier_namespace_name= DINGOS_ID_NAMESPACE_SLUG,
-                                                             timestamp=None,
-                                                             create_timestamp=None,
+                                                             timestamp=timezone.now(),
+                                                             create_timestamp=timezone.now(),
                                                              )
 
         else:
@@ -1629,13 +1629,12 @@ def get_or_create_iobject(identifier_uid,
 
     # create or retrieve identifier
 
-    #if not timestamp:
-    #    raise StandardError("You must supply a timestamp.")
+    if not timestamp:
+        raise StandardError("You must supply a timestamp.")
 
     id_namespace, created = dingos_class_map['IdentifierNameSpace'].objects.get_or_create(uri=identifier_namespace_uri)
 
     if created and identifier_namespace_name:
-        print identifier_namespace_name
         id_namespace.name = identifier_namespace_name
         id_namespace.save()
 
@@ -1657,20 +1656,20 @@ def get_or_create_iobject(identifier_uid,
 
     if not create_timestamp:
         create_timestamp = timezone.now()
-    if not timestamp:
-        timestamp = create_timestamp
-        iobject = overwrite
-        created = False
+    #if not timestamp:
+    #    timestamp = create_timestamp
+    #    iobject = overwrite
+    #    created = False
 
 
-    else:
-        iobject, created = dingos_class_map["InfoObject"].objects.get_or_create(identifier=identifier,
-                                                                               timestamp=timestamp,
-                                                                               defaults={'iobject_family': iobject_family,
-                                                                                         'iobject_family_revision': iobject_family_revision,
-                                                                                         'iobject_type': iobject_type,
-                                                                                         'iobject_type_revision': iobject_type_revision,
-                                                                                         'create_timestamp': create_timestamp})
+
+    iobject, created = dingos_class_map["InfoObject"].objects.get_or_create(identifier=identifier,
+                                                                           timestamp=timestamp,
+                                                                           defaults={'iobject_family': iobject_family,
+                                                                                     'iobject_family_revision': iobject_family_revision,
+                                                                                     'iobject_type': iobject_type,
+                                                                                     'iobject_type_revision': iobject_type_revision,
+                                                                                     'create_timestamp': create_timestamp})
     if created:
         iobject.set_name()
         iobject.save()
@@ -1689,7 +1688,7 @@ def get_or_create_iobject(identifier_uid,
         iobject.save()
 
     logger.debug(
-        "Created iobject with %s (created was %s) and %s (overwrite %s)" % (iobject.identifier, timestamp, created, overwrite))
+        "Created iobject id with %s , ts %s (created was %s) and overwrite as %s" % (iobject.identifier, timestamp, created, overwrite))
     return iobject, created
 
 

@@ -144,7 +144,17 @@ class ConfigDict(collections.Mapping):
             self.walker = self.walker[key]
             if isinstance(self.walker,basestring):
                 # We have reached a leaf in the dictionary
-                return self.walker
+                value = self.walker
+                try:
+                    value = int(value)
+                except:
+                    pass
+                if isinstance(self.default,ConfigDefaultIntWrapper) and not isinstance(value,int):
+                    return self.default
+                elif isinstance(self.default,ConfigDefaultStringWrapper) and not isinstance(value,basestring):
+                    return self.default
+                else:
+                    return value
             else:
                 logger.debug("Returning self %s with default %s and walker %s" % (self,self.default,self.walker))
                 return self

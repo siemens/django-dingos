@@ -32,10 +32,11 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% block content %}
 
-    <div class= {% if customization.horizontal.dingos.view.orientation == 'horizontal' %}
-                 "l-2cr-fluid l-d-12"
+    <div class= {% if customization.horizontal.dingos.view.orientation != 'horizontal' %}
+                ""
                 {% else %}
-                 ""
+                "l-2cr-fluid l-d-12"
+
                 {% endif %}
             >
         <div class="c-1">
