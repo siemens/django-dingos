@@ -414,7 +414,7 @@ class DingoObjDict(ExtendedSortedDict):
 
         return _flatten(self,result_list=[], attr_dict={}, namespace=[], prefix=[])
 
-    def from_flat_repr(self,fact_list,include_node_id=False):
+    def from_flat_repr(self,fact_list,include_node_id=False,no_attributes=False):
         """
         Convert a flat representation of information (consisting of a fact list and a dictionary
         mapping node ids to attributes into a dictionary representation information.
@@ -448,6 +448,9 @@ class DingoObjDict(ExtendedSortedDict):
 
         """
 
+        if include_node_id:
+            no_attributes=False
+
         def node_id_unpack(n):
             """
             Given a node_id, unpack it into list-signifier
@@ -470,6 +473,7 @@ class DingoObjDict(ExtendedSortedDict):
             node_path = fact['node_id'].split(':')
             del(fact['node_id'])
             walker = result
+            walker_parent=None
             #logger.debug(fact)
             for i in range(0,len(node_path)):
 
@@ -478,6 +482,8 @@ class DingoObjDict(ExtendedSortedDict):
                 element = fact_path[i]
                 node_id = ':'.join(node_path[0:i+1])
 
+                if no_attributes and i == len(node_path)-1 and node_kind== 'A':
+                    continue
 
                 if not (element in walker.keys()):
 
@@ -487,12 +493,14 @@ class DingoObjDict(ExtendedSortedDict):
                         if include_node_id:
                             child_dict['@@node_id'] = node_id
                         walker[element].append(child_dict)
+                        walker_parent = walker
                         walker = walker[element][0]
                     elif node_kind == 'N':
                         child_dict = DingoObjDict()
                         if include_node_id:
                             child_dict['@@node_id'] = node_id
                         walker[element] = child_dict
+                        walker_parent = walker
                         walker = walker[element]
 
                 else:
@@ -504,8 +512,10 @@ class DingoObjDict(ExtendedSortedDict):
                             if include_node_id:
                                 next_item['@@node_id'] = node_id
                             walker[element].append(next_item)
+                            walker_parent=walker
                             walker=walker[element][counter]# next_item
                         elif len(walker[element]) > counter:
+                            walker_parent=walker
                             walker = walker[element][counter]
                         else:
                             # TODO: introduce error logging
@@ -513,8 +523,11 @@ class DingoObjDict(ExtendedSortedDict):
                             pass
 
                     else:
+                        walker_parent=walker
                         walker=walker[element]
             if node_kind == 'A':
+                if no_attributes:
+                    continue
                 if len(fact['value_list']) == 1:
                     value = fact['value_list'][0]
                 else:
@@ -527,17 +540,25 @@ class DingoObjDict(ExtendedSortedDict):
             else:
                 if len(fact['value_list']) == 1:
                     if fact['value_list'][0] != '':
-                        walker['_value'] = fact['value_list'][0]
+                        if no_attributes:
+                            walker_parent[element] = fact['value_list'][0]
+                        else:
+                            walker['_value'] = fact['value_list'][0]
                 else:
-                    walker['_value'] = fact['value_list']
+                    if no_attributes:
+                        walker_parent[element] = fact['value_list']
+                    else:
+                        walker['_value'] = fact['value_list']
                 if include_node_id:
                     walker['@@node_id'] = node_id
 
                 del(fact['value_list'])
 
-                for key in fact:
-                    if fact[key]:
-                        walker[key] = fact[key]
+
+                if not no_attributes:
+                    for key in fact:
+                        if fact[key]:
+                            walker[key] = fact[key]
 
 
 

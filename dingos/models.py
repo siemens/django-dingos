@@ -22,16 +22,18 @@ import pprint
 import re
 import hashlib
 import base64
-
+import copy
 
 from django.db import models
 from django.db.models import Count, F
+from django.contrib.auth.models import User, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core import urlresolvers
 from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.core.files.base import ContentFile
+from django.core.exceptions import ObjectDoesNotExist
 
 import dingos.read_settings
 
@@ -39,7 +41,7 @@ import dingos
 
 from dingos import *
 
-from dingos.core.datastructures import DingoObjDict,ExtendedSortedDict
+from dingos.core.datastructures import DingoObjDict,ExtendedSortedDict,dict2DingoObjDict
 
 logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=2)
@@ -867,6 +869,9 @@ class InfoObject(DingoModel):
     def __unicode__(self):
         return "%s: %s" % (self.iobject_type, self.name)
 
+    def clear(self):
+        self.fact_thru.all().delete()
+
     def is_empty(self):
         """
         Returns true if the enrichment is empty
@@ -1002,8 +1007,11 @@ class InfoObject(DingoModel):
             namespace_dict = {}
 
         if not self.is_empty():
-            logger.error("Attempt to import a dictionary into a non-empty info object")
-            return
+            logger.debug("Non-empty info object %s (timestamp %s, pk %s ) is overwritten with new information" % (self.identifier,
+                                                                                                                 self.timestamp,
+                                                                                                                 self.pk))
+            self.clear()
+
 
         # Flatten the DingoObjDict
 
@@ -1098,7 +1106,7 @@ class InfoObject(DingoModel):
         self.set_name()
 
 
-    def to_dict(self,include_node_id=False):
+    def to_dict(self,include_node_id=False,no_attributes=False):
         flat_result = []
 
         fact_thrus = self.fact_thru.all().prefetch_related(
@@ -1143,9 +1151,10 @@ class InfoObject(DingoModel):
             flat_result.append(fact_dict)
 
         result = DingoObjDict()
-        result.from_flat_repr(flat_result,include_node_id=include_node_id)
-        result['@@iobject_type'] = self.iobject_type.name
-        result['@@iobject_type_ns'] = self.iobject_type.namespace.uri
+        result.from_flat_repr(flat_result,include_node_id=include_node_id,no_attributes=no_attributes)
+        if not no_attributes:
+            result['@@iobject_type'] = self.iobject_type.name
+            result['@@iobject_type_ns'] = self.iobject_type.namespace.uri
         #result = result.to_tuple()
         return result
 
@@ -1464,6 +1473,151 @@ class Marking2X(models.Model):
 
 dingos_class_map["Marking2X"] = Marking2X
 
+class UserData(DingoModel):
+    """
+    Model for binding user/group-specific data stored in DINGOS InfoObjects to a Django user/group
+    (or combination thereof).
+    """
+
+    user = models.ForeignKey(User,
+                             null=True)
+    group = models.ForeignKey(Group,
+                              null=True)
+
+    data_kind = models.SlugField(max_length=32)
+
+    identifier = models.ForeignKey(Identifier,
+                                   null=True)
+
+    class Meta:
+        unique_together = ('user', 'group','data_kind')
+
+    def retrieve(self):
+
+        settings_iobject = None
+        if self.identifier:
+            settings_iobject = self.identifier.latest
+        if settings_iobject:
+            settings= settings_iobject.to_dict(no_attributes=True)
+            print "Found settings %s" % settings
+            return settings
+        else:
+            return None
+
+    def store(self,settings,iobject_type_name=DINGOS_USER_DATA_TYPE_NAME,keep_history=False,iobject_name=None):
+
+        settings_dod = dict2DingoObjDict(settings)
+
+        settings_iobject = None
+        if self.identifier:
+            settings_iobject = self.identifier.latest
+
+        if (not settings_iobject) or keep_history:
+            # We make a new object
+            if self.identifier:
+                iobject_identifier = self.identifier.uid
+            else:
+                # Actually, the identifier of the information object in which
+                # we store user data is irrelevant, since we will always retrieve
+                # the information object / identifier via the foreign key. But
+                # why not make a speaking identifier?
+
+                if self.user:
+                    user_pk = self.user.pk
+                else:
+                    user_pk = None
+
+                if self.group:
+                    group_pk = self.group.pk
+                else:
+                    group_pk = None
+
+                iobject_identifier = "%s_u%s_g%s" % (iobject_type_name,user_pk,group_pk)
+
+
+                settings_iobject,created = get_or_create_iobject(iobject_identifier,
+                                                             identifier_namespace_uri = DINGOS_ID_NAMESPACE_URI,
+                                                             iobject_type_name = iobject_type_name,
+                                                             iobject_type_namespace_uri = DINGOS_NAMESPACE_URI,
+                                                             iobject_type_revision_name = REVISION,
+                                                             iobject_family_name = DINGOS_INTERNAL_IOBJECT_FAMILY_NAME,
+                                                             iobject_family_revision_name= REVISION,
+                                                             identifier_namespace_name= DINGOS_ID_NAMESPACE_SLUG,
+                                                             timestamp=timezone.now(),
+                                                             create_timestamp=timezone.now(),
+                                                             )
+
+        else:
+            # We are going to overwrite information in an existing information object --
+            # let us therefore adjust the timestamp.
+            settings_iobject.timestamp = timezone.now()
+            settings_iobject.save()
+        if not self.identifier:
+            self.identifier = settings_iobject.identifier
+            self.save()
+        result = settings_iobject.from_dict(settings_dod)
+        if iobject_name:
+            settings_iobject.name = iobject_name
+            settings_iobject.save()
+        return result
+
+    @staticmethod
+    def get_user_data(user=None,group=None,data_kind=DINGOS_USER_DATA_TYPE_NAME):
+        """
+        Returns either stored settings of a given user or default settings.
+        This behavior reflects the need for views to have some settings at
+        hand when running. The settings are returned as dict object.
+        """
+        logger.debug("Get user settings called")
+
+        if not user.is_authenticated():
+            user = None
+
+        try:
+            user_config =  UserData.objects.get(user=user,group=group,data_kind=data_kind)
+            return user_config.retrieve()
+        except:
+            return None
+
+
+    @staticmethod
+    def get_user_data_iobject(user=None,group=None,data_kind=DINGOS_USER_DATA_TYPE_NAME):
+        """
+        Returns either stored settings of a given user or default settings.
+        This behavior reflects the need for views to have some settings at
+        hand when running. The settings are returned as dict object.
+        """
+        logger.debug("Get user settings called")
+
+        if not user.is_authenticated():
+            user = None
+        try:
+            user_config =  UserData.objects.get(user=user,group=group,data_kind=data_kind)
+            return user_config.identifier.latest
+        except:
+            return None
+
+
+    @staticmethod
+    def store_user_data(user=None, group=None,data_kind=DINGOS_USER_DATA_TYPE_NAME,user_data=None,iobject_name=None):
+        """
+        Returns either stored settings of a given user or default settings.
+        This behavior reflects the need for views to have some settings at
+        hand when running. The settings are returned as dict object.
+        """
+
+        if not user_data:
+            user_data = {}
+
+        if not user.is_authenticated():
+            user = None
+
+        user_config,created =  UserData.objects.get_or_create(user=user,group=group,data_kind=data_kind)
+        return user_config.store(user_data,iobject_type_name=data_kind,iobject_name=iobject_name)
+
+dingos_class_map["UserData"] = UserData
+
+
 
 def get_or_create_iobject(identifier_uid,
                           identifier_namespace_uri,
@@ -1485,8 +1639,8 @@ def get_or_create_iobject(identifier_uid,
 
     # create or retrieve identifier
 
-    #if not timestamp:
-    #    raise StandardError("You must supply a timestamp.")
+    if not timestamp:
+        raise StandardError("You must supply a timestamp.")
 
     id_namespace, created = dingos_class_map['IdentifierNameSpace'].objects.get_or_create(uri=identifier_namespace_uri)
 
@@ -1512,23 +1666,26 @@ def get_or_create_iobject(identifier_uid,
 
     if not create_timestamp:
         create_timestamp = timezone.now()
-    if not timestamp:
-        timestamp = create_timestamp
-        iobject = overwrite
-        created = False
+    #if not timestamp:
+    #    timestamp = create_timestamp
+    #    iobject = overwrite
+    #    created = False
 
 
-    else:
-        iobject, created = dingos_class_map["InfoObject"].objects.get_or_create(identifier=identifier,
-                                                                               timestamp=timestamp,
-                                                                               defaults={'iobject_family': iobject_family,
-                                                                                         'iobject_family_revision': iobject_family_revision,
-                                                                                         'iobject_type': iobject_type,
-                                                                                         'iobject_type_revision': iobject_type_revision,
-                                                                                         'create_timestamp': create_timestamp})
+
+    iobject, created = dingos_class_map["InfoObject"].objects.get_or_create(identifier=identifier,
+                                                                           timestamp=timestamp,
+                                                                           defaults={'iobject_family': iobject_family,
+                                                                                     'iobject_family_revision': iobject_family_revision,
+                                                                                     'iobject_type': iobject_type,
+                                                                                     'iobject_type_revision': iobject_type_revision,
+                                                                                     'create_timestamp': create_timestamp})
     if created:
         iobject.set_name()
         iobject.save()
+        identifier.latest = iobject
+        identifier.save()
+
 
     elif overwrite:
         iobject.timestamp = timestamp
@@ -1541,7 +1698,7 @@ def get_or_create_iobject(identifier_uid,
         iobject.save()
 
     logger.debug(
-        "Created iobject with %s (created was %s) and %s (overwrite %s)" % (iobject.identifier, timestamp, created, overwrite))
+        "Created iobject id with %s , ts %s (created was %s) and overwrite as %s" % (iobject.identifier, timestamp, created, overwrite))
     return iobject, created
 
 
@@ -1711,4 +1868,7 @@ def write_large_value(value,storage_location=dingos.DINGOS_LARGE_VALUE_DESTINATI
         dingos_class_map['BlobStorage'].objects.get_or_create(sha256=value_hash,
                                                               content=value)
     return (value_hash,storage_location)
+
+
+
 

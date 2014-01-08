@@ -67,10 +67,20 @@ DINGOS_ID_NAMESPACE_SLUG = 'DingosDefaultIdNameSpace'
 DINGOS_GENERIC_FAMILY_NAME = 'generic'
 
 # The DINGOS_IOBJECT_FAMILY_NAME is used as family name for all internally created objects
-# such as PLACEHOLDERS. We Dingo's revision both as revision for families and object types
-# of internally created information objects.
+# such as PLACEHOLDERS that should by default be visible to a normal user.
+
 
 DINGOS_IOBJECT_FAMILY_NAME = 'DINGOS'
+
+# The DINGOS_INTERNAL_IOBJECT_FAMILY_NAME is used as family name for all internally created objects
+# such as USER_CONFIGURATION, SAVED_SEARCHES, etc. that should by default not be visible to a normal user.
+# of internally created information objects.
+
+DINGOS_INTERNAL_IOBJECT_FAMILY_NAME = 'DINGOS_internal'
+
+# We Dingo's revision both as revision for families and object types
+# of internally created information objects.
+
 
 DINGOS_REVISION_NAME = REVISION
 
@@ -85,7 +95,11 @@ DINGOS_PLACEHOLDER_TYPE_NAME = 'PLACEHOLDER'
 DINGOS_DEFAULT_IMPORT_MARKING_TYPE_NAME = "ImportInfo"
 
 
-DINGOS_CONFIGURATION_TYPE_NAME = 'USER_CONFIG'
+DINGOS_USER_DATA_TYPE_NAME = 'USER_DATA'
+
+DINGOS_USER_PREFS_TYPE_NAME = 'USER_PREFS'
+
+DINGOS_SAVED_SEARCHES_TYPE_NAME = 'SAVED_SEARCHES'
 
 
 # Values larger than DINGOS_MAX_VALUE_SIZE_WRITTEN_TO_DB are
@@ -115,5 +129,50 @@ DINGOS_BLOB_ROOT = None
 
 DINGOS_BLOB_STORAGE = None
 
+DINGOS_DEFAULT_USER_PREFS = {
+    'dingos' : { 'widgets' :
+                     {'embedded_in_objects' :
+                          {'lines' : {'@description': """Max. number of objects displayed in
+                                                        widget listing the objects in which the
+                                                        current object is embedded.""",
+                                      '_value' : '5'}
+                          } ,
+                      },
+                 'view' :
+                     {'pagination':
+                          {'lines' : {'@description': """Max. number of lines displayed in
+                                                    paginated views.""",
+                                      '_value' : '20'},
+                           },
+                      'orientation' : {'@description': """Layout orientation. Possible values are 'vertical' and
+                                                          'horizontal'.""",
+                                       '_value' : 'horizontal'}
+                     }
+
+    }
+}
+
+# It does not make sense to specifiy default saved searches here (anyhow, the specification of
+# saved searches via the defaults is more to show the concept of saved searches than for
+# actual use. To specify saved searches in the settings file under ``DINGOS`` settings,
+# do as follows::
+#
+#  ...
+#    'DINGOS_DEFAULT_SAVED_SEARCHES' : {
+#        'dingos' : [
+#            { 'priority' : "0",
+#              'title' : 'Filter for STIX Packages',
+#              'view' : 'url.dingos.list.infoobject.generic',
+#              'parameter' : 'iobject_type=72',
+#              }
+#        ],
+#        }
+#  ...
+#
+#
+
+DINGOS_DEFAULT_SAVED_SEARCHES = {
+    'dingos' : []
+    }
 
 

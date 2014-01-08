@@ -23,10 +23,12 @@ from django import http
 
 from django.db.models import F
 
-from dingos.models import Identifier, InfoObject2Fact, InfoObject
+from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData
 from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter
+from braces.views import LoginRequiredMixin
 
-from dingos import DINGOS_TEMPLATE_FAMILY
+from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME
+
 
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView
 
@@ -40,13 +42,15 @@ class InfoObjectList(BasicFilterView):
                    ('List',None),
                    ('InfoObject',None))
 
-    paginate_by = 15
 
     filterset_class= InfoObjectFilter
 
     title = 'List of Info Objects (generic filter)'
 
-    queryset = InfoObject.objects.exclude(latest_of=None).prefetch_related(
+    queryset = InfoObject.objects.\
+        exclude(latest_of=None). \
+        exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+        prefetch_related(
         'iobject_type',
         'iobject_type__iobject_family',
         'iobject_family',
@@ -62,13 +66,13 @@ class InfoObjectList_Id_filtered(BasicFilterView):
                    ('List',None),
                    ('InfoObject',None))
 
-    paginate_by = 15
-
     filterset_class= IdSearchFilter
 
     title = 'ID-based filtering'
 
-    queryset = InfoObject.objects.exclude(latest_of=None).prefetch_related(
+    queryset = InfoObject.objects.exclude(latest_of=None). \
+        exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+        prefetch_related(
         'iobject_type',
         'iobject_family',
         'iobject_family_revision',
@@ -80,8 +84,6 @@ class InfoObjectsEmbedded(BasicFilterView):
     breadcrumbs = (('Dingo',None),
                    ('List',None),
                    ('InfoObject',None))
-
-    paginate_by = 15
 
     filterset_class = InfoObjectFilter
 
@@ -110,21 +112,20 @@ class InfoObjectsEmbedded(BasicFilterView):
 class SimpleFactSearch(BasicFilterView):
     template_name = 'dingos/%s/searches/SimpleFactSearch.html' % DINGOS_TEMPLATE_FAMILY
 
-    paginate_by = 15
-
     title = 'Fact-based filtering'
 
 
     filterset_class = FactTermValueFilter
 
-    queryset =  InfoObject2Fact.objects.all().exclude(iobject__latest_of=None).prefetch_related('iobject',
-                                                                                                'iobject__iobject_type',
-                                                                                                'fact__fact_term',
-                                                                                                'fact__fact_values').select_related().distinct().order_by('iobject__id')
+    queryset =  InfoObject2Fact.objects.all().\
+        exclude(iobject__latest_of=None). \
+        exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+        prefetch_related('iobject',
+            'iobject__iobject_type',
+            'fact__fact_term',
+            'fact__fact_values').select_related().distinct().order_by('iobject__id')
 
-
-
-class InfoObjectView(BasicDetailView):
+class InfoObjectView_wo_login(BasicDetailView):
     """
     Note that below we generate a query set for the facts by hand
     rather than carrying out the queries through the object-query.
@@ -147,8 +148,6 @@ class InfoObjectView(BasicDetailView):
     )
     model = InfoObject
 
-    max_embedded = 5
-
     template_name = 'dingos/%s/details/InfoObjectDetails.html' % DINGOS_TEMPLATE_FAMILY
 
     title = 'Info Object Details'
@@ -164,15 +163,20 @@ class InfoObjectView(BasicDetailView):
                                                              'node_id')
 
 
-    max_embedded = 5
 
     template_name = 'dingos/%s/details/InfoObjectDetails.html' % DINGOS_TEMPLATE_FAMILY
 
     title = 'Info Object Details'
 
     def get_context_data(self, **kwargs):
-        context = super(InfoObjectView, self).get_context_data(**kwargs)
-        context['max_embedded'] = self.max_embedded
+        # as a hack, we clear here the settings in the session. This will
+        # lead to a reload of the user config into the session data
+        try:
+            del(self.request.session['customization'])
+            del(self.request.session['customization_for_authenticated'])
+        except KeyError, err:
+                pass
+        context = super(InfoObjectView_wo_login, self).get_context_data(**kwargs)
 
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
         context['iobject2facts'] = self.iobject2facts
@@ -184,6 +188,12 @@ class InfoObjectView(BasicDetailView):
         return context
 
 
+class InfoObjectView(LoginRequiredMixin,InfoObjectView_wo_login):
+    pass
+
+class UserPrefsView(InfoObjectView_wo_login):
+    def get_object(self):
+        return UserData.get_user_data_iobject(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
 
 
 class InfoObjectJSONView(BasicDetailView):
