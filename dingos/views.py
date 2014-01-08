@@ -169,6 +169,11 @@ class InfoObjectView_wo_login(BasicDetailView):
     title = 'Info Object Details'
 
     def get_context_data(self, **kwargs):
+        # as a hack, we clear here the settings in the session. This will
+        # lead to a reload of the user config into the session data
+        del(self.request.session['customization'])
+        del(self.request.session['customization_for_authenticated'])
+
         context = super(InfoObjectView_wo_login, self).get_context_data(**kwargs)
 
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)

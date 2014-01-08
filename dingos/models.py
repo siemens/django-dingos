@@ -869,6 +869,9 @@ class InfoObject(DingoModel):
     def __unicode__(self):
         return "%s: %s" % (self.iobject_type, self.name)
 
+    def clear(self):
+        self.fact_thru.all().delete()
+
     def is_empty(self):
         """
         Returns true if the enrichment is empty
@@ -1004,8 +1007,11 @@ class InfoObject(DingoModel):
             namespace_dict = {}
 
         if not self.is_empty():
-            logger.error("Attempt to import a dictionary into a non-empty info object")
-            return
+            logger.debug("Non-empty info object %s (timestamp %s, pk %s ) is overwritten with new information" % (self.identifier,
+                                                                                                                 self.timestamp,
+                                                                                                                 self.pk))
+            self.clear()
+
 
         # Flatten the DingoObjDict
 

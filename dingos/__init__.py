@@ -146,20 +146,33 @@ DINGOS_DEFAULT_USER_PREFS = {
                            },
                       'orientation' : {'@description': """Layout orientation. Possible values are 'vertical' and
                                                           'horizontal'.""",
-                                       '_value' : 'vertical'}
+                                       '_value' : 'horizontal'}
                      }
 
     }
 }
 
+# It does not make sense to specifiy default saved searches here (anyhow, the specification of
+# saved searches via the defaults is more to show the concept of saved searches than for
+# actual use. To specify saved searches in the settings file under ``DINGOS`` settings,
+# do as follows::
+#
+#  ...
+#    'DINGOS_DEFAULT_SAVED_SEARCHES' : {
+#        'dingos' : [
+#            { 'priority' : "0",
+#              'title' : 'Filter for STIX Packages',
+#              'view' : 'url.dingos.list.infoobject.generic',
+#              'parameter' : 'iobject_type=72',
+#              }
+#        ],
+#        }
+#  ...
+#
+#
+
 DINGOS_DEFAULT_SAVED_SEARCHES = {
-    'dingos' : [
-                             { 'priority' : "0",
-                               'title' : 'Filter for STIX Packages',
-                               'view' : 'url.dingos.list.infoobject.generic',
-                               'parameter' : 'iobject_type=72',
-                               }
-    ],
+    'dingos' : []
     }
 
 

@@ -119,12 +119,12 @@ def get_dict(dictionary, *keys,**kwargs):
 
     existing = dictionary
     for i in range(0, len(keys)):
-        print "Trying %s" % keys[i]
+
         if keys[i] in existing:
-            print 'Found %s is %s ' % (keys[i], existing[keys[i]])
+
             existing = existing[keys[i]]
         else:
-            print "Failed on %s" % keys[i]
+
             return default
     return existing
 

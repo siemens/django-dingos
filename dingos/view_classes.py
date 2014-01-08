@@ -91,7 +91,7 @@ class ViewMethodMixin(object):
         return get_query_string(self.request,*args,**kwargs)
 
     def get_user_data(self):
-        print "Get user data called"
+
 
         # Below, we retrieve user-specific data (user preferences, saved searches, etc.)
         # We take this data from the session -- if it has already been
@@ -163,7 +163,7 @@ class ViewMethodMixin(object):
     def lookup_customization(self,*args,**kwargs):
         user_data = self.get_user_data()
         default_value = kwargs['default']
-        print "User data: %s" % user_data
+
         result =  get_dict(user_data.get('customization',{}),*args,**kwargs)
         try:
             result = int(result)
