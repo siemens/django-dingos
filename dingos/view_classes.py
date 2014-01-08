@@ -176,8 +176,7 @@ class ViewMethodMixin(object):
             return result
 
 
-#class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
-class BasicListView(CommonContextMixin,ViewMethodMixin,ListView):
+class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
 
     login_url = "/admin"
 
@@ -190,8 +189,7 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,ListView):
         item_count = self.lookup_customization('dingos','view','pagination','lines',default=20)
         return item_count
 
-#class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,FilterView):
-class BasicFilterView(CommonContextMixin,ViewMethodMixin,FilterView):
+class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,FilterView):
 
     login_url = "/admin"
 
