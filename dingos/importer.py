@@ -371,7 +371,9 @@ class DingoImportCommand(BaseCommand):
                 for filename in glob.glob(arg):
 
                     logger.info("Starting import of %s" % filename)
-
-                    self.Importer.xml_import(filepath = filename,
-                                             markings = markings,
-                                             **options)
+                    try:
+                        self.Importer.xml_import(filepath = filename,
+                           markings = markings,
+                           **options)
+                    except:
+                        logger.error("Something went wrong when importing %s. Traceback: %s" % (filename,traceback.format_exc()))
