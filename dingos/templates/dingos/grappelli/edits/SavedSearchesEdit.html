@@ -54,6 +54,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
         <div class="grp-tr">
           <div class="grp-th">Name</div>
           <div class="grp-th">Link</div>
+          <div class="grp-th">Parameters</div>
           <div class="grp-th" style="text-align:right;">Actions</div>
         </div>
       </div>
@@ -62,18 +63,32 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
      {% for form in formset %}
        <div class="grp-module grp-tbody grp-dynamic-form">
          <div class="grp-tr">
-           <div class="grp-td">
-	     {{form.title}}
-	     {{form.title.errors}}
-           </div>
-           <div class="grp-td">
+           <div class="grp-td"              
+           {% if form.new_entry.value == True %}
+           style="background-color:#FFB6C1;"
+           {% endif %}
+           > 
 	     {{form.view}}
 	     {{form.parameter}}
+	     {{form.new_entry}}
+
+	     {{form.title}}
+	     {{form.title.errors}}
+             {% if form.new_entry.value == True %}
+             <p class="grp-help">This is a temporary entry and won't be persisted unless you give it a name and press save.</p>
+             {% endif %}
+           </div>
+           <div class="grp-td">
+
 	     {% if form.view.value %}
 	       {% url form.view.value %}
 	     {% endif %}
 
            </div>
+
+           <div class="grp-td">
+	       {{form.parameter.value }}
+           </div>              
           <div class="grp-td grp-tools-container">
             <ul class="grp-tools">
               <li><a href="javascript://" title="Move item" class="grp-icon grp-drag-handler"></a></li>
@@ -86,15 +101,15 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
 
-      <div class="grp-module grp-tbody">
-        <div class="grp-tr">
-          <div class="grp-td" style="background-color:#FFF;"></div>
-          <div class="grp-td" style="background-color:#FFF;"></div>
-          <div class="grp-td" style="background-color:#FFF;text-align:right;"><input name="action" value="Save" type="submit" /></div>
-        </div>
-      </div>
     </div>
   </div>
+
+<footer class="grp-module grp-submit-row grp-fixed-footer">
+    <header style="display:none"><h1>Submit Options</h1></header>
+    <ul><li> <div class="grp-button"><input name="action" value="Save" type="submit" /> </li>
+    </ul>
+</footer>
+
 </form>
 
 {% endblock %}

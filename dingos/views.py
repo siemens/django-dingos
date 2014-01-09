@@ -196,7 +196,7 @@ class CustomSearchesEditView(BasicTemplateView):
     template_name = 'dingos/%s/edits/SavedSearchesEdit.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Saved searches'
 
-    
+
     form_class = formset_factory(EditSavedSearchesForm, can_order=True, can_delete=True,extra=0)
 
     formset = None
@@ -216,19 +216,19 @@ class CustomSearchesEditView(BasicTemplateView):
         initial = []
 
         for saved_search in saved_searches:
-            initial.append({'title': saved_search['title'],
+            initial.append({'new_entry': False,
+                            'title': saved_search['title'],
                             'view' : saved_search['view'],
                             'parameter' : saved_search['parameter']})
         if self.request.session.get('new_search'):
             print "Found new search"
-            initial.append({'DELETE': True, #Hm, I hoped this would bring the javascript/css to mark the
-                                            # the field in red ... but maybe it does not work because
-                                            # I have not included the required javascript.
-                            'title': "NEW SEARCH",
+            initial.append({'new_entry' : True,
+                            'title': "",
                             'view' : self.request.session['new_search']['view'],
                             'parameter' : self.request.session['new_search']['parameter']})
             del(self.request.session['new_search'])
 
+        print initial
         self.formset = self.form_class(initial=initial)
 
         #print dir(self.formset)
@@ -238,6 +238,7 @@ class CustomSearchesEditView(BasicTemplateView):
     def post(self, request, *args, **kwargs):
 
         user_data = self.get_user_data()
+        print request.POST.dict()
         self.formset = self.form_class(request.POST.dict())
 
 
@@ -248,6 +249,7 @@ class CustomSearchesEditView(BasicTemplateView):
 
             for form in self.formset.ordered_forms:
                 search = form.cleaned_data
+                print "Iterating %s" % search
 
                 # Search has the following form::
                 #
@@ -259,7 +261,8 @@ class CustomSearchesEditView(BasicTemplateView):
                 #     }
                 #
 
-                if search['title'] != '' and not search['DELETE']:
+                if (search['title'] != '' or not search['new_entry']) and not search['DELETE']:
+                    print "Saving %s" % search
                     dingos_saved_searches.append( { 'view' : search['view'],
                         'parameter' : search['parameter'],
                         'title' : search['title'],
@@ -276,9 +279,10 @@ class CustomSearchesEditView(BasicTemplateView):
             del request.session['customization']
 
         else:
-            print "NOT valid! --> ", formset.errors 
+            # Form was not valid, we return the form as is
 
-        return super(BasicTemplateView,self).get(request, *args, **kwargs)
+            return super(BasicTemplateView,self).get(request, *args, **kwargs)
+        return self.get(request, *args, **kwargs)
 
 class InfoObjectJSONView(BasicDetailView):
     # Config for Prefetch/SelectRelated Mixins_
