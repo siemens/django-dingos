@@ -196,6 +196,11 @@ class CustomSearchesEditView(BasicTemplateView):
     template_name = 'dingos/%s/edits/SavedSearchesEdit.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Saved searches'
 
+    form_class = formset_factory(EditSavedSearchesForm, can_order=True, can_delete=True)
+
+    formset = None
+
+
     def get_context_data(self, **kwargs):
         context = super(CustomSearchesEditView, self).get_context_data(**kwargs)
 
@@ -211,10 +216,29 @@ class CustomSearchesEditView(BasicTemplateView):
            nid = len(self.request.session['saved_searches']['dingos'])
            context['new_search'].update( { 'id' : nid, 'order' : nid + 1 } )
 
-           
+
+        context['formset'] = self.formset
+
         return context
 
     def get(self, request, *args, **kwargs):
+        user_data = self.get_user_data()
+        saved_searches = user_data['saved_searches'].get('dingos',[])
+        print saved_searches
+        initial = []
+
+        for saved_search in saved_searches:
+            initial.append({'title': saved_search['title'],
+                            'view' : saved_search['view'],
+                            'parameter' : saved_search['parameter']})
+        if self.request.session.get('new_search'):
+            initial.append({'title': "",
+                            'view' : self.request.session['new_search']['view'],
+                            'parameter' : self.request.session['new_search']['parameter']})
+
+        self.formset = self.form_class(initial=saved_searches)
+
+
         return super(BasicTemplateView,self).get(request, *args, **kwargs)
 
     def count_forms(self, post):
