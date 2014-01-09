@@ -20,6 +20,6 @@ from django import forms
 from django.forms import widgets
 
 class EditSavedSearchesForm(forms.Form):
-    title = forms.CharField(min_length=3,max_length=100)
+    title = forms.CharField(min_length=3,max_length=100, widget=widgets.TextInput(attrs={'size':'100','class':'vTextField'}))
     parameter = forms.CharField(min_length=3,max_length=255,widget=widgets.HiddenInput)
     view = forms.CharField(min_length=3,max_length=50, widget=widgets.HiddenInput)

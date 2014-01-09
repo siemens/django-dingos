@@ -58,6 +58,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
         </div>
       </div>
 
+      {{ formset.management_form }}
      {% for form in formset %}
        <div class="grp-module grp-tbody grp-dynamic-form">
          <div class="grp-tr">
@@ -68,7 +69,10 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
            <div class="grp-td">
 	     {{form.view}}
 	     {{form.parameter}}
-	     {{form.view.value}}
+	     {% if form.view.value %}
+	       {% url form.view.value %}
+	     {% endif %}
+
            </div>
           <div class="grp-td grp-tools-container">
             <ul class="grp-tools">

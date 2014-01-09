@@ -196,7 +196,7 @@ class CustomSearchesEditView(BasicTemplateView):
     template_name = 'dingos/%s/edits/SavedSearchesEdit.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Saved searches'
 
-    form_class = formset_factory(EditSavedSearchesForm, can_order=True, can_delete=True)
+    form_class = formset_factory(EditSavedSearchesForm, can_order=True, can_delete=True,extra=0)
 
     formset = None
 
@@ -238,50 +238,30 @@ class CustomSearchesEditView(BasicTemplateView):
 
         self.formset = self.form_class(initial=saved_searches)
 
+        #print dir(self.formset)
 
         return super(BasicTemplateView,self).get(request, *args, **kwargs)
 
-    def count_forms(self, post):
-        """
-        Returns the number of searches in a given request.POST dict
-        """
-
-        forms = []
-        regex = re.compile(r'^form-(?P<id>\d)-(paramater|path|title)$')
-        for k, v in post.iteritems():
-            m = re.match(regex, k)
-            if m:
-                d = m.groupdict()
-                if not d['id'] in forms:
-                    forms.append(d['id'])
-
-        return len(forms)
-
-
     def post(self, request, *args, **kwargs):
-        data = { u'form-TOTAL_FORMS' : u'%s' % self.count_forms(request.POST.dict()),
-                 u'form-INITIAL_FORMS' : u'0',
-                 u'form-MAX_NUM_FORMS' : u'',
-                 u'form-MIN_NUM_FORMS' : u'',
-               }
-        data.update(request.POST.dict())
-        form_class = formset_factory(EditSavedSearchesForm, can_order=True)
-        formset = form_class(data)
 
-        if formset.is_valid() and request.user.is_authenticated():
+        self.formset = self.form_class(request.POST.dict())
+
+
+        if self.formset.is_valid() and request.user.is_authenticated():
             saved_searches = { 'dingos' : [] }
-            for form in formset.ordered_forms:
+            for form in self.formset.ordered_forms:
                 search = form.cleaned_data
-                saved_searches['dingos'].append( { 'view' : search['view'], 
-                                                   'parameter' : search['parameter'],
-                                                   'title' : search['title'],
-                                                   'priority' : '%s' % search['ORDER'],
-                                                 }
-                                               )
-            UserData.store_user_data(user=request.user,
-                                     data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
-                                     user_data=saved_searches,
-                                     iobject_name = "Saved searches of user '%s'" % request.user.username)
+                print form.cleaned_data
+                # saved_searches['dingos'].append( { 'view' : search['view'],
+                #                                    'parameter' : search['parameter'],
+                #                                    'title' : search['title'],
+                #                                    'priority' : '%s' % search['ORDER'],
+                #                                  }
+                #                                )
+            # UserData.store_user_data(user=request.user,
+            #                          data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
+            #                          user_data=saved_searches,
+            #                          iobject_name = "Saved searches of user '%s'" % request.user.username)
 
             # enforce reload of session
             del request.session['customization']
