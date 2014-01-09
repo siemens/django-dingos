@@ -196,6 +196,7 @@ class CustomSearchesEditView(BasicTemplateView):
     template_name = 'dingos/%s/edits/SavedSearchesEdit.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Saved searches'
 
+    
     form_class = formset_factory(EditSavedSearchesForm, can_order=True, can_delete=True,extra=0)
 
     formset = None
@@ -211,7 +212,7 @@ class CustomSearchesEditView(BasicTemplateView):
     def get(self, request, *args, **kwargs):
         user_data = self.get_user_data()
         saved_searches = user_data['saved_searches'].get('dingos',[])
-        print saved_searches
+
         initial = []
 
         for saved_search in saved_searches:
@@ -219,12 +220,16 @@ class CustomSearchesEditView(BasicTemplateView):
                             'view' : saved_search['view'],
                             'parameter' : saved_search['parameter']})
         if self.request.session.get('new_search'):
-            initial.append({'title': "",
+            print "Found new search"
+            initial.append({'DELETE': True, #Hm, I hoped this would bring the javascript/css to mark the
+                                            # the field in red ... but maybe it does not work because
+                                            # I have not included the required javascript.
+                            'title': "NEW SEARCH",
                             'view' : self.request.session['new_search']['view'],
                             'parameter' : self.request.session['new_search']['parameter']})
             del(self.request.session['new_search'])
 
-        self.formset = self.form_class(initial=saved_searches)
+        self.formset = self.form_class(initial=initial)
 
         #print dir(self.formset)
 
@@ -232,6 +237,7 @@ class CustomSearchesEditView(BasicTemplateView):
 
     def post(self, request, *args, **kwargs):
 
+        user_data = self.get_user_data()
         self.formset = self.form_class(request.POST.dict())
 
 
@@ -260,7 +266,7 @@ class CustomSearchesEditView(BasicTemplateView):
                         }
                         )
 
-            saved_searches['dingos'] = dingos_saved_searchess
+            saved_searches['dingos'] = dingos_saved_searches
             UserData.store_user_data(user=request.user,
                                  data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
                                  user_data=saved_searches,
