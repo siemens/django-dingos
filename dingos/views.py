@@ -204,19 +204,6 @@ class CustomSearchesEditView(BasicTemplateView):
     def get_context_data(self, **kwargs):
         context = super(CustomSearchesEditView, self).get_context_data(**kwargs)
 
-        # delete the saved search within session to avoid pollution of session store
-        # and add the temporary search to context
-        if self.request.session.get('new_search'):
-           context['new_search'] = self.request.session['new_search']
-           del self.request.session['new_search']
-           self.request.session.modified = True
-
-           # set form id for proper formset handling
-           # ...it's ugly but Django needs proper formed HTML fields
-           nid = len(self.request.session['saved_searches']['dingos'])
-           context['new_search'].update( { 'id' : nid, 'order' : nid + 1 } )
-
-
         context['formset'] = self.formset
 
         return context
@@ -235,6 +222,7 @@ class CustomSearchesEditView(BasicTemplateView):
             initial.append({'title': "",
                             'view' : self.request.session['new_search']['view'],
                             'parameter' : self.request.session['new_search']['parameter']})
+            del(self.request.session['new_search'])
 
         self.formset = self.form_class(initial=saved_searches)
 
@@ -247,25 +235,39 @@ class CustomSearchesEditView(BasicTemplateView):
         self.formset = self.form_class(request.POST.dict())
 
 
+        saved_searches = user_data['saved_searches']
+
         if self.formset.is_valid() and request.user.is_authenticated():
-            saved_searches = { 'dingos' : [] }
+            dingos_saved_searches = []
+
             for form in self.formset.ordered_forms:
                 search = form.cleaned_data
-                print form.cleaned_data
-                # saved_searches['dingos'].append( { 'view' : search['view'],
-                #                                    'parameter' : search['parameter'],
-                #                                    'title' : search['title'],
-                #                                    'priority' : '%s' % search['ORDER'],
-                #                                  }
-                #                                )
-            # UserData.store_user_data(user=request.user,
-            #                          data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
-            #                          user_data=saved_searches,
-            #                          iobject_name = "Saved searches of user '%s'" % request.user.username)
+
+                # Search has the following form::
+                #
+                #     {'view': u'url.dingos.list.infoobject.generic',
+                #      'parameter': u'iobject_type=72',
+                #      u'ORDER': None,
+                #      u'DELETE': False,
+                #     'title': u'Filter for STIX Packages'
+                #     }
+                #
+
+                if search['title'] != '' and not search['DELETE']:
+                    dingos_saved_searches.append( { 'view' : search['view'],
+                        'parameter' : search['parameter'],
+                        'title' : search['title'],
+                        }
+                        )
+
+            saved_searches['dingos'] = dingos_saved_searchess
+            UserData.store_user_data(user=request.user,
+                                 data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
+                                 user_data=saved_searches,
+                                 iobject_name = "Saved searches of user '%s'" % request.user.username)
 
             # enforce reload of session
             del request.session['customization']
-            request.session.modified = True
 
         else:
             print "NOT valid! --> ", formset.errors 
