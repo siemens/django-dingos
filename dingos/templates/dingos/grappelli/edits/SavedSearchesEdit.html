@@ -37,6 +37,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             });
         })(grp.jQuery);
     </script>
+
 {% endblock %}
 
 {% block content_title %}
@@ -68,9 +69,15 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
            style="background-color:#FFB6C1;"
            {% endif %}
            > 
-	     {{form.view}}
-	     {{form.parameter}}
+             {% comment %}
+              We output the hidden fields:
+              - new_entry is hidden, because it is set/unset automatically (to distinguish a newly
+                added entry that is not to be saved if it is not given a name
+              - position probably is needed by the Grappelli JS (or maybe not?)                
+             {% endcomment %}
 	     {{form.new_entry}}
+
+	     {{form.position}}
 
 	     {{form.title}}
 	     {{form.title.errors}}
@@ -79,6 +86,12 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
              {% endif %}
            </div>
            <div class="grp-td">
+             {% comment %}
+             The view field is hidden, because we want to display its value using the url tag. Still,
+             we need to include it here, otherwise we will not have access to the value when the
+             form is returned.
+             {% endcomment %}
+	     {{form.view}}
 
 	     {% if form.view.value %}
 	       {% url form.view.value %}
@@ -87,7 +100,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
            </div>
 
            <div class="grp-td">
-	       {{form.parameter.value }}
+	     {{form.parameter}}
            </div>              
           <div class="grp-td grp-tools-container">
             <ul class="grp-tools">

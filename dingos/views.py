@@ -215,14 +215,19 @@ class CustomSearchesEditView(BasicTemplateView):
 
         initial = []
 
+        counter = 0
+
         for saved_search in saved_searches:
             initial.append({'new_entry': False,
+                            'position' : counter,
                             'title': saved_search['title'],
                             'view' : saved_search['view'],
                             'parameter' : saved_search['parameter']})
+            counter +=1
         if self.request.session.get('new_search'):
             print "Found new search"
-            initial.append({'new_entry' : True,
+            initial.append({'position' : counter,
+                            'new_entry' : True,
                             'title': "",
                             'view' : self.request.session['new_search']['view'],
                             'parameter' : self.request.session['new_search']['parameter']})

@@ -245,7 +245,7 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
             }
 
             # Redirect to edit view as this takes care of the rest
-            return HttpResponseRedirect(urlresolvers.reverse('url.dingos.edit.savedsearches')) 
+            return HttpResponseRedirect(urlresolvers.reverse('url.dingos.admin.edit.savedsearches'))
 
 class BasicDetailView(CommonContextMixin,
                       ViewMethodMixin,
