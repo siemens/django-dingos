@@ -228,14 +228,15 @@ class CustomSearchesEditView(BasicTemplateView):
 
 
     def post(self, request, *args, **kwargs):
-        data = { 'form-TOTAL_FORMS' : u'%s' % self.count_forms(request.POST.dict()),
-                 'form-INITIAL_FORMS' : u'0',
-                 'form-MAX_NUM_FORMS' : u'',
+        data = { u'form-TOTAL_FORMS' : u'%s' % self.count_forms(request.POST.dict()),
+                 u'form-INITIAL_FORMS' : u'0',
+                 u'form-MAX_NUM_FORMS' : u'',
+                 u'form-MIN_NUM_FORMS' : u'',
                }
         data.update(request.POST.dict())
         print "DATA : %s" % data
-        EditSavedSearchesFormset = formset_factory(EditSavedSearchesForm, can_order=False)
-        formset = EditSavedSearchesFormset(data)
+        form_class = formset_factory(EditSavedSearchesForm, can_order=True)
+        formset = form_class(data)
 
         if formset.is_valid() and request.user.is_authenticated():
             saved_searches = { 'dingos' : [] }
