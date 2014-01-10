@@ -18,6 +18,6 @@
 from django import forms
 
 class EditSavedSearchesForm(forms.Form):
-    title = forms.CharField(max_length=100)
-    parameter = forms.CharField(max_length=50)
-    view = forms.CharField(max_length=50)
+    title = forms.CharField(min_length=3,max_length=100)
+    parameter = forms.CharField(min_length=3,max_length=255)
+    view = forms.CharField(min_length=3,max_length=50)
