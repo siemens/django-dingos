@@ -67,7 +67,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
            <div class="grp-td">
              <input type="hidden" name="form-{{ forloop.counter0 }}-view" value="{{ search.view }}">
              <input type="hidden" name="form-{{ forloop.counter0 }}-parameter" value="{{ search.parameter }}">
-             <input type="hidden" name="form-{{ forloop.counter0 }}-ORDER" value="{{ forloop.revcounter }}">
+             <input type="hidden" name="form-{{ forloop.counter0 }}-ORDER" value="{{ forloop.counter }}">
              <p><a href="{% url search.view %}?{{ search.parameter }}" target="_blank">{% url search.view %}</a>
            </div>
           <div class="grp-td grp-tools-container">
@@ -90,7 +90,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
           <div class="grp-td" style="background-color:#FFB6C1;">
             <input type="hidden" name="form-{{ new_search.id }}-view" value="{{ new_search.view }}">
             <input type="hidden" name="form-{{ new_search.id }}-parameter" value="{{ new_search.parameter }}">
-            <input type="hidden" name="form-{{ new_search.id }}-ORDER" value="0">
+            <input type="hidden" name="form-{{ new_search.id }}-ORDER" value="{{ new_search.order }}">
             <p><a href="{% url new_search.view %}?{{ new_search.parameter }}" target="_blank">{% url new_search.view %}</a></p>
           </div>
           <div class="grp-td grp-tools-container" style="background-color:#FFB6C1;">

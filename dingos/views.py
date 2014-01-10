@@ -208,7 +208,8 @@ class CustomSearchesEditView(BasicTemplateView):
 
            # set form id for proper formset handling
            # ...it's ugly but Django needs proper formed HTML fields
-           context['new_search'].update( { 'id' : len(self.request.session['saved_searches']['dingos']) } )
+           nid = len(self.request.session['saved_searches']['dingos'])
+           context['new_search'].update( { 'id' : nid, 'order' : nid + 1 } )
 
            
         return context
