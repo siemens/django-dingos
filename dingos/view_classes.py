@@ -44,8 +44,6 @@ from dingos.core.template_helpers import ConfigDictWrapper
 
 from dingos.core.utilities import get_dict
 
-
-
 class CommonContextMixin(ContextMixin):
     """
     Each view passes a 'context' to the template with which the view
@@ -241,7 +239,7 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
             match = urlresolvers.resolve(request.path_info)
             
             # write data into session
-            request.session['new-search'] = { 
+            request.session['new_search'] = { 
                 # do the whole magic within a single line (strip empty elements + action, urlencode, creating GET string
                 "parameter" : "&".join(list( "%s=%s" % (urlquote_plus(k),urlquote_plus(v)) for k, v in request.GET.iteritems() if v and k != "action")),
                 "view" : match.url_name,

@@ -15,23 +15,20 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
+import re
 import json
 
 from django import http
-
-
 from django.db.models import F
+from django.forms.formsets import formset_factory
 
 from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData
 from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter
+from dingos.forms import EditSavedSearchesForm
+from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME, DINGOS_SAVED_SEARCHES_TYPE_NAME, DINGOS_DEFAULT_SAVED_SEARCHES
+
 from braces.views import LoginRequiredMixin
-
-from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME
-
-
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView
-
 
 
 class InfoObjectList(BasicFilterView):
@@ -199,14 +196,66 @@ class CustomSearchesEditView(BasicTemplateView):
     template_name = 'dingos/%s/edits/SavedSearchesEdit.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Saved searches'
 
-    def get(self, request, *args, **kwargs):
+    def get_context_data(self, **kwargs):
+        context = super(CustomSearchesEditView, self).get_context_data(**kwargs)
 
-        # delete new-search from session to avoid polluting session store
-        if request.session.get('new-search'):
-            kwargs['new-search'] = request.session['new-search']
-            print kwargs, args
-            del request.session['new-search']
-            request.session.modified = True
+        # delete the saved search within session to avoid pollution of session store
+        # and add the temporary search to context
+        if self.request.session.get('new_search'):
+           context['new_search'] = self.request.session['new_search']
+           del self.request.session['new_search']
+           self.request.session.modified = True
+        return context
+
+    def get(self, request, *args, **kwargs):
+        return super(BasicTemplateView,self).get(request, *args, **kwargs)
+
+    def count_forms(self, post):
+        """
+        Returns the number of searches in a given request.POST dict
+        """
+
+        forms = []
+        regex = re.compile(r'^form-(?P<id>\d)-(paramater|path|title)$')
+        for k, v in post.iteritems():
+            m = re.match(regex, k)
+            if m:
+                d = m.groupdict()
+                if not d['id'] in forms:
+                    forms.append(d['id'])
+
+        return len(forms)
+
+
+    def post(self, request, *args, **kwargs):
+        data = { 'form-TOTAL_FORMS' : u'%s' % self.count_forms(request.POST.dict()),
+                 'form-INITIAL_FORMS' : u'0',
+                 'form-MAX_NUM_FORMS' : u'',
+               }
+        data.update(request.POST.dict())
+        print "DATA : %s" % data
+        EditSavedSearchesFormset = formset_factory(EditSavedSearchesForm, can_order=False)
+        formset = EditSavedSearchesFormset(data)
+
+        if formset.is_valid() and request.user.is_authenticated():
+            saved_searches = { 'dingos' : [] }
+            for form in formset:
+                search = form.cleaned_data
+                print search
+                saved_searches['dingos'].append( { 'view' : search['view'], 
+                                                   'parameter' : search['paramater'],
+                                                   'title' : search['title'],
+                                                   'priority' : search['ORDER'],
+                                                 }
+                                               )
+            print "$$$$ %s" % saved_searches
+
+            UserData.store_user_data(user=request.user,
+                                     data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
+                                     user_data=DINGOS_DEFAULT_SAVED_SEARCHES,
+                                     iobject_name = "Saved searches of user '%s'" % request.user.username)
+        else:
+            print "NOT valid! --> ", formset.errors 
 
         return super(BasicTemplateView,self).get(request, *args, **kwargs)
 
