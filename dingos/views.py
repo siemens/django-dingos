@@ -205,6 +205,12 @@ class CustomSearchesEditView(BasicTemplateView):
            context['new_search'] = self.request.session['new_search']
            del self.request.session['new_search']
            self.request.session.modified = True
+
+           # set form id for proper formset handling
+           # ...it's ugly but Django needs proper formed HTML fields
+           context['new_search'].update( { 'id' : len(self.request.session['saved_searches']['dingos']) } )
+
+           
         return context
 
     def get(self, request, *args, **kwargs):
@@ -234,27 +240,28 @@ class CustomSearchesEditView(BasicTemplateView):
                  u'form-MIN_NUM_FORMS' : u'',
                }
         data.update(request.POST.dict())
-        print "DATA : %s" % data
         form_class = formset_factory(EditSavedSearchesForm, can_order=True)
         formset = form_class(data)
 
         if formset.is_valid() and request.user.is_authenticated():
             saved_searches = { 'dingos' : [] }
-            for form in formset:
+            for form in formset.ordered_forms:
                 search = form.cleaned_data
-                print search
                 saved_searches['dingos'].append( { 'view' : search['view'], 
-                                                   'parameter' : search['paramater'],
+                                                   'parameter' : search['parameter'],
                                                    'title' : search['title'],
-                                                   'priority' : search['ORDER'],
+                                                   'priority' : '%s' % search['ORDER'],
                                                  }
                                                )
-            print "$$$$ %s" % saved_searches
-
             UserData.store_user_data(user=request.user,
                                      data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
-                                     user_data=DINGOS_DEFAULT_SAVED_SEARCHES,
+                                     user_data=saved_searches,
                                      iobject_name = "Saved searches of user '%s'" % request.user.username)
+
+            # enforce reload of session
+            del request.session['customization']
+            request.session.modified = True
+
         else:
             print "NOT valid! --> ", formset.errors 
 
