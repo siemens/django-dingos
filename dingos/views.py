@@ -192,6 +192,11 @@ class UserPrefsView(InfoObjectView_wo_login):
     def get_object(self):
         return UserData.get_user_data_iobject(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
 
+class InfoObjectsEditView(InfoObjectView_wo_login):
+    template_name = 'dingos/%s/edits/InfoObjectsEdit.html' % DINGOS_TEMPLATE_FAMILY
+    title = 'Edit InfoObject'
+
+
 class CustomSearchesEditView(BasicTemplateView):
     template_name = 'dingos/%s/edits/SavedSearchesEdit.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Saved searches'
