@@ -22,7 +22,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% load dingos_tags %}
 
 {% block extrahead %}
-    <script type="text/javascript" src="/static/grappelli/js/grappelli.min.js"></script>
     <script type="text/javascript" charset="utf-8">
         (function ($) {
             $(document).ready(function () {
@@ -45,9 +44,48 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endblock %}
 
 {% block content %}
+    <script type="text/javascript" charset="utf-8">
+        (function ($) {
+            $(document).ready(function () {
+
+        $("#iobject_type_set-group > div.grp-table").sortable({
+            handle: "a.grp-drag-handler",
+            items: "div.grp-dynamic-form",
+            axis: "y",
+            appendTo: 'body',
+            forceHelperSize: true,
+            placeholder: 'grp-module ui-sortable-placeholder',
+            forcePlaceholderSize: true,
+            containment: '#iobject_type_set-group > div.grp-table',
+            tolerance: 'pointer',
+            start: function(evt, ui) {
+                var template = "<div class='grp-tr'>",
+                    len = ui.item.find("div.grp-tr").children("div.grp-td").length;
+                for (var i = 0; i < len; i++) {
+                    template += "<div class='grp-td' style='height:" + (ui.item.outerHeight() + 12 ) + "px'>&nbsp;</div>";
+                }
+                template += "</div>";
+                ui.placeholder.addClass("grp-tbody grp-module").append(template);
+            },
+            stop: function(evt, ui) {
+                var lastScrollTop = $(window).scrollTop();
+                // Toggle div.table twice to remove webkits border-spacing bug
+                $("#iobject_type_set-group > div.grp-table").toggle().toggle();
+                $(window).scrollTop(lastScrollTop);
+            }
+        });
+
+
+	$("#iobject_type_set-group").grp_inline({prefix: "iobject_type_set"});
+
+
+
+            });
+        })(grp.jQuery);
+    </script>
 
 <form action="" method="post">{% csrf_token %}
-  <div class="grp-group grp-tabular">
+  <div class="grp-group grp-tabular" id="iobject_type_set-group">
     <h2>Available searches</h2>
 
     <div class="grp-module grp-table">
@@ -56,13 +94,14 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
           <div class="grp-th">Name</div>
           <div class="grp-th">Link</div>
           <div class="grp-th">Parameters</div>
+          <div class="grp-th position required">Position</div>
           <div class="grp-th" style="text-align:right;">Actions</div>
         </div>
       </div>
 
       {{ formset.management_form }}
      {% for form in formset %}
-       <div class="grp-module grp-tbody grp-dynamic-form">
+       <div class="grp-module grp-tbody grp-dynamic-form has_original">
          <div class="grp-tr">
            <div class="grp-td"              
            {% if form.new_entry.value == True %}
@@ -76,8 +115,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
               - position probably is needed by the Grappelli JS (or maybe not?)                
              {% endcomment %}
 	     {{form.new_entry}}
-
-	     {{form.position}}
 
 	     {{form.title}}
 	     {{form.title.errors}}
@@ -102,10 +139,15 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
            <div class="grp-td">
 	     {{form.parameter}}
            </div>              
-          <div class="grp-td grp-tools-container">
+
+           <div class="grp-td position">
+             {{form.position}}
+           </div>
+
+           <div class="grp-td grp-tools-container">
             <ul class="grp-tools">
               <li><a href="javascript://" title="Move item" class="grp-icon grp-drag-handler"></a></li>
-              <li><a href="javascript://" title="Delete item" class="grp-icon grp-delete-handler"></a></li>
+              <li class="grp-remove-handler-container">{{form.DELETE}}<a href="javascript://" title="Delete item" class="grp-icon grp-delete-handler"></a></li>
             </ul>
           </div>
          </div>

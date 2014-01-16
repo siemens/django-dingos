@@ -29,4 +29,4 @@ class EditSavedSearchesForm(forms.Form):
     parameter = forms.CharField(max_length=1024,widget=widgets.TextInput(attrs={'readonly':True,'class':'vTextField'}))
     view = forms.CharField(max_length=256,widget=widgets.HiddenInput)
     new_entry = forms.BooleanField(widget=widgets.HiddenInput,required=False)
-    position = forms.IntegerField(widget=widgets.HiddenInput)
+    position = forms.IntegerField(widget=widgets.TextInput(attrs={'class':'vIntegerField'}))

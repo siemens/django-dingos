@@ -196,7 +196,6 @@ class CustomSearchesEditView(BasicTemplateView):
     template_name = 'dingos/%s/edits/SavedSearchesEdit.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Saved searches'
 
-
     form_class = formset_factory(EditSavedSearchesForm, can_order=True, can_delete=True,extra=0)
 
     formset = None
@@ -225,28 +224,21 @@ class CustomSearchesEditView(BasicTemplateView):
                             'parameter' : saved_search['parameter']})
             counter +=1
         if self.request.session.get('new_search'):
-            print "Found new search"
             initial.append({'position' : counter,
                             'new_entry' : True,
                             'title': "",
                             'view' : self.request.session['new_search']['view'],
                             'parameter' : self.request.session['new_search']['parameter']})
             del(self.request.session['new_search'])
+            self.request.session.modified = True
 
-        print initial
         self.formset = self.form_class(initial=initial)
-
-        #print dir(self.formset)
-
         return super(BasicTemplateView,self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
 
         user_data = self.get_user_data()
-        print request.POST.dict()
         self.formset = self.form_class(request.POST.dict())
-
-
         saved_searches = user_data['saved_searches']
 
         if self.formset.is_valid() and request.user.is_authenticated():
@@ -254,7 +246,6 @@ class CustomSearchesEditView(BasicTemplateView):
 
             for form in self.formset.ordered_forms:
                 search = form.cleaned_data
-                print "Iterating %s" % search
 
                 # Search has the following form::
                 #
@@ -282,6 +273,7 @@ class CustomSearchesEditView(BasicTemplateView):
 
             # enforce reload of session
             del request.session['customization']
+            request.session.modified = True
 
         else:
             # Form was not valid, we return the form as is
