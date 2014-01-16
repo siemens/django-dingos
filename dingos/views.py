@@ -196,77 +196,88 @@ class CustomSearchesEditView(BasicTemplateView):
     template_name = 'dingos/%s/edits/SavedSearchesEdit.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Saved searches'
 
+    form_class = formset_factory(EditSavedSearchesForm, can_order=True, can_delete=True,extra=0)
+
+    formset = None
+
+
     def get_context_data(self, **kwargs):
         context = super(CustomSearchesEditView, self).get_context_data(**kwargs)
 
-        # delete the saved search within session to avoid pollution of session store
-        # and add the temporary search to context
-        if self.request.session.get('new_search'):
-           context['new_search'] = self.request.session['new_search']
-           del self.request.session['new_search']
-           self.request.session.modified = True
+        context['formset'] = self.formset
 
-           # set form id for proper formset handling
-           # ...it's ugly but Django needs proper formed HTML fields
-           nid = len(self.request.session['saved_searches']['dingos'])
-           context['new_search'].update( { 'id' : nid, 'order' : nid + 1 } )
-
-           
         return context
 
     def get(self, request, *args, **kwargs):
+        user_data = self.get_user_data()
+        saved_searches = user_data['saved_searches'].get('dingos',[])
+
+        initial = []
+
+        counter = 0
+
+        for saved_search in saved_searches:
+            initial.append({'new_entry': False,
+                            'position' : counter,
+                            'title': saved_search['title'],
+                            'view' : saved_search['view'],
+                            'parameter' : saved_search['parameter']})
+            counter +=1
+        if self.request.session.get('new_search'):
+            initial.append({'position' : counter,
+                            'new_entry' : True,
+                            'title': "",
+                            'view' : self.request.session['new_search']['view'],
+                            'parameter' : self.request.session['new_search']['parameter']})
+            del(self.request.session['new_search'])
+            self.request.session.modified = True
+
+        self.formset = self.form_class(initial=initial)
         return super(BasicTemplateView,self).get(request, *args, **kwargs)
 
-    def count_forms(self, post):
-        """
-        Returns the number of searches in a given request.POST dict
-        """
-
-        forms = []
-        regex = re.compile(r'^form-(?P<id>\d)-(paramater|path|title)$')
-        for k, v in post.iteritems():
-            m = re.match(regex, k)
-            if m:
-                d = m.groupdict()
-                if not d['id'] in forms:
-                    forms.append(d['id'])
-
-        return len(forms)
-
-
     def post(self, request, *args, **kwargs):
-        data = { u'form-TOTAL_FORMS' : u'%s' % self.count_forms(request.POST.dict()),
-                 u'form-INITIAL_FORMS' : u'0',
-                 u'form-MAX_NUM_FORMS' : u'',
-                 u'form-MIN_NUM_FORMS' : u'',
-               }
-        data.update(request.POST.dict())
-        form_class = formset_factory(EditSavedSearchesForm, can_order=True)
-        formset = form_class(data)
 
-        if formset.is_valid() and request.user.is_authenticated():
-            saved_searches = { 'dingos' : [] }
-            for form in formset.ordered_forms:
+        user_data = self.get_user_data()
+        self.formset = self.form_class(request.POST.dict())
+        saved_searches = user_data['saved_searches']
+
+        if self.formset.is_valid() and request.user.is_authenticated():
+            dingos_saved_searches = []
+
+            for form in self.formset.ordered_forms:
                 search = form.cleaned_data
-                saved_searches['dingos'].append( { 'view' : search['view'], 
-                                                   'parameter' : search['parameter'],
-                                                   'title' : search['title'],
-                                                   'priority' : '%s' % search['ORDER'],
-                                                 }
-                                               )
+                # Search has the following form::
+                #
+                #     {'view': u'url.dingos.list.infoobject.generic',
+                #      'parameter': u'iobject_type=72',
+                #      u'ORDER': None,
+                #      u'DELETE': False,
+                #     'title': u'Filter for STIX Packages'
+                #     }
+                #
+
+                if (search['title'] != '' or not search['new_entry']) and not search['DELETE']:
+                    dingos_saved_searches.append( { 'view' : search['view'],
+                        'parameter' : search['parameter'],
+                        'title' : search['title'],
+                        }
+                        )
+
+            saved_searches['dingos'] = dingos_saved_searches
             UserData.store_user_data(user=request.user,
-                                     data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
-                                     user_data=saved_searches,
-                                     iobject_name = "Saved searches of user '%s'" % request.user.username)
+                                 data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
+                                 user_data=saved_searches,
+                                 iobject_name = "Saved searches of user '%s'" % request.user.username)
 
             # enforce reload of session
             del request.session['customization']
             request.session.modified = True
 
         else:
-            print "NOT valid! --> ", formset.errors 
+            # Form was not valid, we return the form as is
 
-        return super(BasicTemplateView,self).get(request, *args, **kwargs)
+            return super(BasicTemplateView,self).get(request, *args, **kwargs)
+        return self.get(request, *args, **kwargs)
 
 class InfoObjectJSONView(BasicDetailView):
     # Config for Prefetch/SelectRelated Mixins_
