@@ -79,12 +79,17 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 	$("#iobject_type_set-group").grp_inline({prefix: "iobject_type_set"});
 
 
+	$('#saved-search-edit').submit(function(){
+		$.each($('input', '.position-input'), function(i,v){
+			$(this).val(i);
+		});
+	});
 
             });
         })(grp.jQuery);
     </script>
 
-<form action="" method="post">{% csrf_token %}
+<form id="saved-search-edit" action="" method="post">{% csrf_token %}
   <div class="grp-group grp-tabular" id="iobject_type_set-group">
     <h2>Available searches</h2>
 
@@ -94,7 +99,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
           <div class="grp-th">Name</div>
           <div class="grp-th">Link</div>
           <div class="grp-th">Parameters</div>
-          <div class="grp-th position required">Position</div>
           <div class="grp-th" style="text-align:right;">Actions</div>
         </div>
       </div>
@@ -138,11 +142,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
            <div class="grp-td">
 	     {{form.parameter}}
+	     <span class="position-input" style="display:none;">{{form.ORDER}}</span>
            </div>              
-
-           <div class="grp-td position">
-             {{form.position}}
-           </div>
 
            <div class="grp-td grp-tools-container">
             <ul class="grp-tools">
@@ -161,7 +162,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <footer class="grp-module grp-submit-row grp-fixed-footer">
     <header style="display:none"><h1>Submit Options</h1></header>
-    <ul><li> <div class="grp-button"><input name="action" value="Save" type="submit" /> </li>
+    <ul>
+      <li><input type="submit" class="grp-button grp-default" value="Save"></li>
     </ul>
 </footer>
 

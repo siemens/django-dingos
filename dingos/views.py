@@ -246,7 +246,6 @@ class CustomSearchesEditView(BasicTemplateView):
 
             for form in self.formset.ordered_forms:
                 search = form.cleaned_data
-
                 # Search has the following form::
                 #
                 #     {'view': u'url.dingos.list.infoobject.generic',
@@ -258,7 +257,6 @@ class CustomSearchesEditView(BasicTemplateView):
                 #
 
                 if (search['title'] != '' or not search['new_entry']) and not search['DELETE']:
-                    print "Saving %s" % search
                     dingos_saved_searches.append( { 'view' : search['view'],
                         'parameter' : search['parameter'],
                         'title' : search['title'],
