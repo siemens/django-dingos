@@ -19,6 +19,104 @@ this program; if not, write to the Free Software Foundation, Inc., 51
 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
+{% comment %}
+The Javascript below in the extrahead is taken from
+the django-grappelli project, which is published under the following license:
+
+django-grappelli
+----------------
+
+Copyright (c) Patrick Kranzlmueller, Axel Swoboda (vonautomatisch werkstaetten),
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation and/or
+other materials provided with the distribution.
+3. Neither the name of FileBrowser nor the names of its contributors may be used
+to endorse or promote products derived from this software without specific prior
+written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
+OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
+THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+{% endcomment %}
+
+{% block extrahead %}
+    <script type="text/javascript" charset="utf-8">
+        (function ($) {
+            $(document).ready(function () {
+
+                (function ($) {
+                    $(document).ready(function () {
+                        $("#grp-content-container .grp-collapse").grp_collapsible();
+                    });
+                })(grp.jQuery);
+
+
+            });
+        })(grp.jQuery);
+    </script>
+
+    <script type="text/javascript" charset="utf-8">
+        (function ($) {
+            $(document).ready(function () {
+
+        $("#iobject_type_set-group > div.grp-table").sortable({
+            handle: "a.grp-drag-handler",
+            items: "div.grp-dynamic-form",
+            axis: "y",
+            appendTo: 'body',
+            forceHelperSize: true,
+            placeholder: 'grp-module ui-sortable-placeholder',
+            forcePlaceholderSize: true,
+            containment: '#iobject_type_set-group > div.grp-table',
+            tolerance: 'pointer',
+            start: function(evt, ui) {
+                var template = "<div class='grp-tr'>",
+                    len = ui.item.find("div.grp-tr").children("div.grp-td").length;
+                for (var i = 0; i < len; i++) {
+                    template += "<div class='grp-td' style='height:" + (ui.item.outerHeight() + 12 ) + "px'>&nbsp;</div>";
+                }
+                template += "</div>";
+                ui.placeholder.addClass("grp-tbody grp-module").append(template);
+            },
+            stop: function(evt, ui) {
+                var lastScrollTop = $(window).scrollTop();
+                // Toggle div.table twice to remove webkits border-spacing bug
+                $("#iobject_type_set-group > div.grp-table").toggle().toggle();
+                $(window).scrollTop(lastScrollTop);
+            }
+        });
+
+
+	$("#iobject_type_set-group").grp_inline({prefix: "iobject_type_set"});
+
+
+	$('#saved-search-edit').submit(function(){
+		$.each($('input', '.position-input'), function(i,v){
+			$(this).val(i);
+		});
+	});
+
+            });
+        })(grp.jQuery);
+    </script>
+
+
+
+{% endblock %}
 
 
 

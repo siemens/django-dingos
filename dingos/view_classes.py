@@ -233,7 +233,6 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
 
     def get(self, request, *args, **kwargs):
         if request.GET.get('action','Submit Query') == 'Submit Query':
-            print "Forward to super"
             return super(BasicFilterView,self).get(request, *args, **kwargs)
         else:
             match = urlresolvers.resolve(request.path_info)
@@ -246,7 +245,7 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
             }
 
             # Redirect to edit view as this takes care of the rest
-            return HttpResponseRedirect(urlresolvers.reverse('url.dingos.edit.savedsearches')) 
+            return HttpResponseRedirect(urlresolvers.reverse('url.dingos.admin.edit.savedsearches'))
 
 class BasicDetailView(CommonContextMixin,
                       ViewMethodMixin,

@@ -21,23 +21,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% load dingos_tags %}
 
-{% block extrahead %}
-    <script type="text/javascript" src="/static/grappelli/js/grappelli.min.js"></script>
-    <script type="text/javascript" charset="utf-8">
-        (function ($) {
-            $(document).ready(function () {
-
-                (function ($) {
-                    $(document).ready(function () {
-                        $("#grp-content-container .grp-collapse").grp_collapsible();
-                    });
-                })(grp.jQuery);
-
-
-            });
-        })(grp.jQuery);
-    </script>
-{% endblock %}
 
 {% block content_title %}
     <h1>Saved searches for user {{ user.username }}</h1>
@@ -45,8 +28,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% block content %}
 
-<form action="" method="post">{% csrf_token %}
-  <div class="grp-group grp-tabular">
+<form id="saved-search-edit" action="" method="post">{% csrf_token %}
+  <div class="grp-group grp-tabular" id="iobject_type_set-group">
     <h2>Available searches</h2>
 
     <div class="grp-module grp-table">
@@ -54,65 +37,75 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
         <div class="grp-tr">
           <div class="grp-th">Name</div>
           <div class="grp-th">Link</div>
+          <div class="grp-th">Parameters</div>
           <div class="grp-th" style="text-align:right;">Actions</div>
         </div>
       </div>
 
-     {% for search in saved_searches.EmptyList.dingos %}
-       <div class="grp-module grp-tbody grp-dynamic-form">
+      {{ formset.management_form }}
+     {% for form in formset %}
+       <div class="grp-module grp-tbody grp-dynamic-form has_original">
          <div class="grp-tr">
-           <div class="grp-td">
-             <input type="text" name = "form-{{ forloop.counter0 }}-title" class="vTextField" value="{{ search.title }}"/>
+           <div class="grp-td"              
+           {% if form.new_entry.value == True %}
+           style="background-color:#FFB6C1;"
+           {% endif %}
+           > 
+             {% comment %}
+              We output the hidden fields:
+              - new_entry is hidden, because it is set/unset automatically (to distinguish a newly
+                added entry that is not to be saved if it is not given a name
+              - position probably is needed by the Grappelli JS (or maybe not?)                
+             {% endcomment %}
+	     {{form.new_entry}}
+
+	     {{form.title}}
+	     {{form.title.errors}}
+             {% if form.new_entry.value == True %}
+             <p class="grp-help">This is a temporary entry and won't be persisted unless you give it a name and press save.</p>
+             {% endif %}
            </div>
            <div class="grp-td">
-             <input type="hidden" name="form-{{ forloop.counter0 }}-view" value="{{ search.view }}">
-             <input type="hidden" name="form-{{ forloop.counter0 }}-parameter" value="{{ search.parameter }}">
-             <input type="hidden" name="form-{{ forloop.counter0 }}-ORDER" value="{{ forloop.counter }}">
-             <p><a href="{% url search.view %}?{{ search.parameter }}" target="_blank">{% url search.view %}</a>
+             {% comment %}
+             The view field is hidden, because we want to display its value using the url tag. Still,
+             we need to include it here, otherwise we will not have access to the value when the
+             form is returned.
+             {% endcomment %}
+	     {{form.view}}
+
+	     {% if form.view.value %}
+	       {% url form.view.value %}
+	     {% endif %}
+
            </div>
-          <div class="grp-td grp-tools-container">
+
+           <div class="grp-td">
+	     {{form.parameter}}
+	     <span class="position-input" style="display:none;">{{form.ORDER}}</span>
+           </div>              
+
+           <div class="grp-td grp-tools-container">
             <ul class="grp-tools">
               <li><a href="javascript://" title="Move item" class="grp-icon grp-drag-handler"></a></li>
-              <li><a href="javascript://" title="Delete item" class="grp-icon grp-delete-handler"></a></li>
+              <li class="grp-remove-handler-container">{{form.DELETE}}<a href="javascript://" title="Delete item" class="grp-icon grp-delete-handler"></a></li>
             </ul>
           </div>
          </div>
        </div>
      {% endfor %}
 
-     {% if new_search %}
-       <div class="grp-module grp-tbody grp-dynamic-form">
-         <div class="grp-tr">
-           <div class="grp-td" style="background-color:#FFB6C1;">
-             <input type="text" name="form-{{ new_search.id }}-title" class="vTextField" value="New search"/>
-             <p class="grp-help">This is a temporary entry and won't be persisted until you press save.</p>
-          </div>
-          <div class="grp-td" style="background-color:#FFB6C1;">
-            <input type="hidden" name="form-{{ new_search.id }}-view" value="{{ new_search.view }}">
-            <input type="hidden" name="form-{{ new_search.id }}-parameter" value="{{ new_search.parameter }}">
-            <input type="hidden" name="form-{{ new_search.id }}-ORDER" value="{{ new_search.order }}">
-            <p><a href="{% url new_search.view %}?{{ new_search.parameter }}" target="_blank">{% url new_search.view %}</a></p>
-          </div>
-          <div class="grp-td grp-tools-container" style="background-color:#FFB6C1;">
-            <ul class="grp-tools">
-              <li><a href="javascript://" title="Move item" class="grp-icon grp-drag-handler"></a></li>
-              <li><a href="javascript://" title="Delete item" class="grp-icon grp-delete-handler"></a></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    {% endif %}
 
 
-      <div class="grp-module grp-tbody">
-        <div class="grp-tr">
-          <div class="grp-td" style="background-color:#FFF;"></div>
-          <div class="grp-td" style="background-color:#FFF;"></div>
-          <div class="grp-td" style="background-color:#FFF;text-align:right;"><input name="action" value="Save" type="submit" /></div>
-        </div>
-      </div>
     </div>
   </div>
+
+<footer class="grp-module grp-submit-row grp-fixed-footer">
+    <header style="display:none"><h1>Submit Options</h1></header>
+    <ul>
+      <li><input type="submit" class="grp-button grp-default" value="Save"></li>
+    </ul>
+</footer>
+
 </form>
 
 {% endblock %}
