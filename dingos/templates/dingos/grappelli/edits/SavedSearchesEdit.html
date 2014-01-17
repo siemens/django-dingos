@@ -21,73 +21,12 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% load dingos_tags %}
 
-{% block extrahead %}
-    <script type="text/javascript" charset="utf-8">
-        (function ($) {
-            $(document).ready(function () {
-
-                (function ($) {
-                    $(document).ready(function () {
-                        $("#grp-content-container .grp-collapse").grp_collapsible();
-                    });
-                })(grp.jQuery);
-
-
-            });
-        })(grp.jQuery);
-    </script>
-
-{% endblock %}
 
 {% block content_title %}
     <h1>Saved searches for user {{ user.username }}</h1>
 {% endblock %}
 
 {% block content %}
-    <script type="text/javascript" charset="utf-8">
-        (function ($) {
-            $(document).ready(function () {
-
-        $("#iobject_type_set-group > div.grp-table").sortable({
-            handle: "a.grp-drag-handler",
-            items: "div.grp-dynamic-form",
-            axis: "y",
-            appendTo: 'body',
-            forceHelperSize: true,
-            placeholder: 'grp-module ui-sortable-placeholder',
-            forcePlaceholderSize: true,
-            containment: '#iobject_type_set-group > div.grp-table',
-            tolerance: 'pointer',
-            start: function(evt, ui) {
-                var template = "<div class='grp-tr'>",
-                    len = ui.item.find("div.grp-tr").children("div.grp-td").length;
-                for (var i = 0; i < len; i++) {
-                    template += "<div class='grp-td' style='height:" + (ui.item.outerHeight() + 12 ) + "px'>&nbsp;</div>";
-                }
-                template += "</div>";
-                ui.placeholder.addClass("grp-tbody grp-module").append(template);
-            },
-            stop: function(evt, ui) {
-                var lastScrollTop = $(window).scrollTop();
-                // Toggle div.table twice to remove webkits border-spacing bug
-                $("#iobject_type_set-group > div.grp-table").toggle().toggle();
-                $(window).scrollTop(lastScrollTop);
-            }
-        });
-
-
-	$("#iobject_type_set-group").grp_inline({prefix: "iobject_type_set"});
-
-
-	$('#saved-search-edit').submit(function(){
-		$.each($('input', '.position-input'), function(i,v){
-			$(this).val(i);
-		});
-	});
-
-            });
-        })(grp.jQuery);
-    </script>
 
 <form id="saved-search-edit" action="" method="post">{% csrf_token %}
   <div class="grp-group grp-tabular" id="iobject_type_set-group">
