@@ -48,10 +48,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% block content %}
 
-
-
     <div class="l-2cr-fluid l-d-8">
-
         <div class="c-1">
             {% show_InfoObjectMarkings object %}
             {% show_InfoObjectRevisions_vertical object %}
@@ -59,15 +56,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
         </div>
         <div class="c-2">
             {% show_InfoObjectIDData object %}
-            {% show_InfoObject object iobject2facts highlight=highlight show_NodeID=show_NodeID%}
-
+            {% show_InfoObject object iobject2facts highlight=highlight show_NodeID=show_NodeID formset=formset formindex=formindex %}
         </div>
-
     </div>
 
-
-
-
 {% endblock %}
-
-

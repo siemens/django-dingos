@@ -24,7 +24,7 @@ from django.forms.formsets import formset_factory
 
 from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData
 from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter
-from dingos.forms import EditSavedSearchesForm
+from dingos.forms import EditInfoObjectFieldForm, EditSavedSearchesForm
 from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME, DINGOS_SAVED_SEARCHES_TYPE_NAME, DINGOS_DEFAULT_SAVED_SEARCHES
 
 from braces.views import LoginRequiredMixin
@@ -192,9 +192,42 @@ class UserPrefsView(InfoObjectView_wo_login):
     def get_object(self):
         return UserData.get_user_data_iobject(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
 
-class InfoObjectsEditView(InfoObjectView_wo_login):
+class InfoObjectsEditView(LoginRequiredMixin,InfoObjectView_wo_login):
     template_name = 'dingos/%s/edits/InfoObjectsEdit.html' % DINGOS_TEMPLATE_FAMILY
-    title = 'Edit InfoObject'
+    title = 'Edit Info Object Details'
+
+    attr_editable = True
+    form_class = formset_factory(EditInfoObjectFieldForm, extra=0)
+
+    def get_context_data(self, **kwargs):
+        context = super(InfoObjectView_wo_login, self).get_context_data(**kwargs)
+        context.update(super(LoginRequiredMixin, self).get_context_data(**kwargs))
+
+        form_builder = []
+        index = {}
+        cnt = 0
+       
+        for io2f in context['object'].fact_thru.all():
+
+            if len(io2f.fact.fact_values.all()) == 1 and io2f.fact.value_iobject_id == None \
+               and ( (self.attr_editable and io2f.fact.fact_term.attribute != "") or \
+                     not io2f.fact.fact_term.attribute ):
+                value = io2f.fact.fact_values.all()[0].value
+                form_builder.append( { 'value' : value } )
+                index.update( { io2f.id :  cnt } )
+                cnt += 1
+
+        context['formset'] = self.form_class(initial=form_builder)
+        context['formindex'] = index
+
+        import pprint
+        pprint.pprint(index)
+
+        return context
+
+    def get(self, request, *args, **kwargs):
+        return super(InfoObjectView_wo_login,self).get(request, *args, **kwargs)
+
 
 
 class CustomSearchesEditView(BasicTemplateView):
@@ -202,9 +235,7 @@ class CustomSearchesEditView(BasicTemplateView):
     title = 'Saved searches'
 
     form_class = formset_factory(EditSavedSearchesForm, can_order=True, can_delete=True,extra=0)
-
     formset = None
-
 
     def get_context_data(self, **kwargs):
         context = super(CustomSearchesEditView, self).get_context_data(**kwargs)

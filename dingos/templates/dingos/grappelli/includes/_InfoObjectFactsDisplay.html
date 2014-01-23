@@ -21,6 +21,12 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
 {% block fact %}
+
+   {% if formset and formindex %}
+     <form id="infoobject-edit" action="" method="post">{% csrf_token %}
+     {{ formset.management_form }}
+   {% endif %}
+
     <div class="grp-module grp-collapse grp-open">
         <h2 class="grp-collapse-handler">Facts</h2>
 
@@ -65,13 +71,17 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                         {% else %}
                             {%  for value in k.fact.fact_values.all %}
                                 {% if value.storage_location == 1 %}
-                                    On Disk: {{ value.value }}
+                                    On Disk: 
                                 {% elif value.storage_location == 2 %}
-                                    In Blob Table: {{ value.value }}
+                                    In Blob Table: 
+                                {% endif %}
+                                                               
+                                {% if k.id in formindex.values %}
+                                    {% render_formset_form formset formindex k.id 'value' %}
                                 {% else %}
                                     {{ value.value }}
-
                                 {% endif %}
+
                                 {%  if not forloop.last %}
                                   ,<br/>
                                 {% endif %}
@@ -96,6 +106,13 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     </div>
 
+  {% if formset and formindex %}
+    <footer class="grp-module grp-submit-row grp-fixed-footer">
+    <header style="display:none"><h1>Submit Options</h1></header>
+      <ul><li><input class="grp-button grp-default" type="submit" value="Save"></input></li></ul>
+    </footer>
+  </form>
+  {% endif %}
 {% endblock %}
 
 
@@ -186,8 +203,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
         {% endfor %}
     </table>
-
-
 </div>
 
 

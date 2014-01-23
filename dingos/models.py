@@ -1499,7 +1499,7 @@ class UserData(DingoModel):
             settings_iobject = self.identifier.latest
         if settings_iobject:
             settings= settings_iobject.to_dict(no_attributes=True)
-            print "Found settings %s" % settings
+            #print "Found settings %s" % settings
             return settings
         else:
             return None
