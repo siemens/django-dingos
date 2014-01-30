@@ -221,7 +221,7 @@ class InfoObjectsEditView(LoginRequiredMixin,InfoObjectView_wo_login):
         context['formindex'] = index
 
         import pprint
-        pprint.pprint(index)
+        pprint.pprint(context)
 
         return context
 
