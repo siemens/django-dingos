@@ -64,22 +64,22 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                     {% for obj in object_list %}
                         <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
-                        <td class="nowrap">
+                        <td>
                             <a href="{%url 'url.dingos.view.infoobject' pk=obj.pk %}">{{ obj.identifier }}</a>
                         </td>
-                        <td class="nowrap">
+                        <td>
                             {{obj.timestamp | date:"Y-m-d H:i:s O"}}
                         </td>
-                        <td class="nowrap">
+                        <td>
                             {{obj.create_timestamp | date:"Y-m-d H:i:s O"}}
                         </td>
-                        <td class="nowrap">
+                        <td>
                             {{obj.name}}
                         </td>
-                        <td class="nowrap">
+                        <td>
                             {{obj.iobject_type.name}}
                         </td>
-                        <td class="nowrap">
+                        <td>
                             {{obj.iobject_family.name}}  {{obj.iobject_family_revision.name}}
                         </td>
                      </tr>

@@ -38,34 +38,33 @@
 
 {% endblock %}
 
-{# Below, fill out the 
+{# Below, fill out the #} 
 
 {% block objects %}
-
-
-    <div class="grp-row">
-    <table>
-
-
+   <div class="grp-module grp-changelist-results">
+    <table id="result_list" cellspacing="0" class="grp-sortable">
+     <thead>
        <tr>
-	<th >
-	  Info Object
+	<th scope="col"  class="sortable column-infoobject">
+	  <div class="grp-text"><a href="">Info Object</a></div>
 	</th>
-	<th >
-	  IO-Type
+	<th scope="col"  class="sortable column-iotype">
+	  <div class="grp-text"><a href="">IO-Type</a></div>
 	</th>
-	<th >
-	  Fact Term
+	<th scope="col"  class="sortable column-factterm">
+	  <div class="grp-text"><a href="">Fact Term</a></div>
 	</th>
-	<th >
-	  Value
+	<th scope="col"  class="sortable column-value">
+	  <div class="grp-text"><a href="">Value</a></div>
 	</th>
        </tr>
+     </thead>
 
 
- {% for enrich2fact in object_list %}
-  <tr >
-    <td >
+    <tbody>
+     {% for enrich2fact in object_list %}
+    <tr class="grp-row grp-row-{% cycle 'even' 'odd' %}">
+      <td>
 	<a href="{%url 'url.dingos.view.infoobject.redirect2highlight' pk=enrich2fact.iobject.id node=enrich2fact.node_id %}"> {{enrich2fact.iobject.name}} </a>
     </td>
     <td >
@@ -77,9 +76,10 @@
     <td >
 	{{ enrich2fact.fact.fact_values.all|join:", " }}
     </td>
-  </tr >
-    {% endfor %}
-</table>
+   </tr >
+  {% endfor %}
+  </tbody>
+ </table>
 </div>
 {% endblock %}
 
