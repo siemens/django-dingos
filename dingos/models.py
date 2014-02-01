@@ -712,7 +712,6 @@ dingos_class_map["InfoObject2Fact"] = InfoObject2Fact
 
 
 class IO2F2Namespace(DingoModel):
-
     io2f = models.ForeignKey("InfoObject2Fact",
                                 related_name="namespace_thru",
                                 )
@@ -721,6 +720,9 @@ class IO2F2Namespace(DingoModel):
                              related_name="io2f_thru",
                              )
     position = models.SmallIntegerField()
+
+    def __unicode__(self):
+        return "%s: %s" % (self.position, self.namespace.uri)
 
 dingos_class_map["IO2F2Namespace"] = IO2F2Namespace
 
@@ -939,7 +941,8 @@ class InfoObject(DingoModel):
                  node_id_name='',
                  is_attribute=False,
                  ns_uri_dict=None,
-                 namespaces=None):
+                 namespaces=None,
+                 top_level_namespace=None):
         """
         Add a fact to the iobject. If a fact term for the iobject type
         with the given fact data type and source (CYBOX, etc.) does not
@@ -1007,8 +1010,11 @@ class InfoObject(DingoModel):
 
         counter = 0
         io2f2n_list = []
+
+        current_namespace = top_level_namespace
         for (ns_uri,ns_slug) in namespaces:
-            if ns_uri:
+
+            if ns_uri and current_namespace[0] != ns_uri:
 
                 if not (ns_uri in ns_uri_dict):
                     ns_uri_obj, created = self._DCM['DataTypeNameSpace'].objects.get_or_create(uri=ns_uri,name=ns_slug)
@@ -1018,10 +1024,12 @@ class InfoObject(DingoModel):
                     ns_uri_obj_pk = ns_uri_dict[ns_uri]
 
                 io2f2n_list.append(IO2F2Namespace(io2f=e2f,position=counter,namespace_id=ns_uri_obj_pk))
+                current_namespace = (ns_uri,ns_slug)
             counter +=1
             #self._DCM['IO2F2Namespace'].object.create(io2f=self,position=counter,namespace__pk=ns_uri_obj_pk)
 
         print "List: %s" % io2f2n_list
+        print "%s%s" % (fact_term_name,fact_term_attribute)
         print IO2F2Namespace.objects.bulk_create(io2f2n_list)
 
 
@@ -1039,7 +1047,13 @@ class InfoObject(DingoModel):
 
         # Instantiate default parameters
 
+        print dingos_obj_dict
 
+
+        if '@@ns' in dingos_obj_dict.keys():
+            top_level_namespace = (namespace_dict.get(dingos_obj_dict.get('@@ns'),None),dingos_obj_dict.get('@@ns'))
+        else:
+            top_level_namespace = (None,None)
 
         if not config_hooks:
             config_hooks = {}
@@ -1072,7 +1086,7 @@ class InfoObject(DingoModel):
                                                      force_nonleaf_fact_predicate=force_nonleaf_fact_predicate,
                                                      namespace_dict=namespace_dict)
 
-        #print flat_list
+        print flat_list
 
 
         for fact in flat_list:
@@ -1138,6 +1152,7 @@ class InfoObject(DingoModel):
             add_fact_kargs['values'] = [fact['value']]
             add_fact_kargs['node_id_name'] = fact['node_id']
             add_fact_kargs['namespaces'] = fact['namespaces']
+            add_fact_kargs['top_level_namespace'] = top_level_namespace
 
             handler_return_value = True
 
@@ -1175,12 +1190,12 @@ class InfoObject(DingoModel):
                                                            'fact__fact_values__fact_data_type__namespace',
                                                            'fact__value_iobject_id',
                                                            'fact__value_iobject_id__namespace',
-                                                           'namespace_thru__namespace'
+                                                           #'namespace_thru__namespace'
                                                            'node_id')
 
 
 
-        print fact_thrus.namespace_thru
+        #print fact_thrus.namespace_thru
 
         #fact_thrus = self.fact_thru.all()
         for fact_thru in fact_thrus:
@@ -1221,6 +1236,67 @@ class InfoObject(DingoModel):
             result['@@iobject_type_ns'] = self.iobject_type.namespace.uri
         #result = result.to_tuple()
         return result
+
+    def to_dict_json(self,include_node_id=False,no_attributes=False):
+        flat_result = []
+
+        fact_thrus = self.fact_thru.all().prefetch_related(
+            'fact__fact_term',
+            'fact__fact_values',
+            'fact__fact_values__fact_data_type',
+            'fact__fact_values__fact_data_type__namespace',
+            'fact__value_iobject_id',
+            'fact__value_iobject_id__namespace',
+            'namespace_thru__namespace',
+            'node_id')
+
+
+
+
+
+        #fact_thrus = self.fact_thru.all()
+        for fact_thru in fact_thrus:
+            print fact_thru.node_id
+            print fact_thru.fact.fact_term
+            print fact_thru.namespace_thru.values_list('position','namespace__uri')
+            value_list = []
+            first = True
+            fact_datatype_name = None
+            fact_datatype_ns = None
+            for fact_value in fact_thru.fact.fact_values.all():
+                if first:
+                    fact_datatype_name = fact_value.fact_data_type.name
+                    fact_datatype_ns = fact_value.fact_data_type.namespace.uri
+                    if (fact_datatype_name == DINGOS_DEFAULT_FACT_DATATYPE and
+                                fact_datatype_ns == DINGOS_NAMESPACE_URI):
+
+                        fact_datatype_name = None
+                        fact_datatype_ns = None
+                        first = False
+                value_list.append(fact_value.value)
+
+            fact_dict = {'node_id': fact_thru.node_id.name,
+                         'term': fact_thru.fact.fact_term.term,
+                         'attribute' : fact_thru.fact.fact_term.attribute,
+                         '@@type': fact_datatype_name,
+                         '@@type_ns': fact_datatype_ns,
+                         'value_list': value_list}
+
+            if fact_thru.fact.value_iobject_id:
+                value_iobject_id_ns = fact_thru.fact.value_iobject_id.namespace.uri
+                value_iobject_id  =fact_thru.fact.value_iobject_id.uid
+                fact_dict['@@idref_ns'] = fact_thru.fact.value_iobject_id.namespace.uri
+                fact_dict['@@idref_id'] = fact_thru.fact.value_iobject_id.uid
+            flat_result.append(fact_dict)
+
+        result = DingoObjDict()
+        result.from_flat_repr(flat_result,include_node_id=include_node_id,no_attributes=no_attributes)
+        if not no_attributes:
+            result['@@iobject_type'] = self.iobject_type.name
+            result['@@iobject_type_ns'] = self.iobject_type.namespace.uri
+            #result = result.to_tuple()
+        return result
+
 
     def show_fact_terms(self,level):
         """Returns a list of the fact terms (split in 'term' and 'attribute') that

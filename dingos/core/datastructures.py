@@ -292,6 +292,8 @@ class DingoObjDict(ExtendedSortedDict):
         if not namespace_dict:
             namespace_dict = {}
 
+
+
         def node_id_gen(n):
             """
             Given an integer, generate a fixed-length representation.
@@ -378,7 +380,7 @@ class DingoObjDict(ExtendedSortedDict):
                         elt_names.append(element)
 
                         fact_data = {'term': '/'.join(elt_names),
-                                     'namespaces' : map(lambda x: x[2],prefix),
+                                     'namespaces' : map(lambda x: x[2],prefix + [('N',counter,current_namespace)]),
                                      'value': self[element],
                                      'attribute': False,
                                      'node_id': "%s" % ':'.join(map(node_id_gen, prefix + [('N', counter,current_namespace)]))}
@@ -389,6 +391,11 @@ class DingoObjDict(ExtendedSortedDict):
                         counter += 1
                     else:
                         logger.debug("Recursing for %s" % self[element])
+                        if '@@ns' in self[element].keys():
+                            current_namespace = (namespace_dict.get(self[element].get('@@ns'),None),self[element].get('@@ns'))
+                        else:
+                            current_namespace = (None,None)
+
                         (result_list, attr_dict) = _flatten(self[element],
                                                             result_list=result_list,
                                                             attr_dict=attr_dict,
