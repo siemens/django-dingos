@@ -395,8 +395,10 @@ class DingoObjDict(ExtendedSortedDict):
                 fact = {'term': "%s" % ('/'.join(namespace)),
                         'value': self[attribute],
                         'node_id': attr_node_id,
-                        'attribute': attribute[1:]}
+                        'attribute': attribute[1:],
+                        'number_of_attributed_elements': len(elements)}
                 if not attr_ignore_predicate(fact):
+                    del(fact['number_of_attributed_elements'])
                     result_list.append(fact)
                     logger.debug("Appended fact %s" % fact)
                     attr_counter += 1
