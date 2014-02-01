@@ -114,6 +114,7 @@ class ViewMethodMixin(object):
         # 4.) authenticated user && anonymous settings --> load
 
         settings = self.request.session.get('customization')
+        print "Found Settings %s" % settings
         saved_searches = self.request.session.get('saved_searches')
         load_new_settings = False
 
@@ -131,6 +132,7 @@ class ViewMethodMixin(object):
 
         else:
             load_new_settings = True
+        print "Load is %s" % load_new_settings
 
         if load_new_settings:
             # Load user settings. If for the current user, no user settings have been
@@ -161,7 +163,7 @@ class ViewMethodMixin(object):
 
             saved_searches = UserData.get_user_data(user=self.request.user, data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
             if not saved_searches:
-
+                print "STORING DATA"
                 UserData.store_user_data(user=self.request.user,
                                          data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
                                          user_data=DINGOS_DEFAULT_SAVED_SEARCHES,
@@ -169,7 +171,7 @@ class ViewMethodMixin(object):
                 saved_searches = UserData.get_user_data(user=self.request.user, data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
 
 
-
+            print "Writing Customization"
             self.request.session['customization'] = settings
             self.request.session['saved_searches'] = saved_searches
 
