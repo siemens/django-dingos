@@ -146,6 +146,7 @@ class ViewMethodMixin(object):
 
 
             settings = UserData.get_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
+            print "SEttings %s" % settings
             if not settings:
                 UserData.store_user_data(user=self.request.user,
                                          data_kind=DINGOS_USER_PREFS_TYPE_NAME,
@@ -153,7 +154,7 @@ class ViewMethodMixin(object):
                                          iobject_name= "User preferences of user '%s'" % user_name)
 
                 settings = UserData.get_user_data(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
-
+                print "Aber jetzt %s" % settings
 
 
             # Do the same for saved searches
@@ -185,8 +186,8 @@ class ViewMethodMixin(object):
             pass
         default_value = kwargs['default']
 
-
-        result =  get_dict(user_data,data_kind,*args,**kwargs)
+        #TODO FIX
+        result =  None#get_dict(user_data,data_kind,*args,**kwargs)
         try:
             result = int(result)
         except:

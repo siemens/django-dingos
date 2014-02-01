@@ -722,6 +722,7 @@ class IO2F2Namespace(DingoModel):
                              )
     position = models.SmallIntegerField()
 
+dingos_class_map["IO2F2Namespace"] = IO2F2Namespace
 
 class Fact(DingoModel):
     """
@@ -1007,18 +1008,21 @@ class InfoObject(DingoModel):
         counter = 0
         io2f2n_list = []
         for (ns_uri,ns_slug) in namespaces:
+            if ns_uri:
 
-            if not (ns_uri in ns_uri_dict):
-                ns_uri_obj, created = self._DCM['DataTypeNameSpace'].objects.get_or_create(uri=ns_uri,name=ns_slug)
-                ns_uri_obj_pk = ns_uri_obj.pk
-                ns_uri_dict[ns_uri]=ns_uri_obj_pk
-            else:
-                ns_uri_obj_pk = ns_uri_dict[ns_uri]
+                if not (ns_uri in ns_uri_dict):
+                    ns_uri_obj, created = self._DCM['DataTypeNameSpace'].objects.get_or_create(uri=ns_uri,name=ns_slug)
+                    ns_uri_obj_pk = ns_uri_obj.pk
+                    ns_uri_dict[ns_uri]=ns_uri_obj_pk
+                else:
+                    ns_uri_obj_pk = ns_uri_dict[ns_uri]
 
-            io2f2n_list.append(DataTypeNameSpace(io2f=self,position=counter,namespace__pk=ns_uri_obj_pk))
-
+                io2f2n_list.append(IO2F2Namespace(io2f=e2f,position=counter,namespace_id=ns_uri_obj_pk))
+            counter +=1
             #self._DCM['IO2F2Namespace'].object.create(io2f=self,position=counter,namespace__pk=ns_uri_obj_pk)
-        self._DCM['IO2F2Namespace'].object.bulk_create(io2f2n_list)
+
+        print "List: %s" % io2f2n_list
+        print IO2F2Namespace.objects.bulk_create(io2f2n_list)
 
 
         return e2f
@@ -1133,6 +1137,7 @@ class InfoObject(DingoModel):
             add_fact_kargs['fact_term_attribute'] = fact['attribute']
             add_fact_kargs['values'] = [fact['value']]
             add_fact_kargs['node_id_name'] = fact['node_id']
+            add_fact_kargs['namespaces'] = fact['namespaces']
 
             handler_return_value = True
 
@@ -1170,7 +1175,12 @@ class InfoObject(DingoModel):
                                                            'fact__fact_values__fact_data_type__namespace',
                                                            'fact__value_iobject_id',
                                                            'fact__value_iobject_id__namespace',
+                                                           'namespace_thru__namespace'
                                                            'node_id')
+
+
+
+        print fact_thrus.namespace_thru
 
         #fact_thrus = self.fact_thru.all()
         for fact_thru in fact_thrus:
@@ -1561,6 +1571,7 @@ class UserData(DingoModel):
     def store(self,settings,iobject_type_name=DINGOS_USER_DATA_TYPE_NAME,keep_history=False,iobject_name=None):
 
         settings_dod = dict2DingoObjDict(settings)
+        print settings_dod
 
         settings_iobject = None
         if self.identifier:
@@ -1610,6 +1621,7 @@ class UserData(DingoModel):
             self.identifier = settings_iobject.identifier
             self.save()
         result = settings_iobject.from_dict(settings_dod)
+
         if iobject_name:
             settings_iobject.name = iobject_name
             settings_iobject.save()

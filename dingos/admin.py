@@ -28,7 +28,8 @@ from models import DataTypeNameSpace,\
     InfoObjectNaming,\
     BlobStorage,\
     IdentifierNameSpace,\
-    UserData
+    UserData,\
+    IO2F2Namespace
 
 
 
@@ -156,5 +157,7 @@ admin.site.register(NodeID)
 admin.site.register(Revision)
 admin.site.register(BlobStorage,BlobStorageAdmin)
 admin.site.register(UserData,UserDataAdmin)
+
+admin.site.register(IO2F2Namespace)
 
 
