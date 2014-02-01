@@ -131,6 +131,8 @@ class InfoObjectView_wo_login(BasicDetailView):
     pagination only displays 100 or 200 or so.
     """
 
+
+
     # Config for Prefetch/SelectRelated Mixins_
     select_related = ()
     prefetch_related = ('iobject_type',
@@ -166,6 +168,7 @@ class InfoObjectView_wo_login(BasicDetailView):
     title = 'Info Object Details'
 
     def get_context_data(self, **kwargs):
+        print "At start"  + "%s" % self.request.session.get('customization',"NIX")
         # as a hack, we clear here the settings in the session. This will
         # lead to a reload of the user config into the session data
         try:
@@ -290,7 +293,7 @@ class InfoObjectJSONView(BasicDetailView):
         #return self.get_json_response(json.dumps(context['object'].show_elements(""),indent=2))
         include_node_id = self.request.GET.get('include_node_id',False)
 
-        return self.get_json_response(json.dumps(context['object'].to_dict_json(include_node_id=include_node_id,track_namespaces=True),indent=2))
+        return self.get_json_response(json.dumps(context['object'].to_dict(include_node_id=include_node_id,track_namespaces=True),indent=2))
 
     def get_json_response(self, content, **httpresponse_kwargs):
         return http.HttpResponse(content,

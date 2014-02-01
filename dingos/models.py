@@ -1225,7 +1225,7 @@ class InfoObject(DingoModel):
         self.set_name()
 
 
-    def to_dict(self,include_node_id=False,no_attributes=False):
+    def to_dict_old(self,include_node_id=False,no_attributes=False):
         flat_result = []
 
         fact_thrus = self.fact_thru.all().prefetch_related(
@@ -1282,7 +1282,7 @@ class InfoObject(DingoModel):
         #result = result.to_tuple()
         return result
 
-    def to_dict_json(self,include_node_id=False,no_attributes=False,track_namespaces=False):
+    def to_dict(self,include_node_id=False,no_attributes=False,track_namespaces=False):
         flat_result = []
 
         fact_thrus = self.fact_thru.all().prefetch_related(
@@ -1703,7 +1703,7 @@ class UserData(DingoModel):
             print "Object is %s" % settings_iobject
 
         if settings_iobject:
-            settings= settings_iobject.to_dict_json(no_attributes=True,track_namespaces=False)
+            settings= settings_iobject.to_dict(no_attributes=True,track_namespaces=False)
             print "Found settings %s" % settings
             return settings
         else:
