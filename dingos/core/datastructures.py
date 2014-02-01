@@ -197,7 +197,7 @@ class DingoObjDict(ExtendedSortedDict):
 
 
 
-    def flatten(self, attr_ignore_predicate=None,force_nonleaf_fact_predicate=None):
+    def flatten(self, attr_ignore_predicate=None,force_nonleaf_fact_predicate=None,namespace_dict=None):
         """
         Flatten a Dingo dictionary representation of into a list
         of fact-term/value pairs and associated information about tree structure (in node_id)
@@ -289,6 +289,8 @@ class DingoObjDict(ExtendedSortedDict):
 
         """
 
+        if not namespace_dict:
+            namespace_dict = {}
 
         def node_id_gen(n):
             """
@@ -309,7 +311,7 @@ class DingoObjDict(ExtendedSortedDict):
         RE_ELEMENT_MATCHER = re.compile(r"[^@_].*")
 
 
-        def _flatten(self, result_list, attr_dict, namespace, prefix):
+        def _flatten(self, result_list, attr_dict, elt_names, prefix):
             """
             Flatten a Dingo dictionary representation of an infomration object into a list
             of fact-term/value pairs and associated information about tree structure (in node_id)
@@ -318,6 +320,11 @@ class DingoObjDict(ExtendedSortedDict):
             Internal function for recursive calls.
 
             """
+
+            if '@@ns' in self.keys():
+                current_namespace = (namespace_dict.get(self.get('@@ns'),None),self.get('@@ns'))
+            else:
+                current_namespace = (None,None)
 
             attributes = filter(lambda x: x[0] == '@', self.keys())
 
@@ -330,7 +337,8 @@ class DingoObjDict(ExtendedSortedDict):
 
             elements = filter(lambda x: RE_ELEMENT_MATCHER.match(x), self)
 
-            fact_data = {'term': '/'.join(namespace),
+            fact_data = {'term': '/'.join(elt_names),
+                         'namespaces' : map(lambda x: x[2],prefix),
                          'value': self.get('_value', ''),
                          'attribute': False,
                          'node_id': node_id}
@@ -338,7 +346,8 @@ class DingoObjDict(ExtendedSortedDict):
             if elements == [] or force_nonleaf_fact_predicate(fact_data,attributes):
                 logger.debug("Entered _VALUE branch for %s" % self)
                 if '_value' in self.keys() or attributes != []:
-                    fact_data = {'term': '/'.join(namespace),
+                    fact_data = {'term': '/'.join(elt_names),
+                                 'namespaces' : map(lambda x: x[2],prefix),
                                  'value': self.get('_value', ''),
                                  'attribute': False,
                                  'node_id': node_id}
@@ -355,8 +364,8 @@ class DingoObjDict(ExtendedSortedDict):
                             (result_list, attr_dict) = _flatten(sub_elt,
                                                                 result_list=result_list,
                                                                 attr_dict=attr_dict,
-                                                                namespace=namespace + [element],
-                                                                prefix=prefix + [('L', counter)])
+                                                                elt_names=elt_names + [element],
+                                                                prefix=prefix + [('L', counter,current_namespace)])
 
 
                             counter += 1
@@ -366,33 +375,35 @@ class DingoObjDict(ExtendedSortedDict):
                         # that provide value direcly rather then via '_value' key in dictionary
 
                         # temporarily append namespace
-                        namespace.append(element)
+                        elt_names.append(element)
 
-                        fact_data = {'term': '/'.join(namespace),
+                        fact_data = {'term': '/'.join(elt_names),
+                                     'namespaces' : map(lambda x: x[2],prefix),
                                      'value': self[element],
                                      'attribute': False,
-                                     'node_id': "%s" % ':'.join(map(node_id_gen, prefix + [('N', counter)]))}
+                                     'node_id': "%s" % ':'.join(map(node_id_gen, prefix + [('N', counter,current_namespace)]))}
                         logger.debug("Appended fact %s" % fact_data)
                         result_list.append(fact_data)
                         # clean up namespace
-                        namespace = namespace[:-1]
+                        elt_names = elt_names[:-1]
                         counter += 1
                     else:
                         logger.debug("Recursing for %s" % self[element])
                         (result_list, attr_dict) = _flatten(self[element],
                                                             result_list=result_list,
                                                             attr_dict=attr_dict,
-                                                            namespace=namespace + [element],
-                                                            prefix=prefix + [('N', counter)])
+                                                            elt_names=elt_names + [element],
+                                                            prefix=prefix + [('N', counter,current_namespace)])
                         counter += 1
 
             attr_counter = 0
             for attribute in attributes:
                 if node_id == '':
-                    attr_node_id = node_id_gen(('A', attr_counter))
+                    attr_node_id = node_id_gen(('A', attr_counter,(None,None)))
                 else:
-                    attr_node_id = "%s:%s" % (node_id, node_id_gen(('A', attr_counter)))
-                fact = {'term': "%s" % ('/'.join(namespace)),
+                    attr_node_id = "%s:%s" % (node_id, node_id_gen(('A', attr_counter,(None,None))))
+                fact = {'term': "%s" % ('/'.join(elt_names)),
+                        'namespaces' : map(lambda x: x[2],prefix),
                         'value': self[attribute],
                         'node_id': attr_node_id,
                         'attribute': attribute[1:]}
@@ -412,7 +423,7 @@ class DingoObjDict(ExtendedSortedDict):
         if not force_nonleaf_fact_predicate:
             force_nonleaf_fact_predicate = (lambda x,y: False)
 
-        return _flatten(self,result_list=[], attr_dict={}, namespace=[], prefix=[])
+        return _flatten(self,result_list=[], attr_dict={}, elt_names=[], prefix=[])
 
     def from_flat_repr(self,fact_list,include_node_id=False,no_attributes=False):
         """

@@ -681,6 +681,11 @@ class InfoObject2Fact(DingoModel):
     node_id = models.ForeignKey("NodeID")
 
 
+    namespace = models.ManyToManyField("DataTypeNameSpace",
+                                   through="IO2F2Namespace",
+                                   help_text="Namespace information for nodes in this fact")
+
+
 
     @property
     def marking_thru(self):
@@ -703,6 +708,19 @@ class InfoObject2Fact(DingoModel):
 
 
 dingos_class_map["InfoObject2Fact"] = InfoObject2Fact
+
+
+
+class IO2F2Namespace(DingoModel):
+
+    io2f = models.ForeignKey("InfoObject2Fact",
+                                related_name="namespace_thru",
+                                )
+
+    namespace = models.ForeignKey("DataTypeNameSpace",
+                             related_name="io2f_thru",
+                             )
+    position = models.SmallIntegerField()
 
 
 class Fact(DingoModel):
@@ -918,7 +936,9 @@ class InfoObject(DingoModel):
                  value_iobject_id=None,
                  value_iobject_ts=None,
                  node_id_name='',
-                 is_attribute=False):
+                 is_attribute=False,
+                 ns_uri_dict=None,
+                 namespaces=None):
         """
         Add a fact to the iobject. If a fact term for the iobject type
         with the given fact data type and source (CYBOX, etc.) does not
@@ -928,6 +948,12 @@ class InfoObject(DingoModel):
 
         if not values:
             values = []
+
+        if not namespaces:
+            namespaces = []
+
+        if not ns_uri_dict:
+            ns_uri_dict = None
 
         # get or create fact_term
         fact_term, created = get_or_create_fact_term(iobject_family_name=self.iobject_family.name,
@@ -978,19 +1004,38 @@ class InfoObject(DingoModel):
             fact=fact_obj,
             attributed_fact=attributed_io2f)
 
+        counter = 0
+        io2f2n_list = []
+        for (ns_uri,ns_slug) in namespaces:
+
+            if not (ns_uri in ns_uri_dict):
+                ns_uri_obj, created = self._DCM['DataTypeNameSpace'].objects.get_or_create(uri=ns_uri,name=ns_slug)
+                ns_uri_obj_pk = ns_uri_obj.pk
+                ns_uri_dict[ns_uri]=ns_uri_obj_pk
+            else:
+                ns_uri_obj_pk = ns_uri_dict[ns_uri]
+
+            io2f2n_list.append(DataTypeNameSpace(io2f=self,position=counter,namespace__pk=ns_uri_obj_pk))
+
+            #self._DCM['IO2F2Namespace'].object.create(io2f=self,position=counter,namespace__pk=ns_uri_obj_pk)
+        self._DCM['IO2F2Namespace'].object.bulk_create(io2f2n_list)
+
+
         return e2f
 
     def from_dict(self,
                   dingos_obj_dict,
                   config_hooks=None,
                   namespace_dict=None,
-                  special_ft_handler=None):
+                  ):
         """
         Convert DingoObjDict to facts and associate resulting facts with this information object.
         """
 
 
         # Instantiate default parameters
+
+
 
         if not config_hooks:
             config_hooks = {}
@@ -1006,6 +1051,10 @@ class InfoObject(DingoModel):
         if not namespace_dict:
             namespace_dict = {}
 
+
+        namespace_uri_2_pk_mapping = dict(self._DCM['DataTypeNameSpace'].objects.values_list('uri','id'))
+
+
         if not self.is_empty():
             logger.debug("Non-empty info object %s (timestamp %s, pk %s ) is overwritten with new information" % (self.identifier,
                                                                                                                  self.timestamp,
@@ -1016,7 +1065,11 @@ class InfoObject(DingoModel):
         # Flatten the DingoObjDict
 
         (flat_list, attrs) = dingos_obj_dict.flatten(attr_ignore_predicate=attr_ignore_predicate,
-                                                     force_nonleaf_fact_predicate=force_nonleaf_fact_predicate)
+                                                     force_nonleaf_fact_predicate=force_nonleaf_fact_predicate,
+                                                     namespace_dict=namespace_dict)
+
+        #print flat_list
+
 
         for fact in flat_list:
 
@@ -1098,6 +1151,7 @@ class InfoObject(DingoModel):
                             break
             logger.debug("Treating fact (before special handler list) %s with attr_info %s and kargs %s" % (fact, attr_info, add_fact_kargs))
             if (handler_return_value == True):
+                add_fact_kargs['ns_uri_dict'] = namespace_uri_2_pk_mapping
                 e2f_obj = self.add_fact(**add_fact_kargs)
             elif not handler_return_value:
                 continue
