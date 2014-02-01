@@ -362,7 +362,10 @@ class DingoObjDict(ExtendedSortedDict):
                     logger.debug("Processing element %s" % element)
                     if type(self[element]) == type([]):
                         logger.debug("Entered list branch for %s " % self[element])
+
                         for sub_elt in self[element]:
+                            current_namespace = (namespace_dict.get(sub_elt.get('@@ns'),None),sub_elt.get('@@ns'))
+
                             (result_list, attr_dict) = _flatten(sub_elt,
                                                                 result_list=result_list,
                                                                 attr_dict=attr_dict,
@@ -391,10 +394,7 @@ class DingoObjDict(ExtendedSortedDict):
                         counter += 1
                     else:
                         logger.debug("Recursing for %s" % self[element])
-                        if '@@ns' in self[element].keys():
-                            current_namespace = (namespace_dict.get(self[element].get('@@ns'),None),self[element].get('@@ns'))
-                        else:
-                            current_namespace = (None,None)
+                        current_namespace = (namespace_dict.get(self[element].get('@@ns'),None),self[element].get('@@ns'))
 
                         (result_list, attr_dict) = _flatten(self[element],
                                                             result_list=result_list,
@@ -432,7 +432,7 @@ class DingoObjDict(ExtendedSortedDict):
 
         return _flatten(self,result_list=[], attr_dict={}, elt_names=[], prefix=[])
 
-    def from_flat_repr(self,fact_list,include_node_id=False,no_attributes=False):
+    def from_flat_repr(self,fact_list,include_node_id=False,no_attributes=False,track_namespaces=True,top_level_namespace=False):
         """
         Convert a flat representation of information (consisting of a fact list and a dictionary
         mapping node ids to attributes into a dictionary representation information.
@@ -466,7 +466,19 @@ class DingoObjDict(ExtendedSortedDict):
 
         """
 
-        if include_node_id:
+        def make_ns_slug(i):
+            return "n%s" % i
+
+        namespace_dict = {}
+        name_counter = 0
+
+        if top_level_namespace:
+            top_level_ns_slug = make_ns_slug(name_counter)
+            namespace_dict[top_level_namespace] = top_level_ns_slug
+            name_counter += 1
+
+
+        if include_node_id or track_namespaces:
             no_attributes=False
 
         def node_id_unpack(n):
@@ -480,6 +492,8 @@ class DingoObjDict(ExtendedSortedDict):
 
         result = self
         for fact in fact_list:
+
+            current_ns_slug = None
             fact_path = fact['term'].split('/')
             del(fact['term'])
             if fact.get('attribute'):
@@ -490,12 +504,39 @@ class DingoObjDict(ExtendedSortedDict):
                 del(fact['attribute'])
             node_path = fact['node_id'].split(':')
             del(fact['node_id'])
+
+
+            if '@@namespace_map' in fact.keys():
+                namespace_map = fact['@@namespace_map']
+                del(fact['@@namespace_map'])
+            else:
+                namespace_map = None
+
+
+
             walker = result
             walker_parent=None
             #logger.debug(fact)
-            for i in range(0,len(node_path)):
 
-                #logger.debug("%s  %s" % (node_path,node_path[i]))
+            for i in range(0,len(node_path)):
+                namespace_slug=None
+                if track_namespaces and namespace_map:
+                    #print namespace_map.namespaces_thru.get(position=i).namespace.uri
+                    try:
+                        namespace = namespace_map.namespaces_thru.get(position=i).namespace.uri
+                    except:
+                        namespace = None
+                    if namespace:
+                        if not namespace in namespace_dict:
+                            namespace_slug = "n%s" % name_counter
+                            name_counter += 1
+                            namespace_dict[namespace] = namespace_slug
+                        else:
+                            namespace_slug= namespace_dict[namespace]
+
+                if not current_ns_slug:
+                    current_ns_slug = namespace_slug
+
                 (node_kind,counter) = node_id_unpack(node_path[i])
                 element = fact_path[i]
                 node_id = ':'.join(node_path[0:i+1])
@@ -510,6 +551,11 @@ class DingoObjDict(ExtendedSortedDict):
                         child_dict = DingoObjDict()
                         if include_node_id:
                             child_dict['@@node_id'] = node_id
+                        if namespace_slug and current_ns_slug != namespace_slug:
+                            child_dict['@@ns'] = namespace_slug
+                            current_ns_slug = namespace_slug
+
+                            #child_dict['@@ns'] = fact.get('namespace_map').
                         walker[element].append(child_dict)
                         walker_parent = walker
                         walker = walker[element][0]
@@ -517,6 +563,10 @@ class DingoObjDict(ExtendedSortedDict):
                         child_dict = DingoObjDict()
                         if include_node_id:
                             child_dict['@@node_id'] = node_id
+                        if namespace_slug and current_ns_slug != namespace_slug:
+                            child_dict['@@ns'] = namespace_slug
+                            current_ns_slug = namespace_slug
+
                         walker[element] = child_dict
                         walker_parent = walker
                         walker = walker[element]
@@ -577,6 +627,10 @@ class DingoObjDict(ExtendedSortedDict):
                     for key in fact:
                         if fact[key]:
                             walker[key] = fact[key]
+
+        if track_namespaces:
+            return {'top_level_ns_slug' : top_level_ns_slug,
+                    'namespace_dict' : namespace_dict}
 
 
 

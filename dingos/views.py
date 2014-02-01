@@ -290,7 +290,7 @@ class InfoObjectJSONView(BasicDetailView):
         #return self.get_json_response(json.dumps(context['object'].show_elements(""),indent=2))
         include_node_id = self.request.GET.get('include_node_id',False)
 
-        return self.get_json_response(json.dumps(context['object'].to_dict_json(include_node_id=include_node_id),indent=2))
+        return self.get_json_response(json.dumps(context['object'].to_dict_json(include_node_id=include_node_id,track_namespaces=True),indent=2))
 
     def get_json_response(self, content, **httpresponse_kwargs):
         return http.HttpResponse(content,

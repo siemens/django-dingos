@@ -29,7 +29,8 @@ from models import DataTypeNameSpace,\
     BlobStorage,\
     IdentifierNameSpace,\
     UserData,\
-    IO2F2Namespace
+    FactTermNamespaceMap,\
+    PositionalNamespace
 
 
 
@@ -65,6 +66,21 @@ class InfoObjectType_InfoObjectNaming_Inline(admin.TabularInline):
     extra = 0
     fields=('format_string','position')
     sortable_field_name = 'position'
+
+
+class FactTermNamespaceMap_PositionalNamespace_Inline(admin.TabularInline):
+    model = PositionalNamespace
+    extra = 1
+    fields=('position','namespace')
+    sortable_field_name = 'position'
+    raw_id_fields = ('namespace',)
+    autocomplete_lookup_fields = {
+        'fk': ['namespace'],
+        'm2m': [],
+        }
+
+
+
 
 
 class DataTypeNameSpace_FactDataType_Inline(admin.TabularInline):
@@ -132,6 +148,13 @@ class InfoObjectFamilyAdmin(admin.ModelAdmin):
 class BlobStorageAdmin(admin.ModelAdmin):
     list_display = ('sha256',)
 
+
+class FactTermNamespaceMapAdmin(admin.ModelAdmin):
+    list_display = ('fact_term',)
+
+    inlines = (FactTermNamespaceMap_PositionalNamespace_Inline,)
+
+
 #
 # Registration
 # ------------
@@ -158,6 +181,6 @@ admin.site.register(Revision)
 admin.site.register(BlobStorage,BlobStorageAdmin)
 admin.site.register(UserData,UserDataAdmin)
 
-admin.site.register(IO2F2Namespace)
+admin.site.register(FactTermNamespaceMap,FactTermNamespaceMapAdmin)
 
 
