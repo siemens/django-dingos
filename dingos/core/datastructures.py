@@ -432,7 +432,7 @@ class DingoObjDict(ExtendedSortedDict):
 
         return _flatten(self,result_list=[], attr_dict={}, elt_names=[], prefix=[])
 
-    def from_flat_repr(self,fact_list,include_node_id=False,no_attributes=False,track_namespaces=True,top_level_namespace=False):
+    def from_flat_repr(self,fact_list,include_node_id=False,no_attributes=False,track_namespaces=True,namespace_mapping=None):
         """
         Convert a flat representation of information (consisting of a fact list and a dictionary
         mapping node ids to attributes into a dictionary representation information.
@@ -466,16 +466,16 @@ class DingoObjDict(ExtendedSortedDict):
 
         """
 
-        def make_ns_slug(i):
-            return "n%s" % i
+        if not namespace_mapping:
+            namespace_mapping = {}
+        name_counter = {'counter':0}
 
-        namespace_dict = {}
-        name_counter = 0
 
-        if top_level_namespace:
-            top_level_ns_slug = make_ns_slug(name_counter)
-            namespace_dict[top_level_namespace] = top_level_ns_slug
-            name_counter += 1
+        def make_ns_slug(name_counter):
+            while "n%s" % name_counter['counter'] in namespace_mapping.values():
+                name_counter['counter']  = name_counter['counter']+1
+
+            return "n%s" % name_counter['counter']
 
 
         if include_node_id or track_namespaces:
@@ -527,12 +527,12 @@ class DingoObjDict(ExtendedSortedDict):
                     except:
                         namespace = None
                     if namespace:
-                        if not namespace in namespace_dict:
-                            namespace_slug = "n%s" % name_counter
-                            name_counter += 1
-                            namespace_dict[namespace] = namespace_slug
+                        if not namespace in namespace_mapping:
+                            namespace_slug = make_ns_slug(name_counter)
+
+                            namespace_mapping[namespace] = namespace_slug
                         else:
-                            namespace_slug= namespace_dict[namespace]
+                            namespace_slug= namespace_mapping[namespace]
 
                 if not current_ns_slug:
                     current_ns_slug = namespace_slug
@@ -629,8 +629,8 @@ class DingoObjDict(ExtendedSortedDict):
                             walker[key] = fact[key]
 
         if track_namespaces:
-            return {'top_level_ns_slug' : top_level_ns_slug,
-                    'namespace_dict' : namespace_dict}
+            return namespace_mapping
+
 
 
 

@@ -168,14 +168,7 @@ class InfoObjectView_wo_login(BasicDetailView):
     title = 'Info Object Details'
 
     def get_context_data(self, **kwargs):
-        print "At start"  + "%s" % self.request.session.get('customization',"NIX")
-        # as a hack, we clear here the settings in the session. This will
-        # lead to a reload of the user config into the session data
-        try:
-            del(self.request.session['customization'])
-            del(self.request.session['customization_for_authenticated'])
-        except KeyError, err:
-                pass
+
         context = super(InfoObjectView_wo_login, self).get_context_data(**kwargs)
 
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
@@ -193,6 +186,14 @@ class InfoObjectView(LoginRequiredMixin,InfoObjectView_wo_login):
 
 class UserPrefsView(InfoObjectView_wo_login):
     def get_object(self):
+        # We delete the session data in  order to achieve a reload
+        # when viewing this page.
+
+        try:
+            del(self.request.session['customization'])
+            del(self.request.session['customization_for_authenticated'])
+        except KeyError, err:
+                pass
         return UserData.get_user_data_iobject(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
 
 class CustomSearchesEditView(BasicTemplateView):
