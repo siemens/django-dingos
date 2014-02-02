@@ -1029,6 +1029,7 @@ class InfoObject(DingoModel):
         for k,g in itertools.groupby(namespace_map_elts,lambda x:x[0]):
             namespace_maps.append(list(g))
 
+        print "Fact Term %s" % fact_term_name
         print "Maps: %s" % namespace_maps
 
         namespace_map = None
@@ -1230,6 +1231,14 @@ class InfoObject(DingoModel):
     def to_dict(self,include_node_id=False,no_attributes=False,track_namespaces=False):
         flat_result = []
 
+        def make_ns_slug(name_counter,slug='n'):
+            while "%s%s" % (slug,name_counter['counter']) in namespace_mapping.values():
+                name_counter['counter']  = name_counter['counter']+1
+
+            return "%s%s" % (slug,name_counter['counter'])
+
+        name_counter = {'counter':0}
+
         if track_namespaces:
 
             fact_thrus = self.fact_thru.all().prefetch_related(
@@ -1253,7 +1262,7 @@ class InfoObject(DingoModel):
 
         export_ns_dict = {}
 
-
+        namespace_mapping=  {"%s-%s" % (self.iobject_type.namespace.uri,self.iobject_type_revision): 'n0'}
         #fact_thrus = self.fact_thru.all()
         for fact_thru in fact_thrus:
             #print fact_thru.node_id
@@ -1265,37 +1274,55 @@ class InfoObject(DingoModel):
             first = True
             fact_datatype_name = None
             fact_datatype_ns = None
-            for fact_value in fact_thru.fact.fact_values.all():
-                if first:
-                    fact_datatype_name = fact_value.fact_data_type.name
-                    fact_datatype_ns = fact_value.fact_data_type.namespace.uri
-                    if (fact_datatype_name == DINGOS_DEFAULT_FACT_DATATYPE and
-                                fact_datatype_ns == DINGOS_NAMESPACE_URI):
-
-                        fact_datatype_name = None
-                        fact_datatype_ns = None
-                        first = False
-                value_list.append(fact_value.value)
 
             fact_dict = {'node_id': fact_thru.node_id.name,
                          'term': fact_thru.fact.fact_term.term,
                          'attribute' : fact_thru.fact.fact_term.attribute,
-                         '@@type': fact_datatype_name,
-                         '@@type_ns': fact_datatype_ns,
-                         'value_list': value_list,
+
+
                          '@@namespace_map' : fact_thru.namespace_map,
                          }
 
+            for fact_value in fact_thru.fact.fact_values.all():
+                if first:
+                    first=False
+                    fact_datatype_name = fact_value.fact_data_type.name
+                    fact_datatype_ns = fact_value.fact_data_type.namespace.uri
+                    if (fact_datatype_name == DINGOS_DEFAULT_FACT_DATATYPE and
+                                fact_datatype_ns == DINGOS_NAMESPACE_URI) or fact_thru.fact.value_iobject_id:
+                        pass
+                    else:
+                        if not fact_datatype_ns in namespace_mapping:
+                            namespace_slug = make_ns_slug(name_counter)
+                            namespace_mapping[fact_datatype_ns] = namespace_slug
+                        else:
+                            namespace_slug= namespace_mapping[fact_datatype_ns]
+                        fact_dict['@@type'] = '%s:%s' % (namespace_slug,fact_datatype_name)
+
+                value_list.append(fact_value.value)
+
+
+
+
+            fact_dict['value_list'] = value_list
+
+
+
             if fact_thru.fact.value_iobject_id:
                 value_iobject_id_ns = fact_thru.fact.value_iobject_id.namespace.uri
+                if not value_iobject_id_ns in namespace_mapping:
+                    namespace_slug = make_ns_slug(name_counter)
+                    namespace_mapping[value_iobject_id_ns] = namespace_slug
+                else:
+                    namespace_slug= namespace_mapping[value_iobject_id_ns]
+
                 value_iobject_id  =fact_thru.fact.value_iobject_id.uid
-                fact_dict['@@idref_ns'] = fact_thru.fact.value_iobject_id.namespace.uri
-                fact_dict['@@idref_id'] = fact_thru.fact.value_iobject_id.uid
+                fact_dict['@idref'] = "%s:%s" % (namespace_slug,value_iobject_id)
             flat_result.append(fact_dict)
 
         result = DingoObjDict()
 
-        namespace_mapping=  {self.iobject_type.namespace.uri: 'n0'}
+
         result.from_flat_repr(flat_result,
             include_node_id=include_node_id,
             no_attributes=no_attributes,
@@ -1310,8 +1337,8 @@ class InfoObject(DingoModel):
                 result['@@iobject_type_ns'] = self.iobject_type.namespace.uri
                 return result
             else:
-                result['@@iobject_type_ns'] = namespace_mapping[self.iobject_type.namespace.uri]
-                result['@@iobject_type'] = self.iobject_type.name
+                result['@ns'] = namespace_mapping["%s-%s" % (self.iobject_type.namespace.uri,self.iobject_type_revision)]
+                #result['@@iobject_type'] = self.iobject_type.name
                 return {'namespaces': dict(map(lambda x : (x[1],x[0]), namespace_mapping.items())),
                         'object' : result
                 }

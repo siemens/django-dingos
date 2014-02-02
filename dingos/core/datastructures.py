@@ -364,6 +364,7 @@ class DingoObjDict(ExtendedSortedDict):
                         logger.debug("Entered list branch for %s " % self[element])
 
                         for sub_elt in self[element]:
+                            print "NS: %s %s %s" % (element,sub_elt.get('@@ns'),sub_elt)
                             current_namespace = (namespace_dict.get(sub_elt.get('@@ns'),None),sub_elt.get('@@ns'))
 
                             (result_list, attr_dict) = _flatten(sub_elt,
@@ -471,11 +472,12 @@ class DingoObjDict(ExtendedSortedDict):
         name_counter = {'counter':0}
 
 
-        def make_ns_slug(name_counter):
-            while "n%s" % name_counter['counter'] in namespace_mapping.values():
+
+        def make_ns_slug(name_counter,slug='n'):
+            while "%s%s" % (slug,name_counter['counter']) in namespace_mapping.values():
                 name_counter['counter']  = name_counter['counter']+1
 
-            return "n%s" % name_counter['counter']
+            return "%s%s" % (slug,name_counter['counter'])
 
 
         if include_node_id or track_namespaces:
@@ -493,7 +495,7 @@ class DingoObjDict(ExtendedSortedDict):
         result = self
         for fact in fact_list:
 
-            current_ns_slug = None
+            current_ns_slug = {-1:None}
             fact_path = fact['term'].split('/')
             del(fact['term'])
             if fact.get('attribute'):
@@ -512,6 +514,9 @@ class DingoObjDict(ExtendedSortedDict):
             else:
                 namespace_map = None
 
+            if namespace_map:
+                for ns_t in namespace_map.namespaces_thru.all():
+                    print " %s - %s" % (ns_t.position,ns_t.namespace.uri)
 
 
             walker = result
@@ -534,8 +539,11 @@ class DingoObjDict(ExtendedSortedDict):
                         else:
                             namespace_slug= namespace_mapping[namespace]
 
-                if not current_ns_slug:
-                    current_ns_slug = namespace_slug
+                    print "NS: %s %s" % (namespace_map,namespace)
+                current_ns_slug[i] = namespace_slug
+                print "Factterm %s, ns %s %s" % (fact_path,current_ns_slug,i)
+                #if not current_ns_slug:
+                #    current_ns_slug = namespace_slug
 
                 (node_kind,counter) = node_id_unpack(node_path[i])
                 element = fact_path[i]
@@ -551,10 +559,8 @@ class DingoObjDict(ExtendedSortedDict):
                         child_dict = DingoObjDict()
                         if include_node_id:
                             child_dict['@@node_id'] = node_id
-                        if namespace_slug and current_ns_slug != namespace_slug:
-                            child_dict['@@ns'] = namespace_slug
-                            current_ns_slug = namespace_slug
-
+                        if namespace_slug and current_ns_slug[i] != current_ns_slug[i-1]:
+                            child_dict['@@ns'] = current_ns_slug[i]
                             #child_dict['@@ns'] = fact.get('namespace_map').
                         walker[element].append(child_dict)
                         walker_parent = walker
@@ -563,9 +569,8 @@ class DingoObjDict(ExtendedSortedDict):
                         child_dict = DingoObjDict()
                         if include_node_id:
                             child_dict['@@node_id'] = node_id
-                        if namespace_slug and current_ns_slug != namespace_slug:
-                            child_dict['@@ns'] = namespace_slug
-                            current_ns_slug = namespace_slug
+                        if namespace_slug and current_ns_slug[i] != current_ns_slug[i-1]:
+                            child_dict['@@ns'] = current_ns_slug[i]
 
                         walker[element] = child_dict
                         walker_parent = walker
@@ -594,6 +599,7 @@ class DingoObjDict(ExtendedSortedDict):
                         walker_parent=walker
                         walker=walker[element]
             if node_kind == 'A':
+                print "Attribute %s" % fact['value_list']
                 if no_attributes:
                     continue
                 if len(fact['value_list']) == 1:
