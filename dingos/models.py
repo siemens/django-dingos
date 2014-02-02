@@ -1278,8 +1278,6 @@ class InfoObject(DingoModel):
             fact_dict = {'node_id': fact_thru.node_id.name,
                          'term': fact_thru.fact.fact_term.term,
                          'attribute' : fact_thru.fact.fact_term.attribute,
-
-
                          '@@namespace_map' : fact_thru.namespace_map,
                          }
 
@@ -1307,8 +1305,9 @@ class InfoObject(DingoModel):
             fact_dict['value_list'] = value_list
 
 
-
+            print "REF %s@%s: %s" % (fact_dict['term'],fact_dict['attribute'],fact_thru.fact.value_iobject_id)
             if fact_thru.fact.value_iobject_id:
+                print "REFentered %s@%s: %s" % (fact_dict['term'],fact_dict['attribute'],fact_thru.fact.value_iobject_id)
                 value_iobject_id_ns = fact_thru.fact.value_iobject_id.namespace.uri
                 if not value_iobject_id_ns in namespace_mapping:
                     namespace_slug = make_ns_slug(name_counter)
@@ -1317,7 +1316,17 @@ class InfoObject(DingoModel):
                     namespace_slug= namespace_mapping[value_iobject_id_ns]
 
                 value_iobject_id  =fact_thru.fact.value_iobject_id.uid
-                fact_dict['@idref'] = "%s:%s" % (namespace_slug,value_iobject_id)
+                if fact_dict['attribute']:
+                    # Here we treat the case that the reference is part of an attribute such as
+                    # 'phase_id'
+                    fact_dict['value_list'] = ["%s:%s" % (namespace_slug,value_iobject_id)]
+                else:
+                    # Otherwise, we sneak in an idref attribute. Because the code that
+                    # generates the dictionary simply dumps all untreated key-value paris
+                    # into the generated dictionary, this works... but is a bit of a hack, really.
+
+                    fact_dict['@idref'] = "%s:%s" % (namespace_slug,value_iobject_id)
+                print "FD %s" % fact_dict
             flat_result.append(fact_dict)
 
         result = DingoObjDict()
