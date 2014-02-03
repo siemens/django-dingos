@@ -416,6 +416,7 @@ class DingoObjDict(ExtendedSortedDict):
                         'node_id': attr_node_id,
                         'attribute': attribute[1:],
                         'number_of_attributed_elements': len(elements)}
+                print "%s: %s" % (fact['term'],len(elements))
                 if not attr_ignore_predicate(fact):
                     del(fact['number_of_attributed_elements'])
                     result_list.append(fact)

@@ -959,6 +959,7 @@ class InfoObject(DingoModel):
 
         """
 
+
         if not values:
             values = []
 
@@ -981,6 +982,7 @@ class InfoObject(DingoModel):
                                                      dingos_class_map=self._DCM)
 
 
+
         # get or create fact object
 
         fact_obj, created = get_or_create_fact(fact_term,
@@ -990,6 +992,7 @@ class InfoObject(DingoModel):
                                                value_iobject_id=value_iobject_id,
                                                value_iobject_ts=value_iobject_ts,
                                                )
+
 
 
         # get or create node identifier
@@ -1029,34 +1032,30 @@ class InfoObject(DingoModel):
         for k,g in itertools.groupby(namespace_map_elts,lambda x:x[0]):
             namespace_maps.append(list(g))
 
-        print "Fact Term %s" % fact_term_name
-        print "Maps: %s" % namespace_maps
 
         namespace_map = None
 
         namespaces_uris = map(lambda x:x[0],namespaces)
 
-        print namespaces_uris
 
         for i in namespace_maps:
-            print "Testing %s from %s" % (map(lambda x:x[2],i),i)
             if namespaces_uris == map(lambda x:x[2],i):
                 namespace_map = FactTermNamespaceMap.objects.get(id=i[0][0])
 
-                print "FOUND it!"
+
                 break
 
 
 
         if not namespace_map:
-            print "Didn't find it"
+
             namespace_map = FactTermNamespaceMap.objects.create(fact_term=fact_term)
             for (ns_uri,ns_slug) in namespaces:
 
                 if ns_uri:
 
                     if not (ns_uri in ns_uri_dict):
-                        ns_uri_obj, created = self._DCM['DataTypeNameSpace'].objects.get_or_create(uri=ns_uri,name=ns_slug)
+                        ns_uri_obj, created = self._DCM['DataTypeNameSpace'].objects.get_or_create(uri=ns_uri,defaults={'name':ns_slug})
                         ns_uri_obj_pk = ns_uri_obj.pk
                         ns_uri_dict[ns_uri]=ns_uri_obj_pk
                     else:
@@ -1067,8 +1066,6 @@ class InfoObject(DingoModel):
                 counter +=1
                 #self._DCM['IO2F2Namespace'].object.create(io2f=self,position=counter,namespace__pk=ns_uri_obj_pk)
 
-            print "List: %s" % io2f2n_list
-            print "Generating for %s%s" % (fact_term_name,fact_term_attribute)
             if len(io2f2n_list)!= 0:
                 PositionalNamespace.objects.bulk_create(io2f2n_list)
             else:
@@ -1093,7 +1090,7 @@ class InfoObject(DingoModel):
 
         # Instantiate default parameters
 
-        print dingos_obj_dict
+
 
 
         if '@@ns' in dingos_obj_dict.keys():
@@ -1132,7 +1129,6 @@ class InfoObject(DingoModel):
                                                      force_nonleaf_fact_predicate=force_nonleaf_fact_predicate,
                                                      namespace_dict=namespace_dict)
 
-        print flat_list
 
 
         for fact in flat_list:
@@ -1305,9 +1301,7 @@ class InfoObject(DingoModel):
             fact_dict['value_list'] = value_list
 
 
-            print "REF %s@%s: %s" % (fact_dict['term'],fact_dict['attribute'],fact_thru.fact.value_iobject_id)
             if fact_thru.fact.value_iobject_id:
-                print "REFentered %s@%s: %s" % (fact_dict['term'],fact_dict['attribute'],fact_thru.fact.value_iobject_id)
                 value_iobject_id_ns = fact_thru.fact.value_iobject_id.namespace.uri
                 if not value_iobject_id_ns in namespace_mapping:
                     namespace_slug = make_ns_slug(name_counter)
@@ -1326,7 +1320,7 @@ class InfoObject(DingoModel):
                     # into the generated dictionary, this works... but is a bit of a hack, really.
 
                     fact_dict['@idref'] = "%s:%s" % (namespace_slug,value_iobject_id)
-                print "FD %s" % fact_dict
+
             flat_result.append(fact_dict)
 
         result = DingoObjDict()
@@ -1690,25 +1684,21 @@ class UserData(DingoModel):
         unique_together = ('user', 'group','data_kind')
 
     def retrieve(self):
-        print "Called Retrieve"
 
         settings_iobject = None
         if self.identifier:
             settings_iobject = self.identifier.latest
-            print "Object is %s" % settings_iobject
 
         if settings_iobject:
             settings= settings_iobject.to_dict(no_attributes=True,track_namespaces=False)
-            print "Found settings %s" % settings
             return settings
         else:
-            print "found no settings"
             return None
 
     def store(self,settings,iobject_type_name=DINGOS_USER_DATA_TYPE_NAME,keep_history=False,iobject_name=None):
 
         settings_dod = dict2DingoObjDict(settings)
-        print settings_dod
+
 
         settings_iobject = None
         if self.identifier:
