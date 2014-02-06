@@ -37,22 +37,22 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
            	  <thead>
                     <tr>
                         <th scope="col"  class="sortable column-identifier">
-                            <div class="grp-text"><a href="">Identifier</a></div>
+			    {% include "dingos/grappelli/includes/_TableOrdering.html" with index="1" title="Identifier" parameter=request.GET.o only %}
                         </th>
                         <th scope="col"  class="sortable column-timestamp">
-                            <div class="grp-text"><a href="">Timestamp</a></div>
+			    {% include "dingos/grappelli/includes/_TableOrdering.html" with index="2" title="Timestamp" parameter=request.GET.o only %}
                         </th>
                         <th scope="col"  class="sortable column-created">
-                            <div class="grp-text"><a href="">Created</a></div>
+                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="3" title="Created" parameter=request.GET.o only %}
                         </th>
                         <th scope="col"  class="sortable column-name">
-                            <div class="grp-text"><a href="">Name</a></div>
+                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="4" title="Name" parameter=request.GET.o only %}
                         </th>
                         <th scope="col"  class="sortable column-objecttype">
-                            <div class="grp-text"><a href="">Obj. Type</a></div>
+                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="5" title="Object Type" parameter=request.GET.o only %}
                         </th>
                         <th scope="col"  class="sortable column-family">
-                            <div class="grp-text"><a href="">Family</a></div>
+                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="6" title="Family" parameter=request.GET.o only %}
                         </th>
                     </tr>
 		  </thead>

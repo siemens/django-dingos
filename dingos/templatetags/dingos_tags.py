@@ -184,6 +184,58 @@ def sliceupto(value, upto):
         return value
 
 @register.simple_tag
+def get_index_opposite_direction(get, index):
+    """
+    Returns "ascending" if index is negative in a given get string
+    and "descending" if index is positive. If index isn't
+    available at all in get None is returned.
+    """
+
+    # cover stange Django stuff
+    if get.startswith('INVALID EXPRESSION: ') or len(get) == 0:
+        return None
+
+    l = get.split('.')
+    if index in l:
+        return "descending"
+    elif '-%s' % index in l:
+        return "ascending"
+    return None
+
+@register.simple_tag
+def create_ordering_url(get, index, remove=False):
+    """
+    Returns a valid URL for a given get-paramater
+    and an index. If index is already within
+    get-paramater switch it to '-index' else
+    just append it to already existing list.
+    If remove is True the index will be thrown out
+    of the get-parameters wether it's -index or index.
+    """
+
+    # somehow if request.GET.xy doesn't exist there 
+    # will be a string returned instead of None
+    if get.startswith('INVALID EXPRESSION: ') or len(get) == 0:
+        return index
+
+    l = get.split('.')
+
+    if not remove:
+        if index in l:
+            l[l.index(index)] = "-%s" % index
+        elif '-%s' % index in l:
+           l[l.index('-%s' % index)] = index
+        else:
+            l.append(index)
+    else:
+      try:
+          l.remove(index)
+      except:
+          l.remove("-%s" % index)
+
+    return '.'.join(l)
+
+@register.simple_tag
 def create_title(*args):
     """
     Combines all given arguments to create clean title-tags values.

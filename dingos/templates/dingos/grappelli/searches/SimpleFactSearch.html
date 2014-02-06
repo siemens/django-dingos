@@ -6,7 +6,7 @@
 
 {# Below, we fill out the form that queries the search parameters #}
 
-{% block list_title %} Fact Search {% endblock %}
+nclude "dingos/grappelli/includes/_TableOrdering.html" with index="2" title="IO-Type" parameter=request.GET.o only %}{% block list_title %} Fact Search {% endblock %}
 {% block search_options %}
 
 
@@ -46,16 +46,16 @@
      <thead>
        <tr>
 	<th scope="col"  class="sortable column-infoobject">
-	  <div class="grp-text"><a href="">Info Object</a></div>
+          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="1" title="Info Object" parameter=request.GET.o only %}
 	</th>
 	<th scope="col"  class="sortable column-iotype">
-	  <div class="grp-text"><a href="">IO-Type</a></div>
+          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="2" title="IO-Type" parameter=request.GET.o only %}
 	</th>
 	<th scope="col"  class="sortable column-factterm">
-	  <div class="grp-text"><a href="">Fact Term</a></div>
+          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="3" title="Fact-Term" parameter=request.GET.o only %}
 	</th>
 	<th scope="col"  class="sortable column-value">
-	  <div class="grp-text"><a href="">Value</a></div>
+          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="4" title="Value" parameter=request.GET.o only %}
 	</th>
        </tr>
      </thead>
