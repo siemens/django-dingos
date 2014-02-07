@@ -203,7 +203,7 @@ def get_index_opposite_direction(get, index):
     return None
 
 @register.simple_tag
-def create_ordering_url(get, index, remove=False):
+def create_ordering_url(get, index, remove=False, single_ordering=True):
     """
     Returns a valid URL for a given get-paramater
     and an index. If index is already within
@@ -211,6 +211,9 @@ def create_ordering_url(get, index, remove=False):
     just append it to already existing list.
     If remove is True the index will be thrown out
     of the get-parameters wether it's -index or index.
+    Single_ordering is used if ONLY ONE ordering is allowed
+    and therefore ordering using two (or more) parameter
+    won't be enabled.
     """
 
     # somehow if request.GET.xy doesn't exist there 
@@ -220,20 +223,29 @@ def create_ordering_url(get, index, remove=False):
 
     l = get.split('.')
 
+    # SINGLE PARAMETER ORDERING (e.g. &o=parameter1 or %o=-parameter1 ONLY!)
+    if single_ordering:
+        if not remove:
+            return '-%s' % index if index in l else index
+        return ''
+
+    # MULTIPLE PARAMETER ORDERING (e.g. &o=parameter1.-parameter2)
     if not remove:
         if index in l:
             l[l.index(index)] = "-%s" % index
         elif '-%s' % index in l:
-           l[l.index('-%s' % index)] = index
+            l[l.index('-%s' % index)] = index
         else:
             l.append(index)
     else:
       try:
           l.remove(index)
-      except:
           l.remove("-%s" % index)
+      except ValueError:
+          pass
 
     return '.'.join(l)
+
 
 @register.simple_tag
 def create_title(*args):

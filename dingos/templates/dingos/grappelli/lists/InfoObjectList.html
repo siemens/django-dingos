@@ -37,22 +37,22 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
            	  <thead>
                     <tr>
                         <th scope="col"  class="sortable column-identifier">
-			    {% include "dingos/grappelli/includes/_TableOrdering.html" with index="1" title="Identifier" parameter=request.GET.o only %}
+			    {% include "dingos/grappelli/includes/_TableOrdering.html" with index="identifier__uid" title="Identifier" parameter=request.GET.o only %}
                         </th>
                         <th scope="col"  class="sortable column-timestamp">
-			    {% include "dingos/grappelli/includes/_TableOrdering.html" with index="2" title="Timestamp" parameter=request.GET.o only %}
+			    {% include "dingos/grappelli/includes/_TableOrdering.html" with index="timestamp" title="Timestamp" parameter=request.GET.o only %}
                         </th>
                         <th scope="col"  class="sortable column-created">
-                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="3" title="Created" parameter=request.GET.o only %}
+                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="create_timestamp" title="Created" parameter=request.GET.o only %}
                         </th>
                         <th scope="col"  class="sortable column-name">
-                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="4" title="Name" parameter=request.GET.o only %}
+			   {% include "dingos/grappelli/includes/_TableOrdering.html" with index="name" title="Name" parameter=request.GET.o only %}
                         </th>
                         <th scope="col"  class="sortable column-objecttype">
-                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="5" title="Object Type" parameter=request.GET.o only %}
+                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="iobject_type" title="Object Type" parameter=request.GET.o only %}
                         </th>
                         <th scope="col"  class="sortable column-family">
-                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="6" title="Family" parameter=request.GET.o only %}
+                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="iobject_type__iobject_family" title="Family" parameter=request.GET.o only %}
                         </th>
                     </tr>
 		  </thead>

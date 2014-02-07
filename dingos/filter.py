@@ -95,8 +95,10 @@ class InfoObjectFilter(django_filters.FilterSet):
     create_timestamp = ExtendedDateRangeFilter(label="Create/Import Timestamp")
 
     class Meta:
+        order_by = True # (('iobject_type','InfoObject Type'),('identifier__namespace','NS'),('-identifier__pk','Identifier URI'))
+ 
         model = InfoObject
-        fields = ['iobject_type','iobject_type__iobject_family',
+        fields = ['iobject_type','iobject_type__iobject_family','name',
                   'identifier__namespace','identifier__uid','timestamp', 'create_timestamp']
 
 
@@ -142,10 +144,11 @@ class FactTermValueFilter(django_filters.FilterSet):
     #iobject__iobject_type = django_filters.ModelMultipleChoiceFilter()
 
     class Meta:
+        order_by = True
         model = InfoObject2Fact
 
-        fields = ['fact__fact_term__term','fact__fact_values__value','iobject__timestamp','iobject__created_timestamp',
-                  'iobject__identifier__namespace','iobject__iobject_type',]
+        fields = ['fact__fact_term__term','fact__fact_values__value','iobject__name','iobject__timestamp','iobject__created_timestamp',
+                  'iobject__identifier__namespace','iobject__iobject_type','iobject__iobject_type__name',]
 
 
 

@@ -46,16 +46,16 @@ nclude "dingos/grappelli/includes/_TableOrdering.html" with index="2" title="IO-
      <thead>
        <tr>
 	<th scope="col"  class="sortable column-infoobject">
-          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="1" title="Info Object" parameter=request.GET.o only %}
+          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="iobject__name" title="Info Object" parameter=request.GET.o only %}
 	</th>
 	<th scope="col"  class="sortable column-iotype">
-          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="2" title="IO-Type" parameter=request.GET.o only %}
+          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="iobject__iobject_type__name" title="IO-Type" parameter=request.GET.o only %}
 	</th>
 	<th scope="col"  class="sortable column-factterm">
-          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="3" title="Fact-Term" parameter=request.GET.o only %}
+          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="fact__fact_term__term" title="Fact-Term" parameter=request.GET.o only %}
 	</th>
 	<th scope="col"  class="sortable column-value">
-          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="4" title="Value" parameter=request.GET.o only %}
+          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="fact__fact_values__value" title="Value" parameter=request.GET.o only %}
 	</th>
        </tr>
      </thead>

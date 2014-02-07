@@ -46,4 +46,4 @@ urlpatterns = patterns('',
 
     url(r'^View/InfoOject/Embedded/(?P<pk>\d*)/$', views.InfoObjectsEmbedded.as_view(), name="url.dingos.view.infoobject.embedded"),
 
-                       )
+    )
