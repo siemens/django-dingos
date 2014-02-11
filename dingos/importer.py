@@ -34,6 +34,7 @@ from dingos.core.datastructures import dict2DingoObjDict
 from dingos import *
 from dingos.import_handling import DingoImportHandling
 
+from dingos.models import InfoObject
 
 DingoImporter = DingoImportHandling()
 
@@ -251,6 +252,11 @@ class DingoImportCommand(BaseCommand):
                     dest='marking_json',
                     default=None,
                     help='File with json representation of information of marking to be associated with imports.'),
+        make_option('-M', '--Marking_ID',
+                    action='append',
+                    dest='marking_ids',
+                    default=[],
+                    help='File with json representation of information of marking to be associated with imports.'),
         make_option('-p', '--marking_pfill',
                     action='append',
                     nargs=2,
@@ -356,6 +362,18 @@ class DingoImportCommand(BaseCommand):
             markings = [marking]
         else:
             markings = []
+
+        if options.get('marking_ids'):
+            for marking_id in options.get('marking_ids'):
+                try:
+                    ns,uid = marking_id.split(':')
+                    marking = InfoObject.objects.exclude(latest_of=None).get(identifier__uid=uid,identifier__namespace__uri=ns)
+                    logger.info("Found marking: %s " % marking)
+                    markings.append(marking)
+                except:
+                    logger.warning('Could not find marking object %s in system' % marking_id)
+
+
 
         #if len(args) > 1 and options['identifier']:
         #    raise CommandError('Option --identifier not supported for more than one file per import.')
