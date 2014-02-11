@@ -269,6 +269,7 @@ class DingoImportCommand(BaseCommand):
 
 
     def __init__(self, *args, **kwargs):
+        self.logger = logger
         self.xml_import_function = kwargs.get('import_function', None)
         try:
             del (kwargs['import_function'])
