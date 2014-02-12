@@ -402,11 +402,11 @@ class DingoImportCommand(BaseCommand):
                     except:
                         logger.error("Something went wrong when importing %s. Traceback: %s" % (filename,traceback.format_exc()))
 
-                    if 'destination_path' in options:
+                    if options.get('destination_path'):
 
                         try:
                             dest_path = os.path.join(options.get('destination_path'), os.path.basename(filename))
                             logger.info("Moving %s to %s" % (os.path.basename(filename),dest_path))
                             os.rename(filename,dest_path)
                         except Exception, err:
-                            mainLogger.exception("Could not move file %s:" % (filename))
+                            logger.exception("Could not move file %s:" % (filename))

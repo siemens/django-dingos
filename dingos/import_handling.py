@@ -129,8 +129,8 @@ class DingoImportHandling(object):
 
         """
 
-        if not timestamp:
-            raise StandardError("You must supply a timestamp.")
+        #if not timestamp:
+        #    raise StandardError("You must supply a timestamp.")
 
         if not uid:
             raise StandardError("You must supply an identifier.")
@@ -163,6 +163,15 @@ class DingoImportHandling(object):
 
         if latest_existing_iobject:
             latest_existing_timestamp = latest_existing_iobject.timestamp
+
+            if ((not timestamp) and
+                iobject_type_name==DINGOS_PLACEHOLDER_TYPE_NAME and
+                iobject_type_namespace_uri==DINGOS_NAMESPACE_URI):
+                return (latest_existing_iobject, EXIST_ID_AND_EXACT_TIMESTAMP)
+
+        if not timestamp:
+            timestamp = create_timestamp
+
 
         existing_iobjects = self._DCM['InfoObject'].objects.filter(identifier__uid=uid).filter(
             identifier__namespace__uri=identifier_ns_uri).filter(timestamp=timestamp)
@@ -234,9 +243,10 @@ class DingoImportHandling(object):
 
             #if not uid:
             #    uid = uuid.uuid1()
-            logger.info("Creating %s:%s with timestamp %s" % (identifier_ns_uri,
-                                                              uid,
-                                                              '{:%d-%m-%Y:%H:%M:%S}.{:03d}'.format(timestamp, timestamp.microsecond // 1000)))
+            logger.info("Creating %s %s:%s with timestamp %s" % (iobject_type_name,
+                                                                 identifier_ns_uri,
+                                                                 uid,
+                                                                 '{:%d-%m-%Y:%H:%M:%S}.{:03d}'.format(timestamp, timestamp.microsecond // 1000)))
 
             iobject, created = get_or_create_iobject(uid,
                                                      identifier_ns_uri,
