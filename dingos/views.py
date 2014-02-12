@@ -28,7 +28,7 @@ from dingos.forms import EditSavedSearchesForm
 from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME, DINGOS_SAVED_SEARCHES_TYPE_NAME, DINGOS_DEFAULT_SAVED_SEARCHES
 
 from braces.views import LoginRequiredMixin
-from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView
+from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView
 
 
 class InfoObjectList(BasicFilterView):
@@ -75,7 +75,7 @@ class InfoObjectList_Id_filtered(BasicFilterView):
         'iobject_family_revision',
         'identifier').select_related().distinct().order_by('-latest_of__pk')
 
-class InfoObjectsEmbedded(BasicFilterView):
+class InfoObjectsEmbedded(BasicListView):
     template_name = 'dingos/%s/lists/InfoObjectEmbedded.html' % DINGOS_TEMPLATE_FAMILY
 
     breadcrumbs = (('Dingo',None),
