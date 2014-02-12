@@ -879,16 +879,19 @@ class InfoObject(DingoModel):
                             help_text="""Name of the information object, usually auto generated.
                                          from type and facts flagged as 'naming'.""")
 
-    @property
-    def marking_thru(self):
-        """
-        Return the back-pointer to a marking that may
-        has been attached via Django's content type mechanism.
-        """
+    #@property
+    #def marking_thru(self):
+    #    """
+    #    Return the back-pointer to a marking that may
+    #    has been attached via Django's content type mechanism.
+    #    """
 
-        self_django_type = ContentType.objects.get_for_model(self)
-        return Marking2X.objects.filter(content_type__pk=self_django_type.id,
-                                        object_id=self.id)
+    #    self_django_type = ContentType.objects.get_for_model(self)
+    #    return Marking2X.objects.filter(content_type__pk=self_django_type.id,
+    #                                    object_id=self.id)
+
+
+    marking_thru = generic.GenericRelation("Marking2X")
 
 
     class Meta:
@@ -1612,16 +1615,18 @@ class Relation(DingoModel):
                                     related_name='+',
                                     help_text="InfoObject containing metadata about relation.")
 
-    @property
-    def marking_thru(self):
-        """
-        Return the back-pointer to markings that may have
-        been attached via Django's content type mechanism.
-        """
+    #@property
+    #def prog_marking_thru(self):
+    #    """
+    #    Return the back-pointer to markings that may have
+    #    been attached via Django's content type mechanism.
+    #    """
 
-        self_django_type = ContentType.objects.get_for_model(self)
-        return Marking2X.objects.filter(content_type__pk=self_django_type.id,
-                                        object_id=self.id)
+    #   self_django_type = ContentType.objects.get_for_model(self)
+    #    return Marking2X.objects.filter(content_type__pk=self_django_type.id,
+    #                                    object_id=self.id)
+
+    marking_thru = generic.GenericRelation("Marking2X")
 
 
     class Meta:
