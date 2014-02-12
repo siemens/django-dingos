@@ -107,6 +107,9 @@ class InfoObjectFilter(django_filters.FilterSet):
         label="ID Namespace",
         to_field_name='id')
 
+    name = django_filters.CharFilter(lookup_type='icontains',
+                                                label='Name contains')
+
     identifier__uid = django_filters.CharFilter(lookup_type='icontains',
                                                 label='ID contains')
 
