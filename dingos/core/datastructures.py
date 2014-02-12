@@ -364,7 +364,6 @@ class DingoObjDict(ExtendedSortedDict):
                         logger.debug("Entered list branch for %s " % self[element])
 
                         for sub_elt in self[element]:
-                            print "NS: %s %s %s" % (element,sub_elt.get('@@ns'),sub_elt)
                             current_namespace = (namespace_dict.get(sub_elt.get('@@ns'),None),sub_elt.get('@@ns'))
 
                             (result_list, attr_dict) = _flatten(sub_elt,
@@ -416,7 +415,6 @@ class DingoObjDict(ExtendedSortedDict):
                         'node_id': attr_node_id,
                         'attribute': attribute[1:],
                         'number_of_attributed_elements': len(elements)}
-                print "%s: %s" % (fact['term'],len(elements))
                 if not attr_ignore_predicate(fact):
                     del(fact['number_of_attributed_elements'])
                     result_list.append(fact)
@@ -517,9 +515,6 @@ class DingoObjDict(ExtendedSortedDict):
             else:
                 namespace_map = None
 
-            if namespace_map:
-                for ns_t in namespace_map.namespaces_thru.all():
-                    print " %s - %s" % (ns_t.position,ns_t.namespace.uri)
 
 
             walker = result
@@ -542,9 +537,7 @@ class DingoObjDict(ExtendedSortedDict):
                         else:
                             namespace_slug= namespace_mapping[namespace]
 
-                    print "NS: %s %s" % (namespace_map,namespace)
                 current_ns_slug[i] = namespace_slug
-                print "Factterm %s, ns %s %s" % (fact_path,current_ns_slug,i)
                 #if not current_ns_slug:
                 #    current_ns_slug = namespace_slug
 
@@ -602,7 +595,7 @@ class DingoObjDict(ExtendedSortedDict):
                         walker_parent=walker
                         walker=walker[element]
             if node_kind == 'A':
-                print "Attribute %s" % fact['value_list']
+
                 if no_attributes:
                     continue
                 if len(fact['value_list']) == 1:
