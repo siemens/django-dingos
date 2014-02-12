@@ -28,7 +28,7 @@ from dingos.forms import EditSavedSearchesForm
 from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME, DINGOS_SAVED_SEARCHES_TYPE_NAME, DINGOS_DEFAULT_SAVED_SEARCHES
 
 from braces.views import LoginRequiredMixin
-from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView
+from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView
 
 
 class InfoObjectList(BasicFilterView):
@@ -75,7 +75,7 @@ class InfoObjectList_Id_filtered(BasicFilterView):
         'iobject_family_revision',
         'identifier').select_related().distinct().order_by('-latest_of__pk')
 
-class InfoObjectsEmbedded(BasicFilterView):
+class InfoObjectsEmbedded(BasicListView):
     template_name = 'dingos/%s/lists/InfoObjectEmbedded.html' % DINGOS_TEMPLATE_FAMILY
 
     breadcrumbs = (('Dingo',None),
@@ -131,6 +131,8 @@ class InfoObjectView_wo_login(BasicDetailView):
     pagination only displays 100 or 200 or so.
     """
 
+
+
     # Config for Prefetch/SelectRelated Mixins_
     select_related = ()
     prefetch_related = ('iobject_type',
@@ -166,13 +168,7 @@ class InfoObjectView_wo_login(BasicDetailView):
     title = 'Info Object Details'
 
     def get_context_data(self, **kwargs):
-        # as a hack, we clear here the settings in the session. This will
-        # lead to a reload of the user config into the session data
-        try:
-            del(self.request.session['customization'])
-            del(self.request.session['customization_for_authenticated'])
-        except KeyError, err:
-                pass
+
         context = super(InfoObjectView_wo_login, self).get_context_data(**kwargs)
 
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
@@ -190,6 +186,14 @@ class InfoObjectView(LoginRequiredMixin,InfoObjectView_wo_login):
 
 class UserPrefsView(InfoObjectView_wo_login):
     def get_object(self):
+        # We delete the session data in  order to achieve a reload
+        # when viewing this page.
+
+        try:
+            del(self.request.session['customization'])
+            del(self.request.session['customization_for_authenticated'])
+        except KeyError, err:
+                pass
         return UserData.get_user_data_iobject(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
 
 class CustomSearchesEditView(BasicTemplateView):
@@ -290,7 +294,7 @@ class InfoObjectJSONView(BasicDetailView):
         #return self.get_json_response(json.dumps(context['object'].show_elements(""),indent=2))
         include_node_id = self.request.GET.get('include_node_id',False)
 
-        return self.get_json_response(json.dumps(context['object'].to_dict(include_node_id=include_node_id),indent=2))
+        return self.get_json_response(json.dumps(context['object'].to_dict(include_node_id=include_node_id,track_namespaces=True),indent=2))
 
     def get_json_response(self, content, **httpresponse_kwargs):
         return http.HttpResponse(content,

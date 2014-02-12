@@ -8,18 +8,37 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding model 'UserConfiguration'
-        db.create_table(u'dingos_userconfiguration', (
+        # Adding model 'PositionalNamespace'
+        db.create_table(u'dingos_positionalnamespace', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
-            ('identifier', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.Identifier'])),
+            ('fact_term_namespace_map', self.gf('django.db.models.fields.related.ForeignKey')(related_name='namespace_thru', to=orm['dingos.FactTermNamespaceMap'])),
+            ('namespace', self.gf('django.db.models.fields.related.ForeignKey')(related_name='fect_term_namespace_map_thru', to=orm['dingos.DataTypeNameSpace'])),
+            ('position', self.gf('django.db.models.fields.SmallIntegerField')()),
         ))
-        db.send_create_signal(u'dingos', ['UserConfiguration'])
+        db.send_create_signal(u'dingos', ['PositionalNamespace'])
+
+        # Adding model 'FactTermNamespaceMap'
+        db.create_table(u'dingos_facttermnamespacemap', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('fact_term', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.FactTerm'])),
+        ))
+        db.send_create_signal(u'dingos', ['FactTermNamespaceMap'])
+
+        # Adding field 'InfoObject2Fact.namespace_map'
+        db.add_column(u'dingos_infoobject2fact', 'namespace_map',
+                      self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.FactTermNamespaceMap'], null=True),
+                      keep_default=False)
 
 
     def backwards(self, orm):
-        # Deleting model 'UserConfiguration'
-        db.delete_table(u'dingos_userconfiguration')
+        # Deleting model 'PositionalNamespace'
+        db.delete_table(u'dingos_positionalnamespace')
+
+        # Deleting model 'FactTermNamespaceMap'
+        db.delete_table(u'dingos_facttermnamespacemap')
+
+        # Deleting field 'InfoObject2Fact.namespace_map'
+        db.delete_column(u'dingos_infoobject2fact', 'namespace_map_id')
 
 
     models = {
@@ -103,6 +122,12 @@ class Migration(SchemaMigration):
             'iobject_type': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'fact_term_thru'", 'to': u"orm['dingos.InfoObjectType']"}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '1024', 'blank': 'True'})
         },
+        u'dingos.facttermnamespacemap': {
+            'Meta': {'object_name': 'FactTermNamespaceMap'},
+            'fact_term': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.FactTerm']"}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'namespaces': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['dingos.DataTypeNameSpace']", 'through': u"orm['dingos.PositionalNamespace']", 'symmetrical': 'False'})
+        },
         u'dingos.factvalue': {
             'Meta': {'unique_together': "(('value', 'fact_data_type', 'storage_location'),)", 'object_name': 'FactValue'},
             'description': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
@@ -146,6 +171,7 @@ class Migration(SchemaMigration):
             'fact': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'iobject_thru'", 'to': u"orm['dingos.Fact']"}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'iobject': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'fact_thru'", 'to': u"orm['dingos.InfoObject']"}),
+            'namespace_map': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.FactTermNamespaceMap']", 'null': 'True'}),
             'node_id': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.NodeID']"})
         },
         u'dingos.infoobjectfamily': {
@@ -182,6 +208,13 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'})
         },
+        u'dingos.positionalnamespace': {
+            'Meta': {'object_name': 'PositionalNamespace'},
+            'fact_term_namespace_map': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'namespace_thru'", 'to': u"orm['dingos.FactTermNamespaceMap']"}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'namespace': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'fect_term_namespace_map_thru'", 'to': u"orm['dingos.DataTypeNameSpace']"}),
+            'position': ('django.db.models.fields.SmallIntegerField', [], {})
+        },
         u'dingos.relation': {
             'Meta': {'unique_together': "(('source_id', 'target_id', 'relation_type'),)", 'object_name': 'Relation'},
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -195,11 +228,13 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '32', 'blank': 'True'})
         },
-        u'dingos.userconfiguration': {
-            'Meta': {'object_name': 'UserConfiguration'},
+        u'dingos.userdata': {
+            'Meta': {'unique_together': "(('user', 'group', 'data_kind'),)", 'object_name': 'UserData'},
+            'data_kind': ('django.db.models.fields.SlugField', [], {'max_length': '32'}),
+            'group': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['auth.Group']", 'null': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'identifier': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.Identifier']"}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['auth.User']"})
+            'identifier': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.Identifier']", 'null': 'True'}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['auth.User']", 'null': 'True'})
         }
     }
 

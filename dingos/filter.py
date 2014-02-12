@@ -17,6 +17,8 @@
 
 
 import django_filters
+
+from collections import OrderedDict
 from dingos.models import InfoObject, InfoObject2Fact, InfoObjectType, InfoObjectFamily,IdentifierNameSpace
 from django.db.models import Count
 
@@ -45,33 +47,38 @@ def create_order_keyword_list(keywords):
     return result
 
 class ExtendedDateRangeFilter(django_filters.DateRangeFilter):
-    options = {
-        '': (_('Any date'), lambda qs, name: qs.all()),
-        1: (_('Past 5 minutes'), lambda qs, name: qs.filter(**{
+    options = OrderedDict([
+        ('', (_('Any date'), lambda qs, name: qs.all())),
+        (100, (_('Past 5 minutes'), lambda qs, name: qs.filter(**{
             '%s__gte' % name: now() - timedelta(minutes=5),
             '%s__lt' % name: now() + timedelta(minutes=5),
-            })),
-        2: (_('Today'), lambda qs, name: qs.filter(**{
+            }))),
+        (200, (_('Today'), lambda qs, name: qs.filter(**{
             '%s__year' % name: now().year,
             '%s__month' % name: now().month,
             '%s__day' % name: now().day
-        })),
-        3: (_('Past 24 hours'), lambda qs, name: qs.filter(**{
+        }))),
+        (300, (_('Past 24 hours'), lambda qs, name: qs.filter(**{
             '%s__gte' % name: now() - timedelta(days=1),
             '%s__lt' % name: now() + timedelta(days=1),
-            })),
-        4: (_('Past 7 days'), lambda qs, name: qs.filter(**{
+            }))),
+        (400, (_('Past 48 hours'), lambda qs, name: qs.filter(**{
+            '%s__gte' % name: now() - timedelta(days=2),
+            '%s__lt' % name: now() + timedelta(days=2),
+            }))),
+
+        (500, (_('Past 7 days'), lambda qs, name: qs.filter(**{
             '%s__gte' % name: _truncate(now() - timedelta(days=7)),
             '%s__lt' % name: _truncate(now() + timedelta(days=1)),
-            })),
-        5: (_('This month'), lambda qs, name: qs.filter(**{
+            }))),
+        (600, (_('This month'), lambda qs, name: qs.filter(**{
             '%s__year' % name: now().year,
             '%s__month' % name: now().month
-        })),
-        6: (_('This year'), lambda qs, name: qs.filter(**{
+        }))),
+        (700, (_('This year'), lambda qs, name: qs.filter(**{
             '%s__year' % name: now().year,
-            })),
-        }
+            })))
+    ])
 
 
 class InfoObjectFilter(django_filters.FilterSet):
@@ -80,7 +87,7 @@ class InfoObjectFilter(django_filters.FilterSet):
         InfoObjectType.objects. \
             exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
             annotate(num_objects=Count('iobject_set')).\
-               filter(num_objects__gt=0).\
+            filter(num_objects__gt=0).\
             prefetch_related('iobject_family').order_by('iobject_family__name','name')
 
     iobject_type =  django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
@@ -103,9 +110,12 @@ class InfoObjectFilter(django_filters.FilterSet):
     identifier__uid = django_filters.CharFilter(lookup_type='icontains',
                                                 label='ID contains')
 
-    timestamp = ExtendedDateRangeFilter(label="Object Timestamp")
+    #marking_thru__marking__identifier__uid = django_filters.CharFilter(lookup_type='icontains',
+    #                                                                   label='Marking ID contains')
 
-    create_timestamp = ExtendedDateRangeFilter(label="Create/Import Timestamp")
+    timestamp = ExtendedDateRangeFilter(label="Object Creation Timestamp")
+
+    create_timestamp = ExtendedDateRangeFilter(label="Import Timestamp")
 
     class Meta:
         order_by = create_order_keyword_list(['identifier__uid','timestamp','create_timestamp','name','iobject_type','iobject_type__iobject_family'])
