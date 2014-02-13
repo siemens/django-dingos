@@ -267,7 +267,6 @@ def show_InfoObjectRevisions_vertical(iobject):
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectEmbeddingDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def show_InfoObjectEmbeddings(context,iobject):
-    print context
     return {'object': iobject,
             'customization' : context.get('customization')}
 
