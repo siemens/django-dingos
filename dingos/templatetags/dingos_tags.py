@@ -183,69 +183,25 @@ def sliceupto(value, upto):
     except (ValueError, TypeError):
         return value
 
-@register.simple_tag
-def get_index_opposite_direction(get, index):
+@register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
+def render_table_ordering(context, index, title):
     """
-    Returns "ascending" if index is negative in a given get string
-    and "descending" if index is positive. If index isn't
-    available at all in get None is returned.
+    comment lateron
     """
 
-    # cover stange Django stuff
-    if get.startswith('INVALID EXPRESSION: ') or len(get) == 0:
-        return None
+    # title + plain url (=without o paramater)
+    new_context = { 'title' : title, 'plain_url' : context['view'].get_query_string(remove=['o']) }
 
-    l = get.split('.')
-    if index in l:
-        return "descending"
-    elif '-%s' % index in l:
-        return "ascending"
-    return None
+    # ordered url
+    new_context['ordered_url'] = new_context['plain_url'] + '&o=' + index
 
-@register.simple_tag
-def create_ordering_url(get, index, remove=False, single_ordering=True):
-    """
-    Returns a valid URL for a given get-paramater
-    and an index. If index is already within
-    get-paramater switch it to '-index' else
-    just append it to already existing list.
-    If remove is True the index will be thrown out
-    of the get-parameters wether it's -index or index.
-    Single_ordering is used if ONLY ONE ordering is allowed
-    and therefore ordering using two (or more) parameter
-    won't be enabled.
-    """
+    print context['request'].GET
+    # toggled ordering url (only if needed)
+    if 'o' in context['request'].GET and ( context['request'].GET['o'] == index or context['request'].GET['o'] == '-%s' % index):
+        new_context['toggled_url'] = new_context['plain_url'] + '&o=' + (index if context['request'].GET['o'].startswith('-') else '-' + index) 
+        new_context['order_direction'] = 'ascending' if context['request'].GET['o'].startswith('-') else 'descending'
 
-    # somehow if request.GET.xy doesn't exist there 
-    # will be a string returned instead of None
-    if get.startswith('INVALID EXPRESSION: ') or len(get) == 0:
-        return index
-
-    l = get.split('.')
-
-    # SINGLE PARAMETER ORDERING (e.g. &o=parameter1 or %o=-parameter1 ONLY!)
-    if single_ordering:
-        if not remove:
-            return '-%s' % index if index in l else index
-        return ''
-
-    # MULTIPLE PARAMETER ORDERING (e.g. &o=parameter1.-parameter2)
-    if not remove:
-        if index in l:
-            l[l.index(index)] = "-%s" % index
-        elif '-%s' % index in l:
-            l[l.index('-%s' % index)] = index
-        else:
-            l.append(index)
-    else:
-      try:
-          l.remove(index)
-          l.remove("-%s" % index)
-      except ValueError:
-          pass
-
-    return '.'.join(l)
-
+    return new_context
 
 @register.simple_tag
 def create_title(*args):

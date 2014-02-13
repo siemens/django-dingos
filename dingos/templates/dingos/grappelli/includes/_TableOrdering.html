@@ -1,10 +1,10 @@
+{% comment %}
 {% load create_ordering_url get_index_opposite_direction from dingos_tags %}
-
-  {% if index in parameter %}
+{% endcomment %}
+  {% if toggled_url %}
     <div class="grp-sortoptions">
-      <a class="grp-toggle grp-{% get_index_opposite_direction parameter index %}" title="Toggle sorting" href="?o={% create_ordering_url parameter index %}"></a>
-      <a class="grp-sortremove" title="Remove from sorting" href="?o={% create_ordering_url parameter index True %}"></a>
+      <a class="grp-toggle grp-{{ order_direction }}" title="Toggle sorting" href="{{ toggled_url }}"></a>
+      <a class="grp-sortremove" title="Remove from sorting" href="{{ plain_url }}"></a>
     </div>
   {% endif %}
-   <div class="grp-text"><a href="?o={% create_ordering_url parameter index %}">{{ title }}</a></div>
-
+   <div class="grp-text"><a href="{{ ordered_url }}">{{ title }}</a></div>

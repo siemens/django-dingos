@@ -37,22 +37,22 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
            	  <thead>
                     <tr>
                         <th scope="col"  class="sortable column-identifier">
-			    {% include "dingos/grappelli/includes/_TableOrdering.html" with index="identifier__uid" title="Identifier" parameter=request.GET.o only %}
+			    {% render_table_ordering "identifier__uid" "Identifier" %}
                         </th>
                         <th scope="col"  class="sortable column-timestamp">
-			    {% include "dingos/grappelli/includes/_TableOrdering.html" with index="timestamp" title="Timestamp" parameter=request.GET.o only %}
+			    {% render_table_ordering "timestamp" "Timestamp" %}
                         </th>
                         <th scope="col"  class="sortable column-created">
-                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="create_timestamp" title="Created" parameter=request.GET.o only %}
+                            {% render_table_ordering "create_timestamp" "Created" %}
                         </th>
                         <th scope="col"  class="sortable column-name">
-			   {% include "dingos/grappelli/includes/_TableOrdering.html" with index="name" title="Name" parameter=request.GET.o only %}
+			   {% render_table_ordering "name" "Name" %}
                         </th>
                         <th scope="col"  class="sortable column-objecttype">
-                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="iobject_type" title="Object Type" parameter=request.GET.o only %}
+                            {% render_table_ordering "iobject_type" "Object Type" %}
                         </th>
                         <th scope="col"  class="sortable column-family">
-                            {% include "dingos/grappelli/includes/_TableOrdering.html" with index="iobject_type__iobject_family" title="Family" parameter=request.GET.o only %}
+                            {% render_table_ordering "iobject_type__iobject_family" "Family" %}
                         </th>
                     </tr>
 		  </thead>
