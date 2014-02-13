@@ -188,7 +188,7 @@ def render_table_ordering(context, index, title):
     """
     Renders a TABLE LAYOUT ordering using given index and a human-readable title for it.
     Note that a new context is created for the template (containing only very few elements needed
-    for displaying.
+    for displaying).
 
     Usage in template: {% render_table_ordering "model_field__submodel_field" "Human-readable Title" %}
     """
