@@ -3,13 +3,12 @@
 
 
 {% extends "dingos/grappelli/lists/base_lists_two_column.html" %}
-
+{% load dingos_tags %}
 {# Below, we fill out the form that queries the search parameters #}
 
-nclude "dingos/grappelli/includes/_TableOrdering.html" with index="2" title="IO-Type" parameter=request.GET.o only %}{% block list_title %} Fact Search {% endblock %}
+{% block list_title %} Fact Search {% endblock %}
+
 {% block search_options %}
-
-
 
 <form action="{% url "url.dingos.search.fact" %}" method="GET">
   <div class="grp-module">   
@@ -46,16 +45,16 @@ nclude "dingos/grappelli/includes/_TableOrdering.html" with index="2" title="IO-
      <thead>
        <tr>
 	<th scope="col"  class="sortable column-infoobject">
-          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="iobject__name" title="Info Object" parameter=request.GET.o only %}
+	  {% render_table_ordering "iobject__iobject_type__name" "Info Object" %}
 	</th>
 	<th scope="col"  class="sortable column-iotype">
-          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="iobject__iobject_type__name" title="IO-Type" parameter=request.GET.o only %}
+	  {% render_table_ordering "iobject__iobject_type" "IO-Type" %}
 	</th>
 	<th scope="col"  class="sortable column-factterm">
-          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="fact__fact_term__term" title="Fact-Term" parameter=request.GET.o only %}
+          {% render_table_ordering "fact__fact_term__term" "Fact Term" %}
 	</th>
 	<th scope="col"  class="sortable column-value">
-          {% include "dingos/grappelli/includes/_TableOrdering.html" with index="fact__fact_values__value" title="Value" parameter=request.GET.o only %}
+          {% render_table_ordering "fact__fact_values__value" "Value" %}
 	</th>
        </tr>
      </thead>

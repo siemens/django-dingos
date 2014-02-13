@@ -186,7 +186,9 @@ def sliceupto(value, upto):
 @register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_table_ordering(context, index, title):
     """
-    comment lateron
+    Renders a TABLE LAYOUT ordering using given index and a human-readable title for it.
+    Note that a new context is created for the template (containing only very few elements needed
+    for displaying.
     """
 
     # title + plain url (=without o paramater)
@@ -195,7 +197,6 @@ def render_table_ordering(context, index, title):
     # ordered url
     new_context['ordered_url'] = new_context['plain_url'] + '&o=' + index
 
-    print context['request'].GET
     # toggled ordering url (only if needed)
     if 'o' in context['request'].GET and ( context['request'].GET['o'] == index or context['request'].GET['o'] == '-%s' % index):
         new_context['toggled_url'] = new_context['plain_url'] + '&o=' + (index if context['request'].GET['o'].startswith('-') else '-' + index) 
