@@ -95,6 +95,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     </div>
 
+  {% if list_actions %}
   <footer class="grp-module grp-submit-row grp-fixed-footer" id="submit">
      <header style="display:none"><h1>Submit Options</h1></header>
      <ul>
@@ -102,6 +103,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
          <div class="grp-changelist-actions">
            <select name="action" autocomplete="off">
              <option selected="selected" value="">---------</option>
+             {% for action in list_actions %}
+               <option value="{% url action.1 %}">{{action.0}}</option>
+             {% endfor %}
            </select>
            <input type="hidden" value="0" name="select_across" class="select-across">
            <script type="text/javascript">var _actions_icnt="{{ request.session.customization.dingos.view.pagination.lines }}";</script>
@@ -111,6 +115,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
          </div>
       </li>
     </ul>
-</footer>
+  </footer>
+  {% endif %}
+ 
 
 {% endblock %}

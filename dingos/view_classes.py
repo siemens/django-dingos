@@ -57,6 +57,7 @@ class CommonContextMixin(ContextMixin):
 
         context['title'] = self.title if hasattr(self, 'title') else '[TITLE MISSING]'
 
+        context['list_actions'] = self.list_actions if hasattr(self, 'list_actions') else []
 
         user_data_dict = self.get_user_data()
 
@@ -74,15 +75,13 @@ class CommonContextMixin(ContextMixin):
         # not yield a different value.
 
         settings = self.request.session.get('customization')
-        print " 1 Found Settings %s" % settings
-
+        #print " 1 Found Settings %s" % settings
 
         wrapped_settings = ConfigDictWrapper(config_dict=user_data_dict.get('customization',{}))
         wrapped_saved_searches = ConfigDictWrapper(config_dict=user_data_dict.get('saved_searches',{}))
 
         settings = self.request.session.get('customization')
-        print " 2 Found Settings %s" % settings
-
+        #print " 2 Found Settings %s" % settings
 
         context['customization'] = wrapped_settings
         context['saved_searches'] = wrapped_saved_searches

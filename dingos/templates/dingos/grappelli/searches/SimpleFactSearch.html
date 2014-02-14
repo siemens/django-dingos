@@ -54,9 +54,11 @@
     <table id="result_list" cellspacing="0" class="grp-sortable">
      <thead>
        <tr>
+        {% if list_actions %}
          <th scope="col" class="action-checkbox-column">
            <div class="grp-text"><span><input id="action-toggle" type="checkbox"></span></div>
         </th>
+        {% endif %}
 	<th scope="col"  class="sortable column-infoobject">
 	  {% render_table_ordering "iobject__iobject_type__name" "Info Object" %}
 	</th>
@@ -76,9 +78,11 @@
     <tbody>
    {% for enrich2fact in object_list %}
     <tr class="grp-row grp-row-{% cycle 'even' 'odd' %}">
+     {% if list_actions %}
       <td class="action-input">
         <input class="action-select" name="_selected_action" value="{{enrich2fact.pk}}" type="checkbox">
       </td>
+     {% endif %}
       <td>
 	<a href="{%url 'url.dingos.view.infoobject.redirect2highlight' pk=enrich2fact.iobject.id node=enrich2fact.node_id %}"> {{enrich2fact.iobject.name}} </a>
     </td>

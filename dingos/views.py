@@ -44,6 +44,8 @@ class InfoObjectList(BasicFilterView):
 
     title = 'List of Info Objects (generic filter)'
 
+    list_actions = [ ('dummy1', 'url.dingos.admin.view.userprefs'), ('dummy2', 'url.dingos.admin.edit.savedsearches') ]
+
     queryset = InfoObject.objects.\
         exclude(latest_of=None). \
         exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \

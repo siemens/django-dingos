@@ -43,9 +43,11 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                 {% block header_row %}
            	  <thead>
                     <tr>
+                      {% if list_actions %}
                         <th scope="col" class="action-checkbox-column">
                             <div class="grp-text"><span><input id="action-toggle" type="checkbox"></span></div>
                         </th>
+                      {% endif %}
                         <th scope="col"  class="sortable column-identifier">
 			    {% render_table_ordering "identifier__uid" "Identifier" %}
                         </th>
@@ -73,10 +75,12 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     <tbody>
 
                     {% for obj in object_list %}
-                        <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+                      <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+                       {% if list_actions %}  
                         <td class="action-input">
                           <input class="action-select" name="_selected_action" value="{{obj.pk}}" type="checkbox">
                         </td>
+                       {% endif %}
                         <td>
                             <a href="{%url 'url.dingos.view.infoobject' pk=obj.pk %}">{{ obj.identifier }}</a>
                         </td>
