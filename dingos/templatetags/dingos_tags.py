@@ -23,7 +23,7 @@ from django.core.urlresolvers import reverse
 
 from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
-
+from dingos.models import BlobStorage
 
 from dingos import DINGOS_TEMPLATE_FAMILY
 
@@ -227,6 +227,21 @@ def render_table_ordering(context, index, title):
         new_context['order_direction'] = 'ascending' if context['request'].GET['o'].startswith('-') else 'descending'
 
     return new_context
+
+
+@register.simple_tag
+def lookup_blob(hash_value):
+    """
+    Combines all given arguments to create clean title-tags values.
+    All arguments are divided by a " " seperator and HTML tags
+    are to be removed.
+    """
+    try:
+        blob = BlobStorage.objects.get(sha256=hash_value)
+    except:
+        return "Blob not found"
+    return blob.content
+
 
 @register.simple_tag
 def create_title(*args):

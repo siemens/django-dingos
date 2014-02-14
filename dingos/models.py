@@ -1389,17 +1389,23 @@ class InfoObject(DingoModel):
                                                         'fact_term__term',
                                                         'fact_term__attribute',
                                                         'fact_values__value',
+                                                        'fact_values__storage_location',
                                                         'value_iobject_id__latest__name')
 
         # We build a dictionary that will then be used for the format string
 
         fact_dict = {}
         counter = 0
-        for (node_id, fact_term, attribute, value, related_obj_name) in fact_list:
+        for (node_id, fact_term, attribute, value, storage_location, related_obj_name) in fact_list:
             #print fact_list[counter]
             if type(value)==type([]):
                 value = "%s,..." % value
-            if related_obj_name:
+            if storage_location == dingos.DINGOS_BLOB_TABLE:
+                try:
+                    value = BlobStorage.objects.get(sha256=value).content
+                except:
+                    value = "In blob table %s" % value
+            elif related_obj_name:
                 value = related_obj_name
 
             if attribute:
