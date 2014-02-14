@@ -1,6 +1,5 @@
 {% extends "dingos/grappelli/lists/base_lists_two_column.html" %}
 
-
 {% comment %}
 Copyright (c) Siemens AG, 2013
 
@@ -22,7 +21,15 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% load dingos_tags %}
 
 {% block extrahead %}
-
+<script type="text/javascript" src="/admin/jsi18n/"></script>
+<script src="/static/admin/js/actions.js" type="text/javascript"></script>
+<script charset="utf-8" type="text/javascript">
+            (function($) {
+                $(document).ready(function() {
+                    $("tr input.action-select").actions();
+                });
+            })(grp.jQuery);
+</script>
 {% endblock %}
 
 {% block objects %}
@@ -36,6 +43,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                 {% block header_row %}
            	  <thead>
                     <tr>
+                        <th scope="col" class="action-checkbox-column">
+                            <div class="grp-text"><span><input id="action-toggle" type="checkbox"></span></div>
+                        </th>
                         <th scope="col"  class="sortable column-identifier">
 			    {% render_table_ordering "identifier__uid" "Identifier" %}
                         </th>
@@ -64,6 +74,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                     {% for obj in object_list %}
                         <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+                        <td class="action-input">
+                          <input class="action-select" name="_selected_action" value="{{obj.pk}}" type="checkbox">
+                        </td>
                         <td>
                             <a href="{%url 'url.dingos.view.infoobject' pk=obj.pk %}">{{ obj.identifier }}</a>
                         </td>

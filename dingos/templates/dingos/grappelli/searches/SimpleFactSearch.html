@@ -1,12 +1,22 @@
-
-
-
-
 {% extends "dingos/grappelli/lists/base_lists_two_column.html" %}
+
 {% load dingos_tags %}
+
 {# Below, we fill out the form that queries the search parameters #}
 
 {% block list_title %} Fact Search {% endblock %}
+
+{% block extrahead %}
+<script type="text/javascript" src="/admin/jsi18n/"></script>
+<script src="/static/admin/js/actions.js" type="text/javascript"></script>
+<script charset="utf-8" type="text/javascript">
+            (function($) {
+                $(document).ready(function() {
+                    $("tr input.action-select").actions();
+                });
+            })(grp.jQuery);
+</script>
+{% endblock %}
 
 {% block search_options %}
 
@@ -44,6 +54,9 @@
     <table id="result_list" cellspacing="0" class="grp-sortable">
      <thead>
        <tr>
+         <th scope="col" class="action-checkbox-column">
+           <div class="grp-text"><span><input id="action-toggle" type="checkbox"></span></div>
+        </th>
 	<th scope="col"  class="sortable column-infoobject">
 	  {% render_table_ordering "iobject__iobject_type__name" "Info Object" %}
 	</th>
@@ -61,8 +74,11 @@
 
 
     <tbody>
-     {% for enrich2fact in object_list %}
+   {% for enrich2fact in object_list %}
     <tr class="grp-row grp-row-{% cycle 'even' 'odd' %}">
+      <td class="action-input">
+        <input class="action-select" name="_selected_action" value="{{enrich2fact.pk}}" type="checkbox">
+      </td>
       <td>
 	<a href="{%url 'url.dingos.view.infoobject.redirect2highlight' pk=enrich2fact.iobject.id node=enrich2fact.node_id %}"> {{enrich2fact.iobject.name}} </a>
     </td>
