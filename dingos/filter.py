@@ -110,11 +110,14 @@ class InfoObjectFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(lookup_type='icontains',
                                                 label='Name contains')
 
+    iobject_type__name = django_filters.CharFilter(lookup_type='regex',
+                                                label='Object Type matches')
+
     identifier__uid = django_filters.CharFilter(lookup_type='icontains',
                                                 label='ID contains')
 
-    #marking_thru__marking__identifier__uid = django_filters.CharFilter(lookup_type='icontains',
-    #                                                                   label='Marking ID contains')
+    marking_thru__marking__identifier__uid = django_filters.CharFilter(lookup_type='icontains',
+                                                                       label='Marking ID contains')
 
     timestamp = ExtendedDateRangeFilter(label="Object Creation Timestamp")
 
@@ -123,8 +126,8 @@ class InfoObjectFilter(django_filters.FilterSet):
     class Meta:
         order_by = create_order_keyword_list(['identifier__uid','timestamp','create_timestamp','name','iobject_type','iobject_type__iobject_family'])
         model = InfoObject
-        fields = ['iobject_type','iobject_type__iobject_family','name',
-                  'identifier__namespace','identifier__uid','timestamp', 'create_timestamp']
+        fields = ['iobject_type','iobject_type__name','iobject_type__iobject_family','name',
+                  'identifier__namespace','identifier__uid','timestamp', 'create_timestamp','marking_thru__marking__identifier__uid']
 
 
 
@@ -152,8 +155,12 @@ class FactTermValueFilter(django_filters.FilterSet):
     fact__fact_values__value = django_filters.CharFilter(lookup_type='icontains',
                                                          label='Value contains')
 
-    fact__fact_term__term = django_filters.CharFilter(lookup_type='icontains',
-                                                     label='Fact term contains')
+    fact__fact_term__term = django_filters.CharFilter(lookup_type='regex',
+                                                     label='Fact term matches')
+
+    iobject__name = django_filters.CharFilter(lookup_type='icontains',
+                                                     label='Object name contains')
+
 
     iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('iobject_set')). \
         filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
@@ -165,16 +172,43 @@ class FactTermValueFilter(django_filters.FilterSet):
 
     iobject__timestamp = ExtendedDateRangeFilter(label='Object Timestamp')
 
-    iobject__created_timestamp = ExtendedDateRangeFilter(label='Create/Import Timestamp')
+    iobject__create_timestamp = ExtendedDateRangeFilter(label='Import Timestamp')
+
+    iobject__timestamp = ExtendedDateRangeFilter(label='Object Timestamp')
 
     #iobject__iobject_type = django_filters.ModelMultipleChoiceFilter()
+
+    iobject__identifier__namespace = django_filters.ModelChoiceFilter(
+        queryset= IdentifierNameSpace.objects.exclude(uri__exact=DINGOS_ID_NAMESPACE_URI),
+        required=None,
+        label="ID Namespace",
+        to_field_name='id')
+
+    iobject__iobject_type__name = django_filters.CharFilter(lookup_type='icontains',
+                                                     label='Object Type name contains')
+
+
+
+    iobject__marking_thru__marking__identifier__uid = django_filters.CharFilter(lookup_type='icontains',
+                                                                       label='Marking ID contains')
+
+
+    class Meta:
+        #order_by = create_order_keyword_list(['iobject__iobject_type__name','iobject__iobject_type','fact__fact_term__term', 'fact__fact_values__value'])
+        model = InfoObject2Fact
+
+        fields = ['fact__fact_term__term','fact__fact_values__value','iobject__name','iobject__timestamp','iobject__create_timestamp',
+                  'iobject__identifier__namespace','iobject__iobject_type','iobject__iobject_type__name','iobject__marking_thru__marking__identifier__uid']
+
+
+class OrderedFactTermValueFilter(FactTermValueFilter):
 
     class Meta:
         order_by = create_order_keyword_list(['iobject__iobject_type__name','iobject__iobject_type','fact__fact_term__term', 'fact__fact_values__value'])
         model = InfoObject2Fact
 
-        fields = ['fact__fact_term__term','fact__fact_values__value','iobject__name','iobject__timestamp','iobject__created_timestamp',
-                  'iobject__identifier__namespace','iobject__iobject_type','iobject__iobject_type__name',]
+        fields = ['fact__fact_term__term','fact__fact_values__value','iobject__name','iobject__timestamp','iobject__create_timestamp',
+                  'iobject__identifier__namespace','iobject__iobject_type','iobject__iobject_type__name','iobject__marking_thru__marking__identifier__uid']
 
 
 

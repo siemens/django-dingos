@@ -23,7 +23,7 @@ from django.db.models import F
 from django.forms.formsets import formset_factory
 
 from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData
-from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter
+from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
 from dingos.forms import EditSavedSearchesForm
 from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME, DINGOS_SAVED_SEARCHES_TYPE_NAME, DINGOS_DEFAULT_SAVED_SEARCHES
 
@@ -112,15 +112,51 @@ class SimpleFactSearch(BasicFilterView):
     title = 'Fact-based filtering'
 
 
+    filterset_class = OrderedFactTermValueFilter
+    @property
+    def queryset(self):
+        if self.get_query_string() == '?':
+          queryset = InfoObject2Fact.objects.filter(id=-1)
+        else:
+           queryset =  InfoObject2Fact.objects.all().\
+              exclude(iobject__latest_of=None). \
+              exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+              prefetch_related('iobject',
+                        'iobject__iobject_type',
+                        'fact__fact_term',
+                        'fact__fact_values').select_related()#.distinct().order_by('iobject__id')
+        return queryset
+
+class UniqueSimpleFactSearch(BasicFilterView):
+    template_name = 'dingos/%s/searches/UniqueSimpleFactSearch.html' % DINGOS_TEMPLATE_FAMILY
+
+    title = 'Fact-based filtering (unique)'
+
+
     filterset_class = FactTermValueFilter
 
-    queryset =  InfoObject2Fact.objects.all().\
-        exclude(iobject__latest_of=None). \
-        exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
-        prefetch_related('iobject',
-            'iobject__iobject_type',
-            'fact__fact_term',
-            'fact__fact_values').select_related().distinct().order_by('iobject__id')
+    
+    @property
+    def queryset(self):
+        if self.get_query_string() == '?':
+          queryset = InfoObject2Fact.objects.filter(id=-1)
+        else:
+
+          queryset =  InfoObject2Fact.objects.all().\
+            exclude(iobject__latest_of=None). \
+            exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+            prefetch_related('iobject',
+              'iobject__iobject_type',
+              'fact__fact_term',
+              'fact__fact_values').select_related().order_by('iobject__iobject_type','fact__fact_term','fact__fact_values').distinct('iobject__iobject_type','fact__fact_term','fact__fact_values')
+              #'fact__fact_values').select_related().order_by('fact__fact_values__value').distinct('fact__fact_values__value')
+        return queryset
+
+
+    def get_reduced_query_string(self):
+        return self.get_query_string(remove=['fact__fact_term','fact__fact_values'])
+
+
 
 class InfoObjectView_wo_login(BasicDetailView):
     """

@@ -19,9 +19,15 @@
 from django import template
 from django.utils.html import strip_tags
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.core.urlresolvers import reverse
+
+from django.utils.html import conditional_escape
+from django.utils.safestring import mark_safe
+
 
 from dingos import DINGOS_TEMPLATE_FAMILY
 
+    
 
 
 register = template.Library()
@@ -171,6 +177,20 @@ def node_indent_end(elt_name, node_id, fact_term, attribute):
 register.simple_tag(node_indent_end)
 
 
+
+
+
+
+@register.filter(needs_autoescape=True)
+def insert_wbr(value,autoescape=None):
+    """
+    """
+    if autoescape:
+        esc = conditional_escape
+    else:
+        esc = lambda x:x
+    return mark_safe(esc("%s" % value).replace('/','/<wbr>').replace('0','0<wbr>'))
+
 @register.filter
 def sliceupto(value, upto):
     """
@@ -182,6 +202,8 @@ def sliceupto(value, upto):
         return value[0:upto]
     except (ValueError, TypeError):
         return value
+
+
 
 @register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_table_ordering(context, index, title):
@@ -216,6 +238,14 @@ def create_title(*args):
     seperator = " "
     return strip_tags(seperator.join(args))
 
+
+#@register.simple_tag
+#def url_from_query(*args,url=None):
+#    
+#    if not remove:
+#        remove=[]
+#    request_string = context['view'].get_query_string(remove=remove)
+#    return "%s%s" % (reverse(url),request_string) 
 
 @register.inclusion_tag('dingos/%s/includes/_Paginator.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_paginator(context):
