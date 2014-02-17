@@ -44,17 +44,17 @@
     <table id="result_list" cellspacing="0" class="grp-sortable">
      <thead>
        <tr>
-	<th scope="col"  class="sortable column-infoobject">
-	  {% render_table_ordering "iobject__iobject_type__name" "Info Object" %}
+	<th scope="col">
+	  IO-Type
 	</th>
-	<th scope="col"  class="sortable column-iotype">
-	  {% render_table_ordering "iobject__iobject_type" "IO-Type" %}
+	<th scope="col">
+          Fact Term
 	</th>
-	<th scope="col"  class="sortable column-factterm">
-          {% render_table_ordering "fact__fact_term__term" "Fact Term" %}
+	<th scope="col">
+          Value
 	</th>
-	<th scope="col"  class="sortable column-value">
-          {% render_table_ordering "fact__fact_values__value" "Value" %}
+	<th scope="col">
+          
 	</th>
        </tr>
      </thead>
@@ -63,9 +63,6 @@
     <tbody>
      {% for enrich2fact in object_list %}
     <tr class="grp-row grp-row-{% cycle 'even' 'odd' %}">
-      <td>
-	<a href="{%url 'url.dingos.view.infoobject.redirect2highlight' pk=enrich2fact.iobject.id node=enrich2fact.node_id %}"> {{enrich2fact.iobject.name  | insert_wbr }} </a>
-    </td>
     <td >
 	{{enrich2fact.iobject.iobject_type.name}}
     </td>
@@ -74,6 +71,9 @@
     </td>
     <td >
 	{{ enrich2fact.fact.fact_values.all| join:", " | insert_wbr }}
+    </td>
+    <td>
+      <a href="{% url "url.dingos.search.fact.simple" %}{{view.get_reduced_query_string}}&fact__fact_term__term={{enrich2fact.fact.fact_term | urlencode}}&fact__fact_values__value={{ enrich2fact.fact.fact_values.all.0 | urlencode}}">View all</a>
     </td>
    </tr >
   {% endfor %}

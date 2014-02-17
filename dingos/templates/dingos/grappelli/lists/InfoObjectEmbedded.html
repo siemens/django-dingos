@@ -39,35 +39,37 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     {% if object_list %}
 
-        <div class="grp-row">
-            <table>
+        <div class="grp-module grp-changelist-results">
+            <table id="result_list" cellspacing="0" class="grp-sortable">
 
 
                 {% block header_row %}
-                    <tr >
-                        <th >
+ 		  <thead>
+                    <tr>
+                        <th scope="col"  class="sortable column-identifier">
                             Identifier
                         </th>
-                        <th >
+                        <th scope="col"  class="sortable column-timestamp">
                             Timestamp
                         </th>
-                        <th >
+                        <th scope="col"  class="sortable column-name">
                             Name
                         </th>
-                        <th >
+                        <th scope="col"  class="sortable column-objecttype">
                             Obj. Type
                         </th>
-                        <th >
+                        <th scope="col"  class="sortable column-family">
                             Family
                         </th>
                     </tr>
+                  </thead>
                 {% endblock %}
 
 
                 {% block rows %}
-
+		  <tbody>
                     {% for obj in object_list %}
-                        <tr >
+                       <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
                         <td>
                             <a href="{%url 'url.dingos.view.infoobject.redirect2highlight' pk=obj.iobject.pk node=obj.node_id.name %}">{{ obj.iobject.identifier }}</a>
                         </td>
@@ -83,9 +85,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                         <td >
                             {{obj.iobject.iobject_family.name}}  {{obj.iobject.iobject_family_revision.name}}
                         </td>
-
+                      </tr>
                     {% endfor %}
-                </tr>
+                  </tbody>
                 {% endblock %}
             </table>
         </div>

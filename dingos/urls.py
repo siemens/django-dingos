@@ -25,6 +25,9 @@ urlpatterns = patterns('',
     url(r'^Search/SimpleFactSearch$',
         views.SimpleFactSearch.as_view(),
         name="url.dingos.search.fact.simple"),
+    url(r'^Search/UniqueSimpleFactSearch$',
+        views.UniqueSimpleFactSearch.as_view(),
+        name="url.dingos.search.fact.simple.unique"),
     url(r'^Search/IdSearch$',
         views.InfoObjectList_Id_filtered.as_view(),
         name="url.dingos.list.infoobject.by_id"),
@@ -46,4 +49,4 @@ urlpatterns = patterns('',
 
     url(r'^View/InfoOject/Embedded/(?P<pk>\d*)/$', views.InfoObjectsEmbedded.as_view(), name="url.dingos.view.infoobject.embedded"),
 
-                       )
+    )

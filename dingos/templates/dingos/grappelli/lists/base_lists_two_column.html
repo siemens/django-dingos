@@ -49,10 +49,21 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                             <form action="" method="get">
                                 <table>
-                                    {{ filter.form.as_table }}
+                                  <tbody>
+                                    {% for field in filter.form %}
+                                      {% if not field.id_for_label == 'id_o' %}
+				        <tr>
+                                          <th>{{field.label_tag}}</th>
+                                          <td>{{field.errors}} {{field}}</td>
+                                        </tr>
+                                      {% endif %}
+                                    {% endfor %}
+                                  </tbody>
                                 </table>
-                                <input name="action" value="Submit Query" type="submit" />
-                                <input name="action" value="Save Search" type="submit" />
+				<div style="padding-top:10px;text-align:right;">
+                                  <input name="action" value="Submit Query" type="submit" />
+                                  <input name="action" value="Save Search" type="submit" />
+                                </div>
                             </form>
                         </div>
                     {% endif %}

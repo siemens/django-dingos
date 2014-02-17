@@ -34,6 +34,7 @@ from dingos.core.datastructures import dict2DingoObjDict
 from dingos import *
 from dingos.import_handling import DingoImportHandling
 
+from dingos.models import InfoObject
 
 DingoImporter = DingoImportHandling()
 
@@ -251,6 +252,11 @@ class DingoImportCommand(BaseCommand):
                     dest='marking_json',
                     default=None,
                     help='File with json representation of information of marking to be associated with imports.'),
+        make_option('-M', '--Marking_ID',
+                    action='append',
+                    dest='marking_ids',
+                    default=[],
+                    help='File with json representation of information of marking to be associated with imports.'),
         make_option('-p', '--marking_pfill',
                     action='append',
                     nargs=2,
@@ -262,6 +268,11 @@ class DingoImportCommand(BaseCommand):
                     default=None,
                     dest='identifier_ns_uri',
                     help='URI of namespace used to qualify the identifiers of the created information objects.'),
+        make_option('-d','--destination_path',
+                    action='store',
+                    default=None,
+                    dest='destination_path',
+                    help='Destination path, to which processed files are to be moved. If unset, the files are not moved.'),
     )
 
 
@@ -269,6 +280,7 @@ class DingoImportCommand(BaseCommand):
 
 
     def __init__(self, *args, **kwargs):
+        self.logger = logger
         self.xml_import_function = kwargs.get('import_function', None)
         try:
             del (kwargs['import_function'])
@@ -356,6 +368,18 @@ class DingoImportCommand(BaseCommand):
         else:
             markings = []
 
+        if options.get('marking_ids'):
+            for marking_id in options.get('marking_ids'):
+                try:
+                    ns,uid = marking_id.split(':')
+                    marking = InfoObject.objects.exclude(latest_of=None).get(identifier__uid=uid,identifier__namespace__uri=ns)
+                    logger.info("Found marking: %s " % marking)
+                    markings.append(marking)
+                except:
+                    logger.warning('Could not find marking object %s in system' % marking_id)
+
+
+
         #if len(args) > 1 and options['identifier']:
         #    raise CommandError('Option --identifier not supported for more than one file per import.')
 
@@ -377,3 +401,12 @@ class DingoImportCommand(BaseCommand):
                            **options)
                     except:
                         logger.error("Something went wrong when importing %s. Traceback: %s" % (filename,traceback.format_exc()))
+
+                    if options.get('destination_path'):
+
+                        try:
+                            dest_path = os.path.join(options.get('destination_path'), os.path.basename(filename))
+                            logger.info("Moving %s to %s" % (os.path.basename(filename),dest_path))
+                            os.rename(filename,dest_path)
+                        except Exception, err:
+                            logger.exception("Could not move file %s:" % (filename))
