@@ -24,7 +24,7 @@ from django.forms.formsets import formset_factory
 
 from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData
 from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
-from dingos.forms import EditSavedSearchesForm
+from dingos.forms import EditSavedSearchesForm, CreateQueryForm
 from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME, DINGOS_SAVED_SEARCHES_TYPE_NAME, DINGOS_DEFAULT_SAVED_SEARCHES
 
 from braces.views import LoginRequiredMixin
@@ -337,3 +337,26 @@ class InfoObjectJSONView(BasicDetailView):
                                  content_type='application/json',
                                  **httpresponse_kwargs)
 
+class CreateQueryView(BasicTemplateView):
+    template_name = 'dingos/%s/create/CreateQuery.html' % DINGOS_TEMPLATE_FAMILY
+    title = 'Create query'
+    form = None
+
+    def get_context_data(self, **kwargs):
+        context = super(CreateQueryView, self).get_context_data(**kwargs)
+        context['form'] = self.form
+        return context
+
+    def get(self, request, *args, **kwargs):
+        self.form = CreateQueryForm()
+        return super(BasicTemplateView,self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        self.form = CreateQueryForm(request.POST)
+
+        if self.form.is_valid():
+            query = self.form.cleaned_data['query']
+            # TODO parse query
+            print query
+
+        return self.get(request, *args, **kwargs)
