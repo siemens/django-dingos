@@ -96,12 +96,28 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     </div>
 
   {% if list_actions %}
+  <script charset="utf-8" type="text/javascript">
+    (function($) {
+      $(document).on('change', '#action-target', function() {
+        var _this = this;
+        if ( $(_this).val() != "") {
+          var form = $("#action-form");
+          if($('input[type="checkbox"]:checked', form).length == 0){
+	    $(_this).val("");
+	   return false;
+          }
+          form.attr("action", $(_this).val());
+          form.submit();
+        }
+    });
+  })(grp.jQuery);
+  </script>
   <footer class="grp-module grp-submit-row grp-fixed-footer" id="submit">
      <header style="display:none"><h1>Submit Options</h1></header>
      <ul>
        <li class="grp-float-left grp-changelist-actions">
          <div class="grp-changelist-actions">
-           <select name="action" autocomplete="off">
+           <select name="action" autocomplete="off" id="action-target">
              <option selected="selected" value="">---------</option>
              {% for action in list_actions %}
                <option value="{% url action.1 %}">{{action.0}}</option>

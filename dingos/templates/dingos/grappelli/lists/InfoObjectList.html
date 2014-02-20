@@ -35,9 +35,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% block objects %}
 
     {% if object_list %}
-
-
       <div class="grp-module grp-changelist-results">
+        {% if list_actions %}<form id="action-form" method="post">{% csrf_token %}{% endif %}
         <table id="result_list" cellspacing="0" class="grp-sortable">
 
                 {% block header_row %}
@@ -104,14 +103,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                   </tbody>
                 {% endblock %}
             </table>
+            {% if list_actions %}</form>{% endif %}
         </div>
-
-
-{%  endif %}
-
-
-
+  {%  endif %}
 
 {% endblock %}
-
-

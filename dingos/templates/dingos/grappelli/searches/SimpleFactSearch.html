@@ -51,6 +51,7 @@
 
 {% block objects %}
    <div class="grp-module grp-changelist-results">
+   {% if list_actions %}<form id="action-form" method="post">{% csrf_token %}{% endif %}
     <table id="result_list" cellspacing="0" class="grp-sortable">
      <thead>
        <tr>
@@ -99,6 +100,7 @@
   {% endfor %}
   </tbody>
  </table>
+{% if list_actions %}</form>{% endif %}
 </div>
 {% endblock %}
 
