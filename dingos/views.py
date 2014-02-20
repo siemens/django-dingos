@@ -30,6 +30,14 @@ from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, 
 from braces.views import LoginRequiredMixin
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView
 
+# JUST FOR DEMONSTRATING ISSUES - DELETE THIS BEFORE SHIPPING OUT!
+# ...don't forget to remove the url.py entry as well
+def demo_action(request):
+    output = "<ul>"
+    for key, value in request.POST.iteritems():
+        output += "<li><b>%s</b>: <i>%s</i></li>" % (key, request.POST.getlist(key))
+    output +="</ul>"
+    return(http.HttpResponse(output,status=201))
 
 class InfoObjectList(BasicFilterView):
 
@@ -44,7 +52,7 @@ class InfoObjectList(BasicFilterView):
 
     title = 'List of Info Objects (generic filter)'
 
-    list_actions = [ ('dummy1', 'url.dingos.admin.view.userprefs'), ('dummy2', 'url.dingos.admin.edit.savedsearches') ]
+    list_actions = [ ('dummy1', 'url.dingos.action_demo'), ('dummy2', 'url.dingos.action_demo') ]
 
     queryset = InfoObject.objects.\
         exclude(latest_of=None). \
