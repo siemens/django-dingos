@@ -97,20 +97,55 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
   {% if list_actions %}
   <script charset="utf-8" type="text/javascript">
-    (function($) {
-      $(document).on('change', '#action-target', function() {
-        var _this = this;
-        if ( $(_this).val() != "") {
-          var form = $("#action-form");
-          if($('input[type="checkbox"]:checked', form).length == 0){
-	    $(_this).val("");
-	   return false;
+
+    // CHANGE HERE TO ENABLE USER-SETTING BASED BEHAVIOR
+    var _enable_button = true;
+
+    // button-based
+    if ( _enable_button ) {
+
+      (function($) {
+        $(document).on('click', '#action-submit, :button', function() {
+          var action = $("#action-target");
+          if ( action.val() != "") {
+            var form = $("#action-form");
+            if($('input[type="checkbox"]:checked', form).length > 1) {
+              form.attr("action", action.val());
+              form.submit();
+              return true;
+            }
+          return false;
           }
-          form.attr("action", $(_this).val());
-          form.submit();
-        }
-    });
-  })(grp.jQuery);
+        });
+      })(grp.jQuery);
+
+    }
+
+    // grappelli standard
+    else {
+
+      (function($) {
+        $(document).ready(function() {
+          $('#action-submit-row').hide();
+        });
+      })(grp.jQuery);
+
+      (function($) {
+        $(document).on('change', '#action-target', function() {
+          var _this = this;
+          if ( $(_this).val() != "") {
+            var form = $("#action-form");
+            if($('input[type="checkbox"]:checked', form).length == 0){
+	      $(_this).val("");
+	     return false;
+            }
+            form.attr("action", $(_this).val());
+            form.submit();
+          }
+        });
+      })(grp.jQuery);
+
+  }
   </script>
   <footer class="grp-module grp-submit-row grp-fixed-footer" id="submit">
      <header style="display:none"><h1>Submit Options</h1></header>
@@ -130,7 +165,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
            </ul>
          </div>
       </li>
+      <li id="action-submit-row"><input class="grp-button grp-default" type="button" value="Submit" id="action-submit"></li>
     </ul>
+   
   </footer>
   {% endif %}
  
