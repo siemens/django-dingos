@@ -47,7 +47,7 @@ from dingos.core.utilities import get_dict
 class CommonContextMixin(ContextMixin):
     """
     Each view passes a 'context' to the template with which the view
-    is rendered. By inluding this mixin in a class-based view, the
+    is rendered. By including this mixin in a class-based view, the
     context is enriched with the contents expected by all Dingos
     templates.
     """
@@ -74,14 +74,11 @@ class CommonContextMixin(ContextMixin):
         # not yield a different value.
 
         settings = self.request.session.get('customization')
-        print " 1 Found Settings %s" % settings
-
 
         wrapped_settings = ConfigDictWrapper(config_dict=user_data_dict.get('customization',{}))
         wrapped_saved_searches = ConfigDictWrapper(config_dict=user_data_dict.get('saved_searches',{}))
 
         settings = self.request.session.get('customization')
-        print " 2 Found Settings %s" % settings
 
 
         context['customization'] = wrapped_settings
@@ -107,7 +104,23 @@ class ViewMethodMixin(object):
         return get_query_string(self.request,*args,**kwargs)
 
     def get_user_data(self):
+        """
+        Extracts user data, either from user session or from
+        database (for each User, an InfoObject is used to
+        store data of a certain kind (e.g., user customization,
+        saved searches, etc.). If for a given user,
+        no InfoObject exists for a given type of user-specific data,
+        the default data is read from the settings and
+        an InfoObject with default settings is created.
 
+        The function returns a dictionary of form
+
+        {'customization': <dict with user customization>,
+         'saved_searches': <dict with saved searches>
+         }
+
+
+        """
 
         # Below, we retrieve user-specific data (user preferences, saved searches, etc.)
         # We take this data from the session -- if it has already been
@@ -124,7 +137,7 @@ class ViewMethodMixin(object):
         # 4.) authenticated user && anonymous settings --> load
 
         settings = self.request.session.get('customization')
-        print "Found Settings %s" % settings
+
         saved_searches = self.request.session.get('saved_searches')
         load_new_settings = False
 
@@ -142,7 +155,6 @@ class ViewMethodMixin(object):
 
         else:
             load_new_settings = True
-        print "Load is %s" % load_new_settings
 
         if load_new_settings:
             # Load user settings. If for the current user, no user settings have been
@@ -173,7 +185,7 @@ class ViewMethodMixin(object):
 
             saved_searches = UserData.get_user_data(user=self.request.user, data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
             if not saved_searches:
-                print "STORING DATA"
+
                 UserData.store_user_data(user=self.request.user,
                                          data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
                                          user_data=DINGOS_DEFAULT_SAVED_SEARCHES,
@@ -181,17 +193,23 @@ class ViewMethodMixin(object):
                 saved_searches = UserData.get_user_data(user=self.request.user, data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
 
 
-            print "Writing Customization %s %s" % (settings, saved_searches)
             self.request.session['customization'] = settings
             self.request.session['saved_searches'] = saved_searches
-            print "Written: %s" % self.request.session['customization']
 
         return {'customization': settings,
                 'saved_searches' : saved_searches}
 
 
     def _lookup_user_data(self,*args,**kwargs):
-        print 'Called lookup with %s %s' % (args,kwargs)
+        """
+        Generic function for looking up values in
+        a user-specific dictionary. Use as follows::
+
+           _lookup_user_data('path','to','desired','value','in','dictionary',
+                             default = <default value>,
+                             data_kind = 'customization'/'saved_searches')
+
+        """
         user_data = self.get_user_data()
         data_kind = kwargs.get('data_kind','customization')
         try:
@@ -212,15 +230,33 @@ class ViewMethodMixin(object):
             return result
 
     def lookup_customization(self,*args,**kwargs):
+        """
+        Lookup value in user-customization dictionary. Use as follows::
+
+             lookup_customization('path','to','desired','value','in','dictionary',
+                                 default = <default value>)
+        """
         kwargs['data_kind']='customization'
         return self._lookup_user_data(*args,**kwargs)
 
     def lookup_saved_searches(self,*args,**kwargs):
+        """
+        Lookup value in saved_searches dictionary. Use as follows::
+
+             lookup_customization('path','to','desired','value','in','dictionary',
+                                 default = <default value>)
+        """
+
         kwargs['data_kind']='saved_searches'
         return self._lookup_user_data(*args,**kwargs)
 
 
 class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
+    """
+    Basic class for defining list views: includes the necessary mixins
+    and code to read pagination information from user customization.
+    """
+
 
     login_url = "/admin"
 
@@ -234,6 +270,13 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
         return item_count
 
 class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,FilterView):
+    """
+    Basic class for defining filter views: includes the necessary mixins
+    and code to
+
+    - read pagination information from user customization.
+    - save filter settings as saved search
+    """
 
     login_url = "/admin"
 
