@@ -49,10 +49,21 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                             <form action="" method="get">
                                 <table>
-                                    {{ filter.form.as_table }}
+                                  <tbody>
+                                    {% for field in filter.form %}
+                                      {% if not field.id_for_label == 'id_o' %}
+				        <tr>
+                                          <th>{{field.label_tag}}</th>
+                                          <td>{{field.errors}} {{field}}</td>
+                                        </tr>
+                                      {% endif %}
+                                    {% endfor %}
+                                  </tbody>
                                 </table>
-                                <input name="action" value="Submit Query" type="submit" />
-                                <input name="action" value="Save Search" type="submit" />
+				<div style="padding-top:10px;text-align:right;">
+                                  <input name="action" value="Submit Query" type="submit" />
+                                  <input name="action" value="Save Search" type="submit" />
+                                </div>
                             </form>
                         </div>
                     {% endif %}
@@ -61,24 +72,25 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             </div>
         </div>
         <div class="c-2">
-            {% block frontmatter %}
-            {% endblock frontmatter %}
+            {% block frontmatter %}{% endblock frontmatter %}
             <div class="grp-module">
-            <h2 class="grp-collapse-handler">{% block list_title %}Object List {% endblock %}</h2>
+                <h2 class="grp-collapse-handler">{% block list_title %}Object List {% endblock %}</h2>
 
-            {%  if is_paginated %}
-                {%  render_paginator  %}
-            {% endif %}
+                {% block in_list_tools %}{% endblock %}
 
-            {% block objects %}
-        {% endblock %}
-            {%  if is_paginated %}
-                {%  render_paginator  %}
-            {% endif %}
+                {% if is_paginated %}
+                    {%  render_paginator  %}
+                {% endif %}
+
+                {% block objects %}{% endblock %}
+
+                {% if is_paginated %}
+                    {% render_paginator  %}
+                {% endif %}
+
             </div>
+            {% block endmatter %}{% endblock endmatter %}
         </div>
-
-
 
         </div>
 

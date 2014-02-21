@@ -71,15 +71,13 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                         {% else %}
                             {%  for value in k.fact.fact_values.all %}
                                 {% if value.storage_location == 1 %}
-                                    On Disk: 
+                                    On Disk: {{ value.value }}
                                 {% elif value.storage_location == 2 %}
-                                    In Blob Table: 
-                                {% endif %}
-                                                               
-                                {% if k.id in formindex %}
-                                    {% render_formset_form formset formindex k.id 'value' %}
+                                    {%  lookup_blob value.value %}
+                                {% elif k.node_id.name in formindex %}
+                                    {% render_formset_form formset formindex k.node_id.name 'value' %}
                                 {% else %}
-                                    {{ value.value }}
+ 			                        {{ value.value }}
                                 {% endif %}
 
                                 {%  if not forloop.last %}

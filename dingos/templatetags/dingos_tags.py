@@ -19,9 +19,15 @@
 from django import template
 from django.utils.html import strip_tags
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.core.urlresolvers import reverse
+
+from django.utils.html import conditional_escape
+from django.utils.safestring import mark_safe
+from dingos.models import BlobStorage
 
 from dingos import DINGOS_TEMPLATE_FAMILY
 
+    
 
 
 register = template.Library()
@@ -177,7 +183,21 @@ def render_formset_form(formset, formindex, key, field):
     The formindex[key] determines which form to take 
     from the set. Only a given field will be rendered.
     """
-    return formset[formindex[key]][field]
+    return formset[formindex[key][0]][field]
+
+
+
+
+
+@register.filter(needs_autoescape=True)
+def insert_wbr(value,autoescape=None):
+    """
+    """
+    if autoescape:
+        esc = conditional_escape
+    else:
+        esc = lambda x:x
+    return mark_safe(esc("%s" % value).replace('/','/<wbr>').replace('0','0<wbr>'))
 
 @register.filter
 def sliceupto(value, upto):
@@ -191,6 +211,46 @@ def sliceupto(value, upto):
     except (ValueError, TypeError):
         return value
 
+
+
+@register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
+def render_table_ordering(context, index, title):
+    """
+    Renders a TABLE LAYOUT ordering using given index and a human-readable title for it.
+    Note that a new context is created for the template (containing only very few elements needed
+    for displaying).
+
+    Usage in template: {% render_table_ordering "model_field__submodel_field" "Human-readable Title" %}
+    """
+
+    # title + plain url (=without o paramater)
+    new_context = { 'title' : title, 'plain_url' : context['view'].get_query_string(remove=['o']) }
+
+    # ordered url
+    new_context['ordered_url'] = new_context['plain_url'] + '&o=' + index
+
+    # toggled ordering url (only if needed)
+    if 'o' in context['request'].GET and ( context['request'].GET['o'] == index or context['request'].GET['o'] == '-%s' % index):
+        new_context['toggled_url'] = new_context['plain_url'] + '&o=' + (index if context['request'].GET['o'].startswith('-') else '-' + index) 
+        new_context['order_direction'] = 'ascending' if context['request'].GET['o'].startswith('-') else 'descending'
+
+    return new_context
+
+
+@register.simple_tag
+def lookup_blob(hash_value):
+    """
+    Combines all given arguments to create clean title-tags values.
+    All arguments are divided by a " " seperator and HTML tags
+    are to be removed.
+    """
+    try:
+        blob = BlobStorage.objects.get(sha256=hash_value)
+    except:
+        return "Blob not found"
+    return blob.content
+
+
 @register.simple_tag
 def create_title(*args):
     """
@@ -201,6 +261,14 @@ def create_title(*args):
     seperator = " "
     return strip_tags(seperator.join(args))
 
+
+#@register.simple_tag
+#def url_from_query(*args,url=None):
+#    
+#    if not remove:
+#        remove=[]
+#    request_string = context['view'].get_query_string(remove=remove)
+#    return "%s%s" % (reverse(url),request_string) 
 
 @register.inclusion_tag('dingos/%s/includes/_Paginator.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_paginator(context):
@@ -255,7 +323,6 @@ def show_InfoObjectRevisions_vertical(iobject):
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectEmbeddingDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def show_InfoObjectEmbeddings(context,iobject):
-    print context
     return {'object': iobject,
             'customization' : context.get('customization')}
 

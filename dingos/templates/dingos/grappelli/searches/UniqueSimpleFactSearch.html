@@ -5,7 +5,7 @@
 {% extends "dingos/grappelli/lists/base_lists_two_column.html" %}
 
 {% comment %}
-Copyright (c) Siemens AG, 2013
+Copyright (c) Siemens AG, 2014
 
 This file is part of MANTIS.  MANTIS is free software: you can
 redistribute it and/or modify it under the terms of the GNU General Public
@@ -21,7 +21,6 @@ You should have received a copy of the GNU General Public License along with
 this program; if not, write to the Free Software Foundation, Inc., 51
 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
-
 
 
 {% load dingos_tags %}
@@ -65,17 +64,17 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     <table id="result_list" cellspacing="0" class="grp-sortable">
      <thead>
        <tr>
-	<th scope="col"  class="sortable column-infoobject">
-	  {% render_table_ordering "iobject__iobject_type__name" "Info Object" %}
+	<th scope="col">
+	  IO-Type
 	</th>
-	<th scope="col"  class="sortable column-iotype">
-	  {% render_table_ordering "iobject__iobject_type" "IO-Type" %}
+	<th scope="col">
+          Fact Term
 	</th>
-	<th scope="col"  class="sortable column-factterm">
-          {% render_table_ordering "fact__fact_term__term" "Fact Term" %}
+	<th scope="col">
+          Value
 	</th>
-	<th scope="col"  class="sortable column-value">
-          {% render_table_ordering "fact__fact_values__value" "Value" %}
+	<th scope="col">
+          
 	</th>
        </tr>
      </thead>
@@ -84,9 +83,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     <tbody>
      {% for enrich2fact in object_list %}
     <tr class="grp-row grp-row-{% cycle 'even' 'odd' %}">
-      <td>
-	<a href="{%url 'url.dingos.view.infoobject.redirect2highlight' pk=enrich2fact.iobject.id node=enrich2fact.node_id %}"> {{enrich2fact.iobject.name  | insert_wbr }} </a>
-    </td>
     <td >
 	{{enrich2fact.iobject.iobject_type.name}}
     </td>
@@ -95,6 +91,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     </td>
     <td >
 	{{ enrich2fact.fact.fact_values.all| join:", " | insert_wbr }}
+    </td>
+    <td>
+      <a href="{% url "url.dingos.search.fact.simple" %}{{view.get_reduced_query_string}}&fact__fact_term__term={{enrich2fact.fact.fact_term | urlencode}}&fact__fact_values__value={{ enrich2fact.fact.fact_values.all.0 | urlencode}}">View all</a>
     </td>
    </tr >
   {% endfor %}

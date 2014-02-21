@@ -29,59 +29,62 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     {% if object_list %}
 
-        <div class="grp-row">
-            <table>
 
+      <div class="grp-module grp-changelist-results">
+        <table id="result_list" cellspacing="0" class="grp-sortable">
 
                 {% block header_row %}
-                    <tr >
-                        <th >
-                            Identifier
+           	  <thead>
+                    <tr>
+                        <th scope="col"  class="sortable column-identifier">
+			    {% render_table_ordering "identifier__uid" "Identifier" %}
                         </th>
-                        <th >
-                            Timestamp
+                        <th scope="col"  class="sortable column-timestamp">
+			    {% render_table_ordering "timestamp" "Object Timestamp" %}
                         </th>
-                        <th >
-                            Created
+                        <th scope="col"  class="sortable column-created">
+                            {% render_table_ordering "create_timestamp" "Import Timestamp" %}
                         </th>
-                        <th >
-                            Name
+                        <th scope="col"  class="sortable column-name">
+			   {% render_table_ordering "name" "Name" %}
                         </th>
-                        <th >
-                            Obj. Type
+                        <th scope="col"  class="sortable column-objecttype">
+                            {% render_table_ordering "iobject_type" "Object Type" %}
                         </th>
-                        <th >
-                            Family
+                        <th scope="col"  class="sortable column-family">
+                            {% render_table_ordering "iobject_type__iobject_family" "Family" %}
                         </th>
                     </tr>
+		  </thead>
                 {% endblock %}
 
 
                 {% block rows %}
+                    <tbody>
 
                     {% for obj in object_list %}
-                        <tr >
+                        <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
                         <td>
                             <a href="{%url 'url.dingos.view.infoobject' pk=obj.pk %}">{{ obj.identifier }}</a>
                         </td>
-                        <td >
+                        <td>
                             {{obj.timestamp | date:"Y-m-d H:i:s O"}}
                         </td>
-                        <td >
+                        <td>
                             {{obj.create_timestamp | date:"Y-m-d H:i:s O"}}
                         </td>
-                        <td >
-                            {{obj.name}}
+                        <td>
+                            {{obj.name | insert_wbr }}
                         </td>
-                        <td >
+                        <td>
                             {{obj.iobject_type.name}}
                         </td>
-                        <td >
+                        <td>
                             {{obj.iobject_family.name}}  {{obj.iobject_family_revision.name}}
                         </td>
-
+                     </tr>
                     {% endfor %}
-                </tr>
+                  </tbody>
                 {% endblock %}
             </table>
         </div>

@@ -20,13 +20,16 @@ from django import forms
 from django.forms import widgets
 
 class EditSavedSearchesForm(forms.Form):
+    """
+    Form for editing a saved search. Used by the respective view.
+    """
     title = forms.CharField(required=False, # We allow empty titles -- otherwise
                                             # we cannot have the functionality
                                             # that a new saved search is removed
                                             # if no title is given.
                             max_length=100,
                             widget=widgets.TextInput(attrs={'size':'100','class':'vTextField'}))
-    parameter = forms.CharField(max_length=1024,widget=widgets.TextInput(attrs={'readonly':True,'class':'vTextField'}))
+    parameter = forms.CharField(max_length=1024,widget=widgets.TextInput(attrs={'class':'vTextField'}))
     view = forms.CharField(max_length=256,widget=widgets.HiddenInput)
     new_entry = forms.BooleanField(widget=widgets.HiddenInput,required=False)
 

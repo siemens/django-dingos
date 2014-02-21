@@ -35,7 +35,7 @@ setup(
         'dingos',
     ],
     include_package_data=True,
-    install_requires=['libxml2-python>=2.6.21',
+    install_requires=['libxml2-python>=2.6.9',
                       'django>=1.5.5',
                       'django-grappelli>=2.4.7',
                       'django-braces>=1.0.0',

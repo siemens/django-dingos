@@ -22,13 +22,15 @@ from django import http
 from django.db.models import F
 from django.forms.formsets import formset_factory
 
-from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData
-from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter
-from dingos.forms import EditInfoObjectFieldForm, EditSavedSearchesForm
+from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData, FactValue, get_or_create_fact
+
+from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
+from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm
 from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME, DINGOS_SAVED_SEARCHES_TYPE_NAME, DINGOS_DEFAULT_SAVED_SEARCHES
 
+
 from braces.views import LoginRequiredMixin
-from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView
+from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView
 
 
 class InfoObjectList(BasicFilterView):
@@ -75,7 +77,7 @@ class InfoObjectList_Id_filtered(BasicFilterView):
         'iobject_family_revision',
         'identifier').select_related().distinct().order_by('-latest_of__pk')
 
-class InfoObjectsEmbedded(BasicFilterView):
+class InfoObjectsEmbedded(BasicListView):
     template_name = 'dingos/%s/lists/InfoObjectEmbedded.html' % DINGOS_TEMPLATE_FAMILY
 
     breadcrumbs = (('Dingo',None),
@@ -112,15 +114,51 @@ class SimpleFactSearch(BasicFilterView):
     title = 'Fact-based filtering'
 
 
+    filterset_class = OrderedFactTermValueFilter
+    @property
+    def queryset(self):
+        if self.get_query_string() == '?':
+          queryset = InfoObject2Fact.objects.filter(id=-1)
+        else:
+           queryset =  InfoObject2Fact.objects.all().\
+              exclude(iobject__latest_of=None). \
+              exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+              prefetch_related('iobject',
+                        'iobject__iobject_type',
+                        'fact__fact_term',
+                        'fact__fact_values').select_related()#.distinct().order_by('iobject__id')
+        return queryset
+
+class UniqueSimpleFactSearch(BasicFilterView):
+    template_name = 'dingos/%s/searches/UniqueSimpleFactSearch.html' % DINGOS_TEMPLATE_FAMILY
+
+    title = 'Fact-based filtering (unique)'
+
+
     filterset_class = FactTermValueFilter
 
-    queryset =  InfoObject2Fact.objects.all().\
-        exclude(iobject__latest_of=None). \
-        exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
-        prefetch_related('iobject',
-            'iobject__iobject_type',
-            'fact__fact_term',
-            'fact__fact_values').select_related().distinct().order_by('iobject__id')
+    
+    @property
+    def queryset(self):
+        if self.get_query_string() == '?':
+          queryset = InfoObject2Fact.objects.filter(id=-1)
+        else:
+
+          queryset =  InfoObject2Fact.objects.all().\
+            exclude(iobject__latest_of=None). \
+            exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+            prefetch_related('iobject',
+              'iobject__iobject_type',
+              'fact__fact_term',
+              'fact__fact_values').select_related().order_by('iobject__iobject_type','fact__fact_term','fact__fact_values').distinct('iobject__iobject_type','fact__fact_term','fact__fact_values')
+              #'fact__fact_values').select_related().order_by('fact__fact_values__value').distinct('fact__fact_values__value')
+        return queryset
+
+
+    def get_reduced_query_string(self):
+        return self.get_query_string(remove=['fact__fact_term','fact__fact_values'])
+
+
 
 class InfoObjectView_wo_login(BasicDetailView):
     """
@@ -130,6 +168,8 @@ class InfoObjectView_wo_login(BasicDetailView):
     is treated leads to a prefetching of *all* facts, even though
     pagination only displays 100 or 200 or so.
     """
+
+
 
     # Config for Prefetch/SelectRelated Mixins_
     select_related = ()
@@ -166,13 +206,7 @@ class InfoObjectView_wo_login(BasicDetailView):
     title = 'Info Object Details'
 
     def get_context_data(self, **kwargs):
-        # as a hack, we clear here the settings in the session. This will
-        # lead to a reload of the user config into the session data
-        try:
-            del(self.request.session['customization'])
-            del(self.request.session['customization_for_authenticated'])
-        except KeyError, err:
-                pass
+
         context = super(InfoObjectView_wo_login, self).get_context_data(**kwargs)
 
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
@@ -188,46 +222,92 @@ class InfoObjectView_wo_login(BasicDetailView):
 class InfoObjectView(LoginRequiredMixin,InfoObjectView_wo_login):
     pass
 
-class UserPrefsView(InfoObjectView_wo_login):
-    def get_object(self):
-        return UserData.get_user_data_iobject(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
 
 class InfoObjectsEditView(LoginRequiredMixin,InfoObjectView_wo_login):
     template_name = 'dingos/%s/edits/InfoObjectsEdit.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Edit Info Object Details'
 
-    attr_editable = True
+    attr_editable = False
     form_class = formset_factory(EditInfoObjectFieldForm, extra=0)
+
+    index = {}
+
+    def build_form(self):
+
+        self.form_builder = []
+        self.index = {}
+        cnt = 0
+
+        for io2f in self.iobject2facts: # context['object'].fact_thru.all():
+
+            if len(io2f.fact.fact_values.all()) == 1 and io2f.fact.value_iobject_id == None \
+                and ( (self.attr_editable and io2f.fact.fact_term.attribute != "") or \
+                          not io2f.fact.fact_term.attribute ):
+                value_obj = io2f.fact.fact_values.all()[0]
+                self.form_builder.append( { 'value' : value_obj.value } )
+                self.index.update( { io2f.node_id.name :  (cnt,value_obj) } )
+                cnt += 1
+
+
 
     def get_context_data(self, **kwargs):
         context = super(InfoObjectView_wo_login, self).get_context_data(**kwargs)
         context.update(super(LoginRequiredMixin, self).get_context_data(**kwargs))
 
-        form_builder = []
-        index = {}
-        cnt = 0
-       
-        for io2f in context['object'].fact_thru.all():
+        self.build_form()
 
-            if len(io2f.fact.fact_values.all()) == 1 and io2f.fact.value_iobject_id == None \
-               and ( (self.attr_editable and io2f.fact.fact_term.attribute != "") or \
-                     not io2f.fact.fact_term.attribute ):
-                value = io2f.fact.fact_values.all()[0].value
-                form_builder.append( { 'value' : value } )
-                index.update( { io2f.id :  cnt } )
-                cnt += 1
+        context['formset'] = self.form_class(initial=self.form_builder)
+        context['formindex'] = self.index
 
-        context['formset'] = self.form_class(initial=form_builder)
-        context['formindex'] = index
-
-        import pprint
-        pprint.pprint(context)
+        #print "Context index %s" % self.index
 
         return context
 
     def get(self, request, *args, **kwargs):
+
         return super(InfoObjectView_wo_login,self).get(request, *args, **kwargs)
 
+    def post(self, request, *args, **kwargs):
+        super(InfoObjectView_wo_login,self).get(request, *args, **kwargs)
+        self.build_form()
+
+        user_data = self.get_user_data()
+        self.formset = self.form_class(request.POST.dict())
+
+        if self.formset.is_valid() and request.user.is_authenticated():
+
+            for io2f in self.iobject2facts:
+                if io2f.node_id.name in self.index:
+                    current_value = self.index[io2f.node_id.name][1]
+                    post_value = self.formset.forms[self.index[io2f.node_id.name][0]].cleaned_data['value']
+
+                    if current_value.value != post_value:
+
+                        new_fact,created = get_or_create_fact(io2f.fact.fact_term,
+                                                      fact_dt_name=current_value.fact_data_type.name,
+                                                      fact_dt_namespace_uri=current_value.fact_data_type.namespace.uri,
+                                                      values=[post_value],
+                                                      value_iobject_id=None,
+                                                      value_iobject_ts=None,
+                                                      )
+                        io2f.fact = new_fact
+                        io2f.save()
+                        print io2f.fact
+
+        return super(InfoObjectView_wo_login,self).get(request, *args, **kwargs)
+
+
+class UserPrefsView(InfoObjectsEditView): # InfoObjectView_wo_login):
+    def get_object(self):
+        # We delete the session data in  order to achieve a reload
+        # when viewing this page.
+
+        try:
+            del(self.request.session['customization'])
+            del(self.request.session['customization_for_authenticated'])
+        except KeyError, err:
+            pass
+        return UserData.get_user_data_iobject(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
 
 
 class CustomSearchesEditView(BasicTemplateView):
@@ -326,7 +406,7 @@ class InfoObjectJSONView(BasicDetailView):
         #return self.get_json_response(json.dumps(context['object'].show_elements(""),indent=2))
         include_node_id = self.request.GET.get('include_node_id',False)
 
-        return self.get_json_response(json.dumps(context['object'].to_dict(include_node_id=include_node_id),indent=2))
+        return self.get_json_response(json.dumps(context['object'].to_dict(include_node_id=include_node_id,track_namespaces=True),indent=2))
 
     def get_json_response(self, content, **httpresponse_kwargs):
         return http.HttpResponse(content,

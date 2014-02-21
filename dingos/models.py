@@ -16,7 +16,7 @@
 #
 
 
-
+import itertools
 import logging
 import pprint
 import re
@@ -680,6 +680,7 @@ class InfoObject2Fact(DingoModel):
 
     node_id = models.ForeignKey("NodeID")
 
+    namespace_map = models.ForeignKey("FactTermNamespaceMap",null=True)
 
 
     @property
@@ -704,6 +705,63 @@ class InfoObject2Fact(DingoModel):
 
 dingos_class_map["InfoObject2Fact"] = InfoObject2Fact
 
+
+class FactTermNamespaceMap(DingoModel):
+    """
+    A mapping of components in a fact term to the namespace from which
+    they originated. For example, consider the following piece of XML::
+
+             <FileObj:FileObjectType>
+           <FileObj:File_Name datatype="String" condition="Equals">UNITED NATIONS COMPENSATION SCHEME...pdf
+           </FileObj:File_Name>
+           <FileObj:Hashes>
+               <Common:Hash>
+                   <Common:Type datatype="String">SHA256</Common:Type>
+                   <Common:Simple_Hash_Value datatype="hexBinary" condition="Equals">
+                   586fea79dd23a352a14c3f8bf3dbc9eb732e1d54f804a29160894aec55df4bd5
+                   </Common:Simple_Hash_Value>
+               </Common:Hash>
+
+    Here, for the fact term `Hashes/Hash/Type`, the 0th component `Hashes` would
+    be mapped to the `FileObj` namespace (or rather, the URI associated with the
+    tag `FileObj`), and the 1st and 2nd components `Hash` and `Type` to the
+    namespace associated with `Common`.
+
+    We keep this information around in case we require it to reproduce XML output.
+    """
+
+    fact_term = models.ForeignKey(FactTerm)
+
+    namespaces = models.ManyToManyField("DataTypeNameSpace",
+                                       through="PositionalNamespace",
+                                       )
+
+    def __unicode__(self):
+        return "%s" % (self.fact_term.term)
+
+dingos_class_map["FactTermNamespaceMap"] = FactTermNamespaceMap
+
+
+class PositionalNamespace(DingoModel):
+    """
+    A through model that allows to annotate a mapping between fact term
+    and namespaces with positional information (thus specifying, with
+    which component in a fact term the namespace should be mapped.
+
+    """
+    fact_term_namespace_map = models.ForeignKey("FactTermNamespaceMap",
+                               related_name="namespaces_thru",
+                             )
+
+    namespace = models.ForeignKey("DataTypeNameSpace",
+                             related_name="fact_term_namespace_map_thru",
+                             )
+    position = models.SmallIntegerField()
+
+    def __unicode__(self):
+        return "%s: %s" % (self.position, self.namespace.uri)
+
+dingos_class_map["PositionalNamespace"] = PositionalNamespace
 
 class Fact(DingoModel):
     """
@@ -849,16 +907,19 @@ class InfoObject(DingoModel):
                             help_text="""Name of the information object, usually auto generated.
                                          from type and facts flagged as 'naming'.""")
 
-    @property
-    def marking_thru(self):
-        """
-        Return the back-pointer to a marking that may
-        has been attached via Django's content type mechanism.
-        """
+    #@property
+    #def marking_thru(self):
+    #    """
+    #    Return the back-pointer to a marking that may
+    #    has been attached via Django's content type mechanism.
+    #    """
 
-        self_django_type = ContentType.objects.get_for_model(self)
-        return Marking2X.objects.filter(content_type__pk=self_django_type.id,
-                                        object_id=self.id)
+    #    self_django_type = ContentType.objects.get_for_model(self)
+    #    return Marking2X.objects.filter(content_type__pk=self_django_type.id,
+    #                                    object_id=self.id)
+
+
+    marking_thru = generic.GenericRelation("Marking2X")
 
 
     class Meta:
@@ -918,7 +979,10 @@ class InfoObject(DingoModel):
                  value_iobject_id=None,
                  value_iobject_ts=None,
                  node_id_name='',
-                 is_attribute=False):
+                 is_attribute=False,
+                 ns_uri_dict=None,
+                 namespaces=None,
+                 top_level_namespace=None):
         """
         Add a fact to the iobject. If a fact term for the iobject type
         with the given fact data type and source (CYBOX, etc.) does not
@@ -926,8 +990,15 @@ class InfoObject(DingoModel):
 
         """
 
+
         if not values:
             values = []
+
+        if not namespaces:
+            namespaces = []
+
+        if not ns_uri_dict:
+            ns_uri_dict = None
 
         # get or create fact_term
         fact_term, created = get_or_create_fact_term(iobject_family_name=self.iobject_family.name,
@@ -942,6 +1013,7 @@ class InfoObject(DingoModel):
                                                      dingos_class_map=self._DCM)
 
 
+
         # get or create fact object
 
         fact_obj, created = get_or_create_fact(fact_term,
@@ -951,6 +1023,7 @@ class InfoObject(DingoModel):
                                                value_iobject_id=value_iobject_id,
                                                value_iobject_ts=value_iobject_ts,
                                                )
+
 
 
         # get or create node identifier
@@ -972,25 +1045,89 @@ class InfoObject(DingoModel):
             except InfoObject2Fact.DoesNotExist:
                 pass
 
-        e2f = self._DCM['InfoObject2Fact'].objects.create(
+        io2f = self._DCM['InfoObject2Fact'].objects.create(
             node_id=node_id,
             iobject=self,
             fact=fact_obj,
             attributed_fact=attributed_io2f)
 
-        return e2f
+        counter = 0
+        io2f2n_list = []
+
+
+        namespace_map_elts = FactTermNamespaceMap.objects.filter(fact_term=fact_term).order_by('id','namespaces_thru__position').values_list('id',
+                                                                                             'namespaces_thru__position',
+                                                                                             'namespaces_thru__namespace__uri')
+
+        namespace_maps = []
+        for k,g in itertools.groupby(namespace_map_elts,lambda x:x[0]):
+            namespace_maps.append(list(g))
+
+
+        namespace_map = None
+
+        namespaces_uris = map(lambda x:x[0],namespaces)
+
+
+        for i in namespace_maps:
+            if namespaces_uris == map(lambda x:x[2],i):
+                namespace_map = FactTermNamespaceMap.objects.get(id=i[0][0])
+
+
+                break
+
+
+
+        if not namespace_map:
+
+            namespace_map = FactTermNamespaceMap.objects.create(fact_term=fact_term)
+            for (ns_uri,ns_slug) in namespaces:
+
+                if ns_uri:
+
+                    if not (ns_uri in ns_uri_dict):
+                        ns_uri_obj, created = self._DCM['DataTypeNameSpace'].objects.get_or_create(uri=ns_uri,defaults={'name':ns_slug})
+                        ns_uri_obj_pk = ns_uri_obj.pk
+                        ns_uri_dict[ns_uri]=ns_uri_obj_pk
+                    else:
+                        ns_uri_obj_pk = ns_uri_dict[ns_uri]
+
+                    io2f2n_list.append(PositionalNamespace(fact_term_namespace_map=namespace_map,position=counter,namespace_id=ns_uri_obj_pk))
+
+                counter +=1
+                #self._DCM['IO2F2Namespace'].object.create(io2f=self,position=counter,namespace__pk=ns_uri_obj_pk)
+
+            if len(io2f2n_list)!= 0:
+                PositionalNamespace.objects.bulk_create(io2f2n_list)
+            else:
+                namespace_map.delete()
+                namespace_map = None
+
+        if namespace_map:
+            io2f.namespace_map = namespace_map
+            io2f.save()
+
+        return io2f
 
     def from_dict(self,
                   dingos_obj_dict,
                   config_hooks=None,
                   namespace_dict=None,
-                  special_ft_handler=None):
+                  ):
         """
         Convert DingoObjDict to facts and associate resulting facts with this information object.
         """
 
 
         # Instantiate default parameters
+
+
+
+
+        if '@@ns' in dingos_obj_dict.keys():
+            top_level_namespace = (namespace_dict.get(dingos_obj_dict.get('@@ns'),None),dingos_obj_dict.get('@@ns'))
+        else:
+            top_level_namespace = (None,None)
 
         if not config_hooks:
             config_hooks = {}
@@ -1006,6 +1143,10 @@ class InfoObject(DingoModel):
         if not namespace_dict:
             namespace_dict = {}
 
+
+        namespace_uri_2_pk_mapping = dict(self._DCM['DataTypeNameSpace'].objects.values_list('uri','id'))
+
+
         if not self.is_empty():
             logger.debug("Non-empty info object %s (timestamp %s, pk %s ) is overwritten with new information" % (self.identifier,
                                                                                                                  self.timestamp,
@@ -1016,7 +1157,10 @@ class InfoObject(DingoModel):
         # Flatten the DingoObjDict
 
         (flat_list, attrs) = dingos_obj_dict.flatten(attr_ignore_predicate=attr_ignore_predicate,
-                                                     force_nonleaf_fact_predicate=force_nonleaf_fact_predicate)
+                                                     force_nonleaf_fact_predicate=force_nonleaf_fact_predicate,
+                                                     namespace_dict=namespace_dict)
+
+
 
         for fact in flat_list:
 
@@ -1080,6 +1224,8 @@ class InfoObject(DingoModel):
             add_fact_kargs['fact_term_attribute'] = fact['attribute']
             add_fact_kargs['values'] = [fact['value']]
             add_fact_kargs['node_id_name'] = fact['node_id']
+            add_fact_kargs['namespaces'] = fact['namespaces']
+            add_fact_kargs['top_level_namespace'] = top_level_namespace
 
             handler_return_value = True
 
@@ -1098,6 +1244,7 @@ class InfoObject(DingoModel):
                             break
             logger.debug("Treating fact (before special handler list) %s with attr_info %s and kargs %s" % (fact, attr_info, add_fact_kargs))
             if (handler_return_value == True):
+                add_fact_kargs['ns_uri_dict'] = namespace_uri_2_pk_mapping
                 e2f_obj = self.add_fact(**add_fact_kargs)
             elif not handler_return_value:
                 continue
@@ -1106,57 +1253,138 @@ class InfoObject(DingoModel):
         self.set_name()
 
 
-    def to_dict(self,include_node_id=False,no_attributes=False):
+
+
+    def to_dict(self,include_node_id=False,no_attributes=False,track_namespaces=False):
+        """
+        This function is currently geared very much towards writing
+        STIX/CybOX objects to a dictionary. That should not be the case -- the function
+        needs to be generic just as the from_dict function.
+        TODO: make function generic.
+        """
         flat_result = []
 
-        fact_thrus = self.fact_thru.all().prefetch_related(
-                                                           'fact__fact_term',
-                                                           'fact__fact_values',
-                                                           'fact__fact_values__fact_data_type',
-                                                           'fact__fact_values__fact_data_type__namespace',
-                                                           'fact__value_iobject_id',
-                                                           'fact__value_iobject_id__namespace',
-                                                           'node_id')
+        def make_ns_slug(name_counter,slug='n'):
+            while "%s%s" % (slug,name_counter['counter']) in namespace_mapping.values():
+                name_counter['counter']  = name_counter['counter']+1
 
+            return "%s%s" % (slug,name_counter['counter'])
+
+        name_counter = {'counter':0}
+
+        if track_namespaces:
+
+            fact_thrus = self.fact_thru.all().prefetch_related(
+                'fact__fact_term',
+                'fact__fact_values',
+                'fact__fact_values__fact_data_type',
+                'fact__fact_values__fact_data_type__namespace',
+                'fact__value_iobject_id',
+                'fact__value_iobject_id__namespace',
+                'namespace_map__namespaces_thru__namespace',
+                'node_id')
+        else:
+            fact_thrus = self.fact_thru.all().prefetch_related(
+                'fact__fact_term',
+                'fact__fact_values',
+                'fact__fact_values__fact_data_type',
+                'fact__fact_values__fact_data_type__namespace',
+                'fact__value_iobject_id',
+                'fact__value_iobject_id__namespace',
+                'node_id')
+
+        export_ns_dict = {}
+
+        namespace_mapping=  {"%s-%s" % (self.iobject_type.namespace.uri,self.iobject_type_revision): 'n0'}
         #fact_thrus = self.fact_thru.all()
         for fact_thru in fact_thrus:
+            #print fact_thru.node_id
+            #print fact_thru.fact.fact_term
+            #for positional_namespace in fact_thru.namespace_map.namespaces_thru.all():
+            #    print positional_namespace
+
             value_list = []
             first = True
             fact_datatype_name = None
             fact_datatype_ns = None
-            for fact_value in fact_thru.fact.fact_values.all():
-                if first:
-                    fact_datatype_name = fact_value.fact_data_type.name
-                    fact_datatype_ns = fact_value.fact_data_type.namespace.uri
-                    if (fact_datatype_name == DINGOS_DEFAULT_FACT_DATATYPE and
-                        fact_datatype_ns == DINGOS_NAMESPACE_URI):
-
-                        fact_datatype_name = None
-                        fact_datatype_ns = None
-                        first = False
-                value_list.append(fact_value.value)
 
             fact_dict = {'node_id': fact_thru.node_id.name,
                          'term': fact_thru.fact.fact_term.term,
                          'attribute' : fact_thru.fact.fact_term.attribute,
-                         '@@type': fact_datatype_name,
-                         '@@type_ns': fact_datatype_ns,
-                         'value_list': value_list}
+                         '@@namespace_map' : fact_thru.namespace_map,
+                         }
+
+            for fact_value in fact_thru.fact.fact_values.all():
+                if first:
+                    first=False
+                    fact_datatype_name = fact_value.fact_data_type.name
+                    fact_datatype_ns = fact_value.fact_data_type.namespace.uri
+                    if (fact_datatype_name == DINGOS_DEFAULT_FACT_DATATYPE and
+                                fact_datatype_ns == DINGOS_NAMESPACE_URI) or fact_thru.fact.value_iobject_id:
+                        pass
+                    else:
+                        if not fact_datatype_ns in namespace_mapping:
+                            namespace_slug = make_ns_slug(name_counter)
+                            namespace_mapping[fact_datatype_ns] = namespace_slug
+                        else:
+                            namespace_slug= namespace_mapping[fact_datatype_ns]
+                        fact_dict['@@type'] = '%s:%s' % (namespace_slug,fact_datatype_name)
+
+                value_list.append(fact_value.value)
+
+
+
+
+            fact_dict['value_list'] = value_list
+
 
             if fact_thru.fact.value_iobject_id:
                 value_iobject_id_ns = fact_thru.fact.value_iobject_id.namespace.uri
+                if not value_iobject_id_ns in namespace_mapping:
+                    namespace_slug = make_ns_slug(name_counter)
+                    namespace_mapping[value_iobject_id_ns] = namespace_slug
+                else:
+                    namespace_slug= namespace_mapping[value_iobject_id_ns]
+
                 value_iobject_id  =fact_thru.fact.value_iobject_id.uid
-                fact_dict['@@idref_ns'] = fact_thru.fact.value_iobject_id.namespace.uri
-                fact_dict['@@idref_id'] = fact_thru.fact.value_iobject_id.uid
+                if fact_dict['attribute']:
+                    # Here we treat the case that the reference is part of an attribute such as
+                    # 'phase_id'
+                    fact_dict['value_list'] = ["%s:%s" % (namespace_slug,value_iobject_id)]
+                else:
+                    # Otherwise, we sneak in an idref attribute. Because the code that
+                    # generates the dictionary simply dumps all untreated key-value paris
+                    # into the generated dictionary, this works... but is a bit of a hack, really.
+
+                    fact_dict['@idref'] = "%s:%s" % (namespace_slug,value_iobject_id)
+
             flat_result.append(fact_dict)
 
         result = DingoObjDict()
-        result.from_flat_repr(flat_result,include_node_id=include_node_id,no_attributes=no_attributes)
+
+
+        result.from_flat_repr(flat_result,
+            include_node_id=include_node_id,
+            no_attributes=no_attributes,
+            track_namespaces=track_namespaces,
+            namespace_mapping=namespace_mapping
+            )
+
+
         if not no_attributes:
-            result['@@iobject_type'] = self.iobject_type.name
-            result['@@iobject_type_ns'] = self.iobject_type.namespace.uri
-        #result = result.to_tuple()
-        return result
+            if not track_namespaces:
+                result['@@iobject_type'] = self.iobject_type.name
+                result['@@iobject_type_ns'] = self.iobject_type.namespace.uri
+                return result
+            else:
+                result['@ns'] = namespace_mapping["%s-%s" % (self.iobject_type.namespace.uri,self.iobject_type_revision)]
+                #result['@@iobject_type'] = self.iobject_type.name
+                return {'namespaces': dict(map(lambda x : (x[1],x[0]), namespace_mapping.items())),
+                        'objects' : [result]
+                }
+        else:
+            return result
+
 
     def show_fact_terms(self,level):
         """Returns a list of the fact terms (split in 'term' and 'attribute') that
@@ -1195,17 +1423,23 @@ class InfoObject(DingoModel):
                                                         'fact_term__term',
                                                         'fact_term__attribute',
                                                         'fact_values__value',
+                                                        'fact_values__storage_location',
                                                         'value_iobject_id__latest__name')
 
         # We build a dictionary that will then be used for the format string
 
         fact_dict = {}
         counter = 0
-        for (node_id, fact_term, attribute, value, related_obj_name) in fact_list:
+        for (node_id, fact_term, attribute, value, storage_location, related_obj_name) in fact_list:
             #print fact_list[counter]
             if type(value)==type([]):
                 value = "%s,..." % value
-            if related_obj_name:
+            if storage_location == dingos.DINGOS_BLOB_TABLE:
+                try:
+                    value = BlobStorage.objects.get(sha256=value).content
+                except:
+                    value = "In blob table %s" % value
+            elif related_obj_name:
                 value = related_obj_name
 
             if attribute:
@@ -1421,16 +1655,18 @@ class Relation(DingoModel):
                                     related_name='+',
                                     help_text="InfoObject containing metadata about relation.")
 
-    @property
-    def marking_thru(self):
-        """
-        Return the back-pointer to markings that may have
-        been attached via Django's content type mechanism.
-        """
+    #@property
+    #def prog_marking_thru(self):
+    #    """
+    #    Return the back-pointer to markings that may have
+    #    been attached via Django's content type mechanism.
+    #    """
 
-        self_django_type = ContentType.objects.get_for_model(self)
-        return Marking2X.objects.filter(content_type__pk=self_django_type.id,
-                                        object_id=self.id)
+    #   self_django_type = ContentType.objects.get_for_model(self)
+    #    return Marking2X.objects.filter(content_type__pk=self_django_type.id,
+    #                                    object_id=self.id)
+
+    marking_thru = generic.GenericRelation("Marking2X")
 
 
     class Meta:
@@ -1497,9 +1733,9 @@ class UserData(DingoModel):
         settings_iobject = None
         if self.identifier:
             settings_iobject = self.identifier.latest
+
         if settings_iobject:
-            settings= settings_iobject.to_dict(no_attributes=True)
-            #print "Found settings %s" % settings
+            settings= settings_iobject.to_dict(no_attributes=True,track_namespaces=False)
             return settings
         else:
             return None
@@ -1507,6 +1743,7 @@ class UserData(DingoModel):
     def store(self,settings,iobject_type_name=DINGOS_USER_DATA_TYPE_NAME,keep_history=False,iobject_name=None):
 
         settings_dod = dict2DingoObjDict(settings)
+
 
         settings_iobject = None
         if self.identifier:
@@ -1556,6 +1793,7 @@ class UserData(DingoModel):
             self.identifier = settings_iobject.identifier
             self.save()
         result = settings_iobject.from_dict(settings_dod)
+
         if iobject_name:
             settings_iobject.name = iobject_name
             settings_iobject.save()
