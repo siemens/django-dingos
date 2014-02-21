@@ -224,13 +224,24 @@ class InfoObjectView(LoginRequiredMixin,InfoObjectView_wo_login):
 
 
 class InfoObjectsEditView(LoginRequiredMixin,InfoObjectView_wo_login):
+    """
+    Attention: this view overwrites an InfoObject without creating
+    a new revision. It is currently only used for editing the
+    UserConfigs.
+    """
     template_name = 'dingos/%s/edits/InfoObjectsEdit.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Edit Info Object Details'
 
-    attr_editable = False
+    attr_editable = False # set to True to also allow editing of attributes
+
+    # we use a formset to deal with a varying number of forms
+
     form_class = formset_factory(EditInfoObjectFieldForm, extra=0)
 
+
+
     index = {}
+    form_builder = []
 
     def build_form(self):
 
@@ -238,7 +249,7 @@ class InfoObjectsEditView(LoginRequiredMixin,InfoObjectView_wo_login):
         self.index = {}
         cnt = 0
 
-        for io2f in self.iobject2facts: # context['object'].fact_thru.all():
+        for io2f in self.iobject2facts:
 
             if len(io2f.fact.fact_values.all()) == 1 and io2f.fact.value_iobject_id == None \
                 and ( (self.attr_editable and io2f.fact.fact_term.attribute != "") or \
@@ -259,7 +270,6 @@ class InfoObjectsEditView(LoginRequiredMixin,InfoObjectView_wo_login):
         context['formset'] = self.form_class(initial=self.form_builder)
         context['formindex'] = self.index
 
-        #print "Context index %s" % self.index
 
         return context
 
@@ -297,7 +307,9 @@ class InfoObjectsEditView(LoginRequiredMixin,InfoObjectView_wo_login):
         return super(InfoObjectView_wo_login,self).get(request, *args, **kwargs)
 
 
-class UserPrefsView(InfoObjectsEditView): # InfoObjectView_wo_login):
+class UserPrefsView(InfoObjectsEditView):
+
+
     def get_object(self):
         # We delete the session data in  order to achieve a reload
         # when viewing this page.
