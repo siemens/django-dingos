@@ -101,45 +101,64 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     // CHANGE HERE TO ENABLE USER-SETTING BASED BEHAVIOR
     var _enable_button = true;
 
-    var _submit_style = { 'dummy1' : 1, 'dummy2' : 2 }
+    // needed for mapping actions to submition styles (ajax vs. plain form submit e.g.)
+    var _submit_style = { {% for action in list_actions %} {{action.0}} : {{action.2}}, {% endfor %} }
+
+    // this is the function where the submit actually happens
+    // add implementations of new submit-styles here
+    //
+    // form    : jQuery object of the form to serialize
+    // url     : the url to submit to
+    // method  : GET|POST
+    // style   : values are stored in 
+    //           _submit_style($("#action-target option:selected").text()) 
+    //           Valid implemented styles are:
+    //              0 : STANDARD FORM SUBMIT
+    //              1 : AJAX ASYNCHRONOUS SUBMIT
+    function submit_action(form, url, style, method) {
+
+        $ = grp.jQuery; // use grappellis jQuery in a standard way instead of custom namespace
+        infofield = $('footer .grp-action-counter span'); // field to show some meta-data if needed
+        
+        // AJAX ASYNCHRONOUS REQUEST (TYPE 1)
+        if (style == 1) {
+          $.ajax({ 
+                    url: url, 
+                    data: form.serialize(),
+                    type: method,
+                    success: function(data,state){ infofield.html("Submition "+state); },
+                    error: function(data, state, error) { infofield.html("Submition error: "+error); }
+                 });
+          return false;
+        }
+
+        // DEFAULT REQUEST (TYPE 0)
+        else {
+          form.attr("action", url);
+          form.attr("method", method);
+          form.submit();
+          return true;
+        }
+    }
+
+    // prepares the submit and only triggers it if there is something to submit
+    function submit_prepare($) {
+          var _action_val = $("#action-target").val();
+          var _form = $("#action-form");
+          if ( _action_val != "") {
+            if($('input[type="checkbox"]:checked', _form).length > 1) {
+              return submit_action(_form, _action_val,_submit_style[$("#action-target option:selected").text()], "POST");
+            }
+          return false;
+          }
+    }
+
 
     // button-based
     if ( _enable_button ) {
 
       (function($) {
-        $(document).on('click', '#action-submit, :button', function() {
-          var _action = $("#action-target");
-          var _action_val = _action.val();
-          var form = $("#action-form");
-
-          if ( _action_val != "") {
-            if($('input[type="checkbox"]:checked', form).length > 1) {
-
-              if (true) {
-                var ajax;
-                if (window.XMLHttpRequest)
-                  ajax=new XMLHttpRequest();
-                else
-                  ajax=new ActiveXObject("Microsoft.XMLHTTP"); // IE6 + IE5
-                ajax.onreadystatechange=function() {
-                  if (ajax.readyState==4 && ajax.status==200)
-                    $('footer .grp-action-counter span').html("Subdmitted");
-                  else if (ajax.readyState==4)
-                    $('footer .grp-action-counter span').html("HTTP Error "+ajax.status);
-                }
-                ajax.open("POST", _action_val, true);
-                ajax.send();
-	      }
-
-              else {
-                form.attr("action", _action_val);
-                form.submit();
-                return true;
-              }
-            }
-          return false;
-          }
-        });
+        $(document).on('click', '#action-submit, :button', function() { submit_prepare($); });
       })(grp.jQuery);
 
     }
@@ -154,18 +173,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
       })(grp.jQuery);
 
       (function($) {
-        $(document).on('change', '#action-target', function() {
-          var _this = this;
-          if ( $(_this).val() != "") {
-            var form = $("#action-form");
-            if($('input[type="checkbox"]:checked', form).length == 0){
-	      $(_this).val("");
-	     return false;
-            }
-            form.attr("action", $(_this).val());
-            form.submit();
-          }
-        });
+        $(document).on('change', '#action-target', function() { submit_prepare($); });
       })(grp.jQuery);
 
   }

@@ -52,7 +52,7 @@ class InfoObjectList(BasicFilterView):
 
     title = 'List of Info Objects (generic filter)'
 
-    list_actions = [ ('dummy1', 'url.dingos.action_demo'), ('dummy2', 'url.dingos.action_demo') ]
+    list_actions = [ ('dummy1', 'url.dingos.action_demo', 0), ('dummy2', 'url.dingos.action_demo', 1) ]
 
     queryset = InfoObject.objects.\
         exclude(latest_of=None). \
