@@ -101,18 +101,41 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     // CHANGE HERE TO ENABLE USER-SETTING BASED BEHAVIOR
     var _enable_button = true;
 
+    var _submit_style = { 'dummy1' : 1, 'dummy2' : 2 }
+
     // button-based
     if ( _enable_button ) {
 
       (function($) {
         $(document).on('click', '#action-submit, :button', function() {
-          var action = $("#action-target");
-          if ( action.val() != "") {
-            var form = $("#action-form");
+          var _action = $("#action-target");
+          var _action_val = _action.val();
+          var form = $("#action-form");
+
+          if ( _action_val != "") {
             if($('input[type="checkbox"]:checked', form).length > 1) {
-              form.attr("action", action.val());
-              form.submit();
-              return true;
+
+              if (true) {
+                var ajax;
+                if (window.XMLHttpRequest)
+                  ajax=new XMLHttpRequest();
+                else
+                  ajax=new ActiveXObject("Microsoft.XMLHTTP"); // IE6 + IE5
+                ajax.onreadystatechange=function() {
+                  if (ajax.readyState==4 && ajax.status==200)
+                    $('footer .grp-action-counter span').html("Subdmitted");
+                  else if (ajax.readyState==4)
+                    $('footer .grp-action-counter span').html("HTTP Error "+ajax.status);
+                }
+                ajax.open("POST", _action_val, true);
+                ajax.send();
+	      }
+
+              else {
+                form.attr("action", _action_val);
+                form.submit();
+                return true;
+              }
             }
           return false;
           }
