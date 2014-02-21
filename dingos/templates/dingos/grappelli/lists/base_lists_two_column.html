@@ -110,15 +110,15 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     // form    : jQuery object of the form to serialize
     // url     : the url to submit to
     // method  : GET|POST
+    // info    : jQuery object to show meta information
     // style   : values are stored in 
     //           _submit_style($("#action-target option:selected").text()) 
     //           Valid implemented styles are:
     //              0 : STANDARD FORM SUBMIT
     //              1 : AJAX ASYNCHRONOUS SUBMIT
-    function submit_action(form, url, style, method) {
+    function submit_action(form, url, style, info, method) {
 
         $ = grp.jQuery; // use grappellis jQuery in a standard way instead of custom namespace
-        infofield = $('footer .grp-action-counter span'); // field to show some meta-data if needed
         
         // AJAX ASYNCHRONOUS REQUEST (TYPE 1)
         if (style == 1) {
@@ -126,8 +126,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     url: url, 
                     data: form.serialize(),
                     type: method,
-                    success: function(data,state){ infofield.html("Submition "+state); },
-                    error: function(data, state, error) { infofield.html("Submition error: "+error); }
+                    success: function(data,state){ info.html("Submition "+state); },
+                    error: function(data, state, error) { info.html("Submition error: "+error); }
                  });
           return false;
         }
@@ -145,10 +145,12 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     function submit_prepare($) {
           var _action_val = $("#action-target").val();
           var _form = $("#action-form");
+          var infofield = $('footer .grp-action-counter span'); // field to show infos
           if ( _action_val != "") {
             if($('input[type="checkbox"]:checked', _form).length > 1) {
-              return submit_action(_form, _action_val,_submit_style[$("#action-target option:selected").text()], "POST");
+              return submit_action(_form, _action_val,_submit_style[$("#action-target option:selected").text()], infofield, "POST");
             }
+          infofield.html("No objects selected");
           return false;
           }
     }
