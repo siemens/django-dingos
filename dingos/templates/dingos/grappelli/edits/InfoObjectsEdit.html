@@ -1,0 +1,63 @@
+{% extends "dingos/grappelli/edits/base_edits.html" %}
+
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+
+{% load dingos_tags %}
+
+{% block extrahead %}
+    <script type="text/javascript" charset="utf-8">
+        (function ($) {
+            $(document).ready(function () {
+
+                (function ($) {
+                    $(document).ready(function () {
+                        $("#grp-content-container .grp-collapse").grp_collapsible();
+                    });
+                })(grp.jQuery);
+            });
+        })(grp.jQuery);
+    </script>
+{% endblock %}
+
+{% block content_title %}
+    <h1>Edit Info Object: <a href={% url 'url.dingos.view.infoobject' object.id %}>
+        {% if object.name == 'PLACEHOLDER' %}
+            {{object.iobject_type.name}}
+        {% else %}
+            {{object.name}}
+        {% endif %}
+       </a></h1>
+{% endblock %}
+
+{% block content %}
+
+    <div class="l-2cr-fluid l-d-8">
+        <div class="c-1">
+            {% show_InfoObjectMarkings object %}
+            {% show_InfoObjectRevisions_vertical object %}
+            {% show_InfoObjectEmbeddings_vertical object %}
+        </div>
+        <div class="c-2">
+            {% show_InfoObjectIDData object %}
+            {% show_InfoObject object iobject2facts highlight=highlight show_NodeID=show_NodeID formset=formset formindex=formindex %}
+        </div>
+    </div>
+
+{% endblock %}

@@ -176,6 +176,14 @@ def node_indent_end(elt_name, node_id, fact_term, attribute):
 
 register.simple_tag(node_indent_end)
 
+@register.simple_tag
+def render_formset_form(formset, formindex, key, field):    
+    """ 
+    Outpts a (plain) rendered field of an formset.
+    The formindex[key] determines which form to take 
+    from the set. Only a given field will be rendered.
+    """
+    return formset[formindex[key][0]][field]
 
 
 
@@ -271,7 +279,7 @@ def render_paginator(context):
 # certain aspects of an InformationObject.
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectFactsDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
-def show_InfoObject(context, iobject, iobject2facts, highlight=None,show_NodeID=False):
+def show_InfoObject(context, iobject, iobject2facts, highlight=None, show_NodeID=False, formset=None, formindex=None):
     page = context['view'].request.GET.get('page')
 
     iobject2facts_paginator = Paginator(iobject2facts,200)
@@ -290,7 +298,6 @@ def show_InfoObject(context, iobject, iobject2facts, highlight=None,show_NodeID=
         # If page is out of range (e.g. 9999), deliver last page of results.
         iobject2facts = iobject2facts_paginator.page(iobject2facts_paginator.num_pages)
 
-
     return {'object': iobject,
             'view' : context['view'],
             'is_paginated' : is_paginated,
@@ -299,7 +306,9 @@ def show_InfoObject(context, iobject, iobject2facts, highlight=None,show_NodeID=
             'highlight' : highlight,
             'show_NodeID' : show_NodeID,
             'iobject2facts_paginator':iobject2facts_paginator,
-            'iobject2facts': iobject2facts}
+            'iobject2facts': iobject2facts,
+            'formindex' : formindex,
+            'formset' : formset }
 
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectRevisionListDisplay.html'% DINGOS_TEMPLATE_FAMILY)
