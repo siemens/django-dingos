@@ -53,6 +53,10 @@ class ExtendedDateRangeFilter(django_filters.DateRangeFilter):
             '%s__gte' % name: now() - timedelta(minutes=5),
             '%s__lt' % name: now() + timedelta(minutes=5),
             }))),
+        (120, (_('Past hour'), lambda qs, name: qs.filter(**{
+            '%s__gte' % name: now() - timedelta(minutes=60),
+            '%s__lt' % name: now() + timedelta(minutes=60),
+            }))),
         (200, (_('Today'), lambda qs, name: qs.filter(**{
             '%s__year' % name: now().year,
             '%s__month' % name: now().month,
