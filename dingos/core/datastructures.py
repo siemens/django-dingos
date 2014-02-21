@@ -374,10 +374,10 @@ class DingoObjDict(ExtendedSortedDict):
 
 
                             counter += 1
-                    elif type(self[element]) == type("hallo") or type(self[element]) == unicode:
+                    elif isinstance(self[element],basestring):
                         logger.debug("Entered value branch for %s" % self[element])
                         # added this branch to deal with abbreviated dictionaries
-                        # that provide value direcly rather then via '_value' key in dictionary
+                        # that provide value directly rather then via '_value' key in dictionary
 
                         # temporarily append namespace
                         elt_names.append(element)

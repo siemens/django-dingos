@@ -707,6 +707,28 @@ dingos_class_map["InfoObject2Fact"] = InfoObject2Fact
 
 
 class FactTermNamespaceMap(DingoModel):
+    """
+    A mapping of components in a fact term to the namespace from which
+    they originated. For example, consider the following piece of XML::
+
+             <FileObj:FileObjectType>
+           <FileObj:File_Name datatype="String" condition="Equals">UNITED NATIONS COMPENSATION SCHEME...pdf
+           </FileObj:File_Name>
+           <FileObj:Hashes>
+               <Common:Hash>
+                   <Common:Type datatype="String">SHA256</Common:Type>
+                   <Common:Simple_Hash_Value datatype="hexBinary" condition="Equals">
+                   586fea79dd23a352a14c3f8bf3dbc9eb732e1d54f804a29160894aec55df4bd5
+                   </Common:Simple_Hash_Value>
+               </Common:Hash>
+
+    Here, for the fact term `Hashes/Hash/Type`, the 0th component `Hashes` would
+    be mapped to the `FileObj` namespace (or rather, the URI associated with the
+    tag `FileObj`), and the 1st and 2nd components `Hash` and `Type` to the
+    namespace associated with `Common`.
+
+    We keep this information around in case we require it to reproduce XML output.
+    """
 
     fact_term = models.ForeignKey(FactTerm)
 
@@ -721,6 +743,12 @@ dingos_class_map["FactTermNamespaceMap"] = FactTermNamespaceMap
 
 
 class PositionalNamespace(DingoModel):
+    """
+    A through model that allows to annotate a mapping between fact term
+    and namespaces with positional information (thus specifying, with
+    which component in a fact term the namespace should be mapped.
+
+    """
     fact_term_namespace_map = models.ForeignKey("FactTermNamespaceMap",
                                related_name="namespaces_thru",
                              )
@@ -1228,6 +1256,12 @@ class InfoObject(DingoModel):
 
 
     def to_dict(self,include_node_id=False,no_attributes=False,track_namespaces=False):
+        """
+        This function is currently geared very much towards writing
+        STIX/CybOX objects to a dictionary. That should not be the case -- the function
+        needs to be generic just as the from_dict function.
+        TODO: make function generic.
+        """
         flat_result = []
 
         def make_ns_slug(name_counter,slug='n'):
@@ -1346,7 +1380,7 @@ class InfoObject(DingoModel):
                 result['@ns'] = namespace_mapping["%s-%s" % (self.iobject_type.namespace.uri,self.iobject_type_revision)]
                 #result['@@iobject_type'] = self.iobject_type.name
                 return {'namespaces': dict(map(lambda x : (x[1],x[0]), namespace_mapping.items())),
-                        'object' : result
+                        'objects' : [result]
                 }
         else:
             return result
