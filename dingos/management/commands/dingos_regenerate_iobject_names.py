@@ -54,7 +54,11 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **options):
-        for io in InfoObject.objects.filter(iobject_type__name__icontains=options['restrict_by'],create_timestamp__gt=now() - timedelta(hours=int(options['hours_age']))):
+        if options['hours_age']:
+            iobjects = InfoObject.objects.filter(iobject_type__name__icontains=options['restrict_by'],create_timestamp__gt=now() - timedelta(hours=int(options['hours_age'])))
+        else:
+            iobjects = InfoObject.objects.filter(iobject_type__name__icontains=options['restrict_by'])
+        for io in iobjects:
             current_name = io.name
             print "Renaming %s with current name %s" % (io.identifier.uid,io.name)
             io.set_name()

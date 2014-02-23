@@ -21,6 +21,7 @@ import json
 from django import http
 from django.db.models import F
 from django.forms.formsets import formset_factory
+from braces.views import SuperuserRequiredMixin
 
 from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData, FactValue, get_or_create_fact
 
@@ -162,6 +163,8 @@ class UniqueSimpleFactSearch(BasicFilterView):
 
 class InfoObjectView_wo_login(BasicDetailView):
     """
+    View for viewing an InfoObject.
+
     Note that below we generate a query set for the facts by hand
     rather than carrying out the queries through the object-query.
     This is because the prefetch_related
@@ -220,14 +223,18 @@ class InfoObjectView_wo_login(BasicDetailView):
 
 
 class InfoObjectView(LoginRequiredMixin,InfoObjectView_wo_login):
+    """
+    View for viewing an InfoObject.
+    """
+
     pass
 
 
-class InfoObjectsEditView(LoginRequiredMixin,InfoObjectView_wo_login):
+class BasicInfoObjectEditView(LoginRequiredMixin,InfoObjectView_wo_login):
     """
     Attention: this view overwrites an InfoObject without creating
     a new revision. It is currently only used for editing the
-    UserConfigs.
+    UserConfigs or for edits carried out by the superuser.
     """
     template_name = 'dingos/%s/edits/InfoObjectsEdit.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Edit Info Object Details'
@@ -306,9 +313,18 @@ class InfoObjectsEditView(LoginRequiredMixin,InfoObjectView_wo_login):
 
         return super(InfoObjectView_wo_login,self).get(request, *args, **kwargs)
 
+class InfoObjectEditView(SuperuserRequiredMixin,BasicInfoObjectEditView):
+    """
+    Attention: this view overwrites an InfoObject without creating
+    a new revision. It is currently only used for editing the
+    UserConfigs or for edits carried out by the superuser.
+    """
+    pass
 
-class UserPrefsView(InfoObjectsEditView):
-
+class UserPrefsView(BasicInfoObjectEditView):
+    """
+    View for editing the user configuration of a user.
+    """
 
     def get_object(self):
         # We delete the session data in  order to achieve a reload
@@ -323,6 +339,10 @@ class UserPrefsView(InfoObjectsEditView):
 
 
 class CustomSearchesEditView(BasicTemplateView):
+    """
+    View for editing the saved searches of a user.
+    """
+
     template_name = 'dingos/%s/edits/SavedSearchesEdit.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Saved searches'
 
@@ -408,7 +428,10 @@ class CustomSearchesEditView(BasicTemplateView):
         return self.get(request, *args, **kwargs)
 
 class InfoObjectJSONView(BasicDetailView):
-    # Config for Prefetch/SelectRelated Mixins_
+    """
+    View for JSON representation of InfoObjects.
+    """
+
     select_related = ()
     prefetch_related = () # The to_dict function itself defines the necessary prefetch_stuff
 
