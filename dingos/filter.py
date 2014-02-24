@@ -87,12 +87,21 @@ class ExtendedDateRangeFilter(django_filters.DateRangeFilter):
 
 class InfoObjectFilter(django_filters.FilterSet):
 
-    iobject_type_qs = \
-        InfoObjectType.objects. \
-            exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
-            annotate(num_objects=Count('iobject_set')).\
-            filter(num_objects__gt=0).\
-            prefetch_related('iobject_family').order_by('iobject_family__name','name')
+    # We want to restrict the selection of InfoObject Types to those for which there are actually
+    # objects in the system. The first try to do so was the query below, but that becomes awfully
+    # slow with many objects in the system, because for some reason, Django makes the sQL query
+    # such that it orders as the very first on *all* objects.
+
+    #iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('iobject_set')). \
+    #    filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
+  
+
+    # The query below is a lot faster
+
+    iobject_type_qs_a = InfoObject.objects.order_by('iobject_type').distinct('iobject_type').values('iobject_type__id')
+    iobject_type_qs = InfoObjectType.objects.exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME).\
+                      filter(pk__in=iobject_type_qs_a.filter()).order_by('iobject_family__name','name').prefetch_related('iobject_family')
+
 
     iobject_type =  django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
                                                     required=None,
@@ -166,13 +175,29 @@ class FactTermValueFilter(django_filters.FilterSet):
                                                      label='Object name contains')
 
 
-    iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('iobject_set')). \
-        filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
+
+    # We want to restrict the selection of InfoObject Types to those for which there are actually
+    # objects in the system. The first try to do so was the query below, but that becomes awfully
+    # slow with many objects in the system, because for some reason, Django makes the sQL query
+    # such that it orders as the very first on *all* objects.
+
+    #iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('iobject_set')). \
+    #    filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
+  
+    # The query below is a lot faster
+
+
+    iobject_type_qs_a = InfoObject.objects.order_by('iobject_type').distinct('iobject_type').values('iobject_type__id')
+    iobject_type_qs = InfoObjectType.objects.exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME).\
+                      filter(pk__in=iobject_type_qs_a.filter()).order_by('iobject_family__name','name').prefetch_related('iobject_family')
+
 
     iobject__iobject_type = django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
                                                 required=None,
                                                 label="InfoObject Type",
                                                 to_field_name='id')
+
+
 
     iobject__timestamp = ExtendedDateRangeFilter(label='Object Timestamp')
 

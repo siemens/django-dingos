@@ -25,8 +25,7 @@ The default user configuration is defined in the constant ``DINGOS_DEFAULT_USER_
                                                         paginated views.""",
                                                     '_value' : '20'},
                                          },
-                                    'orientation' : {'@description': """Layout orientation. Possible values are 'vertical' and
-                                                              'horizontal'.""",
+                                    'orientation' : {'@description': """Layout orientation. Possible values are 'vertical', 'horizontal', and 'auto'.""",
                                                      '_value' : 'horizontal'}
                                    }
     
@@ -41,8 +40,8 @@ When a user logs in for the first time, the standard user configuration is copie
 user configuration. The user configuration can be viewed with the view named ``url.dingos.admin.view.userprefs`` --
 the standard URL for this view is ``../Admin/ViewUserPrefs``.
 
-Currently, there is no GUI interface to change the user settings. What you can do in order to experiment with the system
-is to change the default settings as indicated above and then reset the user preferences of your test user(s)
+A logged in user can edit the settings under the ``ViewUserPrefs``.
+Alternatively, for testing purposes, you can change the preferences
 via the command line interface::
 
     python manage.py dingos_manage_user_settings --reset preferences <user_name1> <user_name2> --settings=...
