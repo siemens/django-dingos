@@ -15,6 +15,11 @@ History
 
 * New/Modified views
 
+  * Modifications to all views
+
+    * Added possibility to switch between horizontal and vertical layout ...
+      or have automatic adjustment of the layout depending on screen width.
+
   * Modifications to filter views
 
     * Modified date-picker in filters to enable addition of timespans without
@@ -47,6 +52,11 @@ History
       displayed object is embedded
 
 * Bug fixes / Improvements
+
+  * Generation of filter views became unbearably slow when many
+    (> 40,000) InfoObjects are in the system. This was, because
+    of a badly built query within the dynamically built filter
+    form. This has been fixed.
 
   * Further development of JSON export (still needs work to make
     the to_dict function of InfoObjects generic and configurable such as
