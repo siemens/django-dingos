@@ -23,68 +23,6 @@ from types import StringType, NoneType, BooleanType
 
 logger = logging.getLogger(__name__)
 
-class ConfigDict_OUTDATED(object):
-    """
-
-    First attempt by ckoepp.
-
-    A helper class for using customized
-    configurations within django views
-    """
-
-    _orig_dict =  None
-    _stack = []
-
-    def __init__(self, orig_dict):
-        """
-        Needs to receive a dict-like object for init.
-        Note that it works with all dict-like objects WITHOUT a boolean as key!
-        """
-        self._orig_dict = orig_dict
-
-    def get(self, key):
-        """ Just a wrapper for __getitem__() """
-        return self.__getitem__(key)
-
-    def _clear_stack(self):
-        """ Just clears the stack and returns it's last value (centralized method) """
-        out = self._stack[len(self._stack)-1]
-        self._stack = []
-        return out
-
-    def __getitem__(self, key):
-        """
-        Returns itself until a "True" is given as key (as String instance).
-        In this very case all the former called keys are being tried.
-        If the path turns out to return a valid object it is returned.
-        Otherwise the SECOND LAST key argument (the one BEFORE bool) will
-        be returned as it represents the default value.
-
-        Example usage:
-          this_dict = ConfigDict({ 'first' : { 'second' : 20 } })
-          this_dict.get('first').get('second').get(1).get("True")
-          returns 20 instead of the 1 (which represents the default value)
-        """
-
-        # no bool? just append element and return yourself
-        if not key == "True":
-            self._stack.append(key)
-            return self
-
-        print self._stack
-        # time to create an output by going along stack (last element of stack is DEFAULT value!)
-        current_element = self._orig_dict
-        for i in range(0, len(self._stack)-1):
-            try:
-                current_element = current_element[self._stack[i]]
-
-            # exception raised (TypeError or KeyError)? Return default value
-            except Exception as e:
-                return self._clear_stack()
-
-        return self._clear_stack()
-
-
 class ConfigDict(collections.Mapping):
     """
     A wrapper for a dictionary structure that supports the following behavior

@@ -49,7 +49,7 @@ Dingos-specific features
 User configurations
 ...................
 
-Since Dingos 0.1.1, Dingos offers resources for structured management of user-specific
+Since Dingos 0.2.0, Dingos offers resources for structured management of user-specific
 data such as user-configurations. Please refer to :doc:`dingos_guide_to_userconfiguration` for
 more information.
 
