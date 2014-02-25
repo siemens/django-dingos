@@ -56,7 +56,9 @@ class InfoObjectList(BasicFilterView):
         'iobject_family',
         'identifier__namespace',
         'iobject_family_revision',
-        'identifier').select_related().distinct().order_by('-latest_of__pk')
+        'identifier').order_by('-latest_of__pk')
+        ### JG/STB: edit for performance
+        #'identifier').select_related().distinct().order_by('-latest_of__pk')
 
 class InfoObjectList_Id_filtered(BasicFilterView):
 
