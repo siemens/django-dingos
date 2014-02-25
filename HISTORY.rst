@@ -71,7 +71,9 @@ History
     throws an exception: it continues with import of the next file.
 
   * Added command line arguments to basic import command:
+
     * ability to add IDs of marking objects to be added to imported objects
+
     * ability to automatically move imported XML files to other folder after
       import
 
