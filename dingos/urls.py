@@ -33,9 +33,9 @@ urlpatterns = patterns('',
     url(r'^Edit/SavedSearches$',
         views.CustomSearchesEditView.as_view(),
         name="url.dingos.admin.edit.savedsearches"),
-    url(r'^Create/Query/?$',
-        views.CreateQueryView.as_view(),
-        name="url.dingos.admin.createquery"),
+    url(r'^Search/CustomSearch/?$',
+        views.CustomSearchView.as_view(),
+        name="url.dingos.admin.customquery"),
 
     # Detail-view with highlight and anchor on certain node
     # solved below with a redirect, because with the 'url' template

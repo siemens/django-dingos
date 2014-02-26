@@ -30,5 +30,5 @@ class EditSavedSearchesForm(forms.Form):
     view = forms.CharField(max_length=256,widget=widgets.HiddenInput)
     new_entry = forms.BooleanField(widget=widgets.HiddenInput,required=False)
 
-class CreateQueryForm(forms.Form):
+class CustomQueryForm(forms.Form):
     query = forms.CharField(widget=widgets.Textarea(attrs={'cols':100,'rows':10,'style': 'height:auto; width:auto;'}))
