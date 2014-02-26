@@ -29,7 +29,9 @@ from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, 
 
 from braces.views import LoginRequiredMixin
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView
-
+from queryparser.querylexer import *
+from queryparser.queryparser import *
+from queryparser.querytree import *
 
 class InfoObjectList(BasicFilterView):
 
@@ -356,7 +358,8 @@ class CustomSearchView(BasicTemplateView):
 
         if self.form.is_valid():
             query = self.form.cleaned_data['query']
-            # TODO parse query
-            print query
+            parser = QueryParser()
+            object_tree = parser.parse(query)
+            print object_tree
 
         return self.get(request, *args, **kwargs)
