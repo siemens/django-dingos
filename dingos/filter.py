@@ -98,7 +98,7 @@ class InfoObjectFilter(django_filters.FilterSet):
 
     # The query below is a lot faster
 
-    iobject_type_qs_a = InfoObject.objects.order_by('iobject_type').distinct('iobject_type').values('iobject_type__id')
+    iobject_type_qs_a = InfoObject.objects.values('iobject_type__id').distinct()
     iobject_type_qs = InfoObjectType.objects.exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME).\
                       filter(pk__in=iobject_type_qs_a.filter()).order_by('iobject_family__name','name').prefetch_related('iobject_family')
 
@@ -187,9 +187,9 @@ class FactTermValueFilter(django_filters.FilterSet):
     # The query below is a lot faster
 
 
-    iobject_type_qs_a = InfoObject.objects.order_by('iobject_type').distinct('iobject_type').values('iobject_type__id')
+    iobject_type_qs_a = InfoObject.objects.values('iobject_type__id').distinct()
     iobject_type_qs = InfoObjectType.objects.exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME).\
-                      filter(pk__in=iobject_type_qs_a.filter()).order_by('iobject_family__name','name').prefetch_related('iobject_family')
+                      filter(pk__in=iobject_type_qs_a.all()).order_by('iobject_family__name','name').prefetch_related('iobject_family')
 
 
     iobject__iobject_type = django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
