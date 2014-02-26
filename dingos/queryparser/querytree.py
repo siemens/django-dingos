@@ -5,46 +5,80 @@
 #
 # query object hierarchy
 #---------------------------------------
+from django.db.models import Q
+
+
 class Operator:
     OR = "|"
     AND = "&"
+
 
 class Comparator:
     EQUALS = "="
     CONTAINS = "contains"
     REGEXP = "regexp"
 
+
 class FilterCollection:
     def __init__(self):
-        self.filterList = []
+        self.filter_list = []
 
-    def addNewFilter(self, newFilter):
-        self.filterList.insert(0, newFilter)
+    def add_new_filter(self, new_filter):
+        self.filter_list.insert(0, new_filter)
+
+    def get_filter_list(self):
+        q_list = []
+        for i, oneFilter in enumerate(self.filter_list):
+            q_list.append(oneFilter.build_q())
+        return q_list
 
     def __repr__(self):
         result = "{"
-        for i, cur in enumerate(self.filterList):
+        for i, cur in enumerate(self.filter_list):
             if i != 0:
                 result += " --> "
             result += str(cur)
         result += "}"
         return result
 
+
 class Expression:
-    def __init__(self, leftExpression, operator, rightExpression):
-        self.left = leftExpression
+    def __init__(self, left, operator, right):
+        self.left = left
         self.op = operator
-        self.right = rightExpression
+        self.right = right
+
+    def build_q(self):
+        result = self.left.build_q()
+        if self.op == Operator.AND:
+            result = result & self.right.build_q()
+        elif self.op == Operator.OR:
+            result = result | self.right.build_q()
+        return result
+
     def __repr__(self):
         return "(%s %s %s)" % (self.left, self.op, self.right)
+
 
 class Condition:
     def __init__(self, key, comparator, value):
         self.key = key
         self.comparator = comparator
         self.value = value
+
+    def build_q(self):
+        result = None
+        if self.comparator == Comparator.EQUALS:
+            result = Q(**{self.key + "__exact": self.value})
+        elif self.comparator == Comparator.CONTAINS:
+            result = Q(**{self.key + "__icontains": self.value})
+        elif self.comparator == Comparator.REGEXP:
+            result = Q(**{self.key + "__regex": self.value})
+        return result
+
     def __repr__(self):
         return "%s %s %s" % (self.key, self.comparator, self.value)
+
 
 if __name__ == "__main__":
     # Example: (key1="val1" || (key2="val2" && key3="val3")) && ((key4="val4" && key5="val5") || key6="val6")
@@ -79,10 +113,9 @@ if __name__ == "__main__":
 
     # Build a silly filter for test issues
     test = FilterCollection()
-    test.addNewFilter(expr5)
-    test.addNewFilter(expr4)
-    test.addNewFilter(expr3)
-    test.addNewFilter(expr2)
-    test.addNewFilter(expr1)
+    test.add_new_filter(expr5)
+    test.add_new_filter(expr4)
+    test.add_new_filter(expr3)
+    test.add_new_filter(expr2)
+    test.add_new_filter(expr1)
     print test
-

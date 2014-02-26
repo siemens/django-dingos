@@ -19,7 +19,7 @@ import re
 import json
 
 from django import http
-from django.db.models import F
+from django.db.models import F, Q
 from django.forms.formsets import formset_factory
 
 from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData
@@ -29,7 +29,6 @@ from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, 
 
 from braces.views import LoginRequiredMixin
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView
-from queryparser.querylexer import *
 from queryparser.queryparser import *
 from queryparser.querytree import *
 
@@ -350,16 +349,29 @@ class CustomSearchView(BasicTemplateView):
         return context
 
     def get(self, request, *args, **kwargs):
-        self.form = CustomQueryForm()
+        self.form = CustomQueryForm(request.POST)
         return super(BasicTemplateView,self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         self.form = CustomQueryForm(request.POST)
 
         if self.form.is_valid():
+            print "#########################################################"
             query = self.form.cleaned_data['query']
+            print "QUERY: " + query
+
+            # Parse query
             parser = QueryParser()
-            object_tree = parser.parse(query)
-            print object_tree
+            filterCollection = parser.parse(query)
+
+            # Generate and execute query
+            filter_list = filterCollection.get_filter_list()
+            objects = getattr(InfoObject, 'objects')
+            for i, oneFilter in enumerate(filter_list):
+                print "Filter: %s" % str(oneFilter)
+                #objects = objects.filter(oneFilter)
+                objects = getattr(objects, 'filter')(oneFilter)
+                print "Amount: %d" % len(objects)
+            print "#########################################################"
 
         return self.get(request, *args, **kwargs)

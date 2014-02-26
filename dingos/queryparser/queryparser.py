@@ -31,16 +31,15 @@ class QueryParser:
     def p_query_2(self, p):
         "query : expr"
         p[0] = FilterCollection()
-        p[0].addNewFilter(p[1])
+        p[0].add_new_filter(p[1])
 
     def p_query_3(self, p):
         "query : expr FILTER query"
         p[0] = p[3]
-        p[0].addNewFilter(p[1])
+        p[0].add_new_filter(p[1])
 
     def p_expr_1(self, p):
         "expr : OPEN expr CLOSE"
-        o(3)
         p[0] = p[2]
 
     def p_expr_2(self, p):
@@ -48,16 +47,29 @@ class QueryParser:
         p[0] = Expression(p[1], p[2], p[3])
 
     def p_expr_3(self, p):
-        "expr : key EQUALS VALUE"
+        "expr : key EQUALS value"
         p[0] = Condition(p[1], Comparator.EQUALS, p[3])
 
     def p_expr_4(self, p):
-        "expr : key CONTAINS VALUE"
+        "expr : key CONTAINS value"
         p[0] = Condition(p[1], Comparator.CONTAINS, p[3])
 
     def p_expr_5(self, p):
-        "expr : key REGEXP VALUE"
+        "expr : key REGEXP value"
         p[0] = Condition(p[1], Comparator.REGEXP, p[3])
+
+    def p_value_1(self, p):
+        "value : VALUE"
+        # The quotes need to be removed here in the parser
+        # because the lexer cannot cover the following
+        # examples with regular expressions conveniently.
+        # Legal:
+        #     'fo"o' => fo"o
+        #     "b'ar" => f'oo
+        # Illegal:
+        #     'foo" => FAILURE!
+        #     "bar' => FAILURE!
+        p[0] = p[1][1:-1]
 
     def p_key_1(self, p):
         """key : FIELD
@@ -72,9 +84,6 @@ class QueryParser:
         "boolop : OR"
         p[0] = Operator.OR
 
-
-def o(output):
-    pass
 
 # Main
 if __name__ == "__main__":
