@@ -1,4 +1,4 @@
-{% extends "dingos/grappelli/details/base_details.html" %}
+{% extends "dingos/grappelli/edits/base_edits.html" %}
 
 {% comment %}
 Copyright (c) Siemens AG, 2013
@@ -21,10 +21,23 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% load dingos_tags %}
 
+{% block extrahead %}
+    <script type="text/javascript" charset="utf-8">
+        (function ($) {
+            $(document).ready(function () {
 
+                (function ($) {
+                    $(document).ready(function () {
+                        $("#grp-content-container .grp-collapse").grp_collapsible();
+                    });
+                })(grp.jQuery);
+            });
+        })(grp.jQuery);
+    </script>
+{% endblock %}
 
 {% block content_title %}
-    <h1>Info Object: <a href={% url 'url.dingos.view.infoobject' object.id %}>
+    <h1>Edit Info Object: <a href={% url 'url.dingos.view.infoobject' object.id %}>
         {% if object.name == 'PLACEHOLDER' %}
             {{object.iobject_type.name}}
         {% else %}
@@ -34,8 +47,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endblock %}
 
 {% block content %}
-
-
 
     <div class= {% if customization.horizontal.dingos.view.orientation == 'horizontal' %}
                 "l-2cr-fluid l-d-8"
@@ -52,15 +63,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
         </div>
         <div class="c-2">
             {% show_InfoObjectIDData object %}
-            {% show_InfoObject object iobject2facts highlight=highlight show_NodeID=show_NodeID%}
-
+            {% show_InfoObject object iobject2facts highlight=highlight show_NodeID=show_NodeID formset=formset formindex=formindex %}
         </div>
-
     </div>
 
-
-
-
 {% endblock %}
-
-

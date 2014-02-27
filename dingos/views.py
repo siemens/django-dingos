@@ -21,14 +21,20 @@ import json
 from django import http
 from django.db.models import F, Q
 from django.forms.formsets import formset_factory
+
 from django.contrib import messages
 from django.db import DataError
 from django.core.exceptions import FieldError
 
-from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData
+from braces.views import SuperuserRequiredMixin
+
+from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData, FactValue, get_or_create_fact
+
+
 from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
-from dingos.forms import EditSavedSearchesForm, CustomQueryForm
+from dingos.forms import EditSavedSearchesForm, CustomQueryForm, EditInfoObjectFieldForm
 from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME, DINGOS_SAVED_SEARCHES_TYPE_NAME, DINGOS_DEFAULT_SAVED_SEARCHES
+
 
 from braces.views import LoginRequiredMixin
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView
@@ -56,7 +62,9 @@ class InfoObjectList(BasicFilterView):
         'iobject_family',
         'identifier__namespace',
         'iobject_family_revision',
-        'identifier').select_related().distinct().order_by('-latest_of__pk')
+        'identifier').order_by('-latest_of__pk')
+        ### JG/STB: edit for performance
+        #'identifier').select_related().distinct().order_by('-latest_of__pk')
 
 class InfoObjectList_Id_filtered(BasicFilterView):
 
@@ -163,6 +171,8 @@ class UniqueSimpleFactSearch(BasicFilterView):
 
 class InfoObjectView_wo_login(BasicDetailView):
     """
+    View for viewing an InfoObject.
+
     Note that below we generate a query set for the facts by hand
     rather than carrying out the queries through the object-query.
     This is because the prefetch_related
@@ -221,9 +231,109 @@ class InfoObjectView_wo_login(BasicDetailView):
 
 
 class InfoObjectView(LoginRequiredMixin,InfoObjectView_wo_login):
+    """
+    View for viewing an InfoObject.
+    """
+
     pass
 
-class UserPrefsView(InfoObjectView_wo_login):
+
+class BasicInfoObjectEditView(LoginRequiredMixin,InfoObjectView_wo_login):
+    """
+    Attention: this view overwrites an InfoObject without creating
+    a new revision. It is currently only used for editing the
+    UserConfigs or for edits carried out by the superuser.
+    """
+    template_name = 'dingos/%s/edits/InfoObjectsEdit.html' % DINGOS_TEMPLATE_FAMILY
+    title = 'Edit Info Object Details'
+
+    attr_editable = False # set to True to also allow editing of attributes
+
+    # we use a formset to deal with a varying number of forms
+
+    form_class = formset_factory(EditInfoObjectFieldForm, extra=0)
+
+
+
+    index = {}
+    form_builder = []
+
+    def build_form(self):
+
+        self.form_builder = []
+        self.index = {}
+        cnt = 0
+
+        for io2f in self.iobject2facts:
+
+            if len(io2f.fact.fact_values.all()) == 1 and io2f.fact.value_iobject_id == None \
+                and ( (self.attr_editable and io2f.fact.fact_term.attribute != "") or \
+                          not io2f.fact.fact_term.attribute ):
+                value_obj = io2f.fact.fact_values.all()[0]
+                self.form_builder.append( { 'value' : value_obj.value } )
+                self.index.update( { io2f.node_id.name :  (cnt,value_obj) } )
+                cnt += 1
+
+
+
+    def get_context_data(self, **kwargs):
+        context = super(InfoObjectView_wo_login, self).get_context_data(**kwargs)
+        context.update(super(LoginRequiredMixin, self).get_context_data(**kwargs))
+
+        self.build_form()
+
+        context['formset'] = self.form_class(initial=self.form_builder)
+        context['formindex'] = self.index
+
+
+        return context
+
+    def get(self, request, *args, **kwargs):
+
+        return super(InfoObjectView_wo_login,self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        super(InfoObjectView_wo_login,self).get(request, *args, **kwargs)
+        self.build_form()
+
+        user_data = self.get_user_data()
+        self.formset = self.form_class(request.POST.dict())
+
+        if self.formset.is_valid() and request.user.is_authenticated():
+
+            for io2f in self.iobject2facts:
+                if io2f.node_id.name in self.index:
+                    current_value = self.index[io2f.node_id.name][1]
+                    post_value = self.formset.forms[self.index[io2f.node_id.name][0]].cleaned_data['value']
+
+                    if current_value.value != post_value:
+
+                        new_fact,created = get_or_create_fact(io2f.fact.fact_term,
+                                                      fact_dt_name=current_value.fact_data_type.name,
+                                                      fact_dt_namespace_uri=current_value.fact_data_type.namespace.uri,
+                                                      values=[post_value],
+                                                      value_iobject_id=None,
+                                                      value_iobject_ts=None,
+                                                      )
+                        io2f.fact = new_fact
+                        io2f.save()
+                        print io2f.fact
+
+        return super(InfoObjectView_wo_login,self).get(request, *args, **kwargs)
+
+class InfoObjectEditView(SuperuserRequiredMixin,BasicInfoObjectEditView):
+    """
+    Attention: this view overwrites an InfoObject without creating
+    a new revision. It is currently only used for editing the
+    UserConfigs or for edits carried out by the superuser.
+    """
+    pass
+
+class UserPrefsView(BasicInfoObjectEditView):
+    """
+    View for editing the user configuration of a user.
+    """
+
     def get_object(self):
         # We delete the session data in  order to achieve a reload
         # when viewing this page.
@@ -232,17 +342,20 @@ class UserPrefsView(InfoObjectView_wo_login):
             del(self.request.session['customization'])
             del(self.request.session['customization_for_authenticated'])
         except KeyError, err:
-                pass
+            pass
         return UserData.get_user_data_iobject(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
 
+
 class CustomSearchesEditView(BasicTemplateView):
+    """
+    View for editing the saved searches of a user.
+    """
+
     template_name = 'dingos/%s/edits/SavedSearchesEdit.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Saved searches'
 
     form_class = formset_factory(EditSavedSearchesForm, can_order=True, can_delete=True,extra=0)
-
     formset = None
-
 
     def get_context_data(self, **kwargs):
         context = super(CustomSearchesEditView, self).get_context_data(**kwargs)
@@ -323,7 +436,10 @@ class CustomSearchesEditView(BasicTemplateView):
         return self.get(request, *args, **kwargs)
 
 class InfoObjectJSONView(BasicDetailView):
-    # Config for Prefetch/SelectRelated Mixins_
+    """
+    View for JSON representation of InfoObjects.
+    """
+
     select_related = ()
     prefetch_related = () # The to_dict function itself defines the necessary prefetch_stuff
 

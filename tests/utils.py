@@ -51,15 +51,9 @@ def deltaCalc(func):
 
     def inner(*args, **kwargs):
         count_pre = object_counter()
-        #print "PRE"
-        #pp.pprint(count_pre)
         result = func(*args, **kwargs)
         count_post = object_counter()
-        #print "POST"
-        #pp.pprint(count_post)
         delta = object_count_delta(count_pre, count_post)
-        #print "DELTA"
-        #pp.pprint(delta)
         return (delta, result)
 
     return inner

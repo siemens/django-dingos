@@ -1,3 +1,21 @@
+# Copyright (c) Siemens AG, 2013
+#
+# This file is part of MANTIS.  MANTIS is free software: you can
+# redistribute it and/or modify it under the terms of the GNU General Public
+# License as published by the Free Software Foundation; either version 2
+# of the License, or(at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 51
+# Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+
 from django.conf.urls import patterns, url
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
@@ -17,7 +35,7 @@ urlpatterns = patterns('',
         name= "url.dingos.view.infoobject"),
     url(r'^Admin/ViewUserPrefs/?$',
         views.UserPrefsView.as_view(),
-        name= "url.dingos.admin.view.userprefs",),
+        name= "url.dingos.admin.view.userprefs"),
     url(r'^View/InfoObject/(?P<pk>\d*)/json$',
         views.InfoObjectJSONView.as_view(),
         name= "url.dingos.view.infoobject.json"),
@@ -36,6 +54,13 @@ urlpatterns = patterns('',
     url(r'^Search/CustomSearch/?$',
         views.CustomSearchView.as_view(),
         name="url.dingos.admin.customquery"),
+
+    # Uncommenting below enables an edit view for InfoObjects
+    # that will overwrite an InfoObject without creating an
+    # new revision!!!
+    #url(r'^Edit/InfoObject/(?P<pk>\d*)/$',
+    #    views.InfoObjectsEditView.as_view(),
+    #    name="url.dingos.admin.edit.infoobject"),
 
     # Detail-view with highlight and anchor on certain node
     # solved below with a redirect, because with the 'url' template
