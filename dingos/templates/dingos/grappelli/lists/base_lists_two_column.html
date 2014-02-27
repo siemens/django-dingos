@@ -120,15 +120,29 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
         $ = grp.jQuery; // use grappellis jQuery in a standard way instead of custom namespace
         
-        // AJAX ASYNCHRONOUS REQUEST (TYPE 1)
-        if (style == 1) {
-          $.ajax({ 
-                    url: url, 
-                    data: form.serialize(),
-                    type: method,
-                    success: function(data,state){ info.html("Submition "+state); },
-                    error: function(data, state, error) { info.html("Submition error: "+error); }
+        // AJAX ASYNCHRONOUS REQUEST (TYPE 1 and TYPE 2)
+        if (style == 1 || style == 2) {
+          var ajax = $.ajax({ 
+                        url: url, 
+                        data: form.serialize(),
+                        type: method,
+                        success: function(data,state){ info.html("Submition "+state); },
+                        error: function(data, state, error) { info.html("Submition error: "+error); }
                  });
+          
+          if (style == 2) 
+            ajax.done(function(data){ $('<div id="dialog"></div>').html(data).dialog( 
+                    { modal: true, 
+                      title: "Results", 
+                      width: 330, 
+                      resizeable: true, 
+                      autoOpen: true, 
+                      open: function (event, ui) { // needed because grappelli uses unclean zIndex values (which makes text visible on dialoge box)
+                              $('#dialog').parent('.ui-dialog').css('zIndex', 99999).nextAll('.ui-widget-overlay').css('zIndex', 99999);
+                      }
+                    });
+            });
+
           return false;
         }
 
@@ -160,7 +174,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     if ( _enable_button ) {
 
       (function($) {
-        $(document).on('click', '#action-submit, :button', function() { submit_prepare($); });
+        $(document).on('click', '#action-submit', function() { submit_prepare($); });
       })(grp.jQuery);
 
     }

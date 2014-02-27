@@ -52,7 +52,8 @@ class InfoObjectList(BasicFilterView):
 
     title = 'List of Info Objects (generic filter)'
 
-    list_actions = [ ('dummy1', 'url.dingos.action_demo', 0), ('dummy2', 'url.dingos.action_demo', 1) ]
+    # 0 : standard request | 1 : async. ajax | 2 : async. ajax + dialoge
+    list_actions = [ ('dummy0', 'url.dingos.action_demo', 0), ('dummy1', 'url.dingos.action_demo', 1), ('dummy2', 'url.dingos.action_demo', 2) ]
 
     queryset = InfoObject.objects.\
         exclude(latest_of=None). \
