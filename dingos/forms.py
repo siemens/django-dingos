@@ -35,7 +35,7 @@ class EditSavedSearchesForm(forms.Form):
 
 
 class CustomQueryForm(forms.Form):
-    query = forms.CharField(widget=widgets.Textarea(attrs={'cols':100,'rows':10,'style': 'height:auto; width:auto;'}))
+    query = forms.CharField(required=False,widget=widgets.Textarea(attrs={'cols':100,'rows':10,'style': 'height:auto; width:auto;'}))
 
 class EditInfoObjectFieldForm(forms.Form):
     value = forms.CharField(required=True, widget=widgets.TextInput(attrs={'size':10,'class':'vTextField'}))

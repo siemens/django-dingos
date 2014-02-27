@@ -456,19 +456,21 @@ class InfoObjectJSONView(BasicDetailView):
                                  content_type='application/json',
                                  **httpresponse_kwargs)
 
-class CustomSearchView(BasicTemplateView):
+class CustomSearchView(BasicListView):
     template_name = 'dingos/%s/searches/CustomSearch.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Custom Search'
     form = None
+    object_list = []
 
     def get_context_data(self, **kwargs):
         context = super(CustomSearchView, self).get_context_data(**kwargs)
         context['form'] = self.form
+        context['object_list'] = self.object_list
         return context
 
     def get(self, request, *args, **kwargs):
         self.form = CustomQueryForm(request.POST)
-        return super(BasicTemplateView,self).get(request, *args, **kwargs)
+        return super(BasicListView,self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         self.form = CustomQueryForm(request.POST)
@@ -485,6 +487,7 @@ class CustomSearchView(BasicTemplateView):
 
                 # Generate and execute query
                 filter_list = filterCollection.get_filter_list()
+                print filter_list
                 objects = getattr(InfoObject, 'objects')
                 for i, oneFilter in enumerate(filter_list):
                     print "Filter: %s" % str(oneFilter)
@@ -497,5 +500,7 @@ class CustomSearchView(BasicTemplateView):
             except FieldError as error:
                 messages.error(self.request, error)
             print "#########################################################"
+
+            self.object_list = InfoObject.objects.all()
 
         return self.get(request, *args, **kwargs)
