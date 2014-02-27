@@ -1,11 +1,27 @@
-#!/usr/bin/env python
-
-# --------------------------------------
-# querylexer.py
+# Copyright (c) Siemens AG, 2014
 #
-# tokenizer for the query language
-#---------------------------------------
+# This file is part of MANTIS.  MANTIS is free software: you can
+# redistribute it and/or modify it under the terms of the GNU General Public
+# License as published by the Free Software Foundation; either version 2
+# of the License, or(at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 51
+# Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
 import ply.lex as lex
+
+
+class QueryLexerException(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+    def __str__(self):
+        return self.msg
 
 class QueryLexer:
     # Reserved words
@@ -30,7 +46,7 @@ class QueryLexer:
     t_EQUALS = (r"\=")
     t_VALUE = (r"(\"[^\"]*\"|\'[^\']*\')")
     t_FILTER = (r"\|")
-    t_FACTTERM = (r"\[[a-zA-Z0-9]*\/[a-zA-Z0-9]*\]")
+    t_FACTTERM = (r"\[[a-zA-Z0-9_]*\/[a-zA-Z0-9_]*\]")
 
     # Ignore whitespaces
     t_ignore = "\t\n\r "
@@ -42,9 +58,8 @@ class QueryLexer:
     def t_error(self, t):
         illegal_char = t.value[0].encode("string-escape")
         lineno = t.lexer.lineno
-        print "Illegal character: %s" % illegal_char
-        print "t: %s"
         t.lexer.skip(1)
+        raise QueryLexerException("Illegal character: \"%s\"" % illegal_char)
 
     # Build lexer
     def build(self, **kwargs):

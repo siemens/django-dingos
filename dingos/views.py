@@ -15,7 +15,6 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import re
 import json
 
 from django import http
@@ -28,7 +27,7 @@ from django.core.exceptions import FieldError
 
 from braces.views import SuperuserRequiredMixin
 
-from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData, FactValue, get_or_create_fact
+from dingos.models import InfoObject2Fact, InfoObject, UserData, get_or_create_fact
 
 
 from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
@@ -39,6 +38,7 @@ from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, 
 from braces.views import LoginRequiredMixin
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView
 from queryparser.queryparser import QueryParser, QueryParserException
+from queryparser.querylexer import QueryLexerException
 
 class InfoObjectList(BasicFilterView):
 
@@ -470,36 +470,23 @@ class CustomSearchView(BasicListView):
         self.form = CustomQueryForm(request.GET)
         self.queryset = []
 
-        print "\n\n#########################################################"
         if request.GET.has_key('execute_query') and self.form.is_valid():
             if request.GET['query'] == "":
                 messages.error(self.request, "Please enter a query.")
             else:
-                query = self.form.cleaned_data['query']
-                print "QUERY: " + query
-
                 try:
                     # Parse query
                     parser = QueryParser()
+                    query = self.form.cleaned_data['query']
                     filterCollection = parser.parse(str(query))
 
                     # Generate and execute query
                     filter_list = filterCollection.get_filter_list()
-                    print filter_list
                     objects = getattr(InfoObject, 'objects')
                     for i, oneFilter in enumerate(filter_list):
-                        print "Filter: %s" % str(oneFilter)
                         objects = getattr(objects, 'filter')(oneFilter)
-                        print "Amount: %d" % len(objects)
                     self.queryset = objects
-                except DataError as error:
-                    messages.error(self.request, str(error))
-                except QueryParserException as ex:
-                    messages.error(self.request, ex.msg)
-                except FieldError as error:
-                    messages.error(self.request, error)
-
-                #self.queryset = InfoObject.objects.all()
-        print "#########################################################"
+                except (DataError, QueryParserException, FieldError, QueryLexerException) as ex:
+                    messages.error(self.request, str(ex))
 
         return super(BasicListView,self).get(request, *args, **kwargs)

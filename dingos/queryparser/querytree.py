@@ -1,10 +1,19 @@
-#!/usr/bin/env python
-
-# --------------------------------------
-# querytree.py
+# Copyright (c) Siemens AG, 2014
 #
-# query object hierarchy
-#---------------------------------------
+# This file is part of MANTIS.  MANTIS is free software: you can
+# redistribute it and/or modify it under the terms of the GNU General Public
+# License as published by the Free Software Foundation; either version 2
+# of the License, or(at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 51
+# Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
 from django.db.models import Q
 
 
@@ -67,55 +76,24 @@ class Condition:
         self.value = value
 
     def build_q(self):
-        result = None
+        # Operator choice
+        q_operator = ""
         if self.comparator == Comparator.EQUALS:
-            result = Q(**{self.key + "__iexact": self.value})
+            q_operator = "__iexact"
         elif self.comparator == Comparator.CONTAINS:
-            result = Q(**{self.key + "__icontains": self.value})
+            q_operator = "__icontains"
         elif self.comparator == Comparator.REGEXP:
-            result = Q(**{self.key + "__iregex": self.value})
+            q_operator = "__iregex"
+
+        # Fact term condition
+        if self.key[0] == "[" and self.key[-1] == "]":
+            result = Q(**{"fact_thru__fact__fact_term__term__iexact": self.key[1:-1]})
+            result = result & Q(**{"fact_thru__fact__fact_values__value" + q_operator: self.value})
+        # Field condition
+        else:
+            result = Q(**{self.key + q_operator: self.value})
+
         return result
 
     def __repr__(self):
         return "%s %s %s" % (self.key, self.comparator, self.value)
-
-
-if __name__ == "__main__":
-    # Example: (key1="val1" || (key2="val2" && key3="val3")) && ((key4="val4" && key5="val5") || key6="val6")
-    #   - Expression (type: AND)
-    #       - Expression (type: OR)
-    #           - Condition (key: "key1", comparator: EQ, value: "val1")
-    #           - Expression (type: AND)
-    #               - Condition (key: "key2", comparator: EQ, value: "val2")
-    #               - Condition (key: "key3", comparator: EQ, value: "val3")
-    #       - Expression (type: OR)
-    #           - Expression (type: AND)
-    #               - Condition (key: "key4", comparator: EQ, value: "val4")
-    #               - Condition (key: "key5", comparator: EQ, value: "val5")
-    #           - Condition (key: "key6", comparator: EQ, value: "val6")
-
-    # First branch
-    cond2 = Condition("key2", Comparator.EQUALS, "val2")
-    cond3 = Condition("key3", Comparator.EQUALS, "val3")
-    expr1 = Expression(cond2, Operator.AND, cond3)
-    cond1 = Condition("key1", Comparator.EQUALS, "val1")
-    expr2 = Expression(cond1, Operator.OR, expr1)
-
-    # Second branch
-    cond4 = Condition("key4", Comparator.EQUALS, "val4")
-    cond5 = Condition("key5", Comparator.EQUALS, "val5")
-    expr3 = Expression(cond4, Operator.AND, cond5)
-    cond6 = Condition("key6", Comparator.EQUALS, "val6")
-    expr4 = Expression(expr3, Operator.OR, cond6)
-
-    # Whole query
-    expr5 = Expression(expr2, Operator.AND, expr4)
-
-    # Build a silly filter for test issues
-    test = FilterCollection()
-    test.add_new_filter(expr5)
-    test.add_new_filter(expr4)
-    test.add_new_filter(expr3)
-    test.add_new_filter(expr2)
-    test.add_new_filter(expr1)
-    print test
