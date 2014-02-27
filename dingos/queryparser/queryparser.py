@@ -81,12 +81,17 @@ class QueryParser:
         p[0] = p[1][1:-1]
 
     def p_key_1(self, p):
+        """key : FIELD
+                | FACTTERM"""
+        p[0] = p[1]
+
+    '''def p_key_1(self, p):
         "key : FIELD"
         p[0] = p[1]
 
     def p_key_1(self, p):
         "key : FACTTERM"
-        p[0] = p[1]
+        p[0] = p[1]'''
 
     def p_boolop_1(self, p):
         "boolop : AND"

@@ -467,38 +467,39 @@ class CustomSearchView(BasicListView):
         return context
 
     def get(self, request, *args, **kwargs):
-        #self.form = CustomQueryForm(request.POST)
-        #return super(BasicListView,self).get(request, *args, **kwargs)
-
-        #def post(self, request, *args, **kwargs):
         self.form = CustomQueryForm(request.GET)
+        self.queryset = []
 
-        if self.form.is_valid():
-            print "\n\n#########################################################"
-            query = self.form.cleaned_data['query']
-            print "QUERY: " + query
+        print "\n\n#########################################################"
+        if request.GET.has_key('execute_query') and self.form.is_valid():
+            if request.GET['query'] == "":
+                messages.error(self.request, "Please enter a query.")
+            else:
+                query = self.form.cleaned_data['query']
+                print "QUERY: " + query
 
-            try:
-                # Parse query
-                parser = QueryParser()
-                filterCollection = parser.parse(str(query))
+                try:
+                    # Parse query
+                    parser = QueryParser()
+                    filterCollection = parser.parse(str(query))
 
-                # Generate and execute query
-                filter_list = filterCollection.get_filter_list()
-                print filter_list
-                objects = getattr(InfoObject, 'objects')
-                for i, oneFilter in enumerate(filter_list):
-                    print "Filter: %s" % str(oneFilter)
-                    objects = getattr(objects, 'filter')(oneFilter)
-                    print "Amount: %d" % len(objects)
-            except DataError as error:
-                messages.error(self.request, str(error))
-            except QueryParserException as ex:
-                messages.error(self.request, ex.msg)
-            except FieldError as error:
-                messages.error(self.request, error)
-            print "#########################################################"
+                    # Generate and execute query
+                    filter_list = filterCollection.get_filter_list()
+                    print filter_list
+                    objects = getattr(InfoObject, 'objects')
+                    for i, oneFilter in enumerate(filter_list):
+                        print "Filter: %s" % str(oneFilter)
+                        objects = getattr(objects, 'filter')(oneFilter)
+                        print "Amount: %d" % len(objects)
+                    self.queryset = objects
+                except DataError as error:
+                    messages.error(self.request, str(error))
+                except QueryParserException as ex:
+                    messages.error(self.request, ex.msg)
+                except FieldError as error:
+                    messages.error(self.request, error)
 
-            self.queryset = InfoObject.objects.all()
+                #self.queryset = InfoObject.objects.all()
+        print "#########################################################"
 
-        return super(BasicListView,self).get(request, *args, **kwargs) #self.get(request, *args, **kwargs)
+        return super(BasicListView,self).get(request, *args, **kwargs)
