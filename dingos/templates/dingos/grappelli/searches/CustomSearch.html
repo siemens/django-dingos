@@ -1,4 +1,4 @@
-{% extends "dingos/grappelli/base.html" %}
+{% extends "dingos/grappelli/lists/base_lists_one_column.html" %}
 
 {% comment %}
 Copyright (c) Siemens AG, 2014
@@ -26,8 +26,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     <h1>Custom Search</h1>
 {% endblock %}
 
-{% block content %}
-    <form id="query-executor" action="" method="post">{% csrf_token %}
+{% block list-tools %}
+    <form id="query-executor" action="" method="get">{% csrf_token %}
         <div class="grp-row">
             {{ form.query }}
         </div>
@@ -35,8 +35,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             <input type="submit" name="execute_query" value="Execute query" />
         </div>
     </form>
+{% endblock %}
 
-
+{% block objects %}
     {% if object_list %}
 
 
