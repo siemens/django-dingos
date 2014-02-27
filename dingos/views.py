@@ -21,6 +21,8 @@ import json
 from django import http
 from django.db.models import F, Q
 from django.forms.formsets import formset_factory
+from django.contrib import messages
+from django.db import DataError
 
 from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData
 from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
@@ -29,8 +31,7 @@ from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, 
 
 from braces.views import LoginRequiredMixin
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView
-from queryparser.queryparser import *
-from queryparser.querytree import *
+from queryparser.queryparser import QueryParser
 
 class InfoObjectList(BasicFilterView):
 
@@ -356,7 +357,7 @@ class CustomSearchView(BasicTemplateView):
         self.form = CustomQueryForm(request.POST)
 
         if self.form.is_valid():
-            print "#########################################################"
+            print "\n\n#########################################################"
             query = self.form.cleaned_data['query']
             print "QUERY: " + query
 
@@ -365,13 +366,16 @@ class CustomSearchView(BasicTemplateView):
             filterCollection = parser.parse(query)
 
             # Generate and execute query
-            filter_list = filterCollection.get_filter_list()
-            objects = getattr(InfoObject, 'objects')
-            for i, oneFilter in enumerate(filter_list):
-                print "Filter: %s" % str(oneFilter)
-                #objects = objects.filter(oneFilter)
-                objects = getattr(objects, 'filter')(oneFilter)
-                print "Amount: %d" % len(objects)
+            try:
+                filter_list = filterCollection.get_filter_list()
+                objects = getattr(InfoObject, 'objects')
+                for i, oneFilter in enumerate(filter_list):
+                    print "Filter: %s" % str(oneFilter)
+                    #objects = objects.filter(oneFilter)
+                    objects = getattr(objects, 'filter')(oneFilter)
+                    print "Amount: %d" % len(objects)
+            except DataError as error:
+                messages.error(self.request, str(error))
             print "#########################################################"
 
         return self.get(request, *args, **kwargs)

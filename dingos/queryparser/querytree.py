@@ -69,11 +69,11 @@ class Condition:
     def build_q(self):
         result = None
         if self.comparator == Comparator.EQUALS:
-            result = Q(**{self.key + "__exact": self.value})
+            result = Q(**{self.key + "__iexact": self.value})
         elif self.comparator == Comparator.CONTAINS:
             result = Q(**{self.key + "__icontains": self.value})
         elif self.comparator == Comparator.REGEXP:
-            result = Q(**{self.key + "__regex": self.value})
+            result = Q(**{self.key + "__iregex": self.value})
         return result
 
     def __repr__(self):
