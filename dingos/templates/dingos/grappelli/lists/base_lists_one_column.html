@@ -1,0 +1,96 @@
+{% extends "dingos/grappelli/base.html" %}
+
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+
+
+
+
+
+{% load dingos_tags %}
+
+{% block extrahead %}
+
+{% endblock %}
+
+
+{% block content %}
+
+    <div >
+        <div class="c-1">
+
+            <div class="grp-module">
+                <h2>{% block tool_title %}Filter Parameters {% endblock %}</h2>
+                {%  block list-tools %}
+                    {% if filter.form %}
+                        <div class="grp-row">
+
+                            <form action="" method="get">
+                                <table>
+                                  <tbody>
+                                    {% for field in filter.form %}
+                                      {% if not field.id_for_label == 'id_o' %}
+				        <tr>
+                                          <th>{{field.label_tag}}</th>
+                                          <td>{{field.errors}} {{field}}</td>
+                                        </tr>
+                                      {% endif %}
+                                    {% endfor %}
+                                  </tbody>
+                                </table>
+				<div style="padding-top:10px;text-align:right;">
+                                  <input name="action" value="Submit Query" type="submit" />
+                                  <input name="action" value="Save Search" type="submit" />
+                                </div>
+                            </form>
+                        </div>
+                    {% endif %}
+                {% endblock %}
+
+            </div>
+        </div>
+        <div class="c-2">
+            {% block frontmatter %}{% endblock frontmatter %}
+            <div class="grp-module">
+                <h2 class="grp-collapse-handler">{% block list_title %}Object List {% endblock %}</h2>
+
+                {% block in_list_tools %}{% endblock %}
+
+                {% if is_paginated %}
+                    {%  render_paginator  %}
+                {% endif %}
+
+                {% block objects %}{% endblock %}
+
+                {% if is_paginated %}
+                    {% render_paginator  %}
+                {% endif %}
+
+            </div>
+            {% block endmatter %}{% endblock endmatter %}
+        </div>
+
+        </div>
+
+    </div>
+
+
+
+
+{% endblock %}
