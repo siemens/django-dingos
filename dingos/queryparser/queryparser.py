@@ -9,6 +9,12 @@ import ply.yacc as yacc
 from querylexer import QueryLexer
 from querytree import *
 
+class QueryParserException(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+    def __str__(self):
+        return self.msg
+
 class QueryParser:
     def __init__(self):
         self.lexer = QueryLexer()
@@ -22,7 +28,10 @@ class QueryParser:
             return []
 
     def p_error(self, p):
-        print "Error: %s" % p
+        if p is not None:
+            raise QueryParserException("Syntax error: \"%s\"" % p.value)
+        else:
+            raise QueryParserException("Syntax error: Cannot parse anything.")
 
     def p_query_1(self, p):
         "query :"
