@@ -460,20 +460,18 @@ class CustomSearchView(BasicListView):
     template_name = 'dingos/%s/searches/CustomSearch.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Custom Search'
     form = None
-    object_list = []
 
     def get_context_data(self, **kwargs):
         context = super(CustomSearchView, self).get_context_data(**kwargs)
         context['form'] = self.form
-        context['object_list'] = self.object_list
         return context
 
     def get(self, request, *args, **kwargs):
-        self.form = CustomQueryForm(request.POST)
-        return super(BasicListView,self).get(request, *args, **kwargs)
+        #self.form = CustomQueryForm(request.POST)
+        #return super(BasicListView,self).get(request, *args, **kwargs)
 
-    def post(self, request, *args, **kwargs):
-        self.form = CustomQueryForm(request.POST)
+        #def post(self, request, *args, **kwargs):
+        self.form = CustomQueryForm(request.GET)
 
         if self.form.is_valid():
             print "\n\n#########################################################"
@@ -501,6 +499,6 @@ class CustomSearchView(BasicListView):
                 messages.error(self.request, error)
             print "#########################################################"
 
-            self.object_list = InfoObject.objects.all()
+            self.queryset = InfoObject.objects.all()
 
-        return self.get(request, *args, **kwargs)
+        return super(BasicListView,self).get(request, *args, **kwargs) #self.get(request, *args, **kwargs)
