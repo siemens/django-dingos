@@ -27,6 +27,10 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
+
+from dingos.core.xml_utils import extract_attributes
+
 
 from dingos.core.decorators import print_arguments
 
@@ -62,6 +66,11 @@ class Generic_XML_Import:
 
         self.toplevel_attrs = {}
         self.namespace_dict = {}
+
+        # The creation time stamp
+        self.create_timestamp = timezone.now()
+
+        self.default_timestamp = self.create_timestamp
 
 
     #
@@ -124,7 +133,7 @@ class Generic_XML_Import:
                    markings=None,
                    identifier_ns_uri = None,
                    uid = None,
-                   **kargs):
+                   **kwargs):
 
         """
         Call this function for generic import of an XML file with the following arguments:
@@ -137,8 +146,23 @@ class Generic_XML_Import:
           contents are used as identifier.
          """
 
+        if 'default_timestamp' in kwargs and kwargs['default_timestamp']:
+
+            if isinstance(kwargs['default_timestamp'],basestring):
+                naive = parse_datetime(kwargs['default_timestamp'])
+            else:
+                naive = kwargs['default_timestamp']
+            if not timezone.is_aware(naive):
+                aware = timezone.make_aware(naive,timezone.utc)
+            else:
+                aware = naive
+            self.default_timestamp = aware
+
 
         # Reset bookkeeping dictionaries
+
+        self.toplevel_attrs = {}
+        self.namespace_dict = {}
 
 
         if not markings:
@@ -146,7 +170,7 @@ class Generic_XML_Import:
         if not identifier_ns_uri:
             identifier_ns_uri = DINGOS_DEFAULT_ID_NAMESPACE_URI
 
-        self.__init__()
+
 
         # Carry out generic XML import
         import_result = DingoImporter.xml_import(xml_fname=filepath,
@@ -168,9 +192,6 @@ class Generic_XML_Import:
         else:
             id_and_rev_info['id'] = hashlib.sha256(file_content).hexdigest()
 
-        id_and_rev_info['timestamp'] = timezone.now()
-
-        create_timestamp = id_and_rev_info['timestamp']
 
         iobject_family_name = self.namespace_dict.get(elt_dict.get('@@ns', None), DINGOS_GENERIC_FAMILY_NAME)
 
@@ -180,6 +201,15 @@ class Generic_XML_Import:
 
         # Create info object
 
+
+
+        if id_and_rev_info.get('timestamp'):
+            object_timestamp = id_and_rev_info['timestamp']
+        else:
+            object_timestamp = self.default_timestamp
+
+
+
         DingoImporter.create_iobject(iobject_family_name=iobject_family_name,
                                      iobject_family_revision_name=iobject_family_revision_name,
                                      iobject_type_name=iobject_type_name,
@@ -188,8 +218,8 @@ class Generic_XML_Import:
                                      iobject_data=elt_dict,
                                      uid=id_and_rev_info['id'],
                                      identifier_ns_uri=identifier_ns_uri,
-                                     timestamp=id_and_rev_info['timestamp'],
-                                     create_timestamp=create_timestamp,
+                                     timestamp=object_timestamp,
+                                     create_timestamp=self.create_timestamp,
                                      markings=markings,
                                      config_hooks={'special_ft_handler': self.ft_handler_list(),
                                                    'datatype_extractor': self.datatype_extractor},
