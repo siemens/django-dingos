@@ -159,7 +159,7 @@ class UniqueSimpleFactSearch(BasicFilterView):
 
 
     def get_reduced_query_string(self):
-        return self.get_query_string(remove=['fact__fact_term','fact__fact_values'])
+        return self.get_query_string(remove=['fact__fact_term','fact__fact_values','page'])
 
 
 
