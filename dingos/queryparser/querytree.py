@@ -26,6 +26,8 @@ class Comparator:
     EQUALS = "="
     CONTAINS = "contains"
     REGEXP = "regexp"
+    ICONTAINS = "icontains"
+    IREGEXP = "iregexp"
 
 
 class FilterCollection:
@@ -81,8 +83,12 @@ class Condition:
         if self.comparator == Comparator.EQUALS:
             q_operator = "__iexact"
         elif self.comparator == Comparator.CONTAINS:
-            q_operator = "__icontains"
+            q_operator = "__contains"
         elif self.comparator == Comparator.REGEXP:
+            q_operator = "__regex"
+        elif self.comparator == Comparator.ICONTAINS:
+            q_operator = "__icontains"
+        elif self.comparator == Comparator.IREGEXP:
             q_operator = "__iregex"
 
         # Fact term condition

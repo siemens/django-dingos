@@ -28,6 +28,8 @@ class QueryLexer:
     reserved = {
         "contains" : "CONTAINS",
         "regexp" : "REGEXP",
+        "icontains" : "ICONTAINS",
+        "iregexp" : "IREGEXP",
     }
 
     # Tokens

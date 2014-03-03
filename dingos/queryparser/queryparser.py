@@ -77,6 +77,14 @@ class QueryParser:
         "expr : key REGEXP value"
         p[0] = Condition(p[1], Comparator.REGEXP, p[3])
 
+    def p_expr_6(self, p):
+        "expr : key ICONTAINS value"
+        p[0] = Condition(p[1], Comparator.ICONTAINS, p[3])
+
+    def p_expr_7(self, p):
+        "expr : key IREGEXP value"
+        p[0] = Condition(p[1], Comparator.IREGEXP, p[3])
+
     def p_value_1(self, p):
         "value : VALUE"
         # The quotes need to be removed here in the parser
