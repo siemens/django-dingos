@@ -87,7 +87,7 @@ class Condition:
 
         # Fact term condition
         if self.key[0] == "[" and self.key[-1] == "]":
-            result = Q(**{"fact_thru__fact__fact_term__term__iexact": self.key[1:-1]})
+            result = Q(**{"fact_thru__fact__fact_term__term__iregex": self.key[1:-1]})
             result = result & Q(**{"fact_thru__fact__fact_values__value" + q_operator: self.value})
         # Field condition
         else:
