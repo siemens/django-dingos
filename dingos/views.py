@@ -471,6 +471,7 @@ class CustomSearchView(BasicListView):
         self.queryset = []
 
         if request.GET.has_key('execute_query') and self.form.is_valid():
+            print "####################################################################################"
             if request.GET['query'] == "":
                 messages.error(self.request, "Please enter a query.")
             else:
@@ -478,15 +479,18 @@ class CustomSearchView(BasicListView):
                     # Parse query
                     parser = QueryParser()
                     query = self.form.cleaned_data['query']
+                    print "Query: %s" % query
                     filterCollection = parser.parse(str(query))
 
                     # Generate and execute query
                     filter_list = filterCollection.get_filter_list()
                     objects = getattr(InfoObject, 'objects')
                     for i, oneFilter in enumerate(filter_list):
+                        print "Filter: %s" % oneFilter
                         objects = getattr(objects, 'filter')(oneFilter)
                     self.queryset = objects
                 except (DataError, QueryParserException, FieldError, QueryLexerException) as ex:
                     messages.error(self.request, str(ex))
+            print "####################################################################################"
 
         return super(BasicListView,self).get(request, *args, **kwargs)

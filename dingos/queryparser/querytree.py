@@ -105,8 +105,16 @@ class Condition:
 
         # Fact term condition
         if self.key[0] == "[" and self.key[-1] == "]":
-            result = Q(**{"fact_thru__fact__fact_term__term__iregex": self.key[1:-1]})
+            key = self.key[1:-1]
+            if "@" in key:
+                fact_term, fact_attribute = key.split("@")
+                #print "%s: %s + %s" % (key, fact_term, fact_attribute)
+                result = Q(**{"fact_thru__fact__fact_term__term__iregex": fact_term})
+                result = result & Q(**{"fact_thru__fact__fact_term__attribute__iregex": fact_attribute})
+            else:
+                result = Q(**{"fact_thru__fact__fact_term__term__iregex": key})
             result = result & Q(**{"fact_thru__fact__fact_values__value" + q_operator: self.value})
+            print result
         # Field condition
         else:
             result = Q(**{self.key + q_operator: self.value})

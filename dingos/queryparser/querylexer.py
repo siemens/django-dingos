@@ -52,7 +52,7 @@ class QueryLexer:
     t_EQUALS = (r"\=")
     t_VALUE = (r"(\"[^\"]*\"|\'[^\']*\')")
     t_FILTER = (r"\|")
-    t_FACTTERM = (r"\[[^\/]+(\/[^\/]+)+\]")
+    t_FACTTERM = (r"\[[^\/\@\]]+(\/[^\/\@\]]+)*(\@[^\]]*)?\]")
 
     # Ignore whitespaces
     t_ignore = "\t\n\r "
