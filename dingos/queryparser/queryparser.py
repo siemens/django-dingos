@@ -67,7 +67,6 @@ class QueryParser:
 
     def p_expr_3(self, p):
         "expr : key comp value"
-        print p[1]
         p[0] = Condition(p[1], p[2], p[3])
 
     def p_comp_1(self, p):
@@ -131,13 +130,3 @@ class QueryParser:
     def p_boolop_2(self, p):
         "boolop : OR"
         p[0] = Operator.OR
-
-
-# Main
-if __name__ == "__main__":
-    parser = QueryParser()
-    with open('query_tests.txt') as query_file:
-        for i, line in enumerate(query_file):
-            print "%s:\tQuery:\t%s" % (i+1, line.strip())
-            print "\tObject:\t%s" % parser.parse(line)
-
