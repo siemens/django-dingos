@@ -66,24 +66,45 @@ class QueryParser:
         p[0] = Expression(p[1], p[2], p[3])
 
     def p_expr_3(self, p):
-        "expr : key EQUALS value"
-        p[0] = Condition(p[1], Comparator.EQUALS, p[3])
+        "expr : key comp value"
+        print p[1]
+        p[0] = Condition(p[1], p[2], p[3])
 
-    def p_expr_4(self, p):
-        "expr : key CONTAINS value"
-        p[0] = Condition(p[1], Comparator.CONTAINS, p[3])
+    def p_comp_1(self, p):
+        "comp : EQUALS"
+        p[0] = Comparator.EQUALS
 
-    def p_expr_5(self, p):
-        "expr : key REGEXP value"
-        p[0] = Condition(p[1], Comparator.REGEXP, p[3])
+    def p_comp_2(self, p):
+        "comp : CONTAINS"
+        p[0] = Comparator.CONTAINS
 
-    def p_expr_6(self, p):
-        "expr : key ICONTAINS value"
-        p[0] = Condition(p[1], Comparator.ICONTAINS, p[3])
+    def p_comp_3(self, p):
+        "comp : ICONTAINS"
+        p[0] = Comparator.ICONTAINS
 
-    def p_expr_7(self, p):
-        "expr : key IREGEXP value"
-        p[0] = Condition(p[1], Comparator.IREGEXP, p[3])
+    def p_comp_4(self, p):
+        "comp : REGEXP"
+        p[0] = Comparator.REGEXP
+
+    def p_comp_5(self, p):
+        "comp : IREGEXP"
+        p[0] = Comparator.IREGEXP
+
+    def p_comp_6(self, p):
+        "comp : STARTSWITH"
+        p[0] = Comparator.STARTSWITH
+
+    def p_comp_7(self, p):
+        "comp : ISTARTSWITH"
+        p[0] = Comparator.ISTARTSWITH
+
+    def p_comp_8(self, p):
+        "comp : ENDSWITH"
+        p[0] = Comparator.ENDSWITH
+
+    def p_comp_9(self, p):
+        "comp : IENDSWITH"
+        p[0] = Comparator.IENDSWITH
 
     def p_value_1(self, p):
         "value : VALUE"

@@ -25,9 +25,13 @@ class Operator:
 class Comparator:
     EQUALS = "="
     CONTAINS = "contains"
-    REGEXP = "regexp"
     ICONTAINS = "icontains"
+    REGEXP = "regexp"
     IREGEXP = "iregexp"
+    STARTSWITH = "startswith"
+    ISTARTSWITH = "istartswith"
+    ENDSWITH = "endswith"
+    IENDSWITH = "iendswith"
 
 
 class FilterCollection:
@@ -84,12 +88,20 @@ class Condition:
             q_operator = "__iexact"
         elif self.comparator == Comparator.CONTAINS:
             q_operator = "__contains"
-        elif self.comparator == Comparator.REGEXP:
-            q_operator = "__regex"
         elif self.comparator == Comparator.ICONTAINS:
             q_operator = "__icontains"
+        elif self.comparator == Comparator.REGEXP:
+            q_operator = "__regex"
         elif self.comparator == Comparator.IREGEXP:
             q_operator = "__iregex"
+        elif self.comparator == Comparator.STARTSWITH:
+            q_operator = "__startswith"
+        elif self.comparator == Comparator.ISTARTSWITH:
+            q_operator = "__istartswith"
+        elif self.comparator == Comparator.ENDSWITH:
+            q_operator = "__endswith"
+        elif self.comparator == Comparator.IENDSWITH:
+            q_operator = "__iendswith"
 
         # Fact term condition
         if self.key[0] == "[" and self.key[-1] == "]":

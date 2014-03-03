@@ -27,9 +27,13 @@ class QueryLexer:
     # Reserved words
     reserved = {
         "contains" : "CONTAINS",
-        "regexp" : "REGEXP",
         "icontains" : "ICONTAINS",
+        "regexp" : "REGEXP",
         "iregexp" : "IREGEXP",
+        "startswith" : "STARTSWITH",
+        "istartswith" : "ISTARTSWITH",
+        "endswith" : "ENDSWITH",
+        "iendswith" : "IENDSWITH",
     }
 
     # Tokens
