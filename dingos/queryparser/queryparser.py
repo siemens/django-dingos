@@ -62,13 +62,12 @@ class QueryParser:
         p[0] = p[2]
 
     def p_expr_boolop(self, p):
-        '''
-        expr : expr AND expr
-                | expr OR expr
-        '''
-        if isinstance(p[1], Condition) and isinstance(p[3], Condition):
-            if p[1].key_is_fact_term() and p[3].key_is_fact_term():
-                raise QueryParserException("Boolean operation \"%s\" with two fact terms is not possible. Use filter chaining." % Operator.AND)
+        '''expr : expr AND expr
+                | expr OR expr'''
+        # TODO The following comment works but is not recursive
+        #if isinstance(p[1], Condition) and isinstance(p[3], Condition):
+        #    if p[1].key_is_fact_term() and p[3].key_is_fact_term():
+        #        raise QueryParserException("Boolean operation \"%s\" with two fact terms is not possible. Use filter chaining." % Operator.AND)
         p[0] = Expression(p[1], p[2], p[3])
 
     def p_expr_condition(self, p):
@@ -76,8 +75,7 @@ class QueryParser:
         p[0] = Condition(p[1], p[2], p[3])
 
     def p_comp(self, p):
-        '''
-        comp : EQUALS
+        '''comp : EQUALS
                 | CONTAINS
                 | ICONTAINS
                 | REGEXP
@@ -85,8 +83,7 @@ class QueryParser:
                 | STARTSWITH
                 | ISTARTSWITH
                 | ENDSWITH
-                | IENDSWITH
-        '''
+                | IENDSWITH'''
         p[0] = p[1]
 
     def p_value_with_quotes(self, p):
