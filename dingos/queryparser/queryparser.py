@@ -43,69 +43,53 @@ class QueryParser:
         else:
             raise QueryParserException("Syntax error: Cannot parse anything.")
 
-    def p_query_1(self, p):
+    def p_query_empty(self, p):
         "query :"
         p[0] = FilterCollection()
 
-    def p_query_2(self, p):
+    def p_query_expr(self, p):
         "query : expr"
         p[0] = FilterCollection()
         p[0].add_new_filter(p[1])
 
-    def p_query_3(self, p):
+    def p_query_filter(self, p):
         "query : expr FILTER query"
         p[0] = p[3]
         p[0].add_new_filter(p[1])
 
-    def p_expr_1(self, p):
+    def p_expr_brackets(self, p):
         "expr : OPEN expr CLOSE"
         p[0] = p[2]
 
-    def p_expr_2(self, p):
-        "expr : expr boolop expr"
+    def p_expr_boolop(self, p):
+        '''
+        expr : expr AND expr
+                | expr OR expr
+        '''
+        if isinstance(p[1], Condition) and isinstance(p[3], Condition):
+            if p[1].key_is_fact_term() and p[3].key_is_fact_term():
+                raise QueryParserException("Boolean operation \"%s\" with two fact terms is not possible. Use filter chaining." % Operator.AND)
         p[0] = Expression(p[1], p[2], p[3])
 
-    def p_expr_3(self, p):
+    def p_expr_condition(self, p):
         "expr : key comp value"
         p[0] = Condition(p[1], p[2], p[3])
 
-    def p_comp_1(self, p):
-        "comp : EQUALS"
-        p[0] = Comparator.EQUALS
+    def p_comp(self, p):
+        '''
+        comp : EQUALS
+                | CONTAINS
+                | ICONTAINS
+                | REGEXP
+                | IREGEXP
+                | STARTSWITH
+                | ISTARTSWITH
+                | ENDSWITH
+                | IENDSWITH
+        '''
+        p[0] = p[1]
 
-    def p_comp_2(self, p):
-        "comp : CONTAINS"
-        p[0] = Comparator.CONTAINS
-
-    def p_comp_3(self, p):
-        "comp : ICONTAINS"
-        p[0] = Comparator.ICONTAINS
-
-    def p_comp_4(self, p):
-        "comp : REGEXP"
-        p[0] = Comparator.REGEXP
-
-    def p_comp_5(self, p):
-        "comp : IREGEXP"
-        p[0] = Comparator.IREGEXP
-
-    def p_comp_6(self, p):
-        "comp : STARTSWITH"
-        p[0] = Comparator.STARTSWITH
-
-    def p_comp_7(self, p):
-        "comp : ISTARTSWITH"
-        p[0] = Comparator.ISTARTSWITH
-
-    def p_comp_8(self, p):
-        "comp : ENDSWITH"
-        p[0] = Comparator.ENDSWITH
-
-    def p_comp_9(self, p):
-        "comp : IENDSWITH"
-        p[0] = Comparator.IENDSWITH
-
-    def p_value_1(self, p):
+    def p_value_with_quotes(self, p):
         "value : VALUE"
         # The quotes need to be removed here in the parser
         # because the lexer cannot cover the following
@@ -118,15 +102,7 @@ class QueryParser:
         #     "bar' => FAILURE!
         p[0] = p[1][1:-1]
 
-    def p_key_1(self, p):
+    def p_key_field_factterm(self, p):
         """key : FIELD
                 | FACTTERM"""
         p[0] = p[1]
-
-    def p_boolop_1(self, p):
-        "boolop : AND"
-        p[0] = Operator.AND
-
-    def p_boolop_2(self, p):
-        "boolop : OR"
-        p[0] = Operator.OR

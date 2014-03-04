@@ -18,8 +18,8 @@ from django.db.models import Q
 
 
 class Operator:
-    OR = "|"
-    AND = "&"
+    OR = "||"
+    AND = "&&"
 
 
 class Comparator:
@@ -118,6 +118,9 @@ class Condition:
             result = Q(**{self.key + q_operator: self.value})
 
         return result
+
+    def key_is_fact_term(self):
+        return self.key[0] == "[" and self.key[-1] == "]"
 
     def __repr__(self):
         return "%s %s %s" % (self.key, self.comparator, self.value)
