@@ -44,7 +44,10 @@ docs/_build
 # Cookiecutter
 output/
 
-
 # Emacs
 \#*#
 *~
+
+# Generated files by query language parser (ply)
+parser.out
+parsetab.py
