@@ -10,6 +10,7 @@ Tests for `django-dingos` modules module.
 
 import os
 from django import test
+from unittest import skip
 from dingos.management.commands.dingos_generic_xml_import import Command
 from dingos.models import InfoObject
 import pprint
@@ -44,90 +45,110 @@ class QueryTests(test.TestCase):
     def setUp(self):
         load_data()
 
-    def test_query_exact(self):
+    @skip
+    def test_exact(self):
         print_test_name()
-        out("#######################################################################")
         query = "identifier__uid = 'john_smith'"
         objects = parse_and_query(query)
         self.assertEqual(objects.count(), 1)
         for oneObject in objects:
             self.assertEqual(oneObject.identifier.uid, "john_smith")
-        out("#######################################################################")
 
-
-    def test_query_contains(self):
+    @skip
+    def test_contains(self):
         print_test_name()
-        out("#######################################################################")
-        query = "identifier__uid contains 'john_'"
+
+        query = "identifier__uid contains 'ohn_'"
         objects = parse_and_query(query)
         self.assertEqual(objects.count(), 2)
         for oneObject in objects:
             self.assertTrue("john_" in oneObject.identifier.uid)
-        out("#######################################################################")
 
-        '''out("#######################################################################")
-        query = "identifier__uid contains 'John_'"
+        query = "identifier__uid contains 'OHN_'"
         objects = parse_and_query(query)
         self.assertEqual(objects.count(), 0)
-        out("#######################################################################")
 
-        out("#######################################################################")
-        query = "identifier__uid icontains 'John_'"
+        query = "identifier__uid icontains 'OHN_'"
         objects = parse_and_query(query)
         self.assertEqual(objects.count(), 2)
         for oneObject in objects:
             self.assertTrue("john_" in oneObject.identifier.uid)
-        out("#######################################################################")'''
 
-
-    def test_query_regex(self):
+    @skip
+    def test_regexp(self):
         print_test_name()
-        '''out("#######################################################################")
-        query = "identifier__uid regex '.?ohn_.+'"
+
+        query = "identifier__uid regexp '.?ohn_.+'"
         objects = parse_and_query(query)
         self.assertEqual(objects.count(), 2)
         for oneObject in objects:
             self.assertTrue("john_" in oneObject.identifier.uid)
-        out("#######################################################################")
 
-        out("#######################################################################")
-        query = "identifier__uid regex '.?OHN_.+'"
+        query = "identifier__uid regexp '.?OHN_.+'"
         objects = parse_and_query(query)
         self.assertEqual(objects.count(), 0)
-        out("#######################################################################")
 
-        out("#######################################################################")
-        query = "identifier__uid iregex '.?OHN_.+'"
+        query = "identifier__uid iregexp '.?OHN_.+'"
         objects = parse_and_query(query)
         self.assertEqual(objects.count(), 2)
         for oneObject in objects:
             self.assertTrue("john_" in oneObject.identifier.uid)
-        out("#######################################################################")'''
 
-
-    def test_query_regex(self):
+    @skip
+    def test_startswith(self):
         print_test_name()
-        '''out("#######################################################################")
-        query = "identifier__uid regex '.?ohn_.+'"
+
+        query = "identifier__uid startswith 'john_'"
         objects = parse_and_query(query)
         self.assertEqual(objects.count(), 2)
         for oneObject in objects:
             self.assertTrue("john_" in oneObject.identifier.uid)
-        out("#######################################################################")
 
-        out("#######################################################################")
-        query = "identifier__uid regex '.?OHN_.+'"
+        query = "identifier__uid startswith 'John_'"
         objects = parse_and_query(query)
         self.assertEqual(objects.count(), 0)
-        out("#######################################################################")
 
-        out("#######################################################################")
-        query = "identifier__uid iregex '.?OHN_.+'"
+        query = "identifier__uid istartswith 'John_'"
         objects = parse_and_query(query)
         self.assertEqual(objects.count(), 2)
         for oneObject in objects:
             self.assertTrue("john_" in oneObject.identifier.uid)
-        out("#######################################################################")'''
+
+    @skip
+    def test_endswith(self):
+        print_test_name()
+
+        query = "identifier__uid endswith 'mith'"
+        objects = parse_and_query(query)
+        self.assertEqual(objects.count(), 1)
+        for oneObject in objects:
+            self.assertTrue("john_smith" in oneObject.identifier.uid)
+
+        query = "identifier__uid endswith 'MiTh'"
+        objects = parse_and_query(query)
+        self.assertEqual(objects.count(), 0)
+
+        query = "identifier__uid iendswith 'MiTh'"
+        objects = parse_and_query(query)
+        self.assertEqual(objects.count(), 1)
+        self.assertEqual(objects[0].identifier.uid, "john_smith")
+
+    def test_boolop_or(self):
+        print_test_name()
+
+        query = "identifier__uid = 'john_smith' || identifier__uid = 'john_doe'"
+        objects = parse_and_query(query)
+        self.assertEqual(objects.count(), 2)
+        for oneObject in objects:
+            self.assertTrue("john_smith" in oneObject.identifier.uid or "john_doe" in oneObject.identifier.uid)
+
+    def test_boolop_and(self):
+        print_test_name()
+
+        query = "identifier__uid startswith 'john_' && identifier__uid endswith 'doe'"
+        objects = parse_and_query(query)
+        self.assertEqual(objects.count(), 1)
+        self.assertEqual(objects[0].identifier.uid, "john_doe")
 
     ''' TO TEST
     identifier__namespace__uri contains 'mandian' && [STIX_Header/Package_Intent] endswith "tors"
