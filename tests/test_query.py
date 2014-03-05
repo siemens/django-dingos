@@ -45,7 +45,6 @@ class QueryTests(test.TestCase):
     def setUp(self):
         load_data()
 
-    @skip
     def test_exact(self):
         print_test_name()
 
@@ -95,7 +94,6 @@ class QueryTests(test.TestCase):
                             found = True
             self.assertTrue(found)
 
-    @skip
     def test_contains(self):
         print_test_name()
 
@@ -115,7 +113,6 @@ class QueryTests(test.TestCase):
         for oneObject in objects:
             self.assertTrue("john_" in oneObject.identifier.uid)
 
-    @skip
     def test_regexp(self):
         print_test_name()
 
@@ -135,7 +132,6 @@ class QueryTests(test.TestCase):
         for oneObject in objects:
             self.assertTrue("john_" in oneObject.identifier.uid)
 
-    @skip
     def test_startswith(self):
         print_test_name()
 
@@ -155,7 +151,6 @@ class QueryTests(test.TestCase):
         for oneObject in objects:
             self.assertTrue("john_" in oneObject.identifier.uid)
 
-    @skip
     def test_endswith(self):
         print_test_name()
 
@@ -174,7 +169,6 @@ class QueryTests(test.TestCase):
         self.assertEqual(objects.count(), 1)
         self.assertEqual(objects[0].identifier.uid, "john_smith")
 
-    @skip
     def test_boolop_or(self):
         print_test_name()
 
@@ -184,7 +178,6 @@ class QueryTests(test.TestCase):
         for oneObject in objects:
             self.assertTrue("john_smith" in oneObject.identifier.uid or "john_doe" in oneObject.identifier.uid)
 
-    @skip
     def test_boolop_and(self):
         print_test_name()
 
@@ -207,22 +200,46 @@ class QueryTests(test.TestCase):
         self.assertEqual(objects.count(), 1)
         self.assertEqual(objects[0].identifier.uid, "john_smith")
 
+    def test_filter(self):
+        print_test_name()
+
+        query = "[phoneNumbers/phoneNumber@type]='home' | [phoneNumbers/phoneNumber]='312 555-1234'"
+        objects = parse_and_query(query)
+        self.assertEqual(objects.count(), 1)
+        self.assertEqual(objects[0].identifier.uid, "john_doe")
+
+        query = "filter: [phoneNumbers/phoneNumber@type]='home' | filter: [phoneNumbers/phoneNumber]='312 555-1234'"
+        objects = parse_and_query(query)
+        self.assertEqual(objects.count(), 1)
+        self.assertEqual(objects[0].identifier.uid, "john_doe")
+
+        query = "filter: [phoneNumbers/phoneNumber@type]='home' | exclude: [phoneNumbers/phoneNumber]='312 555-1234'"
+        objects = parse_and_query(query)
+        self.assertEqual(objects.count(), 1)
+        self.assertEqual(objects[0].identifier.uid, "john_smith")
+
 
 def parse_and_query(query):
         # Parse query
         parser = QueryParser()
-        out("Query:\t%s" % query)
-        filter_collection = parser.parse(str(query))
+        out("Query:%s" % query)
+        filterCollection = parser.parse(str(query))
 
         # Generate and execute query
-        filter_list = filter_collection.get_filter_list()
         objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
-        for oneFilter in filter_list:
-            #out("Filter:\t%s" % oneFilter)
-            objects = getattr(objects, 'filter')(oneFilter)
+
+        for oneFilter in filterCollection.get_filter_list():
+            if oneFilter['type'] == 'filter':
+                out("Filter: %s" % oneFilter['q'])
+                objects = getattr(objects, 'filter')(oneFilter['q'])
+            elif oneFilter['type'] == 'exclude':
+                out("Exclude: %s" % oneFilter['q'])
+                objects = getattr(objects, 'exclude')(oneFilter['q'])
+
         objects = objects.distinct()
-        #out("SQL:\t%s" % objects.query)
+        #out("SQL: %s" % objects.query)
         return objects
+
 
 def print_test_name():
     import traceback

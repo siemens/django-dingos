@@ -14,9 +14,9 @@
 # this program; if not, write to the Free Software Foundation, Inc., 51
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-import ply.yacc as yacc
+import ply.yacc as Yacc
 from querylexer import QueryLexer
-from querytree import *
+from querytree import FilterCollection, Expression, Condition
 
 
 class QueryParserException(Exception):
@@ -29,7 +29,7 @@ class QueryParser:
     def __init__(self):
         self.lexer = QueryLexer()
         self.tokens = self.lexer.tokens
-        self.parser = yacc.yacc(module=self)
+        self.parser = Yacc.yacc(module=self)
 
     def parse(self, data):
         if data:
@@ -50,12 +50,24 @@ class QueryParser:
     def p_query_expr(self, p):
         "query : expr"
         p[0] = FilterCollection()
-        p[0].add_new_filter(p[1])
+        p[0].add_new_filter({'type': 'filter', 'expression': p[1]})
 
-    def p_query_filter(self, p):
-        "query : expr FILTER query"
+    def p_query_pipe(self, p):
+        "query : expr PIPE query"
         p[0] = p[3]
-        p[0].add_new_filter(p[1])
+        p[0].add_new_filter({'type': 'filter', 'expression': p[1]})
+
+    def p_query_expr_filter_type(self, p):
+        '''query : FILTER COLON expr
+                | EXCLUDE COLON expr'''
+        p[0] = FilterCollection()
+        p[0].add_new_filter({'type': p[1], 'expression': p[3]})
+
+    def p_query_pipe_filter_type(self, p):
+        '''query : FILTER COLON expr PIPE query
+                | EXCLUDE COLON expr PIPE query'''
+        p[0] = p[5]
+        p[0].add_new_filter({'type': p[1], 'expression': p[3]})
 
     def p_expr_brackets(self, p):
         "expr : OPEN expr CLOSE"
@@ -64,10 +76,6 @@ class QueryParser:
     def p_expr_boolop(self, p):
         '''expr : expr AND expr
                 | expr OR expr'''
-        # TODO The following comment works but is not recursive
-        #if isinstance(p[1], Condition) and isinstance(p[3], Condition):
-        #    if p[1].key_is_fact_term() and p[3].key_is_fact_term():
-        #        raise QueryParserException("Boolean operation \"%s\" with two fact terms is not possible. Use filter chaining." % Operator.AND)
         p[0] = Expression(p[1], p[2], p[3])
 
     def p_expr_condition(self, p):

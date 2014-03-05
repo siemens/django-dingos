@@ -43,8 +43,8 @@ class FilterCollection:
 
     def get_filter_list(self):
         q_list = []
-        for i, oneFilter in enumerate(self.filter_list):
-            q_list.append(oneFilter.build_q())
+        for oneFilter in self.filter_list:
+            q_list.append({'type': oneFilter['type'], 'q': oneFilter['expression'].build_q()})
         return q_list
 
     def __repr__(self):

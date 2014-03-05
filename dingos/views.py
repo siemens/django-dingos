@@ -471,7 +471,6 @@ class CustomSearchView(BasicListView):
         self.queryset = []
 
         if request.GET.has_key('execute_query') and self.form.is_valid():
-            print "####################################################################################"
             if request.GET['query'] == "":
                 messages.error(self.request, "Please enter a query.")
             else:
@@ -479,20 +478,25 @@ class CustomSearchView(BasicListView):
                     # Parse query
                     parser = QueryParser()
                     query = self.form.cleaned_data['query']
-                    print "Query:\t%s" % query
+                    print "\tQuery: %s" % query
                     filterCollection = parser.parse(str(query))
 
                     # Generate and execute query
-                    filter_list = filterCollection.get_filter_list()
                     objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
-                    for oneFilter in filter_list:
-                        print "Filter:\t%s" % oneFilter
-                        objects = getattr(objects, 'filter')(oneFilter)
+
+                    for oneFilter in filterCollection.get_filter_list():
+                        if oneFilter['type'] == 'filter':
+                            print "\tFilter: %s" % oneFilter['q']
+                            objects = getattr(objects, 'filter')(oneFilter['q'])
+                        elif oneFilter['type'] == 'exclude':
+                            print "\tExclude: %s" % oneFilter['q']
+                            objects = getattr(objects, 'exclude')(oneFilter['q'])
+
                     objects = objects.distinct()
-                    print "SQL:\t%s" % objects.query
+                    print "\tSQL: %s" % objects.query
+
                     self.queryset = objects
                 except (DataError, QueryParserException, FieldError, QueryLexerException) as ex:
                     messages.error(self.request, str(ex))
-            print "####################################################################################"
 
         return super(BasicListView,self).get(request, *args, **kwargs)

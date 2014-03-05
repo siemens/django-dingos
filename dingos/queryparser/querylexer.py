@@ -14,7 +14,7 @@
 # this program; if not, write to the Free Software Foundation, Inc., 51
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-import ply.lex as lex
+import ply.lex as Lex
 
 
 class QueryLexerException(Exception):
@@ -26,18 +26,21 @@ class QueryLexerException(Exception):
 class QueryLexer:
     # Reserved words
     reserved = {
-        "contains" : "CONTAINS",
-        "icontains" : "ICONTAINS",
-        "regexp" : "REGEXP",
-        "iregexp" : "IREGEXP",
-        "startswith" : "STARTSWITH",
-        "istartswith" : "ISTARTSWITH",
-        "endswith" : "ENDSWITH",
-        "iendswith" : "IENDSWITH",
+        "contains": "CONTAINS",
+        "icontains": "ICONTAINS",
+        "regexp": "REGEXP",
+        "iregexp": "IREGEXP",
+        "startswith": "STARTSWITH",
+        "istartswith": "ISTARTSWITH",
+        "endswith": "ENDSWITH",
+        "iendswith": "IENDSWITH",
+        "filter": "FILTER",
+        "exclude": "EXCLUDE",
     }
 
     # Tokens
-    tokens = ["FIELD","AND","OR","OPEN","CLOSE","EQUALS","VALUE","FILTER", "FACTTERM"] + list(reserved.values())
+    tokens = ["FIELD", "AND", "OR", "OPEN", "CLOSE", "EQUALS", "VALUE", "PIPE", "FACTTERM", "COLON"]\
+             + list(reserved.values())
 
     def t_FIELD(self, t):
         r"[a-zA-Z][\w]*"
@@ -51,29 +54,28 @@ class QueryLexer:
     t_CLOSE = (r"\)")
     t_EQUALS = (r"\=")
     t_VALUE = (r"(\"[^\"]*\"|\'[^\']*\')")
-    t_FILTER = (r"\|")
+    t_PIPE = (r"\|")
     t_FACTTERM = (r"\[[^\/\@\]]+(\/[^\/\@\]]+)*(\@[^\]]*)?\]")
+    t_COLON = (r"\:")
 
     # Ignore whitespaces
     t_ignore = "\t\n\r "
 
     def __init__(self):
-        self.lexer = lex.lex(module=self)
+        self.lexer = Lex.lex(module=self)
 
     # Error handling
     def t_error(self, t):
         illegal_char = t.value[0].encode("string-escape")
-        lineno = t.lexer.lineno
         t.lexer.skip(1)
         raise QueryLexerException("Illegal character: \"%s\"" % illegal_char)
 
     # Build lexer
     def build(self, **kwargs):
-        self.lexer = lex.lex(module=self, **kwargs)
+        self.lexer = Lex.lex(module=self, **kwargs)
 
     # Test method
     def test(self, data):
         self.lexer.input(data)
         for token in iter(self.lexer.token, None):
             print token
-
