@@ -48,11 +48,52 @@ class QueryTests(test.TestCase):
     @skip
     def test_exact(self):
         print_test_name()
+
+        # Test field
         query = "identifier__uid = 'john_smith'"
         objects = parse_and_query(query)
         self.assertEqual(objects.count(), 1)
+        self.assertEqual(objects[0].identifier.uid, "john_smith")
+
+        # Test fact term
+        query = "[firstName]='John'"
+        objects = parse_and_query(query)
+        self.assertEqual(objects.count(), 2)
         for oneObject in objects:
-            self.assertEqual(oneObject.identifier.uid, "john_smith")
+            found = False
+            for fact in oneObject.facts.all():
+                # One of the fact terms has to be the right one
+                if str(fact.fact_term) == 'firstName':
+                    # One of the values has to be the right one
+                    for value in fact.fact_values.all():
+                        if str(value) == 'John':
+                            found = True
+            self.assertTrue(found)
+
+        # Test deeper fact term
+        query = "[phoneNumbers/phoneNumber]='746 555-4567'"
+        objects = parse_and_query(query)
+        self.assertEqual(objects.count(), 1)
+        found = False
+        for fact in objects[0].facts.all():
+            if str(fact.fact_term) == 'phoneNumbers/phoneNumber':
+                for value in fact.fact_values.all():
+                    if str(value) == '746 555-4567':
+                        found = True
+        self.assertTrue(found)
+
+        # Test fact attribute
+        query = "[phoneNumbers/phoneNumber@type]='home'"
+        objects = parse_and_query(query)
+        self.assertEqual(objects.count(), 2)
+        for oneObject in objects:
+            found = False
+            for fact in oneObject.facts.all():
+                if str(fact.fact_term) == 'phoneNumbers/phoneNumber@type':
+                    for value in fact.fact_values.all():
+                        if str(value) == 'home':
+                            found = True
+            self.assertTrue(found)
 
     @skip
     def test_contains(self):
@@ -133,6 +174,7 @@ class QueryTests(test.TestCase):
         self.assertEqual(objects.count(), 1)
         self.assertEqual(objects[0].identifier.uid, "john_smith")
 
+    @skip
     def test_boolop_or(self):
         print_test_name()
 
@@ -142,6 +184,7 @@ class QueryTests(test.TestCase):
         for oneObject in objects:
             self.assertTrue("john_smith" in oneObject.identifier.uid or "john_doe" in oneObject.identifier.uid)
 
+    @skip
     def test_boolop_and(self):
         print_test_name()
 
@@ -150,24 +193,19 @@ class QueryTests(test.TestCase):
         self.assertEqual(objects.count(), 1)
         self.assertEqual(objects[0].identifier.uid, "john_doe")
 
-    ''' TO TEST
-    identifier__namespace__uri contains 'mandian' && [STIX_Header/Package_Intent] endswith "tors"
-    [STIX_Header/Package_Intent] endswith "Indicators"
-    [STIX_Header/Information_Source/Contributors/Contributor/Name] contains "MITRE (STIX Conversion)"
-    [STIX_Header/Title] contains "APT1 Report"
-    [Observables@cybox_major_version] = "2" || identifier__namespace__uri contains 'mandian'
-    [Observables@cybox_major_version] = "2" && identifier__namespace__uri contains 'mandian'
-    [Observables@cybox_major_version] = "2" | [STIX_Header/Title] contains "APT1 Report"
-    [Observables@cybox_major_version] = "2" && [STIX_Header/Title] contains "APT1 Report"
-    '''
+        query = "identifier__uid = 'john_smith' && identifier__uid = 'john_doe'"
+        objects = parse_and_query(query)
+        self.assertEqual(objects.count(), 0)
 
+        query = "[phoneNumbers/phoneNumber@type]='home' && [phoneNumbers/phoneNumber@type]='fax'"
+        objects = parse_and_query(query)
+        # Logical Q object behaviour! Instead of this query use a filter!
+        self.assertEqual(objects.count(), 0)
 
-    """
-    for fact in oneObject.facts.all():
-        out("\t%s: " % fact.fact_term)
-        for value in fact.fact_values.all():
-            out("\t\t%s" % value)
-    """
+        query = "identifier__uid = 'john_smith' && [phoneNumbers/phoneNumber@type]='home'"
+        objects = parse_and_query(query)
+        self.assertEqual(objects.count(), 1)
+        self.assertEqual(objects[0].identifier.uid, "john_smith")
 
 
 def parse_and_query(query):
@@ -180,18 +218,18 @@ def parse_and_query(query):
         filter_list = filter_collection.get_filter_list()
         objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
         for oneFilter in filter_list:
-            out("Filter:\t%s" % oneFilter)
+            #out("Filter:\t%s" % oneFilter)
             objects = getattr(objects, 'filter')(oneFilter)
         objects = objects.distinct()
-        out("SQL:\t%s" % objects.query)
+        #out("SQL:\t%s" % objects.query)
         return objects
-
 
 def print_test_name():
     import traceback
-    out("Test method: %s" % traceback.extract_stack(None, 2)[0][2])
+    print "\n======================================\nTest method: %s\n======================================" %\
+          traceback.extract_stack(None, 2)[0][2]
 
 
-def out(value):
+def out(value=''):
     print "===> %s" % value
     pass
