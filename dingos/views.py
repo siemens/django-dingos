@@ -18,7 +18,7 @@
 import json
 
 from django import http
-from django.db.models import F, Q
+from django.db.models import F
 from django.forms.formsets import formset_factory
 
 from django.contrib import messages
@@ -479,15 +479,17 @@ class CustomSearchView(BasicListView):
                     # Parse query
                     parser = QueryParser()
                     query = self.form.cleaned_data['query']
-                    print "Query: %s" % query
+                    print "Query:\t%s" % query
                     filterCollection = parser.parse(str(query))
 
                     # Generate and execute query
                     filter_list = filterCollection.get_filter_list()
-                    objects = getattr(InfoObject, 'objects')
-                    for i, oneFilter in enumerate(filter_list):
-                        print "Filter: %s" % oneFilter
+                    objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
+                    for oneFilter in filter_list:
+                        print "Filter:\t%s" % oneFilter
                         objects = getattr(objects, 'filter')(oneFilter)
+                    objects = objects.distinct()
+                    print "SQL:\t%s" % objects.query
                     self.queryset = objects
                 except (DataError, QueryParserException, FieldError, QueryLexerException) as ex:
                     messages.error(self.request, str(ex))
