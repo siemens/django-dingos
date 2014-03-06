@@ -1618,7 +1618,7 @@ class Identifier(DingoModel):
 
 
     def __unicode__(self):
-        return "%s (%s)" % (self.uid, self.namespace.uri)
+        return "%s:%s" % (self.namespace.uri,self.uid)
 
     class Meta:
         unique_together = ('uid', 'namespace',)
