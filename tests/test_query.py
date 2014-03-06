@@ -32,6 +32,7 @@ def load_data(test_location=''):
                    identifier_ns_uri='test.org',
                    marking_json=os.path.join(test_location, 'tests/testdata/markings/query_test_marking.json'),
                    default_timestamp='2013-04-01 00:00:01+00:00')
+    command = Command()
     command.handle(os.path.join(test_location, 'tests/testdata/xml/query_test/john_doe.xml'),
                    uid='john_doe',
                    placeholder_fillers=[("color", "yellow"),
@@ -40,6 +41,16 @@ def load_data(test_location=''):
                    identifier_ns_uri='test.org',
                    marking_json=os.path.join(test_location, 'tests/testdata/markings/query_test_marking.json'),
                    default_timestamp='2013-04-02 00:00:01+00:00')
+    command = Command()
+    command.handle(os.path.join(test_location, 'tests/testdata/xml/query_test/max_mustermann.xml'),
+                   uid='max_mustermann',
+                   placeholder_fillers=[("color", "yellow"),
+                                        ("scope", "organization3"),
+                                        ("usage", "FOUO")],
+                   identifier_ns_uri='test.org',
+                   marking_json=os.path.join(test_location, 'tests/testdata/markings/query_test_marking.json'),
+                   default_timestamp='2013-04-02 00:00:01+00:00')
+
 
 
 class QueryTests(test.TestCase):
@@ -290,14 +301,11 @@ def parse_and_query(query):
     out("Query: %s" % query)
     filterCollection = parser.parse(str(query))
 
+
     # Generate and execute query
     objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
 
-    for oneFilter in filterCollection.get_filter_list():
-        filter_type = oneFilter['type']
-        filter_query = oneFilter['q']
-        out("%s: %s" % (filter_type, filter_query))
-        objects = getattr(objects, filter_type)(filter_query)
+    objects = filterCollection.build_query(base=objects)
 
     objects = objects.distinct()
     #out("SQL: %s" % objects.query)
