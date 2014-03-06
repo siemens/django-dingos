@@ -10,6 +10,7 @@ Tests for `django-dingos` modules module.
 
 import os
 from django import test
+from django.db.models import Q
 from unittest import skip
 from dingos.management.commands.dingos_generic_xml_import import Command
 from dingos.models import InfoObject
@@ -226,7 +227,7 @@ class QueryTests(test.TestCase):
         self.assertEqual(objects.count(), 1)
         self.assertEqual(objects[0].identifier.uid, "john_smith")
 
-    #@skip
+    @skip
     def test_not(self):
         print_test_name()
 
@@ -286,19 +287,17 @@ def parse_and_query(query):
 
     # Parse query
     parser = QueryParser()
-    out("Query:%s" % query)
+    out("Query: %s" % query)
     filterCollection = parser.parse(str(query))
 
     # Generate and execute query
     objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
 
     for oneFilter in filterCollection.get_filter_list():
-        if oneFilter['type'] == 'filter':
-            out("Filter: %s" % oneFilter['q'])
-            objects = getattr(objects, 'filter')(oneFilter['q'])
-        elif oneFilter['type'] == 'exclude':
-            out("Exclude: %s" % oneFilter['q'])
-            objects = getattr(objects, 'exclude')(oneFilter['q'])
+        filter_type = oneFilter['type']
+        filter_query = oneFilter['q']
+        out("%s: %s" % (filter_type, filter_query))
+        objects = getattr(objects, filter_type)(filter_query)
 
     objects = objects.distinct()
     #out("SQL: %s" % objects.query)

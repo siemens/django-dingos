@@ -43,6 +43,35 @@ class QueryParser:
         else:
             raise QueryParserException("Syntax error: Cannot parse anything.")
 
+    '''
+        QUERY LANGUAGE GRAMMAR
+        ======================
+        query:
+        query:  expr
+        query:  expr PIPE query
+        query:  FILTER COLON expr
+                | EXCLUDE COLON expr
+        query:  FILTER COLON expr PIPE query
+                | EXCLUDE COLON expr PIPE query
+        expr:   OPEN expr CLOSE
+        expr:   expr AND expr
+                |expr OR expr
+        expr:   key comp value
+        expr:   key NOT comp value
+        comp:   EQUALS
+                | CONTAINS
+                | ICONTAINS
+                | REGEXP
+                | IREGEXP
+                | STARTSWITH
+                | ISTARTSWITH
+                | ENDSWITH
+                | IENDSWITH
+        value:  VALUE
+        key:    FIELD
+                | FACTTERM
+    '''
+
     def p_query_empty(self, p):
         "query :"
         p[0] = FilterCollection()

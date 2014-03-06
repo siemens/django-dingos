@@ -485,12 +485,10 @@ class CustomSearchView(BasicListView):
                     objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
 
                     for oneFilter in filterCollection.get_filter_list():
-                        if oneFilter['type'] == 'filter':
-                            print "\tFilter: %s" % oneFilter['q']
-                            objects = getattr(objects, 'filter')(oneFilter['q'])
-                        elif oneFilter['type'] == 'exclude':
-                            print "\tExclude: %s" % oneFilter['q']
-                            objects = getattr(objects, 'exclude')(oneFilter['q'])
+                        filter_type = oneFilter['type']
+                        filter_query = oneFilter['q']
+                        print "\t%s: %s" % (filter_type, filter_query)
+                        objects = getattr(objects, filter_type)(filter_query)
 
                     objects = objects.distinct()
                     print "\tSQL: %s" % objects.query
