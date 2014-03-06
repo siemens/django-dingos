@@ -484,11 +484,13 @@ class CustomSearchView(BasicListView):
                     # Generate and execute query
                     objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
 
-                    for oneFilter in filterCollection.get_filter_list():
-                        filter_type = oneFilter['type']
-                        filter_query = oneFilter['q']
-                        print "\t%s: %s" % (filter_type, filter_query)
-                        objects = getattr(objects, filter_type)(filter_query)
+                    objects = filterCollection.build_query(base=objects)
+
+                    #for oneFilter in filterCollection.get_filter_list():
+                    #    filter_type = oneFilter['type']
+                    #    filter_query = oneFilter['q']
+                    #    print "\t%s: %s" % (filter_type, filter_query)
+                    #    objects = getattr(objects, filter_type)(filter_query)
 
                     objects = objects.distinct()
                     print "\tSQL: %s" % objects.query

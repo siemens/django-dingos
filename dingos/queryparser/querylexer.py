@@ -36,6 +36,7 @@ class QueryLexer:
         "iendswith": "IENDSWITH",
         "filter": "FILTER",
         "exclude": "EXCLUDE",
+        "marked_by": "MARKED_BY"
     }
 
     # Tokens

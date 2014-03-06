@@ -16,6 +16,7 @@
 #
 from django.db.models import Q
 
+from dingos.models import InfoObject
 
 class Operator:
     OR = "||"
@@ -41,13 +42,32 @@ class FilterCollection:
     def add_new_filter(self, new_filter):
         self.filter_list.insert(0, new_filter)
 
-    def get_filter_list(self):
-        q_list = []
-        for oneFilter in self.filter_list:
-            q_list.append({'type': oneFilter['type'], 'q': oneFilter['expression'].build_q()})
-        return q_list
+    #def get_filter_list(self):
+    #    q_list = []
+    #    for oneFilter in self.filter_list:
+    #        q_list.append({'type': oneFilter['type'], 'q': oneFilter['expression'].build_q()})
+    #    return q_list
 
-    def __repr__(self):
+    def build_query(self,base=None):
+        if not base:
+            objects = InfoObject.objects.all()
+        else:
+            objects = base
+        for oneFilter in self.filter_list:
+            filter_type = oneFilter['type']
+            if filter_type in ['filter','exclude']:
+                filter_query = oneFilter['expression'].build_q()
+                objects = getattr(objects, filter_type)(filter_query)
+                print "\t%s: %s" % (filter_type, filter_query)
+            elif filter_type in ['marked_by']:
+                #print "QUERY %s" % oneFilter['query'].build_query()
+                objects = getattr(objects, 'filter')(**{'marking_thru__marking__in':oneFilter['query'].build_query()})
+
+
+        return objects
+
+
+def __repr__(self):
         result = "{"
         for i, cur in enumerate(self.filter_list):
             if i != 0:
