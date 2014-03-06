@@ -76,8 +76,9 @@ class Expression:
 
 
 class Condition:
-    def __init__(self, key, comparator, value):
+    def __init__(self, key, is_not, comparator, value):
         self.key = key
+        self.is_not = is_not
         self.comparator = comparator
         self.value = value
 
@@ -112,12 +113,17 @@ class Condition:
                 result = result & Q(**{"fact_thru__fact__fact_term__attribute__iregex": fact_attribute})
             else:
                 result = Q(**{"fact_thru__fact__fact_term__term__iregex": key})
-            result = result & Q(**{"fact_thru__fact__fact_values__value" + q_operator: self.value})
+            result = result & self.enrich_q_with_not(Q(**{"fact_thru__fact__fact_values__value" + q_operator: self.value}))
         # Field condition
         else:
-            result = Q(**{self.key + q_operator: self.value})
+            result = self.enrich_q_with_not(Q(**{self.key + q_operator: self.value}))
 
         return result
+
+    def enrich_q_with_not(self, q_object):
+        if self.is_not:
+            return ~q_object
+        return q_object
 
     def key_is_fact_term(self):
         return self.key[0] == "[" and self.key[-1] == "]"

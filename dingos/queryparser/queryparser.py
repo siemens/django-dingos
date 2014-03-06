@@ -80,7 +80,11 @@ class QueryParser:
 
     def p_expr_condition(self, p):
         "expr : key comp value"
-        p[0] = Condition(p[1], p[2], p[3])
+        p[0] = Condition(p[1], False, p[2], p[3])
+
+    def p_expr_not_condition(self, p):
+        "expr : key NOT comp value"
+        p[0] = Condition(p[1], True, p[3], p[4])
 
     def p_comp(self, p):
         '''comp : EQUALS
