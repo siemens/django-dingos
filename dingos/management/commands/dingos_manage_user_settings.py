@@ -37,7 +37,7 @@ class Command(BaseCommand):
 
     """
     args = 'user_name user_name user_name ...'
-    help = 'Reset user customizations for specified users'
+    help = """Reset user customizations for specified users. When 'ALL' is passed as argument, the changes are carried out for all users."""
 
     option_list = BaseCommand.option_list + (
         make_option('-r', '--reset',

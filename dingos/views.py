@@ -25,7 +25,7 @@ from braces.views import SuperuserRequiredMixin
 
 from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData, FactValue, get_or_create_fact
 
-from dingos.filter import InfoObjectFilter, FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
+from dingos.filter import InfoObjectFilter, CompleteInfoObjectFilter,FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
 from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm
 from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME, DINGOS_SAVED_SEARCHES_TYPE_NAME, DINGOS_DEFAULT_SAVED_SEARCHES
 
@@ -34,7 +34,11 @@ from braces.views import LoginRequiredMixin
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView
 
 
+
+
 class InfoObjectList(BasicFilterView):
+
+    exclude_internal_objects = True
 
     template_name = 'dingos/%s/lists/InfoObjectList.html' % DINGOS_TEMPLATE_FAMILY
 
@@ -48,9 +52,12 @@ class InfoObjectList(BasicFilterView):
     title = 'List of Info Objects (generic filter)'
 
     queryset = InfoObject.objects.\
-        exclude(latest_of=None). \
-        exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
-        prefetch_related(
+        exclude(latest_of=None)
+    
+    if exclude_internal_objects:
+        query_set = queryset.exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME)
+
+    queryset = queryset.prefetch_related(
         'iobject_type',
         'iobject_type__iobject_family',
         'iobject_family',
@@ -59,6 +66,12 @@ class InfoObjectList(BasicFilterView):
         'identifier').order_by('-latest_of__pk')
         ### JG/STB: edit for performance
         #'identifier').select_related().distinct().order_by('-latest_of__pk')
+
+class InfoObjectListIncludingInternals(SuperuserRequiredMixin,InfoObjectList):
+
+    filterset_class= CompleteInfoObjectFilter
+
+    exclude_internal_objects=False
 
 class InfoObjectList_Id_filtered(BasicFilterView):
 
