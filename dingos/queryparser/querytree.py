@@ -35,6 +35,7 @@ class Comparator:
     ENDSWITH = "endswith"
     IENDSWITH = "iendswith"
     LOWERTHAN = "<"
+    RANGE = "range"
 
 
 class FilterCollection:
@@ -123,8 +124,15 @@ class Condition:
             q_operator = "__iendswith"
         elif self.comparator == Comparator.LOWERTHAN:
             q_operator = "__lt"
-            # Exception for date values: Generate datetime object
-            value = generate_date_value(value)
+            value = generate_date_value(value + " 00:00:00")
+        elif self.comparator == Comparator.RANGE:
+            q_operator = "__range"
+            # Value format:
+            # YYYY:mm:dd HH:MM:SS -- YYYY:mm:dd HH:MM:SS
+            (beginValue, endValue) = value.split("--")
+            begin = generate_date_value(beginValue.strip())
+            end = generate_date_value(endValue.strip())
+            value = (begin, end)
 
         if self.key[0] == "[" and self.key[-1] == "]":
             # Fact term condition
@@ -157,7 +165,7 @@ class Condition:
 
 
 def generate_date_value(old_value):
-    naive = parse_datetime((old_value + " 00:00:00").strip())
+    naive = parse_datetime(old_value.strip())
     if naive:
         # Make sure that information regarding the timezone is
         # included in the time stamp. If it is not, we choose
