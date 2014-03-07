@@ -37,12 +37,13 @@ class QueryLexer:
         "filter": "FILTER",
         "exclude": "EXCLUDE",
         "marked_by": "MARKED_BY",
-        "range": "RANGE"
+        "range": "RANGE",
+        "younger": "YOUNGER"
     }
 
     # Tokens
-    tokens = ["FIELD", "AND", "OR", "OPEN", "CLOSE", "EQUALS", "VALUE", "PIPE", "FACTTERM", "COLON", "NOT", "LOWERTHAN"]\
-             + list(reserved.values())
+    tokens = ["FIELD", "AND", "OR", "OPEN", "CLOSE", "EQUALS", "VALUE", "PIPE", "FACTTERM", "COLON", "NOT",
+              "LOWERTHAN"] + list(reserved.values())
 
     def t_FIELD(self, t):
         r"[a-zA-Z][\w]*"

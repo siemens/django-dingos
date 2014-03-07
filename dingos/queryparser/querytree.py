@@ -17,7 +17,17 @@
 from django.db.models import Q
 from dingos.models import InfoObject
 from django.utils import timezone
+from django.utils.timezone import now
 from django.utils.dateparse import parse_datetime
+from datetime import timedelta
+
+
+class QueryParserException(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+    def __str__(self):
+        return self.msg
+
 
 class Operator:
     OR = "||"
@@ -36,6 +46,7 @@ class Comparator:
     IENDSWITH = "iendswith"
     LOWERTHAN = "<"
     RANGE = "range"
+    YOUNGER = "younger"
 
 
 class FilterCollection:
@@ -124,6 +135,8 @@ class Condition:
             q_operator = "__iendswith"
         elif self.comparator == Comparator.LOWERTHAN:
             q_operator = "__lt"
+            # Value format:
+            # YYYY:mm:dd
             value = generate_date_value(value + " 00:00:00")
         elif self.comparator == Comparator.RANGE:
             q_operator = "__range"
@@ -133,6 +146,20 @@ class Condition:
             begin = generate_date_value(beginValue.strip())
             end = generate_date_value(endValue.strip())
             value = (begin, end)
+        elif self.comparator == Comparator.YOUNGER:
+            q_operator = "__gt"
+            # Value example: timestamp younger '4d'
+            unit = value[-1].lower()
+            time_val = int(value[:-1])
+            get_time_delta= {
+                'd': lambda number: timedelta(days=number),
+                'h': lambda number: timedelta(hours=number),
+                'm': lambda number: timedelta(minutes=number)
+            }
+            if unit in get_time_delta:
+                value = now() - get_time_delta[unit](time_val)
+            else:
+                raise QueryParserException("Syntax error: Time unit \"%s\" is not supported" % unit)
 
         if self.key[0] == "[" and self.key[-1] == "]":
             # Fact term condition
@@ -175,4 +202,4 @@ def generate_date_value(old_value):
         else:
             return naive
     else:
-        raise Exception("Syntax error: Cannot read date \"%s\"" % old_value)
+        raise QueryParserException("Syntax error: Cannot read date \"%s\"" % old_value)

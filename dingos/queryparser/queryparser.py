@@ -71,6 +71,7 @@ class QueryParser:
                 | IENDSWITH
                 | LOWERTHAN
                 | RANGE
+                | YOUNGER
         value:  VALUE
         key:    FIELD
                 | FACTTERM
@@ -142,7 +143,8 @@ class QueryParser:
                 | ENDSWITH
                 | IENDSWITH
                 | LOWERTHAN
-                | RANGE'''
+                | RANGE
+                | YOUNGER'''
         p[0] = p[1]
 
     def p_value_with_quotes(self, p):
