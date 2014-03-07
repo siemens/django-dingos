@@ -489,7 +489,8 @@ class CustomSearchView(BasicListView):
                     print "\tSQL: %s" % objects.query
 
                     self.queryset = objects
-                except (DataError, QueryParserException, FieldError, QueryLexerException) as ex:
+                #except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError) as ex:
+                except Exception as ex:
                     messages.error(self.request, str(ex))
 
         return super(BasicListView,self).get(request, *args, **kwargs)

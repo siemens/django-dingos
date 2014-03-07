@@ -138,7 +138,8 @@ class QueryParser:
                 | STARTSWITH
                 | ISTARTSWITH
                 | ENDSWITH
-                | IENDSWITH'''
+                | IENDSWITH
+                | LOWERTHAN'''
         p[0] = p[1]
 
     def p_value_with_quotes(self, p):

@@ -40,7 +40,7 @@ class QueryLexer:
     }
 
     # Tokens
-    tokens = ["FIELD", "AND", "OR", "OPEN", "CLOSE", "EQUALS", "VALUE", "PIPE", "FACTTERM", "COLON", "NOT"]\
+    tokens = ["FIELD", "AND", "OR", "OPEN", "CLOSE", "EQUALS", "VALUE", "PIPE", "FACTTERM", "COLON", "NOT", "LOWERTHAN"]\
              + list(reserved.values())
 
     def t_FIELD(self, t):
@@ -59,6 +59,7 @@ class QueryLexer:
     t_FACTTERM = (r"\[[^\/\@\]]+(\/[^\/\@\]]+)*(\@[^\]]*)?\]")
     t_COLON = (r"\:")
     t_NOT = (r"\!")
+    t_LOWERTHAN = (r"\<")
 
     # Ignore whitespaces
     t_ignore = "\t\n\r "

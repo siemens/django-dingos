@@ -15,8 +15,9 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 from django.db.models import Q
-
 from dingos.models import InfoObject
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 class Operator:
     OR = "||"
@@ -33,6 +34,7 @@ class Comparator:
     ISTARTSWITH = "istartswith"
     ENDSWITH = "endswith"
     IENDSWITH = "iendswith"
+    LOWERTHAN = "<"
 
 
 class FilterCollection:
@@ -97,6 +99,8 @@ class Condition:
         self.value = value
 
     def build_q(self):
+        value = self.value
+
         # Operator choice
         q_operator = ""
         if self.comparator == Comparator.EQUALS:
@@ -117,21 +121,26 @@ class Condition:
             q_operator = "__endswith"
         elif self.comparator == Comparator.IENDSWITH:
             q_operator = "__iendswith"
+        elif self.comparator == Comparator.LOWERTHAN:
+            q_operator = "__lt"
+            # Exception for date values: Generate datetime object
+            value = generate_date_value(value)
 
-        # Fact term condition
         if self.key[0] == "[" and self.key[-1] == "]":
+            # Fact term condition
             key = self.key[1:-1]
             if "@" in key:
+                # Condition for an attribute in the fact term
                 fact_term, fact_attribute = key.split("@")
                 result = Q(**{"fact_thru__fact__fact_term__term__iregex": fact_term})
                 result = result & Q(**{"fact_thru__fact__fact_term__attribute__iregex": fact_attribute})
             else:
                 result = Q(**{"fact_thru__fact__fact_term__term__iregex": key})
             result = result & self.enrich_q_with_not(
-                Q(**{"fact_thru__fact__fact_values__value" + q_operator: self.value}))
-        # Field condition
+                Q(**{"fact_thru__fact__fact_values__value" + q_operator: value}))
         else:
-            result = self.enrich_q_with_not(Q(**{self.key + q_operator: self.value}))
+            # Field condition
+            result = self.enrich_q_with_not(Q(**{self.key + q_operator: value}))
 
         return result
 
@@ -145,3 +154,17 @@ class Condition:
 
     def __repr__(self):
         return "%s %s %s" % (self.key, self.comparator, self.value)
+
+
+def generate_date_value(old_value):
+    naive = parse_datetime((old_value + " 00:00:00").strip())
+    if naive:
+        # Make sure that information regarding the timezone is
+        # included in the time stamp. If it is not, we choose
+        # UTC as default timezone.
+        if not timezone.is_aware(naive):
+            return timezone.make_aware(naive, timezone.utc)
+        else:
+            return naive
+    else:
+        raise Exception("Syntax error: Cannot read date \"%s\"" % old_value)
