@@ -10,7 +10,6 @@ Tests for `django-dingos` modules module.
 
 import os
 from django import test
-from django.db.models import Q
 from unittest import skip
 from dingos.management.commands.dingos_generic_xml_import import Command
 from dingos.models import InfoObject
@@ -52,12 +51,11 @@ def load_data(test_location=''):
                    default_timestamp='2013-04-02 00:00:01+00:00')
 
 
-
 class QueryTests(test.TestCase):
     def setUp(self):
         load_data()
 
-    @skip
+    #@skip
     def test_exact(self):
         print_test_name()
 
@@ -107,7 +105,7 @@ class QueryTests(test.TestCase):
                             found = True
             self.assertTrue(found)
 
-    @skip
+    #@skip
     def test_contains(self):
         print_test_name()
 
@@ -127,7 +125,7 @@ class QueryTests(test.TestCase):
         for oneObject in objects:
             self.assertTrue("john_" in oneObject.identifier.uid)
 
-    @skip
+    #@skip
     def test_regexp(self):
         print_test_name()
 
@@ -147,7 +145,7 @@ class QueryTests(test.TestCase):
         for oneObject in objects:
             self.assertTrue("john_" in oneObject.identifier.uid)
 
-    @skip
+    #@skip
     def test_startswith(self):
         print_test_name()
 
@@ -167,7 +165,7 @@ class QueryTests(test.TestCase):
         for oneObject in objects:
             self.assertTrue("john_" in oneObject.identifier.uid)
 
-    @skip
+    #@skip
     def test_endswith(self):
         print_test_name()
 
@@ -186,7 +184,7 @@ class QueryTests(test.TestCase):
         self.assertEqual(objects.count(), 1)
         self.assertEqual(objects[0].identifier.uid, "john_smith")
 
-    @skip
+    #@skip
     def test_boolop_or(self):
         print_test_name()
 
@@ -196,7 +194,7 @@ class QueryTests(test.TestCase):
         for oneObject in objects:
             self.assertTrue("john_smith" in oneObject.identifier.uid or "john_doe" in oneObject.identifier.uid)
 
-    @skip
+    #@skip
     def test_boolop_and(self):
         print_test_name()
 
@@ -219,7 +217,7 @@ class QueryTests(test.TestCase):
         self.assertEqual(objects.count(), 1)
         self.assertEqual(objects[0].identifier.uid, "john_smith")
 
-    @skip
+    #@skip
     def test_filter(self):
         print_test_name()
 
@@ -238,14 +236,14 @@ class QueryTests(test.TestCase):
         self.assertEqual(objects.count(), 1)
         self.assertEqual(objects[0].identifier.uid, "john_smith")
 
-    @skip
+    #@skip
     def test_not(self):
         print_test_name()
 
         # Test field
         query = "identifier__uid != 'john_smith'"
         objects = parse_and_query(query)
-        self.assertEqual(objects.count(), 3)
+        self.assertEqual(objects.count(), 4)
         for oneObject in objects:
             self.assertNotEqual(oneObject.identifier.uid, "john_smith")
 
@@ -293,44 +291,20 @@ class QueryTests(test.TestCase):
         self.assertEqual(objects.count(), 0)
 
 
-    #@skip
-    def test_misc(self):
-        print_test_name()
-
-        # Subquery
-        subquery = Q(Q(**{'fact_thru__fact__fact_term__term__iregex': 'Usage'}) &
-                     Q(**{'fact_thru__fact__fact_values__value__iexact': 'FOUO'}))
-        out("Subquery: %s" % subquery)
-        subquery_objects = InfoObject.objects.exclude(latest_of=None)
-        subquery_objects = subquery_objects.filter(subquery)
-        subquery_objects.distinct()
-        out("Subquery objects: %s" % subquery_objects)
-
-        # Query
-        query = Q(**{'marking_thru__marking__in': subquery_objects})
-        out("Query: %s" % query)
-        objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
-        objects = objects.filter(query)
-        objects = objects.distinct()
-        out("Objects: %s" % objects)
-
-
 def parse_and_query(query):
     out()
 
     # Parse query
     parser = QueryParser()
     out("Query: %s" % query)
-    filterCollection = parser.parse(str(query))
-
 
     # Generate and execute query
+    filter_collection = parser.parse(str(query))
     objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
-
-    objects = filterCollection.build_query(base=objects)
-
+    objects = filter_collection.build_query(base=objects)
     objects = objects.distinct()
     #out("SQL: %s" % objects.query)
+
     return objects
 
 
