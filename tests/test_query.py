@@ -226,6 +226,20 @@ class QueryTests(test.TestCase):
             for marking in oneObject.marking_thru.all():
                 self.assertTrue(is_term_fact_value(marking.marking, '.*TLP.*', 'yellow'))
 
+        query = "marked_by: (filter: [.*] contains 'yellow' | exclude: [.*] contains 'organization3')"
+        objects = parse_and_query(query)
+        for oneObject in objects:
+            for marking in oneObject.marking_thru.all():
+                self.assertTrue(is_term_fact_value(marking.marking, '.*', 'yellow'))
+                self.assertFalse(is_term_fact_value(marking.marking, '.*', 'organization3'))
+
+        query = "[lastName] contains 'Mustermann' | marked_by: (filter: [.*TLP.*] contains 'yellow')"
+        objects = parse_and_query(query)
+        for oneObject in objects:
+            self.assertTrue(is_term_fact_value(oneObject, "lastName", "Mustermann", lambda a, b: a in b))
+            for marking in oneObject.marking_thru.all():
+                self.assertTrue(is_term_fact_value(marking.marking, '.*TLP.*', 'yellow', lambda a, b: a in b))
+
     #@skip
     def test_not(self):
         print_test_name()
@@ -264,18 +278,18 @@ class QueryTests(test.TestCase):
 
 
 def parse_and_query(query):
-    out()
+    print ""
 
     # Parse query
     parser = QueryParser()
-    out("Query: %s" % query)
+    print "\tQuery: %s" % query
 
     # Generate and execute query
     filter_collection = parser.parse(str(query))
     objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
     objects = filter_collection.build_query(base=objects)
     objects = objects.distinct()
-    #out("SQL: %s" % objects.query)
+    #print "\tSQL: %s" % objects.query
 
     return objects
 
@@ -296,8 +310,3 @@ def print_test_name():
     import traceback
     print "\n======================================\nTest method: %s\n======================================" %\
           traceback.extract_stack(None, 2)[0][2]
-
-
-def out(value=''):
-    print "\t%s" % value
-    pass

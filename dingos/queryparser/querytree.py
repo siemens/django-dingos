@@ -54,8 +54,9 @@ class FilterCollection:
                 objects = getattr(objects, filter_type)(filter_query)
                 print "\t%s: %s" % (filter_type, filter_query)
             elif filter_type in ['marked_by']:
-                #print "QUERY %s" % oneFilter['query'].build_query()
+                print "\t%s: {" % filter_type
                 objects = getattr(objects, 'filter')(**{'marking_thru__marking__in': oneFilter['query'].build_query()})
+                print "\t}"
 
         return objects
 
