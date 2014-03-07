@@ -293,6 +293,28 @@ class QueryTests(test.TestCase):
         self.assertEqual(objects.count(), 0)
 
 
+    #@skip
+    def test_misc(self):
+        print_test_name()
+
+        # Subquery
+        subquery = Q(Q(**{'fact_thru__fact__fact_term__term__iregex': 'Usage'}) &
+                     Q(**{'fact_thru__fact__fact_values__value__iexact': 'FOUO'}))
+        out("Subquery: %s" % subquery)
+        subquery_objects = InfoObject.objects.exclude(latest_of=None)
+        subquery_objects = subquery_objects.filter(subquery)
+        subquery_objects.distinct()
+        out("Subquery objects: %s" % subquery_objects)
+
+        # Query
+        query = Q(**{'marking_thru__marking__in': subquery_objects})
+        out("Query: %s" % query)
+        objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
+        objects = objects.filter(query)
+        objects = objects.distinct()
+        out("Objects: %s" % objects)
+
+
 def parse_and_query(query):
     out()
 
