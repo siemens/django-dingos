@@ -42,27 +42,20 @@ class FilterCollection:
     def add_new_filter(self, new_filter):
         self.filter_list.insert(0, new_filter)
 
-    #def get_filter_list(self):
-    #    q_list = []
-    #    for oneFilter in self.filter_list:
-    #        q_list.append({'type': oneFilter['type'], 'q': oneFilter['expression'].build_q()})
-    #    return q_list
-
-    def build_query(self,base=None):
+    def build_query(self, base=None):
         if not base:
             objects = InfoObject.objects.all()
         else:
             objects = base
         for oneFilter in self.filter_list:
             filter_type = oneFilter['type']
-            if filter_type in ['filter','exclude']:
+            if filter_type in ['filter', 'exclude']:
                 filter_query = oneFilter['expression'].build_q()
                 objects = getattr(objects, filter_type)(filter_query)
                 print "\t%s: %s" % (filter_type, filter_query)
             elif filter_type in ['marked_by']:
                 #print "QUERY %s" % oneFilter['query'].build_query()
-                objects = getattr(objects, 'filter')(**{'marking_thru__marking__in':oneFilter['query'].build_query()})
-
+                objects = getattr(objects, 'filter')(**{'marking_thru__marking__in': oneFilter['query'].build_query()})
 
         return objects
 
@@ -133,7 +126,8 @@ class Condition:
                 result = result & Q(**{"fact_thru__fact__fact_term__attribute__iregex": fact_attribute})
             else:
                 result = Q(**{"fact_thru__fact__fact_term__term__iregex": key})
-            result = result & self.enrich_q_with_not(Q(**{"fact_thru__fact__fact_values__value" + q_operator: self.value}))
+            result = result & self.enrich_q_with_not(
+                Q(**{"fact_thru__fact__fact_values__value" + q_operator: self.value}))
         # Field condition
         else:
             result = self.enrich_q_with_not(Q(**{self.key + q_operator: self.value}))

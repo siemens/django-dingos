@@ -479,18 +479,11 @@ class CustomSearchView(BasicListView):
                     parser = QueryParser()
                     query = self.form.cleaned_data['query']
                     print "\tQuery: %s" % query
-                    filterCollection = parser.parse(str(query))
 
                     # Generate and execute query
+                    filter_collection = parser.parse(str(query))
                     objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
-
-                    objects = filterCollection.build_query(base=objects)
-
-                    #for oneFilter in filterCollection.get_filter_list():
-                    #    filter_type = oneFilter['type']
-                    #    filter_query = oneFilter['q']
-                    #    print "\t%s: %s" % (filter_type, filter_query)
-                    #    objects = getattr(objects, filter_type)(filter_query)
+                    objects = filter_collection.build_query(base=objects)
 
                     objects = objects.distinct()
                     print "\tSQL: %s" % objects.query
