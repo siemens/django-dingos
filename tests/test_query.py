@@ -217,6 +217,16 @@ class QueryTests(test.TestCase):
             self.assertFalse(is_term_fact_value(oneObject, "phoneNumbers/phoneNumber", "312 555-1234"))
 
     #@skip
+    def test_marked_by(self):
+        print_test_name()
+
+        query = "marked_by: (filter: [.*TLP.*] contains 'yellow')"
+        objects = parse_and_query(query)
+        for oneObject in objects:
+            for marking in oneObject.marking_thru.all():
+                self.assertTrue(is_term_fact_value(marking.marking, '.*TLP.*', 'yellow'))
+
+    #@skip
     def test_not(self):
         print_test_name()
 
@@ -249,7 +259,6 @@ class QueryTests(test.TestCase):
         query = "[lastName]!='Smith' && [lastName]!='Doe'"
         objects = parse_and_query(query)
         for oneObject in objects:
-            print "asdf"
             self.assertFalse(is_term_fact_value(oneObject, "lastName", "Smith"))
             self.assertFalse(is_term_fact_value(oneObject, "lastName", "Doe"))
 
@@ -271,10 +280,10 @@ def parse_and_query(query):
     return objects
 
 
-def is_term_fact_value(oneObject, fact_term, fact_value, fact_comp=lambda a, b: a == b):
-    for fact in oneObject.facts.all():
+def is_term_fact_value(one_object, fact_term, fact_value, fact_comp=lambda a, b: a == b):
+    for fact in one_object.facts.all():
         # One of the fact terms has to be the right one
-        if str(fact.fact_term) == fact_term:
+        if re.match(fact_term, str(fact.fact_term), flags=re.I):
             # One of the values has to be the right one
             for value in fact.fact_values.all():
                 #if str(value) == fact_value:
