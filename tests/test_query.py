@@ -9,14 +9,15 @@ Tests for `django-dingos` modules module.
 """
 
 import os
+import re
 from django import test
 from unittest import skip
 from dingos.management.commands.dingos_generic_xml_import import Command
-from dingos.models import InfoObject
+from dingos.models import InfoObject, InfoObject2Fact
 import pprint
 from datetime import datetime
 from dingos.queryparser.queryparser import QueryParser
-import re
+from dingos.queryparser.querytree import FilterCollection
 
 now = datetime.now()
 pp = pprint.PrettyPrinter(indent=2)
@@ -305,17 +306,48 @@ class QueryTests(test.TestCase):
             self.assertFalse(is_term_fact_value(oneObject, "lastName", "Smith"))
             self.assertFalse(is_term_fact_value(oneObject, "lastName", "Doe"))
 
+    #@skip
+    def test_fact_search(self):
+        print_test_name()
 
-def parse_and_query(query):
+        # Test field
+        query = "identifier__uid = 'john_smith'"
+        objects = parse_and_query(query, FilterCollection.INFO_OBJECT_2_FACT)
+        for fact in objects:
+            self.assertEqual(fact.iobject.identifier.uid, "john_smith")
+
+        # Test fact term
+        query = "[firstName]='John'"
+        objects = parse_and_query(query, FilterCollection.INFO_OBJECT_2_FACT)
+        for fact in objects:
+            self.assertTrue(is_term_fact_value(fact.iobject, "firstName", "John"))
+
+        # Test deeper fact term
+        query = "[phoneNumbers/phoneNumber]='746 555-4567'"
+        objects = parse_and_query(query, FilterCollection.INFO_OBJECT_2_FACT)
+        for fact in objects:
+            self.assertTrue(is_term_fact_value(fact.iobject, 'phoneNumbers/phoneNumber', '746 555-4567'))
+
+        # Test fact attribute
+        query = "[phoneNumbers/phoneNumber@type]='home'"
+        objects = parse_and_query(query, FilterCollection.INFO_OBJECT_2_FACT)
+        for fact in objects:
+            self.assertTrue(is_term_fact_value(fact.iobject, 'phoneNumbers/phoneNumber@type', 'home'))
+
+
+def parse_and_query(query, mode=FilterCollection.INFO_OBJECT):
     print ""
 
     # Parse query
-    parser = QueryParser()
+    parser = QueryParser(mode)
     print "\tQuery: %s" % query
 
     # Generate and execute query
     filter_collection = parser.parse(str(query))
-    objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
+    if mode == FilterCollection.INFO_OBJECT:
+        objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
+    else:
+        objects = getattr(InfoObject2Fact, 'objects').exclude(iobject__latest_of=None)
     objects = filter_collection.build_query(base=objects)
     objects = objects.distinct()
     #print "\tSQL: %s" % objects.query

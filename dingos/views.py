@@ -494,6 +494,7 @@ class CustomInfoObjectSearchView(BasicListView):
 
         return super(BasicListView,self).get(request, *args, **kwargs)
 
+
 class CustomFactSearchView(BasicListView):
     template_name = 'dingos/%s/searches/CustomFactSearch.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Custom Fact Search'
