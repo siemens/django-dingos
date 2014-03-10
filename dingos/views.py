@@ -37,8 +37,9 @@ from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, 
 
 from braces.views import LoginRequiredMixin
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView
-from queryparser.queryparser import QueryParser, QueryParserException
+from queryparser.queryparser import QueryParser
 from queryparser.querylexer import QueryLexerException
+from queryparser.querytree import FilterCollection, QueryParserException
 
 class InfoObjectList(BasicFilterView):
 
@@ -456,13 +457,13 @@ class InfoObjectJSONView(BasicDetailView):
                                  content_type='application/json',
                                  **httpresponse_kwargs)
 
-class CustomSearchView(BasicListView):
-    template_name = 'dingos/%s/searches/CustomSearch.html' % DINGOS_TEMPLATE_FAMILY
-    title = 'Custom Search'
+class CustomInfoObjectSearchView(BasicListView):
+    template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
+    title = 'Custom Info Object Search'
     form = None
 
     def get_context_data(self, **kwargs):
-        context = super(CustomSearchView, self).get_context_data(**kwargs)
+        context = super(CustomInfoObjectSearchView, self).get_context_data(**kwargs)
         context['form'] = self.form
         return context
 
@@ -483,6 +484,43 @@ class CustomSearchView(BasicListView):
                     # Generate and execute query
                     filter_collection = parser.parse(str(query))
                     objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
+                    objects = filter_collection.build_query(base=objects)
+                    objects = objects.distinct()
+                    print "\tSQL: %s" % objects.query
+
+                    self.queryset = objects
+                except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError) as ex:
+                    messages.error(self.request, str(ex))
+
+        return super(BasicListView,self).get(request, *args, **kwargs)
+
+class CustomFactSearchView(BasicListView):
+    template_name = 'dingos/%s/searches/CustomFactSearch.html' % DINGOS_TEMPLATE_FAMILY
+    title = 'Custom Fact Search'
+    form = None
+
+    def get_context_data(self, **kwargs):
+        context = super(CustomFactSearchView, self).get_context_data(**kwargs)
+        context['form'] = self.form
+        return context
+
+    def get(self, request, *args, **kwargs):
+        self.form = CustomQueryForm(request.GET)
+        self.queryset = []
+
+        if request.GET.has_key('execute_query') and self.form.is_valid():
+            if request.GET['query'] == "":
+                messages.error(self.request, "Please enter a query.")
+            else:
+                try:
+                    # Parse query
+                    parser = QueryParser(FilterCollection.INFO_OBJECT_2_FACT)
+                    query = self.form.cleaned_data['query']
+                    print "\tQuery: %s" % query
+
+                    # Generate and execute query
+                    filter_collection = parser.parse(str(query))
+                    objects = getattr(InfoObject2Fact, 'objects').exclude(iobject__latest_of=None)
                     objects = filter_collection.build_query(base=objects)
                     objects = objects.distinct()
                     print "\tSQL: %s" % objects.query

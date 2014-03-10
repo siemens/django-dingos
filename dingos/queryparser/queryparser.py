@@ -16,20 +16,14 @@
 #
 import ply.yacc as Yacc
 from querylexer import QueryLexer
-from querytree import FilterCollection, Expression, Condition
-
-
-class QueryParserException(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-    def __str__(self):
-        return self.msg
+from querytree import FilterCollection, Expression, Condition, QueryParserException
 
 class QueryParser:
-    def __init__(self):
+    def __init__(self, mode=FilterCollection.INFO_OBJECT):
         self.lexer = QueryLexer()
         self.tokens = self.lexer.tokens
         self.parser = Yacc.yacc(module=self)
+        self.query_mode = mode
 
     def parse(self, data):
         if data:
@@ -81,11 +75,11 @@ class QueryParser:
 
     def p_query_empty(self, p):
         "query :"
-        p[0] = FilterCollection()
+        p[0] = FilterCollection(self.query_mode)
 
     def p_query_expr(self, p):
         "query : expr"
-        p[0] = FilterCollection()
+        p[0] = FilterCollection(self.query_mode)
         p[0].add_new_filter({'type': 'filter', 'expression': p[1]})
 
     def p_query_pipe(self, p):
@@ -96,17 +90,17 @@ class QueryParser:
     def p_query_expr_filter_type(self, p):
         '''query : FILTER COLON expr
                 | EXCLUDE COLON expr'''
-        p[0] = FilterCollection()
+        p[0] = FilterCollection(self.query_mode)
         p[0].add_new_filter({'type': p[1], 'expression': p[3]})
 
     def p_query_expr_subquery_type(self, p):
         "query : MARKED_BY COLON OPEN query CLOSE"
-        p[0] = FilterCollection()
+        p[0] = FilterCollection(self.query_mode)
         p[0].add_new_filter({'type': p[1], 'query': p[4], 'negation': False})
 
     def p_query_expr_subquery_not_type(self, p):
         "query : NOT MARKED_BY COLON OPEN query CLOSE"
-        p[0] = FilterCollection()
+        p[0] = FilterCollection(self.query_mode)
         p[0].add_new_filter({'type': p[2], 'query': p[5], 'negation': True})
 
     def p_query_pipe_filter_type(self, p):
@@ -136,11 +130,11 @@ class QueryParser:
 
     def p_expr_condition(self, p):
         "expr : key comp value"
-        p[0] = Condition(p[1], False, p[2], p[3])
+        p[0] = Condition(p[1], False, p[2], p[3], self.query_mode)
 
     def p_expr_not_condition(self, p):
         "expr : key NOT comp value"
-        p[0] = Condition(p[1], True, p[3], p[4])
+        p[0] = Condition(p[1], True, p[3], p[4], self.query_mode)
 
     def p_comp(self, p):
         '''comp : EQUALS

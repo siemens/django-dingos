@@ -50,8 +50,12 @@ class Comparator:
 
 
 class FilterCollection:
-    def __init__(self):
+    INFO_OBJECT = "InfoObject"
+    INFO_OBJECT_2_FACT = "InfoObject2Fact"
+
+    def __init__(self, mode):
         self.filter_list = []
+        self.query_mode = mode
 
     def add_new_filter(self, new_filter):
         self.filter_list.insert(0, new_filter)
@@ -69,7 +73,10 @@ class FilterCollection:
                 print "\t%s: %s" % (filter_type, filter_query)
             elif filter_type in ['marked_by'] and 'negation' in oneFilter:
                 print "\t%s:negation=%s {" % (filter_type, oneFilter['negation'])
-                q_query = Q(**{'marking_thru__marking__in': oneFilter['query'].build_query()})
+                q_key = 'marking_thru__marking__in'
+                if self.query_mode == self.INFO_OBJECT_2_FACT:
+                    q_key = q_key + 'iobject__'
+                q_query = Q(**{q_key: oneFilter['query'].build_query()})
                 if oneFilter['negation']:
                     objects = getattr(objects, 'exclude')(q_query)
                 else:
@@ -108,11 +115,12 @@ class Expression:
 
 
 class Condition:
-    def __init__(self, key, is_not, comparator, value):
+    def __init__(self, key, is_not, comparator, value, mode=FilterCollection.INFO_OBJECT):
         self.key = key
         self.is_not = is_not
         self.comparator = comparator
         self.value = value
+        self.query_mode = mode
 
     def build_q(self):
         value = self.value
@@ -154,7 +162,10 @@ class Condition:
             q_operator = "__gt"
             # Value example: timestamp younger '4d'
             unit = value[-1].lower()
-            time_val = int(value[:-1])
+            try:
+                time_val = int(value[:-1])
+            except ValueError as ex:
+                raise QueryParserException("Syntax error: Time span has to be in the format of \"[0-9]+[dhmDHM]\".")
             get_time_delta= {
                 'd': lambda number: timedelta(days=number),
                 'h': lambda number: timedelta(hours=number),
@@ -163,23 +174,29 @@ class Condition:
             if unit in get_time_delta:
                 value = now() - get_time_delta[unit](time_val)
             else:
-                raise QueryParserException("Syntax error: Time unit \"%s\" is not supported" % unit)
+                raise QueryParserException("Syntax error: Time unit \"%s\" is not supported. Supported time units are %s." % (unit, ", ".join(get_time_delta.keys())))
 
+        # Query
+        q_query_prefix = ""
         if self.key[0] == "[" and self.key[-1] == "]":
+            if self.query_mode == FilterCollection.INFO_OBJECT:
+                q_query_prefix = "fact_thru__"
+
             # Fact term condition
             key = self.key[1:-1]
             if "@" in key:
                 # Condition for an attribute in the fact term
                 fact_term, fact_attribute = key.split("@")
-                result = Q(**{"fact_thru__fact__fact_term__term__iregex": fact_term})
-                result = result & Q(**{"fact_thru__fact__fact_term__attribute__iregex": fact_attribute})
+                result = Q(**{q_query_prefix + "fact__fact_term__term__iregex": fact_term})
+                result = result & Q(**{q_query_prefix + "fact__fact_term__attribute__iregex": fact_attribute})
             else:
-                result = Q(**{"fact_thru__fact__fact_term__term__iregex": key})
-            result = result & self.enrich_q_with_not(
-                Q(**{"fact_thru__fact__fact_values__value" + q_operator: value}))
+                result = Q(**{q_query_prefix + "fact__fact_term__term__iregex": key})
+            result = result & self.enrich_q_with_not(Q(**{q_query_prefix + "fact__fact_values__value" + q_operator: value}))
         else:
             # Field condition
-            result = self.enrich_q_with_not(Q(**{self.key + q_operator: value}))
+            if self.query_mode == FilterCollection.INFO_OBJECT_2_FACT:
+                q_query_prefix = "iobject__"
+            result = self.enrich_q_with_not(Q(**{q_query_prefix + self.key + q_operator: value}))
 
         return result
 
@@ -187,9 +204,6 @@ class Condition:
         if self.is_not:
             return ~q_object
         return q_object
-
-    def key_is_fact_term(self):
-        return self.key[0] == "[" and self.key[-1] == "]"
 
     def __repr__(self):
         return "%s %s %s" % (self.key, self.comparator, self.value)

@@ -51,9 +51,12 @@ urlpatterns = patterns('',
     url(r'^Edit/SavedSearches$',
         views.CustomSearchesEditView.as_view(),
         name="url.dingos.admin.edit.savedsearches"),
-    url(r'^Search/CustomSearch/?$',
-        views.CustomSearchView.as_view(),
-        name="url.dingos.admin.customquery"),
+    url(r'^Search/CustomInfoObjectSearch/?$',
+        views.CustomInfoObjectSearchView.as_view(),
+        name="url.dingos.admin.custominfoobjectsearch"),
+    url(r'^Search/CustomFactSearch/?$',
+        views.CustomFactSearchView.as_view(),
+        name="url.dingos.admin.customfactsearch"),
 
     # Uncommenting below enables an edit view for InfoObjects
     # that will overwrite an InfoObject without creating an
