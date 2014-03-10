@@ -43,21 +43,25 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     <th scope="col">IO-Type</th>
                     <th scope="col">Fact Term</th>
                     <th scope="col">Value</th>
+                    <th scope="col"></th>
                 </tr>
             </thead>
             <tbody>
                 {% for enrich2fact in object_list %}
                     <tr class="grp-row grp-row-{% cycle 'even' 'odd' %}">
-                        <td >
+                        <td>
                             {{enrich2fact.iobject.iobject_type.name}}
                         </td>
-                        <td >
+                        <td>
                             {{ enrich2fact.fact.fact_term | insert_wbr}}
                         </td>
-                        <td >
+                        <td>
                             {{ enrich2fact.fact.fact_values.all| join:", " | insert_wbr }}
                         </td>
-                    </tr >
+                        <td>
+                            <a href="{% url "url.dingos.search.fact.simple" %}?fact__fact_term__term={{enrich2fact.fact.fact_term | urlencode}}&fact__fact_values__value={{ enrich2fact.fact.fact_values.all.0 | urlencode}}">View all</a>
+                        </td>
+                    </tr>
                 {% endfor %}
             </tbody>
         </table>

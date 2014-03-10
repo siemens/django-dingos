@@ -523,7 +523,8 @@ class CustomFactSearchView(BasicListView):
                     filter_collection = parser.parse(str(query))
                     objects = getattr(InfoObject2Fact, 'objects').exclude(iobject__latest_of=None)
                     objects = filter_collection.build_query(base=objects)
-                    objects = objects.distinct()
+                    objects = objects.order_by('iobject__iobject_type', 'fact__fact_term', 'fact__fact_values')
+                    objects = objects.distinct('iobject__iobject_type', 'fact__fact_term', 'fact__fact_values')
                     print "\tSQL: %s" % objects.query
 
                     self.queryset = objects
