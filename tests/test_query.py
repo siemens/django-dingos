@@ -241,6 +241,35 @@ class QueryTests(test.TestCase):
                 self.assertTrue(is_term_fact_value(marking.marking, '.*TLP.*', 'yellow', lambda a, b: a in b))
 
     #@skip
+    def test_not_marked_by(self):
+        print_test_name()
+
+        query = "identifier__namespace__uri contains 'test.org' | !marked_by: (filter: [.*TLP.*] contains 'yellow')"
+        objects = parse_and_query(query)
+        for oneObject in objects:
+            self.assertTrue('test.org' in oneObject.identifier.namespace.uri)
+            for marking in oneObject.marking_thru.all():
+                self.assertFalse(is_term_fact_value(marking.marking, '.*TLP.*', 'yellow'))
+
+        query = "!marked_by: (filter: [.*] contains 'yellow' | exclude: [.*] contains 'organization3')" \
+                " | identifier__namespace__uri contains 'test.org'"
+        objects = parse_and_query(query)
+        for oneObject in objects:
+            self.assertTrue('test.org' in oneObject.identifier.namespace.uri)
+            for marking in oneObject.marking_thru.all():
+                if is_term_fact_value(marking.marking, '.*', 'yellow'):
+                    self.assertTrue(is_term_fact_value(marking.marking, '.*', 'organization3'))
+                else:
+                    self.assertFalse(is_term_fact_value(marking.marking, '.*', 'organization3'))
+
+        query = "[lastName] !contains 'Mustermann' | !marked_by: (filter: [.*TLP.*] contains 'yellow')"
+        objects = parse_and_query(query)
+        for oneObject in objects:
+            self.assertFalse(is_term_fact_value(oneObject, "lastName", "Mustermann", lambda a, b: a in b))
+            for marking in oneObject.marking_thru.all():
+                self.assertFalse(is_term_fact_value(marking.marking, '.*TLP.*', 'yellow', lambda a, b: a in b))
+
+    #@skip
     def test_not(self):
         print_test_name()
 

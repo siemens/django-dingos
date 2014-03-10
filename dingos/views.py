@@ -484,13 +484,11 @@ class CustomSearchView(BasicListView):
                     filter_collection = parser.parse(str(query))
                     objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
                     objects = filter_collection.build_query(base=objects)
-
                     objects = objects.distinct()
                     print "\tSQL: %s" % objects.query
 
                     self.queryset = objects
-                #except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError) as ex:
-                except Exception as ex:
+                except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError) as ex:
                     messages.error(self.request, str(ex))
 
         return super(BasicListView,self).get(request, *args, **kwargs)

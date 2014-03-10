@@ -67,9 +67,13 @@ class FilterCollection:
                 filter_query = oneFilter['expression'].build_q()
                 objects = getattr(objects, filter_type)(filter_query)
                 print "\t%s: %s" % (filter_type, filter_query)
-            elif filter_type in ['marked_by']:
-                print "\t%s: {" % filter_type
-                objects = getattr(objects, 'filter')(**{'marking_thru__marking__in': oneFilter['query'].build_query()})
+            elif filter_type in ['marked_by'] and 'negation' in oneFilter:
+                print "\t%s:negation=%s {" % (filter_type, oneFilter['negation'])
+                q_query = Q(**{'marking_thru__marking__in': oneFilter['query'].build_query()})
+                if oneFilter['negation']:
+                    objects = getattr(objects, 'exclude')(q_query)
+                else:
+                    objects = getattr(objects, 'filter')(q_query)
                 print "\t}"
 
         return objects
