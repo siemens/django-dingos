@@ -270,8 +270,13 @@ def create_title(*args):
 #    request_string = context['view'].get_query_string(remove=remove)
 #    return "%s%s" % (reverse(url),request_string) 
 
-@register.inclusion_tag('dingos/%s/includes/Paginator.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
+@register.inclusion_tag('dingos/%s/includes/_Paginator.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_paginator(context,is_counting=True):
+    if 'counting_paginator' in dir(context['view']):
+        is_counting = context['view'].counting_paginator
+    else:
+        is_counting = True
+
     request_string = context['view'].get_query_string(remove=['page'])
     return {'request_string':request_string,'paginator':context['paginator'],'page_obj':context['page_obj'],
             'paginate_by': context['view'].paginate_by, 'object_list_len': context.get('object_list_len',0),

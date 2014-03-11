@@ -38,6 +38,8 @@ from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, Ba
 
 class InfoObjectList(BasicFilterView):
 
+    counting_paginator = False
+
     exclude_internal_objects = True
 
     template_name = 'dingos/%s/lists/InfoObjectList.html' % DINGOS_TEMPLATE_FAMILY
