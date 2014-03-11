@@ -134,6 +134,8 @@ class CommonContextMixin(ContextMixin):
 
         context['title'] = self.title if hasattr(self, 'title') else '[TITLE MISSING]'
 
+        if 'object_list' in context:
+            context['object_list_len'] = len(list(context['object_list']))
 
         user_data_dict = self.get_user_data()
 
@@ -340,6 +342,7 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
     template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
 
     breadcrumbs = ()
+
 
     @property
     def paginate_by(self):

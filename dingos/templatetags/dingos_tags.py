@@ -273,7 +273,8 @@ def create_title(*args):
 @register.inclusion_tag('dingos/%s/includes/_UncountingPaginator.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_paginator(context):
     request_string = context['view'].get_query_string(remove=['page'])
-    return {'request_string':request_string,'paginator':context['paginator'],'page_obj':context['page_obj']}
+    return {'request_string':request_string,'paginator':context['paginator'],'page_obj':context['page_obj'],
+            'paginate_by': context['view'].paginate_by, 'object_list_len': context.get('object_list_len',0)}
 
 # Below we register template tags that display
 # certain aspects of an InformationObject.
