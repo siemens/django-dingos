@@ -472,6 +472,7 @@ class InfoObjectJSONView(BasicDetailView):
                                  content_type='application/json',
                                  **httpresponse_kwargs)
 
+
 class CustomInfoObjectSearchView(BasicListView):
     template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Custom Info Object Search'
@@ -499,7 +500,7 @@ class CustomInfoObjectSearchView(BasicListView):
                     # Generate and execute query
                     filter_collection = parser.parse(str(query))
                     objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
-                    objects = filter_collection.build_query(base=objects)
+                    objects = filter_collection.build_query(base=objects, query_mode=FilterCollection.INFO_OBJECT)
                     objects = objects.distinct()
                     print "\tSQL: %s" % objects.query
 
@@ -530,14 +531,14 @@ class CustomFactSearchView(BasicListView):
             else:
                 try:
                     # Parse query
-                    parser = QueryParser(FilterCollection.INFO_OBJECT_2_FACT)
+                    parser = QueryParser()
                     query = self.form.cleaned_data['query']
                     print "\tQuery: %s" % query
 
                     # Generate and execute query
                     filter_collection = parser.parse(str(query))
                     objects = getattr(InfoObject2Fact, 'objects').exclude(iobject__latest_of=None)
-                    objects = filter_collection.build_query(base=objects)
+                    objects = filter_collection.build_query(base=objects, query_mode=FilterCollection.INFO_OBJECT_2_FACT)
                     objects = objects.order_by('iobject__iobject_type', 'fact__fact_term', 'fact__fact_values')
                     objects = objects.distinct('iobject__iobject_type', 'fact__fact_term', 'fact__fact_values')
                     print "\tSQL: %s" % objects.query

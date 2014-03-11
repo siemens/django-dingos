@@ -53,14 +53,13 @@ class FilterCollection:
     INFO_OBJECT = "InfoObject"
     INFO_OBJECT_2_FACT = "InfoObject2Fact"
 
-    def __init__(self, mode):
+    def __init__(self):
         self.filter_list = []
-        self.query_mode = mode
 
     def add_new_filter(self, new_filter):
         self.filter_list.insert(0, new_filter)
 
-    def build_query(self, base=None):
+    def build_query(self, base=None, query_mode=None):
         if not base:
             objects = InfoObject.objects.all()
         else:
@@ -68,15 +67,16 @@ class FilterCollection:
         for oneFilter in self.filter_list:
             filter_type = oneFilter['type']
             if filter_type in ['filter', 'exclude']:
-                filter_query = oneFilter['expression'].build_q()
+                filter_query = oneFilter['expression'].build_q(query_mode)
                 objects = getattr(objects, filter_type)(filter_query)
                 print "\t%s: %s" % (filter_type, filter_query)
             elif filter_type in ['marked_by'] and 'negation' in oneFilter:
-                print "\t%s:negation=%s {" % (filter_type, oneFilter['negation'])
-                q_key = 'marking_thru__marking__in'
-                if self.query_mode == self.INFO_OBJECT_2_FACT:
-                    q_key = q_key + 'iobject__'
-                q_query = Q(**{q_key: oneFilter['query'].build_query()})
+                print "\t%s: negation=%s {" % (filter_type, oneFilter['negation'])
+                q_key = ''
+                if query_mode == self.INFO_OBJECT_2_FACT:
+                    q_key += 'iobject__'
+                q_key += 'marking_thru__marking__in'
+                q_query = Q(**{q_key: oneFilter['query'].build_query(query_mode=self.INFO_OBJECT)})
                 if oneFilter['negation']:
                     objects = getattr(objects, 'exclude')(q_query)
                 else:
@@ -85,8 +85,7 @@ class FilterCollection:
 
         return objects
 
-
-def __repr__(self):
+    def __repr__(self):
         result = "{"
         for i, cur in enumerate(self.filter_list):
             if i != 0:
@@ -102,12 +101,12 @@ class Expression:
         self.op = operator
         self.right = right
 
-    def build_q(self):
-        result = self.left.build_q()
+    def build_q(self, query_mode=FilterCollection.INFO_OBJECT):
+        result = self.left.build_q(query_mode)
         if self.op == Operator.AND:
-            result = result & self.right.build_q()
+            result = result & self.right.build_q(query_mode)
         elif self.op == Operator.OR:
-            result = result | self.right.build_q()
+            result = result | self.right.build_q(query_mode)
         return result
 
     def __repr__(self):
@@ -115,15 +114,14 @@ class Expression:
 
 
 class Condition:
-    def __init__(self, key, is_not, comparator, value, mode=FilterCollection.INFO_OBJECT):
+    def __init__(self, key, is_not, comparator, value):
         # Replace query language hierarchy separator with python-ish syntax
         self.key = key
         self.is_not = is_not
         self.comparator = comparator
         self.value = value
-        self.query_mode = mode
 
-    def build_q(self):
+    def build_q(self, query_mode=FilterCollection.INFO_OBJECT):
         value = self.value
         key = self.key
 
@@ -181,7 +179,7 @@ class Condition:
         # Query
         q_query_prefix = ""
         if key[0] == "[" and key[-1] == "]":
-            if self.query_mode == FilterCollection.INFO_OBJECT:
+            if query_mode == FilterCollection.INFO_OBJECT:
                 q_query_prefix = "fact_thru__"
 
             # Fact term condition
@@ -197,9 +195,10 @@ class Condition:
         else:
             # Field condition
             key = key.replace(".", "__")
-            if self.query_mode == FilterCollection.INFO_OBJECT_2_FACT:
+            if query_mode == FilterCollection.INFO_OBJECT_2_FACT:
                 q_query_prefix = "iobject__"
-            result = self.enrich_q_with_not(Q(**{q_query_prefix + key + q_operator: value}))
+            key = q_query_prefix + key
+            result = self.enrich_q_with_not(Q(**{key + q_operator: value}))
 
         return result
 

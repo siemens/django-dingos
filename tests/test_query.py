@@ -339,16 +339,16 @@ def parse_and_query(query, mode=FilterCollection.INFO_OBJECT):
     print ""
 
     # Parse query
-    parser = QueryParser(mode)
+    parser = QueryParser()
     print "\tQuery: %s" % query
 
     # Generate and execute query
     filter_collection = parser.parse(str(query))
     if mode == FilterCollection.INFO_OBJECT:
         objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
-    else:
+    elif mode == FilterCollection.INFO_OBJECT_2_FACT:
         objects = getattr(InfoObject2Fact, 'objects').exclude(iobject__latest_of=None)
-    objects = filter_collection.build_query(base=objects)
+    objects = filter_collection.build_query(base=objects, query_mode=mode)
     objects = objects.distinct()
     #print "\tSQL: %s" % objects.query
 
