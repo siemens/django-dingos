@@ -364,7 +364,14 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
 
     breadcrumbs = ()
 
-    paginator_class = UncountingPaginator
+    counting_paginator = False
+
+    @property
+    def paginator_class(self):
+        if not self.counting_paginator:
+            return UncountingPaginator
+        else:
+            return super(BasicFilterView,self).paginator_class
 
     @property
     def paginate_by(self):
