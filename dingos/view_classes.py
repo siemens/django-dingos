@@ -48,14 +48,13 @@ from dingos.core.utilities import get_dict
 
 
 class UncountingPaginator(Paginator):
+    """
+    Counting the number of existing data records can be incredibly slow
+    in postgresql. For list/filter views where we find no solution for
+    this problem, we disable the counting. For this, we need a modified
+    paginator that always returns a huge pagecount.
 
-    def __init__(self, object_list, per_page, orphans=0,
-                 allow_empty_first_page=True):
-        self.object_list = object_list
-        self.per_page = int(per_page)
-        self.orphans = int(orphans)
-        self.allow_empty_first_page = allow_empty_first_page
-        self._num_pages = self._count = None
+    """
 
     def validate_number(self, number):
         """
@@ -68,6 +67,9 @@ class UncountingPaginator(Paginator):
         if number < 1:
             raise EmptyPage('That page number is less than 1')
         if number > self.num_pages:
+            # The original paginator raises an exception here if
+            # the required page does not contain results. This
+            # we need to disable, of course
             pass
 
         return number
@@ -79,46 +81,23 @@ class UncountingPaginator(Paginator):
         number = self.validate_number(number)
         bottom = (number - 1) * self.per_page
         top = bottom + self.per_page
+        # The original Paginator makes the test shown above;
+        # we disable this test. This does not cause problems:
+        # a queryset handles a too large upper bound gracefully.
         #if top + self.orphans >= self.count:
         #    top = self.count
         return self._get_page(self.object_list[bottom:top], number, self)
 
-    def _get_count(self):
-        """
-        Returns the total number of objects, across all pages.
-        """
-        if self._count is None:
-            try:
-                self._count = self.object_list.count()
-            except (AttributeError, TypeError):
-                # AttributeError if object_list has no count() method.
-                # TypeError if object_list.count() requires arguments
-                # (i.e. is of type list).
-                self._count = len(self.object_list)
-        return self._count
-    count = 10000000000# property(_get_count)
+    count = 10000000000
 
-    def _get_num_pages(self):
-        """
-        Returns the total number of pages.
-        """
-        if self._num_pages is None:
-            if self.count == 0 and not self.allow_empty_first_page:
-                self._num_pages = 0
-            else:
-                hits = max(1, self.count - self.orphans)
-                self._num_pages = int(ceil(hits / float(self.per_page)))
-        return self._num_pages
-    num_pages = 1000000000#property(_get_num_pages)
+    num_pages = 10000000000
 
-    def _get_page_range(self):
-        """
-        Returns a 1-based range of pages for iterating through within
-        a template for loop.
-        """
-        return range(1, self.num_pages + 1)
-    page_range = []#property(_get_page_range)
+    # Page-range: returns a 1-based range of pages for iterating through within
+    # a template for loop. For our modified paginator, we return an empty set.
+    # This is likely to lead to problems where the page_range is used. In our
+    # views, this is not the case, it seems.
 
+    page_range = []
 
 
 class CommonContextMixin(ContextMixin):
