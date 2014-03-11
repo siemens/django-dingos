@@ -197,7 +197,7 @@ def insert_wbr(value,autoescape=None):
         esc = conditional_escape
     else:
         esc = lambda x:x
-    return mark_safe(esc("%s" % value).replace('/','/<wbr>').replace('0','0<wbr>'))
+    return mark_safe(esc("%s" % value).replace('/','/<wbr>').replace('0','0<wbr>').replace('_','_<wbr>'))
 
 @register.filter
 def sliceupto(value, upto):

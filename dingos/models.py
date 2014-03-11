@@ -1618,7 +1618,7 @@ class Identifier(DingoModel):
 
 
     def __unicode__(self):
-        return "%s (%s)" % (self.uid, self.namespace.uri)
+        return "%s:%s" % (self.namespace.uri,self.uid)
 
     class Meta:
         unique_together = ('uid', 'namespace',)
@@ -1999,15 +1999,35 @@ def get_or_create_fact(fact_term,
     # The double query is necessary, because the first count counts the number of selected
     # fact_value objects, not the number of total objects for each fact.
 
-    matching_facts = Fact.objects.filter(fact_values__in=value_objects). \
+
+    possibly_matching_facts = Fact.objects.filter(fact_values__in=value_objects,
+                                                  value_iobject_id=value_iobject_id,
+                                                  value_iobject_ts=value_iobject_ts,
+                                                  fact_term=fact_term
+    ).values_list('pk',flat=True)
+
+    matching_facts = Fact.objects.filter(pk__in=list(possibly_matching_facts)). \
         annotate(num_values=Count('fact_values')). \
         filter(num_values=len(value_objects)). \
-        filter(value_iobject_id=value_iobject_id). \
-        filter(value_iobject_ts=value_iobject_ts). \
-        filter(fact_term=fact_term). \
         exclude(id__in= \
-        Fact.objects.annotate(total_values=Count('fact_values')). \
+        Fact.objects.filter(pk__in=possibly_matching_facts).annotate(total_values=Count('fact_values')). \
             filter(total_values__gt=len(value_objects)))
+
+    # Below, for educational purposes, the original query until Dingos 0.2.0, which got *really*
+    # slow with lot's of objects in the system. The reason for this are the last three lines:
+    # the exclude-statement required the database to count the the number of values for each
+    # Fact in the system... but we are really only interested into facts with the same
+    # fact_term, value_iobject_id and value_iobject_ts...
+
+    #matching_facts = Fact.objects.filter(fact_values__in=value_objects). \
+    #    annotate(num_values=Count('fact_values')). \
+    #    filter(num_values=len(value_objects)). \
+    #    filter(value_iobject_id=value_iobject_id). \
+    #    filter(value_iobject_ts=value_iobject_ts). \
+    #    filter(fact_term=fact_term). \
+    #    exclude(id__in= \
+    #    Fact.objects.annotate(total_values=Count('fact_values')). \
+    #        filter(total_values__gt=len(value_objects)))
 
     created = True
     try:
