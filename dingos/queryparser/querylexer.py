@@ -46,7 +46,7 @@ class QueryLexer:
               "LOWERTHAN"] + list(reserved.values())
 
     def t_FIELD(self, t):
-        r"[a-zA-Z][\w]*"
+        r"[a-zA-Z]([a-zA-Z0-9_])*(\.[a-zA-Z]([a-zA-Z0-9_])*)*"
         # Check for reserved words
         t.type = self.reserved.get(t.value, 'FIELD')
         return t

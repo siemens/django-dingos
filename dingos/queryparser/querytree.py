@@ -116,6 +116,7 @@ class Expression:
 
 class Condition:
     def __init__(self, key, is_not, comparator, value, mode=FilterCollection.INFO_OBJECT):
+        # Replace query language hierarchy separator with python-ish syntax
         self.key = key
         self.is_not = is_not
         self.comparator = comparator
@@ -124,6 +125,7 @@ class Condition:
 
     def build_q(self):
         value = self.value
+        key = self.key
 
         # Operator choice
         q_operator = ""
@@ -166,7 +168,7 @@ class Condition:
                 time_val = int(value[:-1])
             except ValueError as ex:
                 raise QueryParserException("Syntax error: Time span has to be in the format of \"[0-9]+[dhmDHM]\".")
-            get_time_delta= {
+            get_time_delta = {
                 'd': lambda number: timedelta(days=number),
                 'h': lambda number: timedelta(hours=number),
                 'm': lambda number: timedelta(minutes=number)
@@ -178,12 +180,12 @@ class Condition:
 
         # Query
         q_query_prefix = ""
-        if self.key[0] == "[" and self.key[-1] == "]":
+        if key[0] == "[" and key[-1] == "]":
             if self.query_mode == FilterCollection.INFO_OBJECT:
                 q_query_prefix = "fact_thru__"
 
             # Fact term condition
-            key = self.key[1:-1]
+            key = key[1:-1]
             if "@" in key:
                 # Condition for an attribute in the fact term
                 fact_term, fact_attribute = key.split("@")
@@ -194,9 +196,10 @@ class Condition:
             result = result & self.enrich_q_with_not(Q(**{q_query_prefix + "fact__fact_values__value" + q_operator: value}))
         else:
             # Field condition
+            key = key.replace(".", "__")
             if self.query_mode == FilterCollection.INFO_OBJECT_2_FACT:
                 q_query_prefix = "iobject__"
-            result = self.enrich_q_with_not(Q(**{q_query_prefix + self.key + q_operator: value}))
+            result = self.enrich_q_with_not(Q(**{q_query_prefix + key + q_operator: value}))
 
         return result
 

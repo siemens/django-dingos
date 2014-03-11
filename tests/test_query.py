@@ -62,7 +62,7 @@ class QueryTests(test.TestCase):
         print_test_name()
 
         # Test field
-        query = "identifier__uid = 'john_smith'"
+        query = "identifier.uid = 'john_smith'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertEqual(oneObject.identifier.uid, "john_smith")
@@ -89,17 +89,17 @@ class QueryTests(test.TestCase):
     def test_contains(self):
         print_test_name()
 
-        query = "identifier__uid contains 'ohn_'"
+        query = "identifier.uid contains 'ohn_'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue("ohn_" in oneObject.identifier.uid)
 
-        query = "identifier__uid contains 'OHN_'"
+        query = "identifier.uid contains 'OHN_'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue("OHN_" in oneObject.identifier.uid)
 
-        query = "identifier__uid icontains 'OHN_'"
+        query = "identifier.uid icontains 'OHN_'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue("ohn_".upper() in oneObject.identifier.uid.upper())
@@ -108,17 +108,17 @@ class QueryTests(test.TestCase):
     def test_regexp(self):
         print_test_name()
 
-        query = "identifier__uid regexp '.?ohn_.*'"
+        query = "identifier.uid regexp '.?ohn_.*'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue(re.match(".?ohn_.*", oneObject.identifier.uid))
 
-        query = "identifier__uid regexp '.?OHN_.+'"
+        query = "identifier.uid regexp '.?OHN_.+'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue(re.match(".?OHN_.*", oneObject.identifier.uid))
 
-        query = "identifier__uid iregexp '.?OHN_.+'"
+        query = "identifier.uid iregexp '.?OHN_.+'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue(re.match(".?OHN_.*", oneObject.identifier.uid, flags=re.I))
@@ -127,17 +127,17 @@ class QueryTests(test.TestCase):
     def test_startswith(self):
         print_test_name()
 
-        query = "identifier__uid startswith 'john_'"
+        query = "identifier.uid startswith 'john_'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue(re.match("john_.*", oneObject.identifier.uid))
 
-        query = "identifier__uid startswith 'John_'"
+        query = "identifier.uid startswith 'John_'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue(re.match("John_.*", oneObject.identifier.uid))
 
-        query = "identifier__uid istartswith 'John_'"
+        query = "identifier.uid istartswith 'John_'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue(re.match("John_.*", oneObject.identifier.uid, flags=re.I))
@@ -146,17 +146,17 @@ class QueryTests(test.TestCase):
     def test_endswith(self):
         print_test_name()
 
-        query = "identifier__uid endswith 'mith'"
+        query = "identifier.uid endswith 'mith'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue(re.match(".*mith", oneObject.identifier.uid))
 
-        query = "identifier__uid endswith 'MiTh'"
+        query = "identifier.uid endswith 'MiTh'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue(re.match(".*MiTh", oneObject.identifier.uid))
 
-        query = "identifier__uid iendswith 'MiTh'"
+        query = "identifier.uid iendswith 'MiTh'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue(re.match(".*MiTh", oneObject.identifier.uid, flags=re.I))
@@ -165,7 +165,7 @@ class QueryTests(test.TestCase):
     def test_boolop_or(self):
         print_test_name()
 
-        query = "identifier__uid = 'john_smith' || identifier__uid = 'john_doe'"
+        query = "identifier.uid = 'john_smith' || identifier.uid = 'john_doe'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue("john_smith" == oneObject.identifier.uid or "john_doe" == oneObject.identifier.uid)
@@ -174,13 +174,13 @@ class QueryTests(test.TestCase):
     def test_boolop_and(self):
         print_test_name()
 
-        query = "identifier__uid startswith 'john_' && identifier__uid endswith 'doe'"
+        query = "identifier.uid startswith 'john_' && identifier.uid endswith 'doe'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue(re.match("john_.*", oneObject.identifier.uid))
             self.assertTrue(re.match(".*doe", oneObject.identifier.uid))
 
-        query = "identifier__uid = 'john_smith' && identifier__uid = 'john_doe'"
+        query = "identifier.uid = 'john_smith' && identifier.uid = 'john_doe'"
         objects = parse_and_query(query)
         # Logical behaviour because 'john_smith'!='john_doe'
         self.assertEqual(objects.count(), 0)
@@ -190,7 +190,7 @@ class QueryTests(test.TestCase):
         # Logical Q object behaviour! Instead of this query use a filter!
         self.assertEqual(objects.count(), 0)
 
-        query = "identifier__uid = 'john_smith' && [phoneNumbers/phoneNumber@type]='home'"
+        query = "identifier.uid = 'john_smith' && [phoneNumbers/phoneNumber@type]='home'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertEqual("john_smith", oneObject.identifier.uid)
@@ -245,7 +245,7 @@ class QueryTests(test.TestCase):
     def test_not_marked_by(self):
         print_test_name()
 
-        query = "identifier__namespace__uri contains 'test.org' | !marked_by: (filter: [.*TLP.*] contains 'yellow')"
+        query = "identifier.namespace.uri contains 'test.org' | !marked_by: (filter: [.*TLP.*] contains 'yellow')"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue('test.org' in oneObject.identifier.namespace.uri)
@@ -253,7 +253,7 @@ class QueryTests(test.TestCase):
                 self.assertFalse(is_term_fact_value(marking.marking, '.*TLP.*', 'yellow'))
 
         query = "!marked_by: (filter: [.*] contains 'yellow' | exclude: [.*] contains 'organization3')" \
-                " | identifier__namespace__uri contains 'test.org'"
+                " | identifier.namespace.uri contains 'test.org'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertTrue('test.org' in oneObject.identifier.namespace.uri)
@@ -275,7 +275,7 @@ class QueryTests(test.TestCase):
         print_test_name()
 
         # Test field
-        query = "identifier__uid != 'john_smith'"
+        query = "identifier.uid != 'john_smith'"
         objects = parse_and_query(query)
         for oneObject in objects:
             self.assertNotEqual(oneObject.identifier.uid, "john_smith")
@@ -311,7 +311,7 @@ class QueryTests(test.TestCase):
         print_test_name()
 
         # Test field
-        query = "identifier__uid = 'john_smith'"
+        query = "identifier.uid = 'john_smith'"
         objects = parse_and_query(query, FilterCollection.INFO_OBJECT_2_FACT)
         for fact in objects:
             self.assertEqual(fact.iobject.identifier.uid, "john_smith")
