@@ -487,7 +487,7 @@ class CustomInfoObjectSearchView(BasicListView):
         self.form = CustomQueryForm(request.GET)
         self.queryset = []
 
-        if request.GET.has_key('execute_query') and self.form.is_valid():
+        if 'execute_query' in request.GET and self.form.is_valid():
             if request.GET['query'] == "":
                 messages.error(self.request, "Please enter a query.")
             else:
@@ -508,7 +508,7 @@ class CustomInfoObjectSearchView(BasicListView):
                 except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError) as ex:
                     messages.error(self.request, str(ex))
 
-        return super(BasicListView,self).get(request, *args, **kwargs)
+        return super(BasicListView, self).get(request, *args, **kwargs)
 
 
 class CustomFactSearchView(BasicListView):
@@ -525,7 +525,7 @@ class CustomFactSearchView(BasicListView):
         self.form = CustomQueryForm(request.GET)
         self.queryset = []
 
-        if request.GET.has_key('execute_query') and self.form.is_valid():
+        if 'execute_query' in request.GET and self.form.is_valid():
             if request.GET['query'] == "":
                 messages.error(self.request, "Please enter a query.")
             else:
@@ -538,7 +538,8 @@ class CustomFactSearchView(BasicListView):
                     # Generate and execute query
                     filter_collection = parser.parse(str(query))
                     objects = getattr(InfoObject2Fact, 'objects').exclude(iobject__latest_of=None)
-                    objects = filter_collection.build_query(base=objects, query_mode=FilterCollection.INFO_OBJECT_2_FACT)
+                    objects = filter_collection.build_query(base=objects,
+                                                            query_mode=FilterCollection.INFO_OBJECT_2_FACT)
                     objects = objects.order_by('iobject__iobject_type', 'fact__fact_term', 'fact__fact_values')
                     objects = objects.distinct('iobject__iobject_type', 'fact__fact_term', 'fact__fact_values')
                     print "\tSQL: %s" % objects.query
@@ -547,4 +548,4 @@ class CustomFactSearchView(BasicListView):
                 except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError) as ex:
                     messages.error(self.request, str(ex))
 
-        return super(BasicListView,self).get(request, *args, **kwargs)
+        return super(BasicListView, self).get(request, *args, **kwargs)
