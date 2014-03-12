@@ -71,6 +71,8 @@ class InfoObjectList(BasicFilterView):
 
 class InfoObjectListIncludingInternals(SuperuserRequiredMixin,InfoObjectList):
 
+    counting_paginator = False
+
     filterset_class= CompleteInfoObjectFilter
 
     exclude_internal_objects=False
@@ -127,6 +129,9 @@ class InfoObjectsEmbedded(BasicListView):
 
 
 class SimpleFactSearch(BasicFilterView):
+
+    counting_paginator = False
+
     template_name = 'dingos/%s/searches/SimpleFactSearch.html' % DINGOS_TEMPLATE_FAMILY
 
     title = 'Fact-based filtering'
@@ -150,6 +155,9 @@ class SimpleFactSearch(BasicFilterView):
         return queryset
 
 class UniqueSimpleFactSearch(BasicFilterView):
+
+    counting_paginator = False
+
     template_name = 'dingos/%s/searches/UniqueSimpleFactSearch.html' % DINGOS_TEMPLATE_FAMILY
 
     title = 'Fact-based filtering (unique)'
