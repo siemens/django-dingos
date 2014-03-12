@@ -18,6 +18,7 @@
 import json
 
 from django import http
+from django.http import HttpResponse
 from django.db.models import F
 from django.forms.formsets import formset_factory
 
@@ -29,7 +30,7 @@ from braces.views import SuperuserRequiredMixin
 
 from dingos.models import InfoObject2Fact, InfoObject, UserData, get_or_create_fact
 
-
+import csv
 
 from dingos.filter import InfoObjectFilter, CompleteInfoObjectFilter,FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
 from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm,  CustomQueryForm
@@ -474,9 +475,10 @@ class InfoObjectJSONView(BasicDetailView):
 
 
 class CustomInfoObjectSearchView(BasicListView):
-    template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
+    template_name = None
     title = 'Custom Info Object Search'
     form = None
+    format = None
 
     def get_context_data(self, **kwargs):
         context = super(CustomInfoObjectSearchView, self).get_context_data(**kwargs)
@@ -508,7 +510,26 @@ class CustomInfoObjectSearchView(BasicListView):
                 except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError) as ex:
                     messages.error(self.request, str(ex))
 
-        return super(BasicListView, self).get(request, *args, **kwargs)
+        result_format = 'default'
+        if result_format == 'default':
+            self.template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
+            return super(BasicListView, self).get(request, *args, **kwargs)
+        elif result_format == 'csv':
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="result.csv"'
+            writer = csv.writer(response)
+            writer.writerow(['First row', 'Foo', 'Bar', 'Baz'])
+            writer.writerow(['col_1', 'col_2'])
+            writer.writerow(['foo1', 'bar1'])
+            writer.writerow(['foo2', 'bar2'])
+            writer.writerow(['foo3', 'bar3'])
+            return response
+        elif result_format == 'table':
+            # TODO Replace the following default behaviour with a more flexible template which allows to specify columns
+            self.template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
+            return super(BasicListView, self).get(request, *args, **kwargs)
+        else:
+            raise ValueError('Unsupported output format')
 
 
 class CustomFactSearchView(BasicListView):
