@@ -28,6 +28,43 @@ If the view is not paginated, nothing happens.
 The html code uses Grappelli CCS classes.
 {% endcomment %}
 
+{%  if not counting_paginator %}
+
+<div class="grp-module">
+
+    <div class="grp-row pagination">
+        {% spaceless %}
+            <div class="c-2">
+                <nav class="grp-pagination grp-navigator">
+	  <span class="step-links">
+	    <ul>
+
+            {% if page_obj.has_previous %}
+                {% if page_obj.previous_page_number != 1 %}
+                    <li><a href="{{request_string}}&page=1"> 1 </a></li>
+                    <li class="grp-separator"><span>...</span></li>
+                {% endif %}
+                <li><a href="{{request_string}}&page={{ page_obj.previous_page_number }}">{{page_obj.previous_page_number}} </a></li>
+            {% endif %}
+
+
+            <li class="grp-result">
+		       <span class="current">
+		       {{ page_obj.number }}
+		       </span>
+            </li>
+
+            {% if object_list_len ==  paginate_by %}
+                <li><a href="{{request_string}}&page={{ page_obj.next_page_number }}">Next </a></li>
+            {% endif %}
+        </ul>
+	  </span>
+                </nav>
+            </div>
+        {% endspaceless %}
+    </div>
+</div>
+{%  else %}
 
 <div class="grp-module">
 
@@ -69,3 +106,4 @@ The html code uses Grappelli CCS classes.
     </div>
 </div>
 
+{% endif %}

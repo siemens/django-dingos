@@ -21,6 +21,8 @@ import copy
 from django.views.generic.base import ContextMixin
 from django.views.generic import DetailView, ListView, TemplateView
 
+from django.core.paginator import Paginator
+
 from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
 
 from  django.core import urlresolvers
@@ -44,6 +46,60 @@ from dingos.core.template_helpers import ConfigDictWrapper
 
 from dingos.core.utilities import get_dict
 
+
+class UncountingPaginator(Paginator):
+    """
+    Counting the number of existing data records can be incredibly slow
+    in postgresql. For list/filter views where we find no solution for
+    this problem, we disable the counting. For this, we need a modified
+    paginator that always returns a huge pagecount.
+
+    """
+
+    def validate_number(self, number):
+        """
+        Validates the given 1-based page number.
+        """
+        try:
+            number = int(number)
+        except (TypeError, ValueError):
+            raise PageNotAnInteger('That page number is not an integer')
+        if number < 1:
+            raise EmptyPage('That page number is less than 1')
+        if number > self.num_pages:
+            # The original paginator raises an exception here if
+            # the required page does not contain results. This
+            # we need to disable, of course
+            pass
+
+        return number
+
+    def page(self, number):
+        """
+        Returns a Page object for the given 1-based page number.
+        """
+        number = self.validate_number(number)
+        bottom = (number - 1) * self.per_page
+        top = bottom + self.per_page
+        # The original Paginator makes the test shown above;
+        # we disable this test. This does not cause problems:
+        # a queryset handles a too large upper bound gracefully.
+        #if top + self.orphans >= self.count:
+        #    top = self.count
+        return self._get_page(self.object_list[bottom:top], number, self)
+
+    count = 10000000000
+
+    num_pages = 10000000000
+
+    # Page-range: returns a 1-based range of pages for iterating through within
+    # a template for loop. For our modified paginator, we return an empty set.
+    # This is likely to lead to problems where the page_range is used. In our
+    # views, this is not the case, it seems.
+
+    page_range = []
+
+
 class CommonContextMixin(ContextMixin):
     """
     Each view passes a 'context' to the template with which the view
@@ -57,6 +113,8 @@ class CommonContextMixin(ContextMixin):
 
         context['title'] = self.title if hasattr(self, 'title') else '[TITLE MISSING]'
 
+        if 'object_list' in context:
+            context['object_list_len'] = len(list(context['object_list']))
 
         user_data_dict = self.get_user_data()
 
@@ -264,6 +322,7 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
 
     breadcrumbs = ()
 
+
     @property
     def paginate_by(self):
         item_count = self.lookup_customization('dingos','view','pagination','lines',default=20)
@@ -283,6 +342,15 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
     template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
 
     breadcrumbs = ()
+
+    counting_paginator = False
+
+    @property
+    def paginator_class(self):
+        if not self.counting_paginator:
+            return UncountingPaginator
+        else:
+            return super(BasicFilterView,self).paginator_class
 
     @property
     def paginate_by(self):
