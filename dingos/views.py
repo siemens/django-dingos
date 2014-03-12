@@ -140,7 +140,9 @@ class SimpleFactSearch(BasicFilterView):
         else:
            queryset =  InfoObject2Fact.objects.all().\
               exclude(iobject__latest_of=None). \
-              exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+              exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME)
+
+           queryset = queryset.\
               prefetch_related('iobject',
                         'iobject__iobject_type',
                         'fact__fact_term',
@@ -165,11 +167,14 @@ class UniqueSimpleFactSearch(BasicFilterView):
           queryset =  InfoObject2Fact.objects.all().\
             exclude(iobject__latest_of=None). \
             exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+            order_by('iobject__iobject_type','fact__fact_term','fact__fact_values').distinct('iobject__iobject_type','fact__fact_term','fact__fact_values')
+
+          queryset = queryset.\
             prefetch_related('iobject',
               'iobject__iobject_type',
               'fact__fact_term',
-              'fact__fact_values').select_related().order_by('iobject__iobject_type','fact__fact_term','fact__fact_values').distinct('iobject__iobject_type','fact__fact_term','fact__fact_values')
-              #'fact__fact_values').select_related().order_by('fact__fact_values__value').distinct('fact__fact_values__value')
+              'fact__fact_values').select_related()
+
         return queryset
 
 
