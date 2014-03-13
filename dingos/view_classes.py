@@ -349,6 +349,12 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
 
     breadcrumbs = ()
 
+    @property
+    def paginator_class(self):
+        if not self.counting_paginator:
+            return UncountingPaginator
+        else:
+            return super(BasicFilterView,self).paginator_class
 
     @property
     def paginate_by(self):
@@ -454,6 +460,13 @@ class BasicCustomQueryView(BasicListView):
                         'iobject_family_revision',
                         'identifier')
 
+    paginate_by_value = 5
+
+    @property
+    def paginate_by(self):
+        return self.paginate_by_value
+
+
     def get_context_data(self, **kwargs):
         """
         Call 'get_context_data' from super and include the query form in the context
@@ -475,6 +488,11 @@ class BasicCustomQueryView(BasicListView):
                     # Parse query
                     parser = QueryParser()
                     query = self.form.cleaned_data['query']
+                    self.paginate_by_value = int(self.form.cleaned_data['paginate_by'])
+                    if self.form.cleaned_data['page']:
+                        self.page_to_show = int(self.form.cleaned_data['page'])
+                    else:
+                        self.page_to_show = 1
 
                     # Generate and execute query
                     formatted_filter_collection = parser.parse(str(query))
@@ -509,6 +527,7 @@ class BasicCustomQueryView(BasicListView):
 
                         return super(BasicListView, self).get(request, *args, **kwargs)
                     elif result_format == 'csv':
+                        p = self.paginator_class(self.queryset,self.paginate_by_value)
                         response = HttpResponse(content_type='text') # '/csv')
                         #response['Content-Disposition'] = 'attachment; filename="result.csv"'
                         writer = csv.writer(response)
@@ -517,7 +536,11 @@ class BasicCustomQueryView(BasicListView):
                         col_specs = formatted_filter_collection.col_specs
                         misc_args = formatted_filter_collection.misc_args
 
-                        to_csv(objects,writer,col_specs['headers'],col_specs['selected_fields'],**misc_args)
+                        to_csv(p.page(self.page_to_show).object_list,
+                               writer,
+                               col_specs['headers'],
+                               col_specs['selected_fields'],
+                               **misc_args)
 
                         return response
                     elif result_format == 'table':

@@ -30,6 +30,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             {{ form.query }}
         </div>
         <div class="grp-row">
+            Paginate by {{ form.paginate_by }} {{ form.page }}
+        </div>
+        <div class="grp-row">
             <input type="submit" name="execute_query" value="Execute query" />
         </div>
     </form>
