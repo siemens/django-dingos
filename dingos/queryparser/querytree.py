@@ -81,7 +81,7 @@ class FilterCollection:
 
             if filter_type in ['object']:
                 expression_repr = expr_or_query
-                q_obj = expression_repr.build_q_obj(query_mode)
+                q_obj = expression_repr.build_q_obj(query_mode=query_mode,filter_type=filter_type)
                 if negation:
                     objects = getattr(objects, 'exclude')(q_obj)
                 else:
@@ -92,7 +92,7 @@ class FilterCollection:
                 expression_repr = expr_or_query
                 print expression_repr
                 print expression_repr.__class__
-                fact_q_obj = expression_repr.build_q_obj(query_mode=self.INFO_OBJECT)
+                fact_q_obj = expression_repr.build_q_obj(query_mode=self.INFO_OBJECT,filter_type=filter_type)
                 if query_mode == self.INFO_OBJECT:
                     q_key = 'facts__in'
                 elif query_mode == self.INFO_OBJECT_2_FACT:
@@ -109,7 +109,7 @@ class FilterCollection:
                 query_repr = expr_or_query
 
                 print "\t%s: negation=%s {" % (filter_type, negation)
-                sub_query = query_repr.build_query(query_mode=self.INFO_OBJECT)
+                sub_query = query_repr.build_query(base=self.INFO_OBJECT.objects.exclude(latest_of=None))
 
                 q_key = ''
                 if query_mode == self.INFO_OBJECT_2_FACT:
@@ -170,12 +170,12 @@ class Expression:
         self.op = operator
         self.right = right
 
-    def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT):
+    def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT,filter_type='object'):
         result = self.left.build_q_obj(query_mode)
         if self.op == Operator.AND:
-            result = result & self.right.build_q_obj(query_mode)
+            result = result & self.right.build_q_obj(query_mode=query_mode,filter_type=filter_type)
         elif self.op == Operator.OR:
-            result = result | self.right.build_q_obj(query_mode)
+            result = result | self.right.build_q_obj(query_mode=query_mode,filter_type=filter_type)
         return result
 
     def __repr__(self):
@@ -190,7 +190,7 @@ class Condition:
         self.comparator = comparator
         self.value = value
 
-    def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT):
+    def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT,filter_type='object'):
         value = self.value
         key = self.key
 
@@ -250,6 +250,8 @@ class Condition:
         # Query
         q_query_prefix = ""
         if key[0] == "[" and key[-1] == "]":
+            if filter_type != 'fact':
+                raise QueryParserException("[key] <op> <value> shortcut is only allowed in fact-filters")
             #if query_mode == FilterCollection.INFO_OBJECT:
             #    q_query_prefix = "fact_thru__"
 
