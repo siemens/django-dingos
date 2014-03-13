@@ -84,7 +84,7 @@ class QueryParser:
 
     def p_request(self, p):
         """request : query FORMATSIGN CSV OPEN formatargs CLOSE"""
-        p[0] = FormattedFilterCollection(p[1], p[5]['colspecs'], p[5]['miscargs'], 'csv')
+        p[0] = FormattedFilterCollection(p[1], p[5]['colspecs'], p[5]['miscargs'], p[3])
 
     def p_formatargs(self, p):
         """formatargs : colspecs"""
