@@ -23,7 +23,7 @@ class QueryParser:
     def __init__(self):
         self.lexer = QueryLexer()
         self.tokens = self.lexer.tokens
-        self.parser = Yacc.yacc(module=self)
+        self.parser = Yacc.yacc(module=self,debug=0)
 
     def parse(self, data):
         if data:

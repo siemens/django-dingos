@@ -48,6 +48,8 @@ from queryparser.querytree import FilterCollection, QueryParserException
 
 class InfoObjectList(BasicFilterView):
 
+    counting_paginator = True
+
     exclude_internal_objects = True
 
     template_name = 'dingos/%s/lists/InfoObjectList.html' % DINGOS_TEMPLATE_FAMILY
@@ -78,6 +80,8 @@ class InfoObjectList(BasicFilterView):
         #'identifier').select_related().distinct().order_by('-latest_of__pk')
 
 class InfoObjectListIncludingInternals(SuperuserRequiredMixin,InfoObjectList):
+
+    counting_paginator = False
 
     filterset_class= CompleteInfoObjectFilter
 
@@ -135,6 +139,9 @@ class InfoObjectsEmbedded(BasicListView):
 
 
 class SimpleFactSearch(BasicFilterView):
+
+    counting_paginator = False
+
     template_name = 'dingos/%s/searches/SimpleFactSearch.html' % DINGOS_TEMPLATE_FAMILY
 
     title = 'Fact-based filtering'
@@ -148,7 +155,9 @@ class SimpleFactSearch(BasicFilterView):
         else:
            queryset =  InfoObject2Fact.objects.all().\
               exclude(iobject__latest_of=None). \
-              exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+              exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME)
+
+           queryset = queryset.\
               prefetch_related('iobject',
                         'iobject__iobject_type',
                         'fact__fact_term',
@@ -156,6 +165,9 @@ class SimpleFactSearch(BasicFilterView):
         return queryset
 
 class UniqueSimpleFactSearch(BasicFilterView):
+
+    counting_paginator = False
+
     template_name = 'dingos/%s/searches/UniqueSimpleFactSearch.html' % DINGOS_TEMPLATE_FAMILY
 
     title = 'Fact-based filtering (unique)'
@@ -173,11 +185,14 @@ class UniqueSimpleFactSearch(BasicFilterView):
           queryset =  InfoObject2Fact.objects.all().\
             exclude(iobject__latest_of=None). \
             exclude(iobject__iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
+            order_by('iobject__iobject_type','fact__fact_term','fact__fact_values').distinct('iobject__iobject_type','fact__fact_term','fact__fact_values')
+
+          queryset = queryset.\
             prefetch_related('iobject',
               'iobject__iobject_type',
               'fact__fact_term',
-              'fact__fact_values').select_related().order_by('iobject__iobject_type','fact__fact_term','fact__fact_values').distinct('iobject__iobject_type','fact__fact_term','fact__fact_values')
-              #'fact__fact_values').select_related().order_by('fact__fact_values__value').distinct('fact__fact_values__value')
+              'fact__fact_values').select_related()
+
         return queryset
 
 
@@ -475,7 +490,9 @@ class InfoObjectJSONView(BasicDetailView):
 
 
 class CustomInfoObjectSearchView(BasicListView):
-    template_name = None
+    counting_paginator = False
+    template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
+
     title = 'Custom Info Object Search'
     form = None
     format = None
@@ -507,6 +524,15 @@ class CustomInfoObjectSearchView(BasicListView):
                     print "\tSQL: %s" % objects.query
 
                     self.queryset = objects
+
+                    self.queryset = self.queryset.prefetch_related(
+                        'iobject_type',
+                        'iobject_type__iobject_family',
+                        'iobject_family',
+                        'identifier__namespace',
+                        'iobject_family_revision',
+                        'identifier').order_by('-latest_of__pk')
+
                 except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError) as ex:
                     messages.error(self.request, str(ex))
 
@@ -533,6 +559,9 @@ class CustomInfoObjectSearchView(BasicListView):
 
 
 class CustomFactSearchView(BasicListView):
+
+    counting_paginator = False
+
     template_name = 'dingos/%s/searches/CustomFactSearch.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Custom Fact Search'
     form = None
@@ -570,3 +599,4 @@ class CustomFactSearchView(BasicListView):
                     messages.error(self.request, str(ex))
 
         return super(BasicListView, self).get(request, *args, **kwargs)
+    counting_paginator = False
