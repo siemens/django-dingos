@@ -140,3 +140,27 @@ def search_by_re_list(re_list, text):
         if m:
             return m.groupdict()
     return None
+
+def get_from_django_obj(obj,fields):
+    """
+    A function for retrieving values from a django object
+    with 'path' generated at runtime. For example, for
+    a Dingos 'InfoObject2Fact' object, the following
+    will extract the list of values associated with
+    the fact referenced in the given InfoObject2Fact
+    object::
+
+       get_from_django_obj(iobject_2_fact,['fact','fact_values','value'])
+
+    *Attention*: This function currently just covers
+    the cases required for its current usage in Dingos:
+    it is likely to mess up in more general cases...
+    """
+    if fields == []:
+        return str(obj)
+    if 'Manager' in "%s" % obj.__class__:
+        return (map(lambda o: get_from_django_obj(o,fields[1:]),obj.all()))
+    else:
+        print "Felder"
+        print (fields)
+        return get_from_django_obj(getattr(obj,fields[0]),fields[1:])

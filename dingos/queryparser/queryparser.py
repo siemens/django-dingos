@@ -104,7 +104,8 @@ class QueryParser:
 
     def p_formatarg_miscarg(self, p):
         """formatarg : ID EQUALS TRUE
-                        | ID EQUALS FALSE"""
+                        | ID EQUALS FALSE
+                        | ID EQUALS VALUE"""
         p[0] = {'key': p[1], 'value': p[3]}
 
     def p_query_empty(self, p):

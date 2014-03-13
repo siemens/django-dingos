@@ -45,7 +45,7 @@ class QueryLexer:
 
     # Tokens
     tokens = ["ID", "AND", "OR", "OPEN", "CLOSE", "EQUALS", "VALUE", "PIPE", "FACTTERM", "COLON", "COMMA", "NOT",
-              "LOWERTHAN", "FORMATSIGN", "FNAME"] + list(reserved.values())
+              "LOWERTHAN", "FORMATSIGN"] + list(reserved.values())
 
     def t_ID(self, t):
         r"[a-zA-Z0-9_\.]+"
@@ -67,7 +67,7 @@ class QueryLexer:
     t_NOT = (r"\!")
     t_LOWERTHAN = (r"\<")
     t_FORMATSIGN = (r"\|F\>")
-    t_FNAME = (r"csv")
+
 
     # Ignore whitespaces
     t_ignore = "\t\n\r "

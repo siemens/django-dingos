@@ -55,6 +55,7 @@ from dingos.models import UserData
 
 from dingos.forms import CustomQueryForm
 
+from dingos.queryparser.result_formatting import to_csv
 
 from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_USER_PREFS_TYPE_NAME, \
@@ -462,26 +463,6 @@ class BasicCustomQueryView(BasicListView):
         self.form = CustomQueryForm(request.GET)
         self.queryset = []
 
-        def descend_object(obj,fields):
-            if fields == []:
-                return str(obj)
-            if 'Manager' in "%s" % obj.__class__:
-                print "Manager for %s" % fields
-                return ', '.join(map(lambda o: descend_object(o,fields[1:]),obj.all()))
-            else:
-                if len(fields) == 1:
-                    print "Last %s" % fields
-                    result = getattr(obj,fields[0])
-                    return str(result)
-                else:
-
-                    print "Recurse for %s" % fields
-                    return descend_object(getattr(obj,fields[0]),fields[1:])
-
-            #else:
-            #    field = fields[0]
-            #    return descend_object(getattr(obj,field),fields[1:])
-
         if 'execute_query' in request.GET and self.form.is_valid():
             if request.GET['query'] == "":
                 messages.error(self.request, "Please enter a query.")
@@ -532,23 +513,8 @@ class BasicCustomQueryView(BasicListView):
                         col_specs = formatted_filter_collection.col_specs
                         misc_args = formatted_filter_collection.misc_args
 
-                        # Headers
-                        # The first line (CSV) is reserved for column headers by default.
-                        if 'include_column_names' not in misc_args.keys() or misc_args['include_column_names'] == 'True':
-                            headline = []
-                            for header in col_specs['headers']:
-                                headline.append(header)
-                            writer.writerow(headline)
+                        to_csv(objects,writer,col_specs['headers'],col_specs['selected_fields'],**misc_args)
 
-                        # Data
-                        for one in objects:
-                            record = []
-                            for field_string in col_specs['selected_fields']:
-                                fields = field_string.split('.')
-                                record.append(descend_object(one,fields))
-
-                                #record.append(str(getattr(one, field_string)))
-                            writer.writerow(record)
                         return response
                     elif result_format == 'table':
                         # TODO Replace the following default behaviour with a more flexible template which allows to specify columns
