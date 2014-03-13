@@ -99,6 +99,17 @@ class FilterCollection:
         return result
 
 
+class FormattedFilterCollection:
+    def __init__(self, filter_collection, column_specs=[], format_args=[]):
+        self.filter_collection = filter_collection
+        self.format_args = format_args
+
+        # Reformat structure of column specifications
+        split = {}
+        (split['headers'], split['selected_fields']) = zip(*(spec.split(':') for spec in column_specs))
+        self.column_specs = split
+
+
 class Expression:
     def __init__(self, left, operator, right):
         self.left = left

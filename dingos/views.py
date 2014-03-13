@@ -517,45 +517,58 @@ class CustomInfoObjectSearchView(BasicListView):
                     print "\tQuery: %s" % query
 
                     # Generate and execute query
-                    filter_collection = parser.parse(str(query))
+                    formatted_filter_collection = parser.parse(str(query))
+                    filter_collection = formatted_filter_collection.filter_collection
                     objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
                     objects = filter_collection.build_query(base=objects, query_mode=FilterCollection.INFO_OBJECT)
                     objects = objects.distinct()
+                    # TODO The following prefetch causes an error: Cannot resolve keyword '+' into field. Choices are: id, name
+                    #objects = objects.prefetch_related(
+                    #    'iobject_type',
+                    #    'iobject_type__iobject_family',
+                    #    'iobject_family',
+                    #    'identifier__namespace',
+                    #    'iobject_family_revision',
+                    #    'identifier').order_by('-latest_of__pk')
                     print "\tSQL: %s" % objects.query
-
                     self.queryset = objects
 
-                    self.queryset = self.queryset.prefetch_related(
-                        'iobject_type',
-                        'iobject_type__iobject_family',
-                        'iobject_family',
-                        'identifier__namespace',
-                        'iobject_family_revision',
-                        'identifier').order_by('-latest_of__pk')
+                    # Output format
+                    result_format = 'default'
+                    if result_format == 'default':
+                        self.template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
+                        return super(BasicListView, self).get(request, *args, **kwargs)
+                    elif result_format == 'csv':
+                        response = HttpResponse(content_type='text/csv')
+                        response['Content-Disposition'] = 'attachment; filename="result.csv"'
+                        writer = csv.writer(response)
+
+                        # Filter selected columns for export
+                        col_specs = formatted_filter_collection.column_specs
+
+                        # Headers
+                        headline = []
+                        for header in col_specs['headers']:
+                            headline.append(header)
+                        writer.writerow(headline)
+
+                        # Data
+                        for one in objects:
+                            record = []
+                            for field in col_specs['selected_fields']:
+                                record.append(str(getattr(one, field)))
+                            writer.writerow(record)
+                        return response
+                    elif result_format == 'table':
+                        # TODO Replace the following default behaviour with a more flexible template which allows to specify columns
+                        self.template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
+                        return super(BasicListView, self).get(request, *args, **kwargs)
+                    else:
+                        raise ValueError('Unsupported output format')
 
                 except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError) as ex:
                     messages.error(self.request, str(ex))
-
-        result_format = 'default'
-        if result_format == 'default':
-            self.template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
-            return super(BasicListView, self).get(request, *args, **kwargs)
-        elif result_format == 'csv':
-            response = HttpResponse(content_type='text/csv')
-            response['Content-Disposition'] = 'attachment; filename="result.csv"'
-            writer = csv.writer(response)
-            writer.writerow(['First row', 'Foo', 'Bar', 'Baz'])
-            writer.writerow(['col_1', 'col_2'])
-            writer.writerow(['foo1', 'bar1'])
-            writer.writerow(['foo2', 'bar2'])
-            writer.writerow(['foo3', 'bar3'])
-            return response
-        elif result_format == 'table':
-            # TODO Replace the following default behaviour with a more flexible template which allows to specify columns
-            self.template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
-            return super(BasicListView, self).get(request, *args, **kwargs)
-        else:
-            raise ValueError('Unsupported output format')
+        return super(BasicListView, self).get(request, *args, **kwargs)
 
 
 class CustomFactSearchView(BasicListView):
@@ -586,7 +599,8 @@ class CustomFactSearchView(BasicListView):
                     print "\tQuery: %s" % query
 
                     # Generate and execute query
-                    filter_collection = parser.parse(str(query))
+                    formatted_filter_collection = parser.parse(str(query))
+                    filter_collection = formatted_filter_collection.filter_collection
                     objects = getattr(InfoObject2Fact, 'objects').exclude(iobject__latest_of=None)
                     objects = filter_collection.build_query(base=objects,
                                                             query_mode=FilterCollection.INFO_OBJECT_2_FACT)

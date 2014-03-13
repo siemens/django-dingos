@@ -38,12 +38,13 @@ class QueryLexer:
         "exclude": "EXCLUDE",
         "marked_by": "MARKED_BY",
         "range": "RANGE",
-        "younger": "YOUNGER"
+        "younger": "YOUNGER",
+        "csv": "CSV"
     }
 
     # Tokens
-    tokens = ["FIELD", "AND", "OR", "OPEN", "CLOSE", "EQUALS", "VALUE", "PIPE", "FACTTERM", "COLON", "NOT",
-              "LOWERTHAN"] + list(reserved.values())
+    tokens = ["FIELD", "AND", "OR", "OPEN", "CLOSE", "EQUALS", "VALUE", "PIPE", "FACTTERM", "COLON", "COMMA", "NOT",
+              "LOWERTHAN", "FORMATSIGN", "COLSPEC"] + list(reserved.values())
 
     def t_FIELD(self, t):
         r"[a-zA-Z]([a-zA-Z0-9_])*(\.[a-zA-Z]([a-zA-Z0-9_])*)*"
@@ -56,12 +57,15 @@ class QueryLexer:
     t_OPEN = (r"\(")
     t_CLOSE = (r"\)")
     t_EQUALS = (r"\=")
-    t_VALUE = (r"(\"[^\"]*\"|\'[^\']*\')")
+    t_VALUE = (r"(\"[^\"\:]*\"|\'[^\'\:]*\')")
     t_PIPE = (r"\|")
     t_FACTTERM = (r"\[[^\/\@\]]+(\/[^\/\@\]]+)*(\@[^\]]*)?\]")
     t_COLON = (r"\:")
+    t_COMMA = (r"\,")
     t_NOT = (r"\!")
     t_LOWERTHAN = (r"\<")
+    t_FORMATSIGN = (r"\|F\>")
+    t_COLSPEC = (r"(\"[^\"\:]+\:[^\"\:]+\"|\'[^\'\:]+\:[^\'\:]+\')")
 
     # Ignore whitespaces
     t_ignore = "\t\n\r "

@@ -16,14 +16,14 @@
 #
 import ply.yacc as Yacc
 from querylexer import QueryLexer
-from querytree import FilterCollection, Expression, Condition, QueryParserException
+from querytree import FilterCollection, Expression, Condition, QueryParserException, FormattedFilterCollection
 
 
 class QueryParser:
     def __init__(self):
         self.lexer = QueryLexer()
         self.tokens = self.lexer.tokens
-        self.parser = Yacc.yacc(module=self,debug=0)
+        self.parser = Yacc.yacc(module=self, debug=0)
 
     def parse(self, data):
         if data:
@@ -42,12 +42,9 @@ class QueryParser:
         ======================
         request:    query
         request:    query FORMATSIGN CSV OPEN formatargs CLOSE
-        formatargs: colspecs COMMA miscargs
         formatargs: colspecs
         colspecs:   COLSPEC COMMA colspecs
         colspecs:   COLSPEC
-        miscargs:
-        miscarg:    FIELD EQUALS BOOL
         query:
         query:      expr
         query:      expr PIPE query
@@ -80,6 +77,39 @@ class QueryParser:
         key:        FIELD
                     | FACTTERM
     '''
+
+    def p_simple_request(self, p):
+        """request : query"""
+        p[0] = FormattedFilterCollection(p[1])
+
+    def p_request(self, p):
+        """request : query FORMATSIGN CSV OPEN formatargs CLOSE"""
+        p[0] = FormattedFilterCollection(p[1], p[5]['colspecs'], p[5]['miscargs'])
+
+    def p_formatargs(self, p):
+        """formatargs : colspecs"""
+        p[0] = {'colspecs': p[1], 'miscargs': []}
+
+    def p_colspecs(self, p):
+        """colspecs : colspec COMMA colspecs"""
+        p[0] = [p[1]] + p[3]
+
+    def p_colspecs_one(self, p):
+        """colspecs : colspec"""
+        p[0] = [p[1]]
+
+    def p_colspec(self, p):
+        """colspec : COLSPEC"""
+        # The quotes need to be removed here in the parser
+        # because the lexer cannot cover the following
+        # examples with regular expressions conveniently.
+        # Legal:
+        #     'fo"o' => fo"o
+        #     "b'ar" => f'oo
+        # Illegal:
+        #     'foo" => FAILURE!
+        #     "bar' => FAILURE!
+        p[0] = p[1][1:-1]
 
     def p_query_empty(self, p):
         """query :"""
