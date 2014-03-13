@@ -40,6 +40,14 @@ class QueryParser:
     '''
         QUERY LANGUAGE GRAMMAR
         ======================
+        request:    query
+        request:    query FORMATSIGN CSV OPEN formatargs CLOSE
+        formatargs: colspecs COMMA miscargs
+        formatargs: colspecs
+        colspecs:   COLSPEC COMMA colspecs
+        colspecs:   COLSPEC
+        miscargs:
+        miscarg:    FIELD EQUALS BOOL
         query:
         query:      expr
         query:      expr PIPE query
