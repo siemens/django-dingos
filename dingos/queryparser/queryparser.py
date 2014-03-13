@@ -41,36 +41,36 @@ class QueryParser:
         QUERY LANGUAGE GRAMMAR
         ======================
         query:
-        query:  expr
-        query:  expr PIPE query
-        query:  FILTER COLON expr
-                | EXCLUDE COLON expr
-        query:  MARKED_BY COLON OPEN query CLOSE
-        query:  NOT MARKED_BY COLON OPEN query CLOSE
-        query:  FILTER COLON expr PIPE query
-                | EXCLUDE COLON expr PIPE query
-        query:  MARKED_BY COLON OPEN query CLOSE PIPE query
-        query:  NOT MARKED_BY COLON OPEN query CLOSE PIPE query
-        expr:   OPEN expr CLOSE
-        expr:   expr AND expr
-                |expr OR expr
-        expr:   key comp value
-        expr:   key NOT comp value
-        comp:   EQUALS
-                | CONTAINS
-                | ICONTAINS
-                | REGEXP
-                | IREGEXP
-                | STARTSWITH
-                | ISTARTSWITH
-                | ENDSWITH
-                | IENDSWITH
-                | LOWERTHAN
-                | RANGE
-                | YOUNGER
-        value:  VALUE
-        key:    FIELD
-                | FACTTERM
+        query:      expr
+        query:      expr PIPE query
+        query:      FILTER COLON expr
+                    | EXCLUDE COLON expr
+        query:      MARKED_BY COLON OPEN query CLOSE
+        query:      NOT MARKED_BY COLON OPEN query CLOSE
+        query:      FILTER COLON expr PIPE query
+                    | EXCLUDE COLON expr PIPE query
+        query:      MARKED_BY COLON OPEN query CLOSE PIPE query
+        query:      NOT MARKED_BY COLON OPEN query CLOSE PIPE query
+        expr:       OPEN expr CLOSE
+        expr:       expr AND expr
+                    |expr OR expr
+        expr:       key comp value
+        expr:       key NOT comp value
+        comp:       EQUALS
+                    | CONTAINS
+                    | ICONTAINS
+                    | REGEXP
+                    | IREGEXP
+                    | STARTSWITH
+                    | ISTARTSWITH
+                    | ENDSWITH
+                    | IENDSWITH
+                    | LOWERTHAN
+                    | RANGE
+                    | YOUNGER
+        value:      VALUE
+        key:        FIELD
+                    | FACTTERM
     '''
 
     def p_query_empty(self, p):
