@@ -38,7 +38,7 @@ from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, Ba
 
 class InfoObjectList(BasicFilterView):
 
-    counting_paginator = False
+    counting_paginator = True
 
     exclude_internal_objects = True
 
