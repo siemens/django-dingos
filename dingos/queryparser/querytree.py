@@ -66,8 +66,6 @@ class FilterCollection:
         # this will lead to the query being executed in order to
         # find out whether it delivers no results ...
 
-
-
         if isinstance(base, type(None)):
             objects = InfoObject.objects.all()
         else:
@@ -81,6 +79,19 @@ class FilterCollection:
                 filter_query = oneFilter['expression'].build_q(query_mode)
                 objects = getattr(objects, filter_type)(filter_query)
                 print "\t%s: %s" % (filter_type, filter_query)
+            elif filter_type in ['fact_filter','fact_exclude']:
+                fact_query = oneFilter['expression'].build_q(query_mode=self.INFO_OBJECT)
+                if query_mode == self.INFO_OBJECT:
+                    q_key = 'facts__in'
+                elif query_mode == self.INFO_OBJECT_2_FACT:
+                    q_key = 'pk__in'
+                print "Query %s %s" % (oneFilter['expression'], fact_query)
+                sub_query = InfoObject2Fact.objects.filter(fact_query)
+                q_query = Q(**{q_key: sub_query})
+                if filter_type == 'fact_filter':
+                    objects = getattr(objects, 'filter')(q_query)
+                else:
+                    objects = getattr(objects, 'exclude')(q_query)
             elif filter_type in ['marked_by'] and 'negation' in oneFilter:
                 print "\t%s: negation=%s {" % (filter_type, oneFilter['negation'])
                 q_key = ''
@@ -222,8 +233,8 @@ class Condition:
         # Query
         q_query_prefix = ""
         if key[0] == "[" and key[-1] == "]":
-            if query_mode == FilterCollection.INFO_OBJECT:
-                q_query_prefix = "fact_thru__"
+            #if query_mode == FilterCollection.INFO_OBJECT:
+            #    q_query_prefix = "fact_thru__"
 
             # Fact term condition
             key = key[1:-1]

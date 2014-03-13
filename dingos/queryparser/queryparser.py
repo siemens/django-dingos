@@ -34,11 +34,11 @@ class QueryParser:
         else:
             return []
 
-    #def p_error(self, p):
-    #    if p is not None:
-    #        raise QueryParserException("Syntax error: \"%s\"" % p.value)
-    #    else:
-    #        raise QueryParserException("Syntax error: Cannot parse anything.")
+    def p_error(self, p):
+        if p is not None:
+            raise QueryParserException("Syntax error: \"%s\"" % p.value)
+        else:
+            raise QueryParserException("Syntax error: Cannot parse anything.")
 
     '''
         QUERY LANGUAGE GRAMMAR
@@ -54,6 +54,8 @@ class QueryParser:
         query:      expr PIPE query
         query:      FILTER COLON expr
                     | EXCLUDE COLON expr
+                    | FACTFILTER COLON expr
+                    | FACTEXCLUDE COLON expr
         query:      MARKED_BY COLON OPEN query CLOSE
         query:      NOT MARKED_BY COLON OPEN query CLOSE
         query:      FILTER COLON expr PIPE query
@@ -124,7 +126,9 @@ class QueryParser:
 
     def p_query_expr_filter_type(self, p):
         """query : FILTER COLON expr
-                | EXCLUDE COLON expr"""
+                | EXCLUDE COLON expr
+                | FACTFILTER COLON expr
+                | FACTEXCLUDE COLON expr"""
         p[0] = FilterCollection()
         p[0].add_new_filter({'type': p[1], 'expression': p[3]})
 
@@ -140,7 +144,9 @@ class QueryParser:
 
     def p_query_pipe_filter_type(self, p):
         """query : FILTER COLON expr PIPE query
-                | EXCLUDE COLON expr PIPE query"""
+                | EXCLUDE COLON expr PIPE query
+                | FACTFILTER COLON expr PIPE query
+                | FACTEXCLUDE COLON expr PIPE query"""
         p[0] = p[5]
         p[0].add_new_filter({'type': p[1], 'expression': p[3]})
 

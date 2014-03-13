@@ -36,6 +36,8 @@ class QueryLexer:
         "iendswith": "IENDSWITH",
         "filter": "FILTER",
         "exclude": "EXCLUDE",
+        "fact_filter": "FACTFILTER",
+        "fact_exclude": "FACTEXCLUDE",
         "marked_by": "MARKED_BY",
         "range": "RANGE",
         "younger": "YOUNGER",
