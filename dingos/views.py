@@ -534,7 +534,7 @@ class CustomInfoObjectSearchView(BasicListView):
                     self.queryset = objects
 
                     # Output format
-                    result_format = 'default'
+                    result_format = formatted_filter_collection.format
                     if result_format == 'default':
                         self.template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
                         return super(BasicListView, self).get(request, *args, **kwargs)

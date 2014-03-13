@@ -100,13 +100,15 @@ class FilterCollection:
 
 
 class FormattedFilterCollection:
-    def __init__(self, filter_collection, column_specs=[], format_args=[]):
+    def __init__(self, filter_collection, column_specs=[], format_args=[], format='default'):
         self.filter_collection = filter_collection
         self.format_args = format_args
+        self.format = format
 
         # Reformat structure of column specifications
-        split = {}
-        (split['headers'], split['selected_fields']) = zip(*(spec.split(':') for spec in column_specs))
+        split = {'headers': [], 'selected_fields': []}
+        if len(column_specs) is not 0:
+            (split['headers'], split['selected_fields']) = zip(*(spec.split(':') for spec in column_specs))
         self.column_specs = split
 
 

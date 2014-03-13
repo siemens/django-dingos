@@ -343,7 +343,7 @@ def parse_and_query(query, mode=FilterCollection.INFO_OBJECT):
     print "\tQuery: %s" % query
 
     # Generate and execute query
-    filter_collection = parser.parse(str(query))
+    filter_collection = parser.parse(str(query)).filter_collection
     if mode == FilterCollection.INFO_OBJECT:
         objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
     elif mode == FilterCollection.INFO_OBJECT_2_FACT:
