@@ -60,7 +60,11 @@ class FilterCollection:
         self.filter_list.insert(0, new_filter)
 
     def build_query(self, base=None, query_mode=None):
-        if not base:
+        # Do NOT use 'base == None' below: if base is a queryset,
+        # this will lead to the query being executed in order to
+        # find out whether it delivers no results ...
+
+        if isinstance(base,type(None)):
             objects = InfoObject.objects.all()
         else:
             objects = base

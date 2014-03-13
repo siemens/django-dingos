@@ -489,6 +489,9 @@ class InfoObjectJSONView(BasicDetailView):
 
 
 class CustomInfoObjectSearchView(BasicListView):
+
+    counting_paginator = False
+
     template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Custom Info Object Search'
     form = None
@@ -520,6 +523,15 @@ class CustomInfoObjectSearchView(BasicListView):
                     print "\tSQL: %s" % objects.query
 
                     self.queryset = objects
+
+                    self.queryset = self.queryset.prefetch_related(
+                        'iobject_type',
+                        'iobject_type__iobject_family',
+                        'iobject_family',
+                        'identifier__namespace',
+                        'iobject_family_revision',
+                        'identifier').order_by('-latest_of__pk')
+
                 except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError) as ex:
                     messages.error(self.request, str(ex))
 
@@ -527,6 +539,9 @@ class CustomInfoObjectSearchView(BasicListView):
 
 
 class CustomFactSearchView(BasicListView):
+
+    counting_paginator = False
+
     template_name = 'dingos/%s/searches/CustomFactSearch.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Custom Fact Search'
     form = None
@@ -564,3 +579,4 @@ class CustomFactSearchView(BasicListView):
                     messages.error(self.request, str(ex))
 
         return super(BasicListView, self).get(request, *args, **kwargs)
+    counting_paginator = False
