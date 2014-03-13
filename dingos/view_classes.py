@@ -18,24 +18,44 @@
 import collections
 import copy
 
+import StringIO
+import csv
+
 from django.views.generic.base import ContextMixin
 from django.views.generic import DetailView, ListView, TemplateView
 
 from django.core.paginator import Paginator
 
-from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
+
+from django.db import DataError
+from django.core.exceptions import FieldError
+
+
+
+
+
 
 from  django.core import urlresolvers
+
+from django.contrib import messages
 
 from django.utils.http import urlquote_plus
 
 from core.http_helpers import get_query_string
 
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
+
+
 
 from django_filters.views import FilterView
 
+from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
+
 from dingos.models import UserData
+
+from dingos.forms import CustomQueryForm
+
+
 from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_USER_PREFS_TYPE_NAME, \
     DINGOS_DEFAULT_USER_PREFS, \
@@ -45,6 +65,12 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
 from dingos.core.template_helpers import ConfigDictWrapper
 
 from dingos.core.utilities import get_dict
+
+from dingos.models import InfoObject
+
+from queryparser.queryparser import QueryParser
+from queryparser.querylexer import QueryLexerException
+from queryparser.querytree import FilterCollection, QueryParserException
 
 
 class UncountingPaginator(Paginator):
@@ -400,4 +426,138 @@ class BasicTemplateView(CommonContextMixin,
                    ('View',None),
     )
 
+
+
+class BasicCustomQueryView(BasicListView):
+
+    counting_paginator = False
+
+    template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
+
+    title = 'Custom Info Object Search'
+
+    form = None
+    format = None
+    distinct = True
+
+    query_base = InfoObject.objects.exclude(latest_of=None)
+
+    prefetch_related = ('iobject_type',
+                        'iobject_type__iobject_family',
+                        'iobject_family',
+                        'identifier__namespace',
+                        'iobject_family_revision',
+                        'identifier')
+
+    def get_context_data(self, **kwargs):
+        """
+        Call 'get_context_data' from super and include the query form in the context
+        for the template to read and display.
+        """
+        context = super(BasicCustomQueryView, self).get_context_data(**kwargs)
+        context['form'] = self.form
+        return context
+
+    def get(self, request, *args, **kwargs):
+        self.form = CustomQueryForm(request.GET)
+        self.queryset = []
+
+        def descend_object(obj,fields):
+            if fields == []:
+                return str(obj)
+            if 'Manager' in "%s" % obj.__class__:
+                print "Manager for %s" % fields
+                return ', '.join(map(lambda o: descend_object(o,fields[1:]),obj.all()))
+            else:
+                if len(fields) == 1:
+                    print "Last %s" % fields
+                    result = getattr(obj,fields[0])
+                    return str(result)
+                else:
+
+                    print "Recurse for %s" % fields
+                    return descend_object(getattr(obj,fields[0]),fields[1:])
+
+            #else:
+            #    field = fields[0]
+            #    return descend_object(getattr(obj,field),fields[1:])
+
+        if 'execute_query' in request.GET and self.form.is_valid():
+            if request.GET['query'] == "":
+                messages.error(self.request, "Please enter a query.")
+            else:
+                try:
+                    # Parse query
+                    parser = QueryParser()
+                    query = self.form.cleaned_data['query']
+
+                    # Generate and execute query
+                    formatted_filter_collection = parser.parse(str(query))
+
+                    filter_collection = formatted_filter_collection.filter_collection
+
+                    objects = self.query_base.all()
+                    objects = filter_collection.build_query(base=objects)
+
+                    objects = objects.distinct()
+
+                    if self.distinct:
+                        if self.distinct == True:
+                            objects = objects.distinct()
+                        elif isinstance(self.distinct,tuple):
+                            objects = objects.distinct(*list(self.distinct))
+                        else:
+                            raise TypeError("'distinct' must either be True or a tuple of field names.")
+
+                    if self.prefetch_related:
+                        if isinstance(self.prefetch_related,tuple):
+                            objects = objects.prefetch_related(*list(self.prefetch_related))
+                        else:
+                            raise TypeError("'prefetch_related' must either be True or a tuple of field names.")
+
+                    self.queryset = objects
+
+                    # Output format
+                    result_format = formatted_filter_collection.format
+
+                    if result_format == 'default':
+
+                        return super(BasicListView, self).get(request, *args, **kwargs)
+                    elif result_format == 'csv':
+                        response = HttpResponse(content_type='text') # '/csv')
+                        #response['Content-Disposition'] = 'attachment; filename="result.csv"'
+                        writer = csv.writer(response)
+
+                        # Filter selected columns for export
+                        col_specs = formatted_filter_collection.col_specs
+                        misc_args = formatted_filter_collection.misc_args
+
+                        # Headers
+                        # The first line (CSV) is reserved for column headers by default.
+                        if 'include_column_names' not in misc_args.keys() or misc_args['include_column_names'] == 'True':
+                            headline = []
+                            for header in col_specs['headers']:
+                                headline.append(header)
+                            writer.writerow(headline)
+
+                        # Data
+                        for one in objects:
+                            record = []
+                            for field_string in col_specs['selected_fields']:
+                                fields = field_string.split('.')
+                                record.append(descend_object(one,fields))
+
+                                #record.append(str(getattr(one, field_string)))
+                            writer.writerow(record)
+                        return response
+                    elif result_format == 'table':
+                        # TODO Replace the following default behaviour with a more flexible template which allows to specify columns
+                        self.template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
+                        return super(BasicListView, self).get(request, *args, **kwargs)
+                    else:
+                        raise ValueError('Unsupported output format')
+
+                except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError, TypeError) as ex:
+                    messages.error(self.request, str(ex))
+        return super(BasicListView, self).get(request, *args, **kwargs)
 

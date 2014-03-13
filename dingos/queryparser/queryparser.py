@@ -18,12 +18,15 @@ import ply.yacc as Yacc
 from querylexer import QueryLexer
 from querytree import FilterCollection, Expression, Condition, QueryParserException, FormattedFilterCollection
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 class QueryParser:
     def __init__(self):
         self.lexer = QueryLexer()
         self.tokens = self.lexer.tokens
-        self.parser = Yacc.yacc(module=self, debug=0)
+        self.parser = Yacc.yacc(module=self,errorlog=logger)#, debug=0)
 
     def parse(self, data):
         if data:
@@ -31,17 +34,17 @@ class QueryParser:
         else:
             return []
 
-    def p_error(self, p):
-        if p is not None:
-            raise QueryParserException("Syntax error: \"%s\"" % p.value)
-        else:
-            raise QueryParserException("Syntax error: Cannot parse anything.")
+    #def p_error(self, p):
+    #    if p is not None:
+    #        raise QueryParserException("Syntax error: \"%s\"" % p.value)
+    #    else:
+    #        raise QueryParserException("Syntax error: Cannot parse anything.")
 
     '''
         QUERY LANGUAGE GRAMMAR
         ======================
         request:    query
-        request:    query FORMATSIGN CSV OPEN formatargs CLOSE
+        request:    query FORMATSIGN ID OPEN formatargs CLOSE
         formatargs: formatarg COMMA formatargs
         formatargs: formatarg
         formatarg:  VALUE
@@ -84,7 +87,7 @@ class QueryParser:
         p[0] = FormattedFilterCollection(p[1])
 
     def p_request(self, p):
-        """request : query FORMATSIGN CSV OPEN formatargs CLOSE"""
+        """request : query FORMATSIGN ID OPEN formatargs CLOSE"""
         p[0] = FormattedFilterCollection(p[1], p[5], p[3])
 
     def p_formatargs(self, p):
@@ -194,6 +197,8 @@ class QueryParser:
         #     'foo" => FAILURE!
         #     "bar' => FAILURE!
         p[0] = p[1][1:-1]
+
+
 
     def p_key_field_factterm(self, p):
         """key : ID

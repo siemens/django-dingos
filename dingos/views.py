@@ -39,7 +39,7 @@ from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, 
 
 
 from braces.views import LoginRequiredMixin
-from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView
+from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView, BasicCustomQueryView
 from queryparser.queryparser import QueryParser
 from queryparser.querylexer import QueryLexerException
 from queryparser.querytree import FilterCollection, QueryParserException
@@ -489,90 +489,8 @@ class InfoObjectJSONView(BasicDetailView):
                                  **httpresponse_kwargs)
 
 
-class CustomInfoObjectSearchView(BasicListView):
-    counting_paginator = False
-    template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
-
-    title = 'Custom Info Object Search'
-    form = None
-    format = None
-
-    def get_context_data(self, **kwargs):
-        context = super(CustomInfoObjectSearchView, self).get_context_data(**kwargs)
-        context['form'] = self.form
-        return context
-
-    def get(self, request, *args, **kwargs):
-        self.form = CustomQueryForm(request.GET)
-        self.queryset = []
-
-        if 'execute_query' in request.GET and self.form.is_valid():
-            if request.GET['query'] == "":
-                messages.error(self.request, "Please enter a query.")
-            else:
-                try:
-                    # Parse query
-                    parser = QueryParser()
-                    query = self.form.cleaned_data['query']
-                    print "\tQuery: %s" % query
-
-                    # Generate and execute query
-                    formatted_filter_collection = parser.parse(str(query))
-                    filter_collection = formatted_filter_collection.filter_collection
-                    objects = getattr(InfoObject, 'objects').exclude(latest_of=None)
-                    objects = filter_collection.build_query(base=objects, query_mode=FilterCollection.INFO_OBJECT)
-                    objects = objects.distinct()
-                    # TODO The following prefetch causes an error: Cannot resolve keyword '+' into field. Choices are: id, name
-                    #objects = objects.prefetch_related(
-                    #    'iobject_type',
-                    #    'iobject_type__iobject_family',
-                    #    'iobject_family',
-                    #    'identifier__namespace',
-                    #    'iobject_family_revision',
-                    #    'identifier').order_by('-latest_of__pk')
-                    print "\tSQL: %s" % objects.query
-                    self.queryset = objects
-
-                    # Output format
-                    result_format = formatted_filter_collection.format
-                    if result_format == 'default':
-                        self.template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
-                        return super(BasicListView, self).get(request, *args, **kwargs)
-                    elif result_format == 'csv':
-                        response = HttpResponse(content_type='text/csv')
-                        response['Content-Disposition'] = 'attachment; filename="result.csv"'
-                        writer = csv.writer(response)
-
-                        # Filter selected columns for export
-                        col_specs = formatted_filter_collection.col_specs
-                        misc_args = formatted_filter_collection.misc_args
-
-                        # Headers
-                        # The first line (CSV) is reserved for column headers by default.
-                        if 'include_column_names' not in misc_args.keys() or misc_args['include_column_names'] == 'True':
-                            headline = []
-                            for header in col_specs['headers']:
-                                headline.append(header)
-                            writer.writerow(headline)
-
-                        # Data
-                        for one in objects:
-                            record = []
-                            for field in col_specs['selected_fields']:
-                                record.append(str(getattr(one, field)))
-                            writer.writerow(record)
-                        return response
-                    elif result_format == 'table':
-                        # TODO Replace the following default behaviour with a more flexible template which allows to specify columns
-                        self.template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
-                        return super(BasicListView, self).get(request, *args, **kwargs)
-                    else:
-                        raise ValueError('Unsupported output format')
-
-                except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError, TypeError) as ex:
-                    messages.error(self.request, str(ex))
-        return super(BasicListView, self).get(request, *args, **kwargs)
-
+class CustomInfoObjectSearchView(BasicCustomQueryView):
+   pass
 
 class CustomFactSearchView(BasicListView):
 
@@ -617,3 +535,22 @@ class CustomFactSearchView(BasicListView):
 
         return super(BasicListView, self).get(request, *args, **kwargs)
     counting_paginator = False
+
+class CustomFactSearchView(BasicCustomQueryView):
+    counting_paginator = False
+
+    template_name = 'dingos/%s/searches/CustomFactSearch.html' % DINGOS_TEMPLATE_FAMILY
+    title = 'Custom Fact Search'
+
+    distinct = True
+
+    query_base = InfoObject2Fact.objects
+
+    prefetch_related = ('fact__fact_term',
+                        'fact__fact_values',
+                        'fact__fact_values__fact_data_type',
+                        'fact__value_iobject_id',
+                        'fact__value_iobject_id__latest',
+                        'fact__value_iobject_id__latest__iobject_type',
+                        'node_id')
+    pass

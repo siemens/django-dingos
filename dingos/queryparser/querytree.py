@@ -15,7 +15,7 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 from django.db.models import Q
-from dingos.models import InfoObject
+from dingos.models import InfoObject, InfoObject2Fact
 from django.utils import timezone
 from django.utils.timezone import now
 from django.utils.dateparse import parse_datetime
@@ -51,8 +51,9 @@ class Comparator:
 
 
 class FilterCollection:
-    INFO_OBJECT = "InfoObject"
-    INFO_OBJECT_2_FACT = "InfoObject2Fact"
+    INFO_OBJECT = InfoObject
+    INFO_OBJECT_2_FACT = InfoObject2Fact
+
 
     def __init__(self):
         self.filter_list = []
@@ -60,15 +61,20 @@ class FilterCollection:
     def add_new_filter(self, new_filter):
         self.filter_list.insert(0, new_filter)
 
-    def build_query(self, base=None, query_mode=None):
+    def build_query(self, base=None):
         # Do NOT use 'base == None' below: if base is a queryset,
         # this will lead to the query being executed in order to
         # find out whether it delivers no results ...
+
+
 
         if isinstance(base, type(None)):
             objects = InfoObject.objects.all()
         else:
             objects = base
+
+        query_mode = objects.model
+
         for oneFilter in self.filter_list:
             filter_type = oneFilter['type']
             if filter_type in ['filter', 'exclude']:
