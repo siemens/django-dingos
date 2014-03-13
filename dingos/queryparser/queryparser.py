@@ -114,51 +114,46 @@ class QueryParser:
         """query :"""
         p[0] = FilterCollection()
 
-    def p_query_expr(self, p):
-        """query : expr"""
-        p[0] = FilterCollection()
-        p[0].add_new_filter({'type': 'filter', 'expression': p[1]})
-
-    def p_query_pipe(self, p):
-        """query : expr PIPE query"""
-        p[0] = p[3]
-        p[0].add_new_filter({'type': 'filter', 'expression': p[1]})
-
     def p_query_expr_filter_type(self, p):
         """query : FILTER COLON expr
-                | EXCLUDE COLON expr
-                | FACTFILTER COLON expr
-                | FACTEXCLUDE COLON expr"""
+                 | FACTFILTER COLON expr
+                 | MARKED_BY COLON OPEN query CLOSE"""
         p[0] = FilterCollection()
-        p[0].add_new_filter({'type': p[1], 'expression': p[3]})
+        if p[1] == 'marked_by':
+            p[0].add_new_filter({'type': p[1], 'expr_or_query': p[4], 'negation': False})
+        else:
+            p[0].add_new_filter({'type': p[1], 'expr_or_query': p[3], 'negation': False})
 
-    def p_query_expr_subquery_type(self, p):
-        """query : MARKED_BY COLON OPEN query CLOSE"""
+    def p_query_expr_filter_not_type(self, p):
+        """query : NOT FILTER COLON expr
+                 | NOT FACTFILTER COLON expr
+                 | NOT MARKED_BY COLON OPEN query CLOSE"""
         p[0] = FilterCollection()
-        p[0].add_new_filter({'type': p[1], 'query': p[4], 'negation': False})
+        if p[2] == 'marked_by':
+            p[0].add_new_filter({'type': p[2], 'expr_or_query': p[5], 'negation': True})
+        else:
+            p[0].add_new_filter({'type': p[2], 'expr_or_query': p[4], 'negation': True})
 
-    def p_query_expr_subquery_not_type(self, p):
-        """query : NOT MARKED_BY COLON OPEN query CLOSE"""
-        p[0] = FilterCollection()
-        p[0].add_new_filter({'type': p[2], 'query': p[5], 'negation': True})
+    def p_pipe_query_expr_filter_type(self, p):
+        """query : query PIPE FILTER COLON expr
+                 | query PIPE FACTFILTER COLON expr
+                 | query PIPE MARKED_BY COLON OPEN query CLOSE"""
+        p[0] = p[1]
+        if p[3] == 'marked_by':
+            p[0].add_new_filter({'type': p[3], 'expr_or_query': p[6], 'negation': False})
+        else:
+            p[0].add_new_filter({'type': p[3], 'expr_or_query': p[5], 'negation': False})
 
-    def p_query_pipe_filter_type(self, p):
-        """query : FILTER COLON expr PIPE query
-                | EXCLUDE COLON expr PIPE query
-                | FACTFILTER COLON expr PIPE query
-                | FACTEXCLUDE COLON expr PIPE query"""
-        p[0] = p[5]
-        p[0].add_new_filter({'type': p[1], 'expression': p[3]})
+    def p_pipe_query_expr_filter_not_type(self, p):
+        """query : query PIPE NOT FILTER COLON expr
+                 | query PIPE NOT FACTFILTER COLON expr
+                 | query PIPE NOT MARKED_BY COLON OPEN query CLOSE"""
+        p[0] = p[1]
+        if p[4] == 'marked_by':
+            p[0].add_new_filter({'type': p[4], 'expr_or_query': p[7], 'negation': True})
+        else:
+            p[0].add_new_filter({'type': p[4], 'expr_or_query': p[6], 'negation': True})
 
-    def p_query_pipe_subquery_type(self, p):
-        """query : MARKED_BY COLON OPEN query CLOSE PIPE query"""
-        p[0] = p[7]
-        p[0].add_new_filter({'type': p[1], 'query': p[4], 'negation': False})
-
-    def p_query_pipe_subquery_not_type(self, p):
-        """query : NOT MARKED_BY COLON OPEN query CLOSE PIPE query"""
-        p[0] = p[8]
-        p[0].add_new_filter({'type': p[2], 'query': p[5], 'negation': True})
 
     def p_expr_brackets(self, p):
         """expr : OPEN expr CLOSE"""

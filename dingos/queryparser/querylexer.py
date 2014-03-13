@@ -34,10 +34,10 @@ class QueryLexer:
         "istartswith": "ISTARTSWITH",
         "endswith": "ENDSWITH",
         "iendswith": "IENDSWITH",
-        "filter": "FILTER",
-        "exclude": "EXCLUDE",
-        "fact_filter": "FACTFILTER",
-        "fact_exclude": "FACTEXCLUDE",
+        "object": "FILTER",
+        #"exclude": "EXCLUDE",
+        "fact": "FACTFILTER",
+        #"fact_exclude": "FACTEXCLUDE",
         "marked_by": "MARKED_BY",
         "range": "RANGE",
         "younger": "YOUNGER",
@@ -46,8 +46,20 @@ class QueryLexer:
     }
 
     # Tokens
-    tokens = ["ID", "AND", "OR", "OPEN", "CLOSE", "EQUALS", "VALUE", "PIPE", "FACTTERM", "COLON", "COMMA", "NOT",
-              "LOWERTHAN", "FORMATSIGN"] + list(reserved.values())
+    tokens = ["ID",
+              "AND",
+              "OR",
+              "OPEN",
+              "CLOSE",
+              "EQUALS",
+              "VALUE",
+              "PIPE",
+              "FACTTERM",
+              "COLON",
+              "COMMA",
+              "NOT",
+              "LOWERTHAN",
+              "FORMATSIGN"] + list(reserved.values())
 
     def t_ID(self, t):
         r"[a-zA-Z0-9_\.]+"

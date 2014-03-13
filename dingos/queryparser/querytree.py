@@ -74,35 +74,52 @@ class FilterCollection:
         query_mode = objects.model
 
         for oneFilter in self.filter_list:
+
             filter_type = oneFilter['type']
-            if filter_type in ['filter', 'exclude']:
-                filter_query = oneFilter['expression'].build_q(query_mode)
-                objects = getattr(objects, filter_type)(filter_query)
-                print "\t%s: %s" % (filter_type, filter_query)
-            elif filter_type in ['fact_filter','fact_exclude']:
-                fact_query = oneFilter['expression'].build_q(query_mode=self.INFO_OBJECT)
+            negation = oneFilter['negation']
+            expr_or_query = oneFilter['expr_or_query']
+
+            if filter_type in ['object']:
+                expression_repr = expr_or_query
+                q_obj = expression_repr.build_q_obj(query_mode)
+                if negation:
+                    objects = getattr(objects, 'exclude')(q_obj)
+                else:
+                    objects = getattr(objects, 'filter')(q_obj)
+                print "\t%s (negated: %s): %s" % (filter_type,negation,q_obj)
+
+            elif filter_type in ['fact']:
+                expression_repr = expr_or_query
+                print expression_repr
+                print expression_repr.__class__
+                fact_q_obj = expression_repr.build_q_obj(query_mode=self.INFO_OBJECT)
                 if query_mode == self.INFO_OBJECT:
                     q_key = 'facts__in'
                 elif query_mode == self.INFO_OBJECT_2_FACT:
                     q_key = 'pk__in'
-                print "Query %s %s" % (oneFilter['expression'], fact_query)
-                sub_query = InfoObject2Fact.objects.filter(fact_query)
-                q_query = Q(**{q_key: sub_query})
-                if filter_type == 'fact_filter':
-                    objects = getattr(objects, 'filter')(q_query)
+                print "Expression %s %s" % (expression_repr, fact_q_obj)
+                sub_query = InfoObject2Fact.objects.filter(fact_q_obj)
+                q_obj = Q(**{q_key: sub_query})
+                if negation:
+                    objects = getattr(objects, 'exclude')(q_obj)
                 else:
-                    objects = getattr(objects, 'exclude')(q_query)
-            elif filter_type in ['marked_by'] and 'negation' in oneFilter:
-                print "\t%s: negation=%s {" % (filter_type, oneFilter['negation'])
+                    objects = getattr(objects, 'filter')(q_obj)
+
+            elif filter_type in ['marked_by']:
+                query_repr = expr_or_query
+
+                print "\t%s: negation=%s {" % (filter_type, negation)
+                sub_query = query_repr.build_query(query_mode=self.INFO_OBJECT)
+
                 q_key = ''
                 if query_mode == self.INFO_OBJECT_2_FACT:
                     q_key += 'iobject__'
                 q_key += 'marking_thru__marking__in'
-                q_query = Q(**{q_key: oneFilter['query'].build_query(query_mode=self.INFO_OBJECT)})
-                if oneFilter['negation']:
-                    objects = getattr(objects, 'exclude')(q_query)
+                q_obj = Q(**{q_key: sub_query})
+                if negation:
+                    objects = getattr(objects, 'exclude')(q_obj)
                 else:
-                    objects = getattr(objects, 'filter')(q_query)
+                    objects = getattr(objects, 'filter')(q_obj)
                 print "\t}"
 
         return objects
@@ -153,12 +170,12 @@ class Expression:
         self.op = operator
         self.right = right
 
-    def build_q(self, query_mode=FilterCollection.INFO_OBJECT):
-        result = self.left.build_q(query_mode)
+    def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT):
+        result = self.left.build_q_obj(query_mode)
         if self.op == Operator.AND:
-            result = result & self.right.build_q(query_mode)
+            result = result & self.right.build_q_obj(query_mode)
         elif self.op == Operator.OR:
-            result = result | self.right.build_q(query_mode)
+            result = result | self.right.build_q_obj(query_mode)
         return result
 
     def __repr__(self):
@@ -173,7 +190,7 @@ class Condition:
         self.comparator = comparator
         self.value = value
 
-    def build_q(self, query_mode=FilterCollection.INFO_OBJECT):
+    def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT):
         value = self.value
         key = self.key
 
