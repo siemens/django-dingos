@@ -100,16 +100,25 @@ class FilterCollection:
 
 
 class FormattedFilterCollection:
-    def __init__(self, filter_collection, column_specs=[], format_args=[], format='default'):
+    def __init__(self, filter_collection, format_args=[], format='default'):
         self.filter_collection = filter_collection
-        self.format_args = format_args
         self.format = format
+
+        # Split format_args into col_specs and misc_args (contains additional output configuration)
+        col_specs = []
+        misc_args = {}
+        for format_arg in format_args:
+            if type(format_arg) is dict:
+                misc_args[format_arg['key']] = format_arg['value']
+            else:
+                col_specs.append(format_arg)
+        self.misc_args = misc_args
 
         # Reformat structure of column specifications
         split = {'headers': [], 'selected_fields': []}
-        if len(column_specs) is not 0:
-            (split['headers'], split['selected_fields']) = zip(*(spec.split(':') for spec in column_specs))
-        self.column_specs = split
+        if len(col_specs) is not 0:
+            (split['headers'], split['selected_fields']) = zip(*(spec.split(':') for spec in col_specs))
+        self.col_specs = split
 
 
 class Expression:

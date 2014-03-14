@@ -39,17 +39,20 @@ class QueryLexer:
         "marked_by": "MARKED_BY",
         "range": "RANGE",
         "younger": "YOUNGER",
-        "csv": "CSV"
+        "csv": "CSV",
+        "True": "TRUE",
+        "False": "FALSE"
     }
 
     # Tokens
-    tokens = ["FIELD", "AND", "OR", "OPEN", "CLOSE", "EQUALS", "VALUE", "PIPE", "FACTTERM", "COLON", "COMMA", "NOT",
-              "LOWERTHAN", "FORMATSIGN", "COLSPEC"] + list(reserved.values())
+    tokens = ["ID", "AND", "OR", "OPEN", "CLOSE", "EQUALS", "VALUE", "PIPE", "FACTTERM", "COLON", "COMMA", "NOT",
+              "LOWERTHAN", "FORMATSIGN"] + list(reserved.values())
 
-    def t_FIELD(self, t):
-        r"[a-zA-Z]([a-zA-Z0-9_])*(\.[a-zA-Z]([a-zA-Z0-9_])*)*"
+    def t_ID(self, t):
+        r"[a-zA-Z0-9_\.]+"
+        #r"[a-zA-Z]([a-zA-Z0-9_])*(\.[a-zA-Z]([a-zA-Z0-9_])*)*"
         # Check for reserved words
-        t.type = self.reserved.get(t.value, 'FIELD')
+        t.type = self.reserved.get(t.value, 'ID')
         return t
 
     t_AND = (r"\&\&")
@@ -57,7 +60,7 @@ class QueryLexer:
     t_OPEN = (r"\(")
     t_CLOSE = (r"\)")
     t_EQUALS = (r"\=")
-    t_VALUE = (r"(\"[^\"\:]*\"|\'[^\'\:]*\')")
+    t_VALUE = (r"(\"[^\"]*\"|\'[^\']*\')")
     t_PIPE = (r"\|")
     t_FACTTERM = (r"\[[^\/\@\]]+(\/[^\/\@\]]+)*(\@[^\]]*)?\]")
     t_COLON = (r"\:")
@@ -65,7 +68,6 @@ class QueryLexer:
     t_NOT = (r"\!")
     t_LOWERTHAN = (r"\<")
     t_FORMATSIGN = (r"\|F\>")
-    t_COLSPEC = (r"(\"[^\"\:]+\:[^\"\:]+\"|\'[^\'\:]+\:[^\'\:]+\')")
 
     # Ignore whitespaces
     t_ignore = "\t\n\r "

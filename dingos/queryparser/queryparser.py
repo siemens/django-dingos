@@ -42,9 +42,10 @@ class QueryParser:
         ======================
         request:    query
         request:    query FORMATSIGN CSV OPEN formatargs CLOSE
-        formatargs: colspecs
-        colspecs:   COLSPEC COMMA colspecs
-        colspecs:   COLSPEC
+        formatargs: formatarg COMMA formatargs
+        formatargs: formatarg
+        formatarg:  VALUE
+        formatarg:  ID EQUALS BOOL
         query:
         query:      expr
         query:      expr PIPE query
@@ -74,7 +75,7 @@ class QueryParser:
                     | RANGE
                     | YOUNGER
         value:      VALUE
-        key:        FIELD
+        key:        ID
                     | FACTTERM
     '''
 
@@ -84,32 +85,24 @@ class QueryParser:
 
     def p_request(self, p):
         """request : query FORMATSIGN CSV OPEN formatargs CLOSE"""
-        p[0] = FormattedFilterCollection(p[1], p[5]['colspecs'], p[5]['miscargs'], p[3])
+        p[0] = FormattedFilterCollection(p[1], p[5], p[3])
 
     def p_formatargs(self, p):
-        """formatargs : colspecs"""
-        p[0] = {'colspecs': p[1], 'miscargs': []}
-
-    def p_colspecs(self, p):
-        """colspecs : colspec COMMA colspecs"""
+        """formatargs : formatarg COMMA formatargs"""
         p[0] = [p[1]] + p[3]
 
-    def p_colspecs_one(self, p):
-        """colspecs : colspec"""
+    def p_formatargs_one(self, p):
+        """formatargs : formatarg"""
         p[0] = [p[1]]
 
-    def p_colspec(self, p):
-        """colspec : COLSPEC"""
-        # The quotes need to be removed here in the parser
-        # because the lexer cannot cover the following
-        # examples with regular expressions conveniently.
-        # Legal:
-        #     'fo"o' => fo"o
-        #     "b'ar" => f'oo
-        # Illegal:
-        #     'foo" => FAILURE!
-        #     "bar' => FAILURE!
+    def p_formatarg_value(self, p):
+        """formatarg : VALUE"""
         p[0] = p[1][1:-1]
+
+    def p_formatarg_miscarg(self, p):
+        """formatarg : ID EQUALS TRUE
+                        | ID EQUALS FALSE"""
+        p[0] = {'key': p[1], 'value': p[3]}
 
     def p_query_empty(self, p):
         """query :"""
@@ -203,6 +196,6 @@ class QueryParser:
         p[0] = p[1][1:-1]
 
     def p_key_field_factterm(self, p):
-        """key : FIELD
+        """key : ID
                 | FACTTERM"""
         p[0] = p[1]

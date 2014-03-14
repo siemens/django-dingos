@@ -544,13 +544,15 @@ class CustomInfoObjectSearchView(BasicListView):
                         writer = csv.writer(response)
 
                         # Filter selected columns for export
-                        col_specs = formatted_filter_collection.column_specs
+                        col_specs = formatted_filter_collection.col_specs
+                        misc_args = formatted_filter_collection.misc_args
 
                         # Headers
-                        headline = []
-                        for header in col_specs['headers']:
-                            headline.append(header)
-                        writer.writerow(headline)
+                        if 'include_column_names' not in misc_args.keys() or misc_args['include_column_names'] == 'True':
+                            headline = []
+                            for header in col_specs['headers']:
+                                headline.append(header)
+                            writer.writerow(headline)
 
                         # Data
                         for one in objects:
