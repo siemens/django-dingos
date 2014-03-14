@@ -25,6 +25,7 @@ from datetime import timedelta
 class QueryParserException(Exception):
     def __init__(self, msg):
         self.msg = msg
+
     def __str__(self):
         return self.msg
 
@@ -64,7 +65,7 @@ class FilterCollection:
         # this will lead to the query being executed in order to
         # find out whether it delivers no results ...
 
-        if isinstance(base,type(None)):
+        if isinstance(base, type(None)):
             objects = InfoObject.objects.all()
         else:
             objects = base
@@ -100,9 +101,9 @@ class FilterCollection:
 
 
 class FormattedFilterCollection:
-    def __init__(self, filter_collection, format_args=[], format='default'):
+    def __init__(self, filter_collection, format_args=[], output_format='default'):
         self.filter_collection = filter_collection
-        self.format = format
+        self.format = output_format
 
         # Split format_args into col_specs and misc_args (contains additional output configuration)
         col_specs = []
@@ -117,7 +118,15 @@ class FormattedFilterCollection:
         # Reformat structure of column specifications
         split = {'headers': [], 'selected_fields': []}
         if len(col_specs) is not 0:
-            (split['headers'], split['selected_fields']) = zip(*(spec.split(':') for spec in col_specs))
+            for spec in col_specs:
+                if ':' in spec:
+                    # Use user-defined header
+                    (header, selected_field) = spec.split(':')
+                else:
+                    # Use selected_field as header
+                    header = selected_field = spec
+                split['headers'].append(header)
+                split['selected_fields'].append(selected_field)
         self.col_specs = split
 
 
@@ -180,9 +189,9 @@ class Condition:
             q_operator = "__range"
             # Value format:
             # YYYY:mm:dd HH:MM:SS -- YYYY:mm:dd HH:MM:SS
-            (beginValue, endValue) = value.split("--")
-            begin = generate_date_value(beginValue.strip())
-            end = generate_date_value(endValue.strip())
+            (begin_value, end_value) = value.split("--")
+            begin = generate_date_value(begin_value.strip())
+            end = generate_date_value(end_value.strip())
             value = (begin, end)
         elif self.comparator == Comparator.YOUNGER:
             q_operator = "__gt"
@@ -190,7 +199,7 @@ class Condition:
             unit = value[-1].lower()
             try:
                 time_val = int(value[:-1])
-            except ValueError as ex:
+            except ValueError:
                 raise QueryParserException("Syntax error: Time span has to be in the format of \"[0-9]+[dhmDHM]\".")
             get_time_delta = {
                 'd': lambda number: timedelta(days=number),
@@ -200,7 +209,9 @@ class Condition:
             if unit in get_time_delta:
                 value = now() - get_time_delta[unit](time_val)
             else:
-                raise QueryParserException("Syntax error: Time unit \"%s\" is not supported. Supported time units are %s." % (unit, ", ".join(get_time_delta.keys())))
+                raise QueryParserException(
+                    "Syntax error: Time unit \"%s\" is not supported. Supported time units are %s."
+                    % (unit, ", ".join(get_time_delta.keys())))
 
         # Query
         q_query_prefix = ""
@@ -217,7 +228,8 @@ class Condition:
                 result = result & Q(**{q_query_prefix + "fact__fact_term__attribute__iregex": fact_attribute})
             else:
                 result = Q(**{q_query_prefix + "fact__fact_term__term__iregex": key})
-            result = result & self.enrich_q_with_not(Q(**{q_query_prefix + "fact__fact_values__value" + q_operator: value}))
+            result = result & self.enrich_q_with_not(
+                Q(**{q_query_prefix + "fact__fact_values__value" + q_operator: value}))
         else:
             # Field condition
             key = key.replace(".", "__")

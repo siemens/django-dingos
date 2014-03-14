@@ -548,6 +548,7 @@ class CustomInfoObjectSearchView(BasicListView):
                         misc_args = formatted_filter_collection.misc_args
 
                         # Headers
+                        # The first line (CSV) is reserved for column headers by default.
                         if 'include_column_names' not in misc_args.keys() or misc_args['include_column_names'] == 'True':
                             headline = []
                             for header in col_specs['headers']:
@@ -568,7 +569,7 @@ class CustomInfoObjectSearchView(BasicListView):
                     else:
                         raise ValueError('Unsupported output format')
 
-                except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError) as ex:
+                except (DataError, QueryParserException, FieldError, QueryLexerException, ValueError, TypeError) as ex:
                     messages.error(self.request, str(ex))
         return super(BasicListView, self).get(request, *args, **kwargs)
 
