@@ -413,7 +413,11 @@ class BasicDetailView(CommonContextMixin,
     breadcrumbs = (('Dingo',None),
                    ('View',None),
     )
-""
+
+    @property
+    def paginate_by(self):
+        return self.lookup_customization('dingos','view','pagination','lines',default=20)
+
 
 class BasicTemplateView(CommonContextMixin,
                        ViewMethodMixin,

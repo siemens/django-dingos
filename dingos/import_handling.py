@@ -71,7 +71,7 @@ class DingoImportHandling(object):
         uid_objects = self._DCM['InfoObject'].objects.filter(identifier__namespace__uri=namespace_uri,
                                                              identifier__uid=uid).order_by('-timestamp')
 
-        if uid_objects.count() >= 1:
+        if len(list(uid_objects)) >= 1:
             return uid_objects[0]
         else:
             return None

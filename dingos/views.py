@@ -48,7 +48,7 @@ from queryparser.querytree import FilterCollection, QueryParserException
 
 class InfoObjectList(BasicFilterView):
 
-    counting_paginator = True
+    counting_paginator = False
 
     exclude_internal_objects = True
 
