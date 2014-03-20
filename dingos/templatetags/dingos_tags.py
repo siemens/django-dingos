@@ -23,7 +23,9 @@ from django.core.urlresolvers import reverse
 
 from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
+
 from dingos.models import BlobStorage
+from dingos.core.utilities import get_from_django_obj
 
 from dingos import DINGOS_TEMPLATE_FAMILY
 
@@ -359,6 +361,11 @@ def show_InfoObjectField(oneObject, field):
     Outputs one field of an InfoObject.
     """
     result = oneObject
-    for oneField in field.split('.'):
-        result = getattr(result, oneField)
-    return result
+    fields = field.split('.')
+    result = get_from_django_obj(result,fields)
+    if isinstance(result,list):
+        return ', '.join(result)
+    else:
+        return result
+
+
