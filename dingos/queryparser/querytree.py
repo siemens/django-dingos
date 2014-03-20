@@ -15,7 +15,7 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 from django.db.models import Q
-from dingos.models import InfoObject, InfoObject2Fact
+from dingos.models import InfoObject, InfoObject2Fact, Fact
 from django.utils import timezone
 from django.utils.timezone import now
 from django.utils.dateparse import parse_datetime
@@ -86,18 +86,18 @@ class FilterCollection:
                     objects = getattr(objects, 'exclude')(q_obj)
                 else:
                     objects = getattr(objects, 'filter')(q_obj)
-                print "\t%s (negated: %s): %s" % (filter_type,negation,q_obj)
+                #print "\t%s (negated: %s): %s" % (filter_type,negation,q_obj)
 
             elif filter_type in ['fact']:
                 expression_repr = expr_or_query
-                print expression_repr
-                print expression_repr.__class__
+                #print expression_repr
+                #print expression_repr.__class__
                 fact_q_obj = expression_repr.build_q_obj(query_mode=self.INFO_OBJECT,filter_type=filter_type)
                 if query_mode == self.INFO_OBJECT:
-                    q_key = 'facts__in'
+                    q_key = 'fact_thru__in'
                 elif query_mode == self.INFO_OBJECT_2_FACT:
                     q_key = 'pk__in'
-                print "Expression %s %s" % (expression_repr, fact_q_obj)
+                #print "Expression %s %s" % (expression_repr, fact_q_obj)
                 sub_query = InfoObject2Fact.objects.filter(fact_q_obj)
                 q_obj = Q(**{q_key: sub_query})
                 if negation:
@@ -171,7 +171,7 @@ class Expression:
         self.right = right
 
     def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT,filter_type='object'):
-        result = self.left.build_q_obj(query_mode)
+        result = self.left.build_q_obj(query_mode=query_mode,filter_type=filter_type)
         if self.op == Operator.AND:
             result = result & self.right.build_q_obj(query_mode=query_mode,filter_type=filter_type)
         elif self.op == Operator.OR:
@@ -249,9 +249,18 @@ class Condition:
 
         # Query
         q_query_prefix = ""
+
+        if key[0] == '@' and key[1] == '[' and key[-1] == ']':
+            if filter_type != 'fact':
+                raise QueryParserException("@[attribute] <op> <value> shortcut is only allowed in fact-filters")
+            key = key[2:-1]
+            sub_q_obj = Q(**{"fact_term__attribute__iregex": key})
+            sub_q_obj = sub_q_obj & self.enrich_q_with_not(Q(**{"fact_values__value" + q_operator: value}))
+            return Q(attributes__fact__in=Fact.objects.filter(sub_q_obj))
+
         if key[0] == "[" and key[-1] == "]":
             if filter_type != 'fact':
-                raise QueryParserException("[key] <op> <value> shortcut is only allowed in fact-filters")
+                raise QueryParserException("[term] <op> <value> shortcut is only allowed in fact-filters")
             #if query_mode == FilterCollection.INFO_OBJECT:
             #    q_query_prefix = "fact_thru__"
 

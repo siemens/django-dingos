@@ -451,7 +451,7 @@ class BasicCustomQueryView(BasicListView):
     format = None
     distinct = True
 
-    query_base = InfoObject.objects.exclude(latest_of=None)
+    query_base = InfoObject.objects#.exclude(latest_of=None)
 
     prefetch_related = ('iobject_type',
                         'iobject_type__iobject_family',
