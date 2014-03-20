@@ -490,7 +490,8 @@ class InfoObjectJSONView(BasicDetailView):
 
 
 class CustomInfoObjectSearchView(BasicCustomQueryView):
-   pass
+    pass
+
 
 class CustomFactSearchView(BasicListView):
 
@@ -535,6 +536,7 @@ class CustomFactSearchView(BasicListView):
 
         return super(BasicListView, self).get(request, *args, **kwargs)
     counting_paginator = False
+
 
 class CustomFactSearchView(BasicCustomQueryView):
     counting_paginator = False

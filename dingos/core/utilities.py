@@ -141,7 +141,8 @@ def search_by_re_list(re_list, text):
             return m.groupdict()
     return None
 
-def get_from_django_obj(obj,fields):
+
+def get_from_django_obj(obj, fields):
     """
     A function for retrieving values from a django object
     with 'path' generated at runtime. For example, for
@@ -156,11 +157,11 @@ def get_from_django_obj(obj,fields):
     the cases required for its current usage in Dingos:
     it is likely to mess up in more general cases...
     """
-    if fields == []:
+    if not fields:
         return str(obj)
     if 'Manager' in "%s" % obj.__class__:
-        return (map(lambda o: get_from_django_obj(o,fields[1:]),obj.all()))
+        return (map(lambda o: get_from_django_obj(o, fields[1:]), obj.all()))
     else:
         print "Felder"
         print (fields)
-        return get_from_django_obj(getattr(obj,fields[0]),fields[1:])
+        return get_from_django_obj(getattr(obj, fields[0]), fields[1:])

@@ -351,3 +351,14 @@ def show_InfoObjectIDData(iobject, show_hyperlink=False,show_title=False):
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectMarkingsListDisplay.html'% DINGOS_TEMPLATE_FAMILY)
 def show_InfoObjectMarkings(iobject):
     return {'object': iobject}
+
+
+@register.simple_tag
+def show_InfoObjectField(oneObject, field):
+    """
+    Outputs one field of an InfoObject.
+    """
+    result = oneObject
+    for oneField in field.split('.'):
+        result = getattr(result, oneField)
+    return result

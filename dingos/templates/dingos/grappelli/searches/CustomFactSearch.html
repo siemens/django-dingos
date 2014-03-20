@@ -39,34 +39,32 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endblock %}
 
 {% block objects %}
-    <div class="grp-module grp-changelist-results">
-        <table id="result_list" cellspacing="0" class="grp-sortable">
-            <thead>
-                <tr>
-                    <th scope="col">IO-Type</th>
-                    <th scope="col">Fact Term</th>
-                    <th scope="col">Value</th>
-                    <th scope="col"></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for enrich2fact in object_list %}
-                    <tr class="grp-row grp-row-{% cycle 'even' 'odd' %}">
-                        <td>
-                            {{enrich2fact.iobject.iobject_type.name}}
-                        </td>
-                        <td>
-                            {{ enrich2fact.fact.fact_term | insert_wbr}}
-                        </td>
-                        <td>
-                            {{ enrich2fact.fact.fact_values.all| join:", " | insert_wbr }}
-                        </td>
-                        <td>
-                            <a href="{% url "url.dingos.search.fact.simple" %}?fact__fact_term__term={{enrich2fact.fact.fact_term | urlencode}}&fact__fact_values__value={{ enrich2fact.fact.fact_values.all.0 | urlencode}}">View all</a>
-                        </td>
+    {% if object_list %}
+        <div class="grp-module grp-changelist-results">
+            <table id="result_list" cellspacing="0" class="grp-sortable">
+                <thead>
+                    <tr>
+                        {% for col_header in col_headers %}
+                            <th scope="col">{{ col_header }}</th>
+                        {% endfor %}
+                        <th scope="col"></th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    {% for enrich2fact in object_list %}
+                        <tr class="grp-row grp-row-{% cycle 'even' 'odd' %}">
+                            {% for selected_col in selected_cols %}
+                                <td>
+                                    {% show_InfoObjectField enrich2fact selected_col %}
+                                </td>
+                            {% endfor %}
+                            <td>
+                                <a href="{% url "url.dingos.search.fact.simple" %}?fact__fact_term__term={{enrich2fact.fact.fact_term | urlencode}}&fact__fact_values__value={{ enrich2fact.fact.fact_values.all.0 | urlencode}}">View all</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {%  endif %}
 {% endblock %}

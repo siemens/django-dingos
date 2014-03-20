@@ -438,7 +438,6 @@ class BasicTemplateView(CommonContextMixin,
     )
 
 
-
 class BasicCustomQueryView(BasicListView):
 
     counting_paginator = False
@@ -474,6 +473,8 @@ class BasicCustomQueryView(BasicListView):
         """
         context = super(BasicCustomQueryView, self).get_context_data(**kwargs)
         context['form'] = self.form
+        context['col_headers'] = self.col_headers
+        context['selected_cols'] = self.selected_cols
         return context
 
     def get(self, request, *args, **kwargs):
@@ -512,29 +513,30 @@ class BasicCustomQueryView(BasicListView):
                         else:
                             raise TypeError("'distinct' must either be True or a tuple of field names.")
 
-                    if self.prefetch_related:
-                        if isinstance(self.prefetch_related,tuple):
-                            objects = objects.prefetch_related(*list(self.prefetch_related))
-                        else:
-                            raise TypeError("'prefetch_related' must either be True or a tuple of field names.")
+                    #if self.prefetch_related:
+                    #    if isinstance(self.prefetch_related,tuple):
+                    #        objects = objects.prefetch_related(*list(self.prefetch_related))
+                    #    else:
+                    #        raise TypeError("'prefetch_related' must either be True or a tuple of field names.")
 
                     self.queryset = objects
 
                     # Output format
                     result_format = formatted_filter_collection.format
 
-                    if result_format == 'default':
+                    # Filter selected columns for export
+                    col_specs = formatted_filter_collection.col_specs
+                    misc_args = formatted_filter_collection.misc_args
 
+                    if result_format == 'default':
+                        self.col_headers = ["IO-Type", "Fact Term", "Value"]
+                        self.selected_cols = ["iobject.iobject_type.name", "fact.fact_term", "fact.fact_values.all"]
                         return super(BasicListView, self).get(request, *args, **kwargs)
                     elif result_format == 'csv':
                         p = self.paginator_class(self.queryset,self.paginate_by_value)
                         response = HttpResponse(content_type='text') # '/csv')
                         #response['Content-Disposition'] = 'attachment; filename="result.csv"'
                         writer = csv.writer(response)
-
-                        # Filter selected columns for export
-                        col_specs = formatted_filter_collection.col_specs
-                        misc_args = formatted_filter_collection.misc_args
 
                         to_csv(p.page(self.page_to_show).object_list,
                                writer,
@@ -544,8 +546,8 @@ class BasicCustomQueryView(BasicListView):
 
                         return response
                     elif result_format == 'table':
-                        # TODO Replace the following default behaviour with a more flexible template which allows to specify columns
-                        self.template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
+                        self.col_headers = col_specs['headers']
+                        self.selected_cols = col_specs['selected_fields']
                         return super(BasicListView, self).get(request, *args, **kwargs)
                     else:
                         raise ValueError('Unsupported output format')
