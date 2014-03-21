@@ -134,14 +134,18 @@ class CommonContextMixin(ContextMixin):
     context is enriched with the contents expected by all Dingos
     templates.
     """
+
+    object_list_len = None
+
     def get_context_data(self, **kwargs):
 
         context = super(CommonContextMixin, self).get_context_data(**kwargs)
 
         context['title'] = self.title if hasattr(self, 'title') else '[TITLE MISSING]'
 
-        if 'object_list' in context:
-            context['object_list_len'] = len(list(context['object_list']))
+        if 'object_list' in context and self.object_list_len == None:
+            self.object_list_len = len(list(context['object_list']))
+        context['object_list_len'] = self.object_list_len
 
         user_data_dict = self.get_user_data()
 
@@ -450,7 +454,7 @@ class BasicCustomQueryView(BasicListView):
     format = None
     distinct = True
 
-    query_base = InfoObject.objects#.exclude(latest_of=None)
+    query_base = InfoObject.objects.exclude(latest_of=None)
 
     prefetch_related = ('iobject_type',
                         'iobject_type__iobject_family',
@@ -460,6 +464,10 @@ class BasicCustomQueryView(BasicListView):
                         'identifier')
 
     paginate_by_value = 5
+
+    col_headers = ["IO-Type", "Fact Term", "Value"]
+    selected_cols = ["iobject.iobject_type.name", "fact.fact_term", "fact.fact_values.all"]
+    
 
     @property
     def paginate_by(self):
@@ -503,21 +511,21 @@ class BasicCustomQueryView(BasicListView):
                     objects = self.query_base.all()
                     objects = filter_collection.build_query(base=objects)
 
-                    objects = objects.distinct()
+                    #objects = objects.distinct()
 
                     if self.distinct:
                         if self.distinct == True:
                             objects = objects.distinct()
                         elif isinstance(self.distinct,tuple):
-                            objects = objects.distinct(*list(self.distinct))
+                            objects = objects.order_by(*list(self.distinct)).distinct(*list(self.distinct))
                         else:
                             raise TypeError("'distinct' must either be True or a tuple of field names.")
 
-                    #if self.prefetch_related:
-                    #    if isinstance(self.prefetch_related,tuple):
-                    #        objects = objects.prefetch_related(*list(self.prefetch_related))
-                    #    else:
-                    #        raise TypeError("'prefetch_related' must either be True or a tuple of field names.")
+                    if self.prefetch_related:
+                        if isinstance(self.prefetch_related,tuple):
+                            objects = objects.prefetch_related(*list(self.prefetch_related))
+                        else:
+                            raise TypeError("'prefetch_related' must either be True or a tuple of field names.")
 
                     self.queryset = objects
 
@@ -529,8 +537,7 @@ class BasicCustomQueryView(BasicListView):
                     misc_args = formatted_filter_collection.misc_args
 
                     if result_format == 'default':
-                        self.col_headers = ["IO-Type", "Fact Term", "Value"]
-                        self.selected_cols = ["iobject.iobject_type.name", "fact.fact_term", "fact.fact_values.all"]
+
                         return super(BasicListView, self).get(request, *args, **kwargs)
                     elif result_format == 'csv':
                         p = self.paginator_class(self.queryset,self.paginate_by_value)

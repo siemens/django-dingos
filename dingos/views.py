@@ -501,6 +501,8 @@ class CustomFactSearchView(BasicListView):
     title = 'Custom Fact Search'
     form = None
 
+    prefetch_related = ("iobject__iobject_type", "fact__fact_term", "fact__fact_values")
+
     def get_context_data(self, **kwargs):
         context = super(CustomFactSearchView, self).get_context_data(**kwargs)
         context['form'] = self.form
@@ -544,11 +546,13 @@ class CustomFactSearchView(BasicCustomQueryView):
     template_name = 'dingos/%s/searches/CustomFactSearch.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Custom Fact Search'
 
-    distinct = True
+    distinct = ('iobject__iobject_type','fact__fact_term','fact__fact_values')
 
     query_base = InfoObject2Fact.objects
 
-    prefetch_related = ('fact__fact_term',
+    prefetch_related = ('iobject',
+                        'iobject__iobject_type',
+                        'fact__fact_term',
                         'fact__fact_values',
                         'fact__fact_values__fact_data_type',
                         'fact__value_iobject_id',

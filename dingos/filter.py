@@ -227,7 +227,11 @@ class FactTermValueFilter(django_filters.FilterSet):
                                                          label='Value contains')
 
     fact__fact_term__term = django_filters.CharFilter(lookup_type='regex',
-                                                     label='Fact term matches')
+                                                     label='Fact term (w/o attribute) matches')
+
+    fact__fact_term__attribute = django_filters.CharFilter(lookup_type='regex',
+                                                     label='Attribute matches')
+
 
     iobject__name = django_filters.CharFilter(lookup_type='icontains',
                                                      label='Object name contains')
@@ -284,7 +288,7 @@ class FactTermValueFilter(django_filters.FilterSet):
         #order_by = create_order_keyword_list(['iobject__iobject_type__name','iobject__iobject_type','fact__fact_term__term', 'fact__fact_values__value'])
         model = InfoObject2Fact
 
-        fields = ['fact__fact_term__term','fact__fact_values__value','iobject__name','iobject__timestamp','iobject__create_timestamp',
+        fields = ['fact__fact_term__term','fact__fact_term__attribute','fact__fact_values__value','iobject__name','iobject__timestamp','iobject__create_timestamp',
                   'iobject__identifier__namespace','iobject__iobject_type','iobject__iobject_type__name','iobject__marking_thru__marking__identifier__uid']
 
 
@@ -294,7 +298,7 @@ class OrderedFactTermValueFilter(FactTermValueFilter):
         order_by = create_order_keyword_list(['iobject__iobject_type__name','iobject__iobject_type','fact__fact_term__term', 'fact__fact_values__value'])
         model = InfoObject2Fact
 
-        fields = ['fact__fact_term__term','fact__fact_values__value','iobject__name','iobject__timestamp','iobject__create_timestamp',
+        fields = ['fact__fact_term__term','fact__fact_term__attribute','fact__fact_values__value','iobject__name','iobject__timestamp','iobject__create_timestamp',
                   'iobject__identifier__namespace','iobject__iobject_type','iobject__iobject_type__name','iobject__marking_thru__marking__identifier__uid']
 
 
