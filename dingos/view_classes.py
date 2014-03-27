@@ -17,9 +17,12 @@
 
 import collections
 import copy
+import json
+
+from django import http
 
 from django.views.generic.base import ContextMixin
-from django.views.generic import DetailView, ListView, TemplateView
+from django.views.generic import DetailView, ListView, TemplateView, View
 
 from django.core.paginator import Paginator
 
@@ -404,4 +407,37 @@ class BasicTemplateView(CommonContextMixin,
                    ('View',None),
     )
 
+
+class BasicJSONView(CommonContextMixin,
+                    ViewMethodMixin,
+                    LoginRequiredMixin,
+                    View):
+
+    login_url = "/admin"
+
+    indent = 2
+
+    @property
+    def returned_obj(self):
+        return {"This":"That"}
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
+    def render_to_response(self, context):
+        returned_obj = self.returned_obj
+        if isinstance(returned_obj,basestring):
+            json_string = returned_obj
+        else:
+            json_string = json.dumps(returned_obj,indent=self.indent)
+
+        return self._get_json_response(json_string)
+
+
+
+    def _get_json_response(self, content, **httpresponse_kwargs):
+         return http.HttpResponse(content,
+                                  content_type='application/json',
+                                  **httpresponse_kwargs)
 
