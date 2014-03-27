@@ -285,6 +285,18 @@ class DingoImportCommand(BaseCommand):
                     default=None,
                     dest='identifier_ns_uri',
                     help='URI of namespace used to qualify the identifiers of the created information objects.'),
+        make_option('-a', '--allowed_identifier_ns_uri',
+                    action='append',
+                    default=[],
+                    dest='allowed_identifier_ns_uris',
+                    help='Namespace URI for which import of identifiers is allowed. Specify one or more '
+                         'such URIs (with repeated arguments); if none are specified, every namespace is allowed.'),
+        make_option('-s', '--substitute_unallowed_namespaces',
+                    action='store_true',
+                    default=False,
+                    dest='substitute_unallowed_namespaces',
+                    help='Set this flag to carry out substitution of identifier namespaces that are not in list of'
+                         ' allowed namespaces.'),
         make_option('-d','--destination_path',
                     action='store',
                     default=None,
@@ -293,9 +305,10 @@ class DingoImportCommand(BaseCommand):
     )
 
 
-    Importer = Generic_XML_Import(allowed_identifier_ns_uris=[DINGOS_DEFAULT_ID_NAMESPACE_URI],
-                                  default_identifier_ns_uri='this.is.a.test',
-                                  substitute_unallowed_namespaces=True)
+
+    Importer_Class = Generic_XML_Import
+
+
 
     # Use below for testing namespace substitution
     #Importer = Generic_XML_Import(allowed_identifier_ns_uris=[DINGOS_DEFAULT_ID_NAMESPACE_URI],
@@ -307,11 +320,7 @@ class DingoImportCommand(BaseCommand):
 
     def __init__(self, *args, **kwargs):
         self.logger = logger
-        self.xml_import_function = kwargs.get('import_function', None)
-        try:
-            del (kwargs['import_function'])
-        except:
-            pass
+
         super(DingoImportCommand,self).__init__(*args,**kwargs)
 
     def create_import_marking(self, args, options):
@@ -386,6 +395,11 @@ class DingoImportCommand(BaseCommand):
         # DingoImport command is able to create a dictionary
         # structure for a marking with object resulting
         # from the import command will be marked.
+
+        self.Importer = self.Importer_Class(allowed_identifier_ns_uris=options['allowed_identifier_ns_uris'],
+                                            default_identifier_ns_uri=options['identifier_ns_uri'],
+                                            substitute_unallowed_namespaces=options['substitute_unallowed_namespaces'])
+
 
         marking = self.create_import_marking(args,options)
 
