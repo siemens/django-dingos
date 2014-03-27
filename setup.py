@@ -41,7 +41,8 @@ setup(
                       'django-braces>=1.0.0',
                       'lxml>=3.2.1',
                       'django-filter>=0.7',
-                      'python-dateutil>=2.2'
+                      'python-dateutil>=2.2',
+                      'ply>=3.4'
     ],
     license="GPLv2+",
     zip_safe=False,
