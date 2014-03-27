@@ -28,11 +28,12 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-from dingos.core.decorators import print_arguments
 
 from dingos.core.datastructures import dict2DingoObjDict
 from dingos import *
 from dingos.import_handling import DingoImportHandling
+
+from dingos.core.decorators import print_arguments
 
 from dingos.models import InfoObject
 
@@ -63,8 +64,23 @@ class Generic_XML_Import:
         self.toplevel_attrs = {}
         self.namespace_dict = {}
 
+        if 'default_identifier_ns_uri' in kwargs:
+            self.default_identifier_ns_uri = kwargs['default_identifier_ns_uri']
+        else:
+            self.default_identifier_ns_uri = DINGOS_DEFAULT_ID_NAMESPACE_URI
 
-    #
+        if 'allowed_identifier_ns_uris' in kwargs:
+            self.allowed_identifier_ns_uris = kwargs['allowed_identifier_ns_uris']
+
+        else:
+            self.allowed_identifier_ns_uris = None
+
+        if 'substitute_unallowed_namespaces' in kwargs:
+            self.substitute_unallowed_namespaces = kwargs['substitute_unallowed_namespaces']
+
+        else:
+            self.substitute_unallowed_namespaces = False
+
     # Now, we define functions for the hooks provided to us
     # by the DINGO xml-import. For the generic import
     # there is almost nothing to be done.
@@ -96,8 +112,6 @@ class Generic_XML_Import:
         """
 
         return False
-
-
     def ft_handler_list(self):
         """
         The fact-term handler list consists of a pairs of predicates
@@ -144,9 +158,8 @@ class Generic_XML_Import:
         if not markings:
             markings = []
         if not identifier_ns_uri:
-            identifier_ns_uri = DINGOS_DEFAULT_ID_NAMESPACE_URI
+            identifier_ns_uri = self.default_identifier_ns_uri
 
-        self.__init__()
 
         # Carry out generic XML import
         import_result = DingoImporter.xml_import(xml_fname=filepath,
@@ -180,6 +193,7 @@ class Generic_XML_Import:
 
         # Create info object
 
+
         DingoImporter.create_iobject(iobject_family_name=iobject_family_name,
                                      iobject_family_revision_name=iobject_family_revision_name,
                                      iobject_type_name=iobject_type_name,
@@ -194,7 +208,10 @@ class Generic_XML_Import:
                                      config_hooks={'special_ft_handler': self.ft_handler_list(),
                                                    'datatype_extractor': self.datatype_extractor},
                                      namespace_dict=self.namespace_dict,
-        )
+                                     default_identifier_ns_uri=self.default_identifier_ns_uri,
+                                     allowed_identifier_ns_uris=self.allowed_identifier_ns_uris,
+                                     substitute_unallowed_namespaces=self.substitute_unallowed_namespaces,
+                                     )
 
 
 class DingoImportCommand(BaseCommand):
@@ -276,7 +293,16 @@ class DingoImportCommand(BaseCommand):
     )
 
 
-    Importer = Generic_XML_Import()
+    Importer = Generic_XML_Import(allowed_identifier_ns_uris=[DINGOS_DEFAULT_ID_NAMESPACE_URI],
+                                  default_identifier_ns_uri='this.is.a.test',
+                                  substitute_unallowed_namespaces=True)
+
+    # Use below for testing namespace substitution
+    #Importer = Generic_XML_Import(allowed_identifier_ns_uris=[DINGOS_DEFAULT_ID_NAMESPACE_URI],
+    #                              default_identifier_ns_uri='this.is.a.test',
+    #                              substitute_unallowed_namespaces=True)
+
+
 
 
     def __init__(self, *args, **kwargs):

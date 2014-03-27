@@ -34,6 +34,9 @@ from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.core.files.base import ContentFile
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.http import urlquote
+
+
 
 import dingos.read_settings
 
@@ -268,6 +271,8 @@ class IdentifierNameSpace(DingoModel):
 
     description = models.TextField(blank=True)
 
+    is_substitution = models.BooleanField(default=False)
+
     def __unicode__(self):
         if self.name:
             return "%s (%s)" % (self.name, self.uri)
@@ -282,6 +287,64 @@ class IdentifierNameSpace(DingoModel):
 
 
 dingos_class_map["IdentifierNameSpace"] = IdentifierNameSpace
+
+
+class IdentifierNameSpaceSubstitutionMap(DingoModel):
+    """
+    There may be restrictions on the namespaces in which InfoObjects
+    may be created by a certain importer. If there is a violation of such a restriction,
+    we want to be able to carry out the import anyhow, but move the newly created object
+    to a substition namespace, for which we track the importer's (default) namespace as well as
+    the namespace that was desired by the importer (but not allowed due to existing restrictions.)
+    """
+
+    importer_namespace = models.ForeignKey(IdentifierNameSpace,
+                                           related_name='substituted_namespaces_thru')
+
+    desired_namespace = models.ForeignKey(IdentifierNameSpace,
+                                          related_name='importer_namespaces_thru')
+
+    substitution_namespace = models.ForeignKey(IdentifierNameSpace,
+                                               related_name='substitution_map')
+
+    class Meta:
+        unique_together = ('importer_namespace', 'desired_namespace', 'substitution_namespace')
+
+
+    def __unicode__(self):
+        return "%s imported by %s" % (self.desired_namespace,self.importer_namespace)
+
+    @staticmethod
+    def substitute_namespace(importer_ns_uri,desired_ns_uri):
+        try:
+            substitution_namespace_map = dingos_class_map['IdentifierNameSpaceSubstitutionMap'].objects.get(importer_namespace__uri=importer_ns_uri,
+                                                                                                            desired_namespace__uri=desired_ns_uri)
+            return substitution_namespace_map.substitution_namespace
+
+        except ObjectDoesNotExist:
+            substitution_namespace_uri = "%s?target=%s" % (importer_ns_uri,urlquote(desired_ns_uri))
+            # Make sure that we really create a new namespace, not by chance
+            # taking an already existing namespace that is *not* a substitution namespace
+            counter =''
+            created = False
+            while not created:
+                substitution_namespace_uri = "%s?target=%s%s" % (importer_ns_uri,urlquote(desired_ns_uri),counter)
+                substitution_namespace,created = dingos_class_map['IdentifierNameSpace'].objects.get_or_create(uri=substitution_namespace_uri,
+                                                                                                               defaults = {'is_substitution':True})
+                if not counter:
+                    counter = 1
+                else:
+                    counter += 1
+            importer_namespace,created = dingos_class_map['IdentifierNameSpace'].objects.get_or_create(uri=importer_ns_uri)
+            desired_namespace,created = dingos_class_map['IdentifierNameSpace'].objects.get_or_create(uri=desired_ns_uri)
+
+            dingos_class_map['IdentifierNameSpaceSubstitutionMap'].objects.get_or_create(importer_namespace=importer_namespace,
+                                                                                         desired_namespace=desired_namespace,
+                                                                                         substitution_namespace=substitution_namespace)
+            return substitution_namespace
+
+dingos_class_map["IdentifierNameSpaceSubstitutionMap"] = IdentifierNameSpaceSubstitutionMap
+
 
 
 
