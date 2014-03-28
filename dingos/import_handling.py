@@ -31,7 +31,7 @@ from dingos.core.datastructures import DingoObjDict
 from core.xml_utils import extract_attributes
 from dingos.models import dingos_class_map, get_or_create_iobject, Marking2X
 
-
+#from dingos.core.decorators import print_arguments
 
 import pprint
 
@@ -79,7 +79,7 @@ class DingoImportHandling(object):
             return None
 
 
-
+    #@print_arguments()
     def create_iobject(self,
                        identifier_ns_uri=None,
                        uid=None,
