@@ -162,6 +162,6 @@ def get_from_django_obj(obj, fields):
     if 'Manager' in "%s" % obj.__class__:
         return (map(lambda o: get_from_django_obj(o, fields[1:]), obj.all()))
     else:
-        print "Felder"
-        print (fields)
+        #print "Felder"
+        #print (fields)
         return get_from_django_obj(getattr(obj, fields[0]), fields[1:])

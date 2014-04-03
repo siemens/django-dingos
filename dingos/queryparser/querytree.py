@@ -108,7 +108,7 @@ class FilterCollection:
             elif filter_type in ['marked_by']:
                 query_repr = expr_or_query
 
-                print "\t%s: negation=%s {" % (filter_type, negation)
+                #print "\t%s: negation=%s {" % (filter_type, negation)
                 sub_query = query_repr.build_query(base=self.INFO_OBJECT.objects.exclude(latest_of=None))
 
                 q_key = ''
@@ -120,7 +120,7 @@ class FilterCollection:
                     objects = getattr(objects, 'exclude')(q_obj)
                 else:
                     objects = getattr(objects, 'filter')(q_obj)
-                print "\t}"
+                #print "\t}"
 
         return objects
 

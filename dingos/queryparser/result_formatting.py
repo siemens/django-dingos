@@ -17,11 +17,12 @@
 
 from dingos.core.utilities import get_from_django_obj
 
-def to_csv(objects,io_obj,headers,fields,**kwargs):
 
-    def recursive_join(xxs,join_string):
-        if isinstance(xxs,list):
-            return join_string.join(map(lambda yys: recursive_join(yys,join_string),xxs))
+def to_csv(objects, io_obj, headers, fields, **kwargs):
+
+    def recursive_join(xxs, join_string):
+        if isinstance(xxs, list):
+            return join_string.join(map(lambda yys: recursive_join(yys, join_string), xxs))
         else:
             return str(xxs)
 
@@ -33,30 +34,29 @@ def to_csv(objects,io_obj,headers,fields,**kwargs):
         io_obj.writerow(headline)
 
     # Data
-    for object in objects:
+    for one in objects:
         record = []
         multivalue_columns = []
         column_counter = 0
         for field_string in fields:
             field_components = field_string.split('.')
-            result = get_from_django_obj(object,field_components)
-            if isinstance(result,list):
+            result = get_from_django_obj(one, field_components)
+            if isinstance(result, list):
                 if len(result) > 1:
-                    multivalue_columns.append(counter)
+                    multivalue_columns.append(column_counter)
 
             record.append(result)
 
-
         if 'flatten' not in kwargs.keys() or kwargs['flatten'] != 'False':
-            finished_columns =  []
+            finished_columns = []
             for column in record:
-                finished_columns.append(recursive_join(column,kwargs.get('flatten',';')))
+                finished_columns.append(recursive_join(column, kwargs.get('flatten', ';')))
             io_obj.writerow(finished_columns)
         else:
             if len(multivalue_columns) > 1:
-                raise TypeError, "Cannot flatten line in result because there is more than one multivalued column"
+                raise TypeError("Cannot flatten line in result because there is more than one multivalued column")
             else:
                 #TODO: add flattening
                 resulting_lines = []
-                finished_columns =  []
+                finished_columns = []
                 pass

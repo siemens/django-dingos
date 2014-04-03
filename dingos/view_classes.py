@@ -15,24 +15,17 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import collections
-import copy
-
-import StringIO
 import csv
 
 from django.views.generic.base import ContextMixin
 from django.views.generic import DetailView, ListView, TemplateView
 
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage
+
+from django.core.paginator import PageNotAnInteger
 
 
 from django.db import DataError
-from django.core.exceptions import FieldError
-
-
-
-
 
 
 from  django.core import urlresolvers
@@ -70,8 +63,6 @@ from dingos.core.utilities import get_dict
 from dingos.models import InfoObject
 
 from queryparser.queryparser import QueryParser
-from queryparser.querylexer import QueryLexerException
-from queryparser.querytree import FilterCollection, QueryParserException
 
 
 class UncountingPaginator(Paginator):
@@ -443,6 +434,7 @@ class BasicTemplateView(CommonContextMixin,
 
 
 class BasicCustomQueryView(BasicListView):
+    page_to_show = 1
 
     counting_paginator = False
 
@@ -465,14 +457,12 @@ class BasicCustomQueryView(BasicListView):
 
     paginate_by_value = 5
 
-    col_headers = ["IO-Type", "Fact Term", "Value"]
-    selected_cols = ["iobject.iobject_type.name", "fact.fact_term", "fact.fact_values.all"]
-    
+    col_headers = ["Identifier", "Object Timestamp", "Import Timestamp", "Name", "Object Type", "Family"]
+    selected_cols = ["identifier", "timestamp", "create_timestamp", "name", "iobject_type.name", "iobject_family.name"]
 
     @property
     def paginate_by(self):
         return self.paginate_by_value
-
 
     def get_context_data(self, **kwargs):
         """
@@ -500,8 +490,6 @@ class BasicCustomQueryView(BasicListView):
                     self.paginate_by_value = int(self.form.cleaned_data['paginate_by'])
                     if self.form.cleaned_data['page']:
                         self.page_to_show = int(self.form.cleaned_data['page'])
-                    else:
-                        self.page_to_show = 1
 
                     # Generate and execute query
                     formatted_filter_collection = parser.parse(str(query))
@@ -511,18 +499,16 @@ class BasicCustomQueryView(BasicListView):
                     objects = self.query_base.all()
                     objects = filter_collection.build_query(base=objects)
 
-                    #objects = objects.distinct()
-
                     if self.distinct:
-                        if self.distinct == True:
-                            objects = objects.distinct()
-                        elif isinstance(self.distinct,tuple):
+                        if isinstance(self.distinct, tuple):
                             objects = objects.order_by(*list(self.distinct)).distinct(*list(self.distinct))
+                        elif self.distinct:
+                            objects = objects.distinct()
                         else:
                             raise TypeError("'distinct' must either be True or a tuple of field names.")
 
                     if self.prefetch_related:
-                        if isinstance(self.prefetch_related,tuple):
+                        if isinstance(self.prefetch_related, tuple):
                             objects = objects.prefetch_related(*list(self.prefetch_related))
                         else:
                             raise TypeError("'prefetch_related' must either be True or a tuple of field names.")
@@ -536,11 +522,16 @@ class BasicCustomQueryView(BasicListView):
                     col_specs = formatted_filter_collection.col_specs
                     misc_args = formatted_filter_collection.misc_args
 
-                    if result_format == 'default':
+                    # Prefetch displayed columns (they are needed in any case)
+                    self.prefetch_related = self.prefetch_related + tuple(col_specs['selected_fields'])
+                    # Remove duplicate items
+                    self.prefetch_related = tuple(set(self.prefetch_related))
 
+                    if result_format == 'default':
+                        # Pretty useless case for live system but useful for tests
                         return super(BasicListView, self).get(request, *args, **kwargs)
                     elif result_format == 'csv':
-                        p = self.paginator_class(self.queryset,self.paginate_by_value)
+                        p = self.paginator_class(self.queryset, self.paginate_by_value)
                         response = HttpResponse(content_type='text') # '/csv')
                         #response['Content-Disposition'] = 'attachment; filename="result.csv"'
                         writer = csv.writer(response)
@@ -559,7 +550,7 @@ class BasicCustomQueryView(BasicListView):
                     else:
                         raise ValueError('Unsupported output format')
 
-                except DataError as ex: #(DataError, QueryParserException, FieldError, QueryLexerException, ValueError, TypeError) as ex:
+                except DataError as ex:
                     messages.error(self.request, str(ex))
         return super(BasicListView, self).get(request, *args, **kwargs)
 

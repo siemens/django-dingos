@@ -493,7 +493,8 @@ class CustomInfoObjectSearchView(BasicCustomQueryView):
     pass
 
 
-class CustomFactSearchView(BasicListView):
+'''class CustomFactSearchView(BasicListView):
+    pass
 
     counting_paginator = False
 
@@ -537,7 +538,7 @@ class CustomFactSearchView(BasicListView):
                     messages.error(self.request, str(ex))
 
         return super(BasicListView, self).get(request, *args, **kwargs)
-    counting_paginator = False
+    counting_paginator = False'''
 
 
 class CustomFactSearchView(BasicCustomQueryView):
@@ -546,9 +547,12 @@ class CustomFactSearchView(BasicCustomQueryView):
     template_name = 'dingos/%s/searches/CustomFactSearch.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Custom Fact Search'
 
-    distinct = ('iobject__iobject_type','fact__fact_term','fact__fact_values')
+    distinct = ('iobject__iobject_type', 'fact__fact_term', 'fact__fact_values')
 
     query_base = InfoObject2Fact.objects
+
+    col_headers = ["IO-Type", "Fact Term", "Value"]
+    selected_cols = ["iobject.iobject_type.name", "fact.fact_term", "fact.fact_values.all"]
 
     prefetch_related = ('iobject',
                         'iobject__iobject_type',
