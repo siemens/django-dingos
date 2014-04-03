@@ -15,6 +15,7 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import re
 
 def listify(x):
     """
@@ -165,3 +166,18 @@ def get_from_django_obj(obj, fields):
         #print "Felder"
         #print (fields)
         return get_from_django_obj(getattr(obj, fields[0]), fields[1:])
+
+
+def replace_identifier_aliases(key):
+    # Replacement format: "<regex_alias>": "<replacement>"
+    replacements = {"^term": "fact.fact_term.term",
+                    "^attribute": "fact.fact_term.attribute",
+                    "^type": "iobject_type"}
+
+    # Replacement
+    result = key
+    for alias, replacement in replacements.items():
+        result = re.sub(alias, replacement, result)
+
+    return result
+

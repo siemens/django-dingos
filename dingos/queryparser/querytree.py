@@ -20,6 +20,7 @@ from django.utils import timezone
 from django.utils.timezone import now
 from django.utils.dateparse import parse_datetime
 from datetime import timedelta
+from dingos.core.utilities import replace_identifier_aliases
 
 
 class QueryParserException(Exception):
@@ -54,7 +55,6 @@ class FilterCollection:
     INFO_OBJECT = InfoObject
     INFO_OBJECT_2_FACT = InfoObject2Fact
 
-
     def __init__(self):
         self.filter_list = []
 
@@ -81,7 +81,7 @@ class FilterCollection:
 
             if filter_type in ['object']:
                 expression_repr = expr_or_query
-                q_obj = expression_repr.build_q_obj(query_mode=query_mode,filter_type=filter_type)
+                q_obj = expression_repr.build_q_obj(query_mode=query_mode, filter_type=filter_type)
                 if negation:
                     objects = getattr(objects, 'exclude')(q_obj)
                 else:
@@ -92,7 +92,7 @@ class FilterCollection:
                 expression_repr = expr_or_query
                 #print expression_repr
                 #print expression_repr.__class__
-                fact_q_obj = expression_repr.build_q_obj(query_mode=self.INFO_OBJECT,filter_type=filter_type)
+                fact_q_obj = expression_repr.build_q_obj(query_mode=self.INFO_OBJECT, filter_type=filter_type)
                 if query_mode == self.INFO_OBJECT:
                     q_key = 'fact_thru__in'
                 elif query_mode == self.INFO_OBJECT_2_FACT:
@@ -160,6 +160,7 @@ class FormattedFilterCollection:
                     # Use selected_field as header
                     header = selected_field = spec
                 split['headers'].append(header)
+                selected_field = replace_identifier_aliases(selected_field)
                 split['selected_fields'].append(selected_field)
         self.col_specs = split
 
@@ -170,12 +171,12 @@ class Expression:
         self.op = operator
         self.right = right
 
-    def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT,filter_type='object'):
-        result = self.left.build_q_obj(query_mode=query_mode,filter_type=filter_type)
+    def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT, filter_type='object'):
+        result = self.left.build_q_obj(query_mode=query_mode, filter_type=filter_type)
         if self.op == Operator.AND:
-            result = result & self.right.build_q_obj(query_mode=query_mode,filter_type=filter_type)
+            result = result & self.right.build_q_obj(query_mode=query_mode, filter_type=filter_type)
         elif self.op == Operator.OR:
-            result = result | self.right.build_q_obj(query_mode=query_mode,filter_type=filter_type)
+            result = result | self.right.build_q_obj(query_mode=query_mode, filter_type=filter_type)
         return result
 
     def __repr__(self):
@@ -190,9 +191,9 @@ class Condition:
         self.comparator = comparator
         self.value = value
 
-    def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT,filter_type='object'):
+    def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT, filter_type='object'):
         value = self.value
-        key = self.key
+        key = replace_identifier_aliases(self.key)
 
         # Operator choice
         q_operator = ""
@@ -306,3 +307,4 @@ def generate_date_value(old_value):
             return naive
     else:
         raise QueryParserException("Syntax error: Cannot read date \"%s\"" % old_value)
+
