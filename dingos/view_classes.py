@@ -26,6 +26,8 @@ from django.views.generic import DetailView, ListView, TemplateView, View
 
 from django.core.paginator import Paginator
 
+from django.shortcuts import render_to_response
+
 from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
 
 from  django.core import urlresolvers
@@ -440,4 +442,23 @@ class BasicJSONView(CommonContextMixin,
          return http.HttpResponse(content,
                                   content_type='application/json',
                                   **httpresponse_kwargs)
+
+
+class BasicView(CommonContextMixin,
+                ViewMethodMixin,
+                LoginRequiredMixin,
+                View):
+
+    login_url = "/admin"
+
+
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
+    def render_to_response(self, context):
+        raise NotImplementedError("No render_to_response method implemented!")
+
+
 

@@ -140,3 +140,16 @@ def search_by_re_list(re_list, text):
         if m:
             return m.groupdict()
     return None
+
+def lookup_in_re_list(re_list, text):
+    """
+    Given a list of compiled regular expressions paired
+    with some other value, try to search in text with each matcher until the first
+    match occurs. Return the paired element for the matching matcher.
+    """
+    for (matcher,elt) in re_list:
+        m = matcher.search(text)
+        if m:
+            elt
+    return None
+

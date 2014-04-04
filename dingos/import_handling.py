@@ -31,6 +31,8 @@ from dingos.core.datastructures import DingoObjDict
 from core.xml_utils import extract_attributes
 from dingos.models import dingos_class_map, get_or_create_iobject, Marking2X
 
+#from dingos.core.decorators import print_arguments
+
 import pprint
 
 pp = pprint.PrettyPrinter(indent=2)
@@ -77,7 +79,7 @@ class DingoImportHandling(object):
             return None
 
 
-
+    #@print_arguments()
     def create_iobject(self,
                        identifier_ns_uri=None,
                        uid=None,
@@ -93,6 +95,9 @@ class DingoImportHandling(object):
                        iobject_type_name=DINGOS_PLACEHOLDER_TYPE_NAME,
                        iobject_type_namespace_uri=DINGOS_NAMESPACE_URI,
                        iobject_type_revision_name="",
+                       default_identifier_ns_uri=DINGOS_DEFAULT_ID_NAMESPACE_URI,
+                       allowed_identifier_ns_uris=None,
+                       substitute_unallowed_namespaces=False,
                        ):
         """
         Create an information object:
@@ -138,6 +143,16 @@ class DingoImportHandling(object):
 
         if not identifier_ns_uri:
             raise StandardError("You must supply an identifier namespace.")
+
+        if allowed_identifier_ns_uris and (not identifier_ns_uri in allowed_identifier_ns_uris):
+            if substitute_unallowed_namespaces:
+                substitution_namespace = dingos_class_map['IdentifierNameSpaceSubstitutionMap'].substitute_namespace(importer_ns_uri=default_identifier_ns_uri,desired_ns_uri=identifier_ns_uri)
+                identifier_ns_uri = substitution_namespace.uri
+            else:
+                logger.warning("Import tried to create object in namespace %s, but this namespace is not"
+                               " in the list of allowed namespaces" % identifier_ns_uri)
+                return (None,False)
+
 
         # Fill in parameter defaults that would be mutable.
 
@@ -260,6 +275,7 @@ class DingoImportHandling(object):
                                                      create_timestamp=create_timestamp,
                                                      overwrite=overwrite,
                                                      dingos_class_map=self._DCM,
+
                                                     )
 
             # After creating the object, we write the facts to the object.
@@ -295,6 +311,10 @@ class DingoImportHandling(object):
                                iobject_type_name=DINGOS_DEFAULT_IMPORT_MARKING_TYPE_NAME,
                                iobject_type_namespace_uri=DINGOS_NAMESPACE_URI,
                                iobject_type_revision_name=DINGOS_REVISION_NAME,
+                               default_identifier_ns_uri=DINGOS_DEFAULT_ID_NAMESPACE_URI,
+                               allowed_identifier_ns_uris=None,
+                               substitute_unallowed_namespaces=False,
+
                                ):
         """
         A specialized version of create_iobject with defaults set such that a default marking object is created.
@@ -311,6 +331,9 @@ class DingoImportHandling(object):
                                                       uid=uid,
                                                       identifier_ns_uri=id_namespace_uri,
                                                       timestamp=timestamp,
+                                                      default_identifier_ns_uri=default_identifier_ns_uri,
+                                                      allowed_identifier_ns_uris=allowed_identifier_ns_uris,
+                                                      substitute_unallowed_namespaces=substitute_unallowed_namespaces,
                                                       )
 
         return iobject
