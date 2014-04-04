@@ -150,6 +150,6 @@ def lookup_in_re_list(re_list, text):
     for (matcher,elt) in re_list:
         m = matcher.search(text)
         if m:
-            elt
+            return elt
     return None
 
