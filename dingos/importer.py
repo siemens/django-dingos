@@ -396,9 +396,9 @@ class DingoImportCommand(BaseCommand):
         # structure for a marking with object resulting
         # from the import command will be marked.
 
-        self.Importer = self.Importer_Class(allowed_identifier_ns_uris=options['allowed_identifier_ns_uris'],
-                                            default_identifier_ns_uri=options['identifier_ns_uri'],
-                                            substitute_unallowed_namespaces=options['substitute_unallowed_namespaces'])
+        self.Importer = self.Importer_Class(allowed_identifier_ns_uris=options.get('allowed_identifier_ns_uris',[]),
+                                            default_identifier_ns_uri=options.get('identifier_ns_uri',None),
+                                            substitute_unallowed_namespaces=options.get('substitute_unallowed_namespaces',False))
 
 
         marking = self.create_import_marking(args,options)
