@@ -16,8 +16,11 @@
 #
 
 
+from  django.core import urlresolvers
 
-from django.utils.http import urlencode
+from django.utils.http import urlencode, urlquote_plus
+
+
 
 def get_query_string(request, new_params=None, remove=None):
     """
@@ -69,3 +72,13 @@ def get_query_string(request, new_params=None, remove=None):
         else:
             p[k] = v
     return '?%s' % urlencode(p)
+
+
+def saved_search_url(search):
+    view_url = urlresolvers.reverse(search.get('view',''))
+    result = "%s?" % view_url
+    if search.get('custom_query',''):
+        result += 'query=%s' % urlquote_plus(search['custom_query'])
+    if search.get('parameter',''):
+        result += '&%s' % search['parameter']
+    return result

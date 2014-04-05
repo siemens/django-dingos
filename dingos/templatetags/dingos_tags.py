@@ -26,7 +26,7 @@ from django.utils.safestring import mark_safe
 
 from dingos.models import BlobStorage
 from dingos.core.utilities import get_from_django_obj
-
+from dingos.core import http_helpers
 from dingos import DINGOS_TEMPLATE_FAMILY
 
     
@@ -368,6 +368,10 @@ def show_InfoObjectField(oneObject, field):
     else:
         return result
 
+
+@register.simple_tag()
+def saved_search_url(search):
+    return http_helpers.saved_search_url(search)
 
 @register.assignment_tag(takes_context=True)
 def obj_by_pk(context, *args,**kwargs):

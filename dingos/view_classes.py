@@ -291,7 +291,6 @@ class ViewMethodMixin(object):
                                          user_data=DINGOS_DEFAULT_SAVED_SEARCHES,
                                          iobject_name = "Saved searches of user '%s'" % user_name)
                 saved_searches = UserData.get_user_data(user=self.request.user, data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
-            print saved_searches
 
             self.request.session['customization'] = settings
             self.request.session['saved_searches'] = saved_searches
