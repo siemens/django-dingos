@@ -26,7 +26,7 @@ from django import http
 
 from django import forms
 
-
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
 from django.views.generic.base import ContextMixin
 from django.views.generic import DetailView, ListView, TemplateView, View
@@ -755,6 +755,9 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
     action_model_class = InfoObject
 
+    def marked_obj_name_function(self,x):
+        return x.name
+
     # Specify either a Django queryset or a DINGOS custom query that selects the marking objects
     # that will be offered in the view
 
@@ -773,6 +776,50 @@ class SimpleMarkingAdditionView(BasicListActionView):
     # the field for selecting marking objects
 
     form_class = SimpleMarkingAdditionForm
+
+
+
+    # If True, marking is not actually applied
+    debug_marking = False
+
+    # If True, action is not actually carried out
+    debug_action = False
+
+    # Action List
+
+    # Elements of the list should have the following form:
+    # {'action_predicate': <function taking instance of marking object and objet to be marked,
+    #                       returning True or False
+    #                       whether action is to be carried out on the marked object>,
+    #  'action_function': <function taking model instances of marking object and object to be
+    #                      marked and carrying out action based on marked object. Should return
+    #                         (True, 'Success message')
+    #                      for successful execution or
+    #                         (False, 'Error message')
+    #                      for problem in executing action
+    #  'mark_after_failure': True/False -- governs whether marking should be carried out
+    #                      even if an error occured. Default is 'False', i.e., if the action
+    #                      was not successful, the marking is not carried out.
+    #  'action_for_existing_marking': True/False -- governs, whether action is to be carried out
+    #                      even if marking already existed. Default is 'False'.
+    # For each marking to be added, the list is traversed; the first action for which the
+    # predicate returned True is carried out.
+
+
+    action_before_marking_list = []
+
+    # The following parameter governs, whether objects for which no action was found,
+    # are marked or not.
+
+    apply_marking_wo_action = True
+
+
+    # If no action could be found (and 'apply_marking_wo_action' is set to False)
+    # we return the following error message. Use this to provide the user with more
+    # information about why you think that no actions could be found.
+
+    no_action_error_message = "No valid action could be found for the object."
+
 
     @property
     def m_queryset(self):
@@ -840,22 +887,84 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
                     for obj_pk in form_data['checked_objects']:
 
-                        marking2x, created = Marking2X.objects.get_or_create(object_id=obj_pk,
-                                                                             content_type = content_type,
-                                                                             marking=marking_obj)
-                        marked_obj = InfoObject.objects.get(pk=obj_pk)
-                        if created:
-                            marked.append((obj_pk,marked_obj.identifier,marked_obj.name))
-                        else:
-                            skipped.append((obj_pk,marked_obj.identifier,marked_obj.name))
-
-                    return_message = """%s info objects were marked with marking '%s'.""" % (len(marked),marking_obj.name)
-
-                    if skipped:
-                        return_message += """ %s info objects were skipped, because the marking already existed.""" % len(skipped)
+                        obj_to_be_marked = InfoObject.objects.get(pk=obj_pk)
 
 
-                    messages.success(self.request,return_message)
+                        action_list = self.action_before_marking_list
+                        if self.apply_marking_wo_action:
+                            # We add a catch-all action as last action that always succeeds
+                            # Thus we do not need to write duplicate code outside the loop
+                            # in cases where we wish to apply markings without having carried out
+                            # an action.
+                            action_list.append({'action_predicate': lambda x,y: True,
+                                                'action_function': lambda x,y: (True,''),
+                                                })
+                        found_action = False
+                        for action  in action_list:
+                            if found_action:
+                                break
+                            action_predicate = action['action_predicate']
+                            action_function = action['action_function']
+                            mark_after_failure = action.get('mark_after_failure',False)
+                            action_for_existing_marking = action.get('action_for_existing_marking',False)
+
+                            if action_predicate(marking_obj,obj_to_be_marked):
+                                found_action = True
+                                try:
+                                    existing_marking = Marking2X.objects.get(object_id=obj_pk,
+                                                          content_type = content_type,
+                                                          marking=marking_obj)
+                                    existing_marking = True
+                                except ObjectDoesNotExist:
+                                    existing_marking = False
+                                except MultipleObjectsReturned:
+                                    existing_marking = True
+
+                                if existing_marking and not action_for_existing_marking:
+                                    message = """%s skipped, because it is already marked with '%s'.
+                                                 No further action has been carried out.""" % (self.marked_obj_name_function(obj_to_be_marked),
+                                                                             marking_obj.name,
+                                                                             )
+                                    messages.error(self.request,message)
+                                    break
+
+
+                                if self.debug_action:
+                                    (success,action_msg) = (True,"DEBUG: Action has not been carried out")
+                                else:
+                                    (success,action_msg) = action_function(marking_obj,obj_to_be_marked)
+                                if success or ((not success) and mark_after_failure):
+                                    if self.debug_marking:
+                                        created = existing_marking
+                                    else:
+                                        marking2x, created = Marking2X.objects.get_or_create(object_id=obj_pk,
+                                                                                             content_type = content_type,
+                                                                                             marking=marking_obj)
+                                    if created:
+                                        message = """%s marked with %s. %s""" % (self.marked_obj_name_function(obj_to_be_marked),
+                                                                                 marking_obj.name,
+                                                                                 action_msg)
+                                    else:
+                                        message = """%s was already marked with %s. %s""" % (self.marked_obj_name_function(obj_to_be_marked),
+                                                                                 marking_obj.name,
+                                                                                 action_msg)
+
+                                    if success:
+                                        messages.success(self.request, message)
+                                    else:
+                                        messages.error(self.request, message)
+
+                                else:
+                                    message = """%s not marked with %s: %s""" % (self.marked_obj_name_function(obj_to_be_marked),
+                                                                                 marking_obj.name,
+                                                                                 action_msg)
+
+                                    messages.error(self.request,message)
+                        if not found_action:
+                            message = """%s could not be marked: %s.""" % (self.marked_obj_name_function(obj_to_be_marked),
+                                                                           self.no_action_error_message)
+                            messages.error(self.request,message)
+
 
                 #Clear checkboxes by emptying the corresponding parameter in the form data and
                 #recreating the form object from this data
