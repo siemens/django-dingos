@@ -55,10 +55,10 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                 ({{ object.iobject_type.namespace.uri }})
             </td>
             <th >
-                <label>InfoObject Family</label>
+                <label>Import Timestamp</label>
             </th>
             <td>
-                {{ object.iobject_family }} {{ object.iobject_family_revision }}
+                {{object.create_timestamp | date:"c"}}
             </td>
 
         </tr>
