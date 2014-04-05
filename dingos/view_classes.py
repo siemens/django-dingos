@@ -15,10 +15,18 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+
 import csv
 
+import collections
+import copy
+import json
+
+from django import http
+
+
 from django.views.generic.base import ContextMixin
-from django.views.generic import DetailView, ListView, TemplateView
+from django.views.generic import DetailView, ListView, TemplateView, View
 
 from django.core.paginator import Paginator, EmptyPage
 
@@ -27,6 +35,10 @@ from django.core.paginator import PageNotAnInteger
 
 from django.db import DataError
 
+
+from django.shortcuts import render_to_response
+
+from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
 
 from  django.core import urlresolvers
 
@@ -433,6 +445,7 @@ class BasicTemplateView(CommonContextMixin,
     )
 
 
+
 class BasicCustomQueryView(BasicListView):
     page_to_show = 1
 
@@ -553,4 +566,57 @@ class BasicCustomQueryView(BasicListView):
                 except DataError as ex:
                     messages.error(self.request, str(ex))
         return super(BasicListView, self).get(request, *args, **kwargs)
+
+class BasicJSONView(CommonContextMixin,
+                    ViewMethodMixin,
+                    LoginRequiredMixin,
+                    View):
+
+    login_url = "/admin"
+
+    indent = 2
+
+    @property
+    def returned_obj(self):
+        return {"This":"That"}
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
+    def render_to_response(self, context):
+        returned_obj = self.returned_obj
+        if isinstance(returned_obj,basestring):
+            json_string = returned_obj
+        else:
+            json_string = json.dumps(returned_obj,indent=self.indent)
+
+        return self._get_json_response(json_string)
+
+
+
+    def _get_json_response(self, content, **httpresponse_kwargs):
+         return http.HttpResponse(content,
+                                  content_type='application/json',
+                                  **httpresponse_kwargs)
+
+
+class BasicView(CommonContextMixin,
+                ViewMethodMixin,
+                LoginRequiredMixin,
+                View):
+
+    login_url = "/admin"
+
+
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
+    def render_to_response(self, context):
+        raise NotImplementedError("No render_to_response method implemented!")
+
+
+
 
