@@ -356,6 +356,8 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
 
     breadcrumbs = ()
 
+    counting_paginator = False
+
     @property
     def paginator_class(self):
         if not self.counting_paginator:
