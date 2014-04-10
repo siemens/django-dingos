@@ -20,7 +20,8 @@ from django.utils import timezone
 from django.utils.timezone import now
 from django.utils.dateparse import parse_datetime
 from datetime import timedelta
-from dingos.core.utilities import replace_identifier_aliases
+from dingos.core.utilities import replace_by_list
+from dingos import DINGOS_QUERY_ALIAS_LIST
 
 
 class QueryParserException(Exception):
@@ -160,7 +161,7 @@ class FormattedFilterCollection:
                     # Use selected_field as header
                     header = selected_field = spec
                 split['headers'].append(header)
-                selected_field = replace_identifier_aliases(selected_field)
+                selected_field = replace_by_list(selected_field, DINGOS_QUERY_ALIAS_LIST)
                 split['selected_fields'].append(selected_field)
         self.col_specs = split
 
@@ -193,7 +194,7 @@ class Condition:
 
     def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT, filter_type='object'):
         value = self.value
-        key = replace_identifier_aliases(self.key)
+        key = replace_by_list(self.key, DINGOS_QUERY_ALIAS_LIST)
 
         # Operator choice
         q_operator = ""

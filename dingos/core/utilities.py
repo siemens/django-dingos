@@ -168,18 +168,17 @@ def get_from_django_obj(obj, fields):
         return get_from_django_obj(getattr(obj, fields[0]), fields[1:])
 
 
-def replace_identifier_aliases(key):
-    # Replacement format: "<regex_alias>": "<replacement>"
-    replacements = {"^term": "fact.fact_term.term",
-                    "^attribute": "fact.fact_term.attribute",
-                    "^type": "iobject_type"}
-
-    # Replacement
+def replace_by_list(key, replacement_list):
+    """
+    Replaces all occurences of a regex pattern in the list with its replacement.
+    List record format: tuple("<regex_alias>", "<replacement>")
+    """
     result = key
-    for alias, replacement in replacements.items():
+    for alias, replacement in replacement_list:
         result = re.sub(alias, replacement, result)
 
     return result
+
 
 def lookup_in_re_list(re_list, text):
     """
