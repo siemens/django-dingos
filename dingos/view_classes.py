@@ -532,17 +532,17 @@ class BasicCustomQueryView(BasicListView):
 
                     if self.prefetch_related:
                         if isinstance(self.prefetch_related, tuple):
-                            # Prefetch displayed columns (they are needed in any case)
-                            display_cols = col_specs['selected_fields']
-                            filtered_cols = tuple()
-                            for col in display_cols:
-                                filtered_col = replace_by_list(col, DINGOS_QUERY_PREFETCH_RELATED_MAPPING)
-                                if not filtered_col == '':
-                                    filtered_cols = filtered_cols + (filtered_col,)
+                            ## Prefetch displayed columns (they are needed in any case)
+                            #display_cols = col_specs['selected_fields']
+                            #filtered_cols = tuple()
+                            #for col in display_cols:
+                            #    filtered_col = replace_by_list(col, DINGOS_QUERY_PREFETCH_RELATED_MAPPING)
+                            #    if not filtered_col == '':
+                            #        filtered_cols = filtered_cols + (filtered_col,)
 
-                            self.prefetch_related = self.prefetch_related + tuple(filtered_cols)
-                            # Remove duplicate items
-                            self.prefetch_related = tuple(set(self.prefetch_related))
+                            #self.prefetch_related = self.prefetch_related + tuple(filtered_cols)
+                            ## Remove duplicate items
+                            #self.prefetch_related = tuple(set(self.prefetch_related))
 
                             objects = objects.prefetch_related(*list(self.prefetch_related))
                         else:

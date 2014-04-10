@@ -175,19 +175,27 @@ DINGOS_DEFAULT_SAVED_SEARCHES = {'dingos': []}
 
 # Replacements for queries (order of processing: top-down)
 DINGOS_QUERY_ALIAS_LIST = (("^fact_term", "fact.fact_term"),
-                           ("^fact_term\.term", "fact.fact_term.term"),
+                           ("^object_type", "iobject_type"),
+                           ("^object_family", "iobject_family"),
+                           ("^iobject_type.namespace", "iobject_type.namespace.uri"),
+                           #("^fact_term\.term", "fact.fact_term.term"),
                            ("^fact_term\.attribute", "fact.fact_term.attribute"),
-                           ("^namespace", "identifier.namespace"),
-                           ("^identifier\.namespace", "identifier.namespace.uri"),
-                           ("^iobject\.namespace", "iobject.identifier.namespace"),
-                           ("^iobject\.identifier\.namespace$", "iobject.identifier.namespace.uri"),)
+                           #("^namespace", "identifier.namespace"),
+                           ("^identifier\.namespace$", "identifier.namespace.uri"),
+                           ("^import_timestamp$", "create_timestamp")
+                           #("^iobject\.namespace", "iobject.identifier.namespace"),
+                           #("^iobject\.identifier\.namespace$", "iobject.identifier.namespace.uri"),
+                           )
 
 # Allowed keys for query conditions
-DINGOS_QUERY_ALLOWED_CONDITIONS = ("^fact\.fact_term\.term$",
+DINGOS_QUERY_ALLOWED_CONDITIONS = ("create_timestamp",
+                                   "timestamp",
+                                   "^fact\.fact_term\.term$",
                                    "^fact\.fact_term\.attribute$",
                                    "^identifier\.namespace\.uri$",
                                    "^name$",
                                    "^iobject_type\.name$",
+                                   "^iobject_type\.namespace\.uri$",
                                    "^identifier\.uid$",
                                    "^iobject_family\.name",
                                    "^iobject\.iobject_type\.name$",

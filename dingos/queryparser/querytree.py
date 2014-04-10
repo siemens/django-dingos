@@ -163,7 +163,7 @@ class FormattedFilterCollection:
                 split['headers'].append(header)
                 selected_field = replace_by_list(selected_field, DINGOS_QUERY_ALIAS_LIST)
                 if not is_in_list(selected_field, DINGOS_QUERY_ALLOWED_COLUMNS):
-                    raise QueryParserException("Column \"" + selected_field + "\" is not allowed to use.")
+                    raise QueryParserException("Column \"" + selected_field + "\" is not allowed.")
                 split['selected_fields'].append(selected_field)
         self.col_specs = split
 
@@ -196,8 +196,11 @@ class Condition:
 
     def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT, filter_type='object'):
         value = self.value
-        key = replace_by_list(self.key, DINGOS_QUERY_ALIAS_LIST)
-        if not is_in_list(key, DINGOS_QUERY_ALLOWED_CONDITIONS):
+        if not self.key[0] == '[':
+            key = replace_by_list(self.key, DINGOS_QUERY_ALIAS_LIST)
+        else:
+            key = self.key
+        if not key[0] == '[' and not is_in_list(key, DINGOS_QUERY_ALLOWED_CONDITIONS):
             raise QueryParserException("Condition key \"" + key + "\" is not allowed to use.")
 
         # Operator choice
