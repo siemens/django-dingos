@@ -74,7 +74,7 @@ from dingos.core.utilities import get_dict
 
 from dingos.models import InfoObject
 
-from queryparser.queryparser import QueryParser
+from queryparser.queryparser import QueryParser, QueryParserException
 
 
 class UncountingPaginator(Paginator):

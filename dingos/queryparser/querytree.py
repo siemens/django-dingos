@@ -20,8 +20,8 @@ from django.utils import timezone
 from django.utils.timezone import now
 from django.utils.dateparse import parse_datetime
 from datetime import timedelta
-from dingos.core.utilities import replace_by_list
-from dingos import DINGOS_QUERY_ALIAS_LIST
+from dingos.core.utilities import replace_by_list, is_in_list
+from dingos import DINGOS_QUERY_ALIAS_LIST, DINGOS_QUERY_ALLOWED_CONDITIONS, DINGOS_QUERY_ALLOWED_COLUMNS
 
 
 class QueryParserException(Exception):
@@ -162,6 +162,8 @@ class FormattedFilterCollection:
                     header = selected_field = spec
                 split['headers'].append(header)
                 selected_field = replace_by_list(selected_field, DINGOS_QUERY_ALIAS_LIST)
+                if not is_in_list(selected_field, DINGOS_QUERY_ALLOWED_COLUMNS):
+                    raise QueryParserException("Column \"" + selected_field + "\" is not allowed to use.")
                 split['selected_fields'].append(selected_field)
         self.col_specs = split
 
@@ -195,6 +197,8 @@ class Condition:
     def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT, filter_type='object'):
         value = self.value
         key = replace_by_list(self.key, DINGOS_QUERY_ALIAS_LIST)
+        if not is_in_list(key, DINGOS_QUERY_ALLOWED_CONDITIONS):
+            raise QueryParserException("Condition key \"" + key + "\" is not allowed to use.")
 
         # Operator choice
         q_operator = ""

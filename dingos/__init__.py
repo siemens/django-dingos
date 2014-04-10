@@ -175,21 +175,30 @@ DINGOS_DEFAULT_SAVED_SEARCHES = {'dingos': []}
 
 # Replacements for queries (order of processing: top-down)
 DINGOS_QUERY_ALIAS_LIST = (("^fact_term", "fact.fact_term"),
-                           ("^fact_term.term", "fact.fact_term.term"),
-                           ("^fact_term.attribute", "fact.fact_term.attribute"),
+                           ("^fact_term\.term", "fact.fact_term.term"),
+                           ("^fact_term\.attribute", "fact.fact_term.attribute"),
                            ("^namespace", "identifier.namespace"),
-                           ("^identifier.namespace", "identifier.namespace.uri"),
-                           ("^iobject.namespace", "iobject.identifier.namespace"),
-                           ("^iobject.identifier.namespace", "iobject.identifier.namespace.uri"),)
+                           ("^identifier\.namespace", "identifier.namespace.uri"),
+                           ("^iobject\.namespace", "iobject.identifier.namespace"),
+                           ("^iobject\.identifier\.namespace", "iobject.identifier.namespace.uri"),)
 
 # Allowed keys for query conditions
-DINGOS_QUERY_ALLOWED_CONDITIONS = ("identifier.uid",
-                                   "identifier.namespace.uri",
-                                   "iobject_type")
+DINGOS_QUERY_ALLOWED_CONDITIONS = ("^fact\.fact_term\.term$",
+                                   "^fact\.fact_term\.attribute$",
+                                   "^identifier\.namespace\.uri$",
+                                   "^name$",
+                                   "^iobject_type\.name$",
+                                   "^identifier\.uid$",
+                                   "^iobject_family\.name",
+                                   "^iobject\.iobject_type\.name$",
+                                   "^iobject\.iobject_family",
+                                   "^iobject\.identifier\.namespace\.uri$",)
 
 # Allowed columns for query result formatting
-DINGOS_QUERY_ALLOWED_COLUMNS = DINGOS_QUERY_ALLOWED_CONDITIONS + ("identifier",
-                                                                  "namespace")
+DINGOS_QUERY_ALLOWED_COLUMNS = DINGOS_QUERY_ALLOWED_CONDITIONS + ("^(iobject\.)?identifier$",
+                                                                  "^timestamp$",
+                                                                  "^(iobject\.)?iobject_type$",
+                                                                  "^fact\.fact_term$",)
 
 # Mapping for columns which cannot be prefetched (needed because not every attribute is ready for prefetch)
 DINGOS_QUERY_PREFETCH_RELATED_MAPPING = (("identifier", ""),

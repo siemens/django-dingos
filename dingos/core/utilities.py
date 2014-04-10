@@ -180,6 +180,16 @@ def replace_by_list(key, replacement_list):
     return result
 
 
+def is_in_list(value, pattern_list):
+    """
+    Searches for value in regex list.
+    """
+    for pattern in pattern_list:
+        if re.match(pattern, value):
+            return True
+    return False
+
+
 def lookup_in_re_list(re_list, text):
     """
     Given a list of compiled regular expressions paired
