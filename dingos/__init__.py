@@ -174,40 +174,52 @@ DINGOS_DEFAULT_USER_PREFS = {
 DINGOS_DEFAULT_SAVED_SEARCHES = {'dingos': []}
 
 # Replacements for queries (order of processing: top-down)
-DINGOS_QUERY_ALIAS_LIST = (("^fact_term", "fact.fact_term"),
-                           ("^object_type", "iobject_type"),
-                           ("^object_family", "iobject_family"),
+DINGOS_QUERY_ALIAS_LIST = (("object","iobject"),
+                           ("^fact_term$", "fact.fact_term"),
+                           ("^value$", "fact.fact_values.value"),
+                           #("^object_type", "iobject_type"),
+                           ("^iobject_family", "iobject_family.name"),
                            ("^iobject_type.namespace", "iobject_type.namespace.uri"),
                            #("^fact_term\.term", "fact.fact_term.term"),
-                           ("^fact_term\.attribute", "fact.fact_term.attribute"),
+                           ("^attribute", "fact.fact_term.attribute"),
                            #("^namespace", "identifier.namespace"),
                            ("^identifier\.namespace$", "identifier.namespace.uri"),
-                           ("^import_timestamp$", "create_timestamp")
+                           ("^import_timestamp$", "create_timestamp"),
+                           ("^fact_term_with_attribute$", "fact.fact_term")
+
                            #("^iobject\.namespace", "iobject.identifier.namespace"),
                            #("^iobject\.identifier\.namespace$", "iobject.identifier.namespace.uri"),
                            )
 
 # Allowed keys for query conditions
-DINGOS_QUERY_ALLOWED_CONDITIONS = ("create_timestamp",
+DINGOS_QUERY_ALLOWED_CONDITIONS = ("import_timestamp",
                                    "timestamp",
-                                   "^fact\.fact_term\.term$",
-                                   "^fact\.fact_term\.attribute$",
-                                   "^identifier\.namespace\.uri$",
+                                   "^fact_term$",
+                                   "^value$",
+                                   "^attribute$",
+                                   "^identifier\.namespace$",
                                    "^name$",
-                                   "^iobject_type\.name$",
-                                   "^iobject_type\.namespace\.uri$",
+                                   "^object_type\.name$",
+                                   "^object_type\.namespace$",
                                    "^identifier\.uid$",
-                                   "^iobject_family\.name",
-                                   "^iobject\.iobject_type\.name$",
-                                   "^iobject\.iobject_family",
-                                   "^iobject\.identifier\.namespace\.uri$",
-                                   "^iobject\.identifier\.uid$",)
+                                   "^object_family",)
 
 # Allowed columns for query result formatting
-DINGOS_QUERY_ALLOWED_COLUMNS = DINGOS_QUERY_ALLOWED_CONDITIONS + ("^(iobject\.)?identifier$",
-                                                                  "^timestamp$",
-                                                                  "^(iobject\.)?iobject_type$",
-                                                                  "^fact\.fact_term$",)
+DINGOS_QUERY_ALLOWED_COLUMNS =  ("(iobject\.)?import_timestamp",
+                                 "(iobject\.)?timestamp",
+                                 "^fact_term$",
+                                 "^value$",
+                                 "^attribute$",
+                                 "^(object\.)?identifier\.namespace$",
+                                 "^(object\.)?name$",
+                                 "^(object\.)?object_type\.name$",
+                                 "^(object\.)?object_type\.namespace$",
+                                 "^(object\.)?identifier\.uid$",
+                                 "^(object\.)?object_family",
+                                 "^(object\.)identifier$",
+                                 "^(object\.)object_type$",
+                                 "^fact_term_with_attribute")
+
 
 # Mapping for columns which cannot be prefetched (needed because not every attribute is ready for prefetch)
 DINGOS_QUERY_PREFETCH_RELATED_MAPPING = (("^name$", ""),
