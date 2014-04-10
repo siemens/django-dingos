@@ -180,7 +180,7 @@ DINGOS_QUERY_ALIAS_LIST = (("^fact_term", "fact.fact_term"),
                            ("^namespace", "identifier.namespace"),
                            ("^identifier\.namespace", "identifier.namespace.uri"),
                            ("^iobject\.namespace", "iobject.identifier.namespace"),
-                           ("^iobject\.identifier\.namespace", "iobject.identifier.namespace.uri"),)
+                           ("^iobject\.identifier\.namespace$", "iobject.identifier.namespace.uri"),)
 
 # Allowed keys for query conditions
 DINGOS_QUERY_ALLOWED_CONDITIONS = ("^fact\.fact_term\.term$",
@@ -192,7 +192,8 @@ DINGOS_QUERY_ALLOWED_CONDITIONS = ("^fact\.fact_term\.term$",
                                    "^iobject_family\.name",
                                    "^iobject\.iobject_type\.name$",
                                    "^iobject\.iobject_family",
-                                   "^iobject\.identifier\.namespace\.uri$",)
+                                   "^iobject\.identifier\.namespace\.uri$",
+                                   "^iobject\.identifier\.uid$",)
 
 # Allowed columns for query result formatting
 DINGOS_QUERY_ALLOWED_COLUMNS = DINGOS_QUERY_ALLOWED_CONDITIONS + ("^(iobject\.)?identifier$",
@@ -201,7 +202,14 @@ DINGOS_QUERY_ALLOWED_COLUMNS = DINGOS_QUERY_ALLOWED_CONDITIONS + ("^(iobject\.)?
                                                                   "^fact\.fact_term$",)
 
 # Mapping for columns which cannot be prefetched (needed because not every attribute is ready for prefetch)
-DINGOS_QUERY_PREFETCH_RELATED_MAPPING = (("identifier", ""),
-                                         ("", ""),
-                                         ("", ""),
-                                         ("", ""))
+DINGOS_QUERY_PREFETCH_RELATED_MAPPING = (("^name$", ""),
+                                         ("^timestamp$", ""),
+                                         ("^iobject_type\.name$", "iobject_type"),
+                                         ("^fact\.fact_term$", "fact"),
+                                         ("^iobject\.iobject_type$", "iobject"),
+                                         ("^iobject\.identifier\.namespace\.uri$", "iobject"),
+                                         ("^iobject\.iobject_family$", "iobject"),
+                                         ("^iobject\.iobject_type\.name$", "iobject"),
+                                         ("^iobject\.identifier\.uid$", "iobject"),
+                                         ("^identifier\.namespace\.uri$", "identifier"),
+                                         ("^iobject_family\.name", "iobject_family"),)

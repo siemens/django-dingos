@@ -66,15 +66,16 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_USER_PREFS_TYPE_NAME, \
     DINGOS_DEFAULT_USER_PREFS, \
     DINGOS_SAVED_SEARCHES_TYPE_NAME, \
-    DINGOS_DEFAULT_SAVED_SEARCHES
+    DINGOS_DEFAULT_SAVED_SEARCHES, \
+    DINGOS_QUERY_PREFETCH_RELATED_MAPPING
 
 from dingos.core.template_helpers import ConfigDictWrapper
 
-from dingos.core.utilities import get_dict
+from dingos.core.utilities import get_dict, replace_by_list
 
 from dingos.models import InfoObject
 
-from queryparser.queryparser import QueryParser, QueryParserException
+from queryparser.queryparser import QueryParser
 
 
 class UncountingPaginator(Paginator):
@@ -522,14 +523,6 @@ class BasicCustomQueryView(BasicListView):
                         else:
                             raise TypeError("'distinct' must either be True or a tuple of field names.")
 
-                    if self.prefetch_related:
-                        if isinstance(self.prefetch_related, tuple):
-                            objects = objects.prefetch_related(*list(self.prefetch_related))
-                        else:
-                            raise TypeError("'prefetch_related' must either be True or a tuple of field names.")
-
-                    self.queryset = objects
-
                     # Output format
                     result_format = formatted_filter_collection.format
 
@@ -537,10 +530,25 @@ class BasicCustomQueryView(BasicListView):
                     col_specs = formatted_filter_collection.col_specs
                     misc_args = formatted_filter_collection.misc_args
 
-                    # Prefetch displayed columns (they are needed in any case)
-                    self.prefetch_related = self.prefetch_related + tuple(col_specs['selected_fields'])
-                    # Remove duplicate items
-                    self.prefetch_related = tuple(set(self.prefetch_related))
+                    if self.prefetch_related:
+                        if isinstance(self.prefetch_related, tuple):
+                            # Prefetch displayed columns (they are needed in any case)
+                            display_cols = col_specs['selected_fields']
+                            filtered_cols = tuple()
+                            for col in display_cols:
+                                filtered_col = replace_by_list(col, DINGOS_QUERY_PREFETCH_RELATED_MAPPING)
+                                if not filtered_col == '':
+                                    filtered_cols = filtered_cols + (filtered_col,)
+
+                            self.prefetch_related = self.prefetch_related + tuple(filtered_cols)
+                            # Remove duplicate items
+                            self.prefetch_related = tuple(set(self.prefetch_related))
+
+                            objects = objects.prefetch_related(*list(self.prefetch_related))
+                        else:
+                            raise TypeError("'prefetch_related' must either be True or a tuple of field names.")
+
+                    self.queryset = objects
 
                     if result_format == 'default':
                         # Pretty useless case for live system but useful for tests
