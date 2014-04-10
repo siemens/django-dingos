@@ -221,7 +221,7 @@ class DataTypeNameSpace(DingoModel):
     of "qualified names" as defined in the CybOx/STIX standards.
     """
 
-    uri = models.URLField(max_length=255,
+    uri = models.CharField(max_length=255,
                           unique=True,
                           help_text="URI of namespace. Example: 'http://stix.mitre.org/default_vocabularies-1'")
 
@@ -258,7 +258,7 @@ class IdentifierNameSpace(DingoModel):
     of "qualified names" as defined in the CybOx/STIX standards.
     """
 
-    uri = models.URLField(max_length=255,
+    uri = models.CharField(max_length=255,
                           unique=True,
                           help_text="URI of namespace. Example: 'http://stix.mitre.org/default_vocabularies-1'")
 
