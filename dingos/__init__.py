@@ -207,32 +207,35 @@ DINGOS_QUERY_ALLOWED_CONDITIONS = ("import_timestamp",
 # Allowed columns for query result formatting
 DINGOS_QUERY_ALLOWED_COLUMNS = {}
 
-DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject'] = ("^import_timestamp$",
-                                              "^timestamp$",
-                                              "^identifier\.namespace$",
-                                              "^name$",
-                                              "^object_type\.name$",
-                                              "^object_type\.namespace$",
-                                              "^identifier\.uid$",
-                                              "^object_family",
-                                              "^identifier$",
-                                              "^object_type$",
-                                              "^fact_term_with_attribute")
+DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject'] = (
+    ("^import_timestamp$",None),
+    ("^timestamp$",None),
+    ("^identifier\.namespace$",None),
+    ("^name$",None),
+    ("^object_type\.name$",None),
+    ("^object_type\.namespace$",None),
+    ("^identifier\.uid$",None),
+    ("^object_family",None),
+    ("^identifier$",None),
+    ("^object_type$",None),
+    ("^fact_term_with_attribute",None)
+)
 
-DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject2Fact'] = ("^object\.import_timestamp$",
-                                                   "^object\.timestamp$",
-                                                   "^fact_term$",
-                                                   "^value$",
-                                                   "^attribute$",
-                                                   "^object\.identifier\.namespace$",
-                                                   "^object\.name$",
-                                                   "^object\.object_type\.name$",
-                                                   "^object\.object_type\.namespace$",
-                                                   "^object\.identifier\.uid$",
-                                                   "^object\.object_family",
-                                                   "^object\identifier$",
-                                                   "^object\object_type$",
-                                                   "^fact_term_with_attribute")
+DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject2Fact'] = (
+    ("^object\.import_timestamp$",None),
+    ("^object\.timestamp$",None),
+    ("^fact_term$",None),
+    ("^value$",None),
+    ("^attribute$",None),
+    ("^object\.identifier\.namespace$",None),
+    ("^object\.name$",None),
+    ("^object\.object_type\.name$",None),
+    ("^object\.object_type\.namespace$",None),
+    ("^object\.identifier\.uid$",None),
+    ("^object\.object_family",None),
+    ("^object\identifier$",None),
+    ("^object\object_type$",None),
+    ("^fact_term_with_attribute",None))
 
 
 

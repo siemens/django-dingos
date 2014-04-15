@@ -162,7 +162,7 @@ class FormattedFilterCollection:
                     # Use selected_field as header
                     header = selected_field = spec
                 split['headers'].append(header)
-                if not is_in_list(selected_field, DINGOS_QUERY_ALLOWED_COLUMNS[query_mode]):
+                if not is_in_list(selected_field, map (lambda x: x[0], DINGOS_QUERY_ALLOWED_COLUMNS[query_mode])):
                     raise QueryParserException("Column \"" + selected_field + "\" is not allowed.")
                 print "'%s'" % selected_field
                 selected_field = replace_by_list(selected_field, DINGOS_QUERY_ALIAS_LIST)
