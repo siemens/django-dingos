@@ -53,8 +53,8 @@ class Comparator:
 
 
 class FilterCollection:
-    INFO_OBJECT = InfoObject
-    INFO_OBJECT_2_FACT = InfoObject2Fact
+    INFO_OBJECT = 'InfoObject'
+    INFO_OBJECT_2_FACT = 'InfoObject2Fact'
 
     def __init__(self):
         self.filter_list = []
@@ -72,7 +72,7 @@ class FilterCollection:
         else:
             objects = base
 
-        query_mode = objects.model
+        query_mode = objects.model.__name__
 
         for oneFilter in self.filter_list:
 
@@ -162,7 +162,7 @@ class FormattedFilterCollection:
                     # Use selected_field as header
                     header = selected_field = spec
                 split['headers'].append(header)
-                if not is_in_list(selected_field, DINGOS_QUERY_ALLOWED_COLUMNS):
+                if not is_in_list(selected_field, DINGOS_QUERY_ALLOWED_COLUMNS[query_mode]):
                     raise QueryParserException("Column \"" + selected_field + "\" is not allowed.")
                 print "'%s'" % selected_field
                 selected_field = replace_by_list(selected_field, DINGOS_QUERY_ALIAS_LIST)

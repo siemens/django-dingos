@@ -205,20 +205,36 @@ DINGOS_QUERY_ALLOWED_CONDITIONS = ("import_timestamp",
                                    "^object_family",)
 
 # Allowed columns for query result formatting
-DINGOS_QUERY_ALLOWED_COLUMNS =  ("(iobject\.)?import_timestamp",
-                                 "(iobject\.)?timestamp",
-                                 "^fact_term$",
-                                 "^value$",
-                                 "^attribute$",
-                                 "^(object\.)?identifier\.namespace$",
-                                 "^(object\.)?name$",
-                                 "^(object\.)?object_type\.name$",
-                                 "^(object\.)?object_type\.namespace$",
-                                 "^(object\.)?identifier\.uid$",
-                                 "^(object\.)?object_family",
-                                 "^(object\.)identifier$",
-                                 "^(object\.)object_type$",
-                                 "^fact_term_with_attribute")
+DINGOS_QUERY_ALLOWED_COLUMNS = {}
+
+DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject'] = ("^import_timestamp$",
+                                              "^timestamp$",
+                                              "^identifier\.namespace$",
+                                              "^name$",
+                                              "^object_type\.name$",
+                                              "^object_type\.namespace$",
+                                              "^identifier\.uid$",
+                                              "^object_family",
+                                              "^identifier$",
+                                              "^object_type$",
+                                              "^fact_term_with_attribute")
+
+DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject2Fact'] = ("^object\.import_timestamp$",
+                                                   "^object\.timestamp$",
+                                                   "^fact_term$",
+                                                   "^value$",
+                                                   "^attribute$",
+                                                   "^object\.identifier\.namespace$",
+                                                   "^object\.name$",
+                                                   "^object\.object_type\.name$",
+                                                   "^object\.object_type\.namespace$",
+                                                   "^object\.identifier\.uid$",
+                                                   "^object\.object_family",
+                                                   "^object\identifier$",
+                                                   "^object\object_type$",
+                                                   "^fact_term_with_attribute")
+
+
 
 
 # Mapping for columns which cannot be prefetched (needed because not every attribute is ready for prefetch)

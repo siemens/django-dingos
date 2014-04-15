@@ -527,7 +527,7 @@ class BasicCustomQueryView(BasicListView):
                     result_format = formatted_filter_collection.format
 
                     # Filter selected columns for export
-                    formatting_arguments = formatted_filter_collection.build_format_arguments(query_mode=self.query_base.model)
+                    formatting_arguments = formatted_filter_collection.build_format_arguments(query_mode=self.query_base.model.__name__)
 
                     col_specs = formatting_arguments['columns']
                     misc_args = formatting_arguments['kwargs']
