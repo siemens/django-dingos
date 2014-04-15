@@ -59,7 +59,11 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                                 </td>
                             {% endfor %}
                             <td>
-                                <a href="{% url "url.dingos.search.fact.simple" %}?fact__fact_term__term={{enrich2fact.fact.fact_term | urlencode}}&fact__fact_values__value={{ enrich2fact.fact.fact_values.all.0 | urlencode}}">View all</a>
+                                {% if distinct %}
+                                <a href="{% url "url.dingos.admin.customfactsearch" %}?query=fact%3A+fact_term+%3D+'{{enrich2fact.fact.fact_term.term | urlencode}}'+%26%26+attribute+%3D+'{{enrich2fact.fact.fact_term.attribute | urlencode}}'+%26%26+value+%3D+'{{ enrich2fact.fact.fact_values.all.0 | urlencode}}'+|+{{ query | urlencode }}&execute_query=Execute+query&paginate_by=50&page=1&nondistinct=1">View all</a>
+                                {%  else %}
+                                <a href="{% url "url.dingos.view.infoobject.redirect2highlight" pk=enrich2fact.iobject.pk node=enrich2fact.node_id %}">View '{{ enrich2fact.iobject.name }}'</a>
+                                {%  endif %}
                             </td>
                         </tr>
                     {% endfor %}

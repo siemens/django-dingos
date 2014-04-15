@@ -489,6 +489,11 @@ class BasicCustomQueryView(BasicListView):
         context['form'] = self.form
         context['col_headers'] = self.col_headers
         context['selected_cols'] = self.selected_cols
+        context['query']= self.request.GET.get('query','')
+        if self.request.GET.get('nondistinct',False):
+            context['distinct'] = False
+        else:
+            context['distinct'] = True
         return context
 
     def get(self, request, *args, **kwargs):
