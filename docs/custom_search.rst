@@ -1,6 +1,8 @@
 Using the DINGOS custom search
 ==============================
 
+.. contents::
+
 .. highlight:: none
    :linenothreshold: 2
 
@@ -144,9 +146,9 @@ constraints can be joined by boolean operators ``&&`` (*and*) and ``||`` (*or*).
 The ``object:`` filter may contain constraints ``<key> <operator> <value>`` for the following keys:
 
 ===================== ======================================================================================
-identifier.namespace  Namespace of the object identifier, e.g. 'http://mandiant.com'
-identifier.uid        UID of the object identifier, e.g., 'ttp-c63f31ac-871b-4846-aa25-de1926f4f3c8'
-object_type.name      Name of the InfoObject type, e.g., 'TTP'
+identifier.namespace  Namespace of the object identifier, e.g. ``http://mandiant.com``
+identifier.uid        UID of the object identifier, e.g., ``ttp-c63f31ac-871b-4846-aa25-de1926f4f3c8``
+object_type.name      Name of the InfoObject type, e.g., ``TTP``
 object_type.namespace Namespace of the InfoObject type, e.g., "stix.mitre.org"
 name                  InfoObject name
 timestamp             InfoObject timestamp (as given in object's revision info)
@@ -231,15 +233,15 @@ String comparison
 All comparision operators can be prefixed with ``!`` for the negation, e.g., ``!=`` for inequality, etc. 
 
 ======================= =======================================================================================
- ``a  = b``               a and b are equal
- ``a contains b``         a is contained in b
- ``a icontains b``        a is contained in b (case insensitive)
- ``a regexp b``           a matches regular expression b
- ``a iregexp b``          a matches regular expression b (case insensitive)
- ``a startswith b``       b is a prefix of a
- ``a istartswith b``      b is a prefix of a (case insensitive)
- ``a endswith b``         b is a suffix of a
- ``a iendswith b``        b is a suffix of a (case insensitive)
+ ``a = b``               ``a`` and ``b`` are equal
+ ``a contains b``         ``a`` is contained in b
+ ``a icontains b``        ``a`` is contained in ``b`` (case insensitive)
+ ``a regexp b``           ``a`` matches regular expression ``b``
+ ``a iregexp b``          ``a`` matches regular expression ``b`` (case insensitive)
+ ``a startswith b``       ``b`` is ``a`` prefix of ``a``
+ ``a istartswith b``      ``b`` is ``a`` prefix of ``a`` (case insensitive)
+ ``a endswith b``         ``b`` is ``a`` suffix of ``a``
+ ``a iendswith b``        ``b`` is ``a`` suffix of ``a`` (case insensitive)
 ======================= =======================================================================================
 
 Timestamp comparison
@@ -250,18 +252,16 @@ for values of facts that represent dates. This is, because all values are stored
 
 
 ======================= =======================================================================================
- ``t1  = t2``             timestamps t1 and t2 are equal
- ``t younger p``          timestamp t is younger than period ``p`` (see below for period specification)
- ``t range r``            timestamp t is in range ``r`` (see below for range specification)
+ ``t1  = t2``             timestamps ``t1`` and ``t2`` are equal
+ ``t younger p``          timestamp ``t`` is younger than period ``p`` (see below for period specification)
+ ``t range r``            timestamp ``t`` is in range ``r`` (see below for range specification)
 ======================= =======================================================================================
 
 Periods can be specified in days (e.g., ``"2d"``), hours (e.g., ``"6h"``), and minutes (e.g., (``"10m"``).
 
-Ranges are specified as follows:
+Ranges are specified as follows::
 
-============================================ ============================================================================
-"YYYY:mm:dd HH:MM:SS -- YYYY:mm:dd HH:MM:SS   Range between timestamps
-============================================ ============================================================================
+             "YYYY:mm:dd HH:MM:SS -- YYYY:mm:dd HH:MM:SS
 
 
 Formatting Syntax
@@ -282,10 +282,10 @@ Columns for object queries
 
 
 ===================== ======================================================================================
-identifier.namespace  Namespace of the object identifier, e.g. 'http://mandiant.com'
-identifier.uid        UID of the object identifier, e.g., 'ttp-c63f31ac-871b-4846-aa25-de1926f4f3c8'
+identifier.namespace  Namespace of the object identifier, e.g. ``http://mandiant.com``
+identifier.uid        UID of the object identifier, e.g., ``ttp-c63f31ac-871b-4846-aa25-de1926f4f3c8``
 identifier            Identifier, printed as ``<namespace>:<uid>``
-object_type.name      Name of the InfoObject type, e.g., 'TTP'
+object_type.name      Name of the InfoObject type, e.g., ``TTP``
 object_type.namespace Namespace of the InfoObject type, e.g., "stix.mitre.org"
 object_type           InfoObject type, printed as ``<namespace>:<name>``
 name                  InfoObject name
@@ -302,11 +302,12 @@ Columns for fact queries
 ============================= ======================================================================================
 fact_term                     fact term of fact
 attribute                     attribute of fact
+value                         value of fact
 fact_term_with_attribute      fact term and attribute of fact printed as "<fact_term>@<attribute>"
-iobject.identifier.namespace  Namespace of the object identifier, e.g. 'http://mandiant.com'
-iobject.identifier.uid        UID of the object identifier, e.g., 'ttp-c63f31ac-871b-4846-aa25-de1926f4f3c8'
+iobject.identifier.namespace  Namespace of the object identifier, e.g. ``http://mandiant.com``
+iobject.identifier.uid        UID of the object identifier, e.g., ``ttp-c63f31ac-871b-4846-aa25-de1926f4f3c8``
 iobject.identifier            Identifier, printed as ``<namespace>:<uid>``
-iobject.object_type.name      Name of the InfoObject type, e.g., 'TTP'
+iobject.object_type.name      Name of the InfoObject type, e.g., ``TTP``
 iobject.object_type.namespace Namespace of the InfoObject type, e.g., "stix.mitre.org"
 iobject.object_type           InfoObject type, printed as ``<namespace>:<name>``
 iobject.name                  InfoObject name
