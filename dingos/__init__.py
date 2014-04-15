@@ -177,65 +177,67 @@ DINGOS_DEFAULT_SAVED_SEARCHES = {'dingos': []}
 DINGOS_QUERY_ALIAS_LIST = (("object","iobject"),
                            ("^fact_term$", "fact.fact_term"),
                            ("^value$", "fact.fact_values.value"),
-                           #("^object_type", "iobject_type"),
                            ("^iobject_family", "iobject_family.name"),
                            ("^iobject_type.namespace", "iobject_type.namespace.uri"),
-                           #("^fact_term\.term", "fact.fact_term.term"),
                            ("^attribute", "fact.fact_term.attribute"),
-                           #("^namespace", "identifier.namespace"),
                            ("^identifier\.namespace$", "identifier.namespace.uri"),
                            ("^import_timestamp$", "create_timestamp"),
                            ("^fact_term_with_attribute$", "fact.fact_term")
-
-                           #("^iobject\.namespace", "iobject.identifier.namespace"),
-                           #("^iobject\.identifier\.namespace$", "iobject.identifier.namespace.uri"),
                            )
 
 # Allowed keys for query conditions
-DINGOS_QUERY_ALLOWED_CONDITIONS = ("import_timestamp",
-                                   "timestamp",
-                                   "^fact_term$",
-                                   "^value$",
-                                   "^attribute$",
-                                   "^identifier\.namespace$",
-                                   "^name$",
-                                   "^object_type\.name$",
-                                   "^object_type\.namespace$",
-                                   "^identifier\.uid$",
-                                   "^object_family",)
+DINGOS_QUERY_ALLOWED_KEYS = {}
+
+DINGOS_QUERY_ALLOWED_KEYS['object'] = (
+    "^import_timestamp$",
+    "^timestamp$",
+    "^identifier\.namespace$",
+    "^name$",
+    "^object_type\.name$",
+    "^object_type\.namespace$",
+    "^identifier\.uid$",
+    "^object_family$",)
+
+DINGOS_QUERY_ALLOWED_KEYS['fact'] = (
+    "^@\[.*\]$",
+    "^\[.*\]",
+    "^fact_term$",
+    "^value$",
+    "^attribute$",
+    )
 
 # Allowed columns for query result formatting
 DINGOS_QUERY_ALLOWED_COLUMNS = {}
 
-DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject'] = (
-    ("^import_timestamp$",None),
-    ("^timestamp$",None),
-    ("^identifier\.namespace$",None),
-    ("^name$",None),
-    ("^object_type\.name$",None),
-    ("^object_type\.namespace$",None),
-    ("^identifier\.uid$",None),
-    ("^object_family",None),
-    ("^identifier$",None),
-    ("^object_type$",None),
-    ("^fact_term_with_attribute",None)
-)
+DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject'] = {
+    "import_timestamp": [],
+    "timestamp": [],
+    "name": [],
+    "identifier": ['identifier','identifier__namespace'],
+    "identifier.uid": ['identifier'],
+    "identifier.namespace": ['identifier__namespace'],
+    "object_type": ['iobject_type','iobject_type__namespace'],
+    "object_type.name": ['iobject_type'],
+    "object_type.namespace": ['iobject_type__namespace'],
+    "object_family": ['iobject_family'],
+}
 
-DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject2Fact'] = (
-    ("^object\.import_timestamp$",None),
-    ("^object\.timestamp$",None),
-    ("^fact_term$",None),
-    ("^value$",None),
-    ("^attribute$",None),
-    ("^object\.identifier\.namespace$",None),
-    ("^object\.name$",None),
-    ("^object\.object_type\.name$",None),
-    ("^object\.object_type\.namespace$",None),
-    ("^object\.identifier\.uid$",None),
-    ("^object\.object_family",None),
-    ("^object\identifier$",None),
-    ("^object\object_type$",None),
-    ("^fact_term_with_attribute",None))
+DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject2Fact'] = {
+    "fact_term": ['fact__fact_term'],
+    "fact_term_with_attribute": ['fact__fact_term'],
+    "value": ["fact__fact_values"],
+    "attribute": ['fact__fact_term'],
+    "object.import_timestamp": ['iobject'],
+    "object.timestamp": ['iobject'],
+    "object.identifier.namespace": ['iobject__identifier__namespace'],
+    "object.name": ['iobject'],
+    "object.object_type.name": ['iobject__iobject_type'],
+    "object.object_type.namespace": ['iobject__iobject_type.namespace'],
+    "object.identifier.uid": ['iobject__identifier'],
+    "object.object_family": ['iobject__iobject_family'],
+    "object.identifier": ['iobject__identifier','iobject__identifier__namespace'],
+    "object.object_type": ['iobject__iobject_type','iobject__iobject_type__namespace'],
+}
 
 
 

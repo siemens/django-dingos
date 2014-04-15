@@ -21,7 +21,7 @@ from django.utils.timezone import now
 from django.utils.dateparse import parse_datetime
 from datetime import timedelta
 from dingos.core.utilities import replace_by_list, is_in_list
-from dingos import DINGOS_QUERY_ALIAS_LIST, DINGOS_QUERY_ALLOWED_CONDITIONS, DINGOS_QUERY_ALLOWED_COLUMNS
+from dingos import DINGOS_QUERY_ALIAS_LIST, DINGOS_QUERY_ALLOWED_KEYS, DINGOS_QUERY_ALLOWED_COLUMNS
 
 
 class QueryParserException(Exception):
@@ -152,6 +152,7 @@ class FormattedFilterCollection:
                 col_specs.append(format_arg)
 
         # Reformat structure of column specifications
+        prefetch_related_fields = set()
         split = {'headers': [], 'selected_fields': []}
         if len(col_specs) is not 0:
             for spec in col_specs:
@@ -162,8 +163,10 @@ class FormattedFilterCollection:
                     # Use selected_field as header
                     header = selected_field = spec
                 split['headers'].append(header)
-                if not is_in_list(selected_field, map (lambda x: x[0], DINGOS_QUERY_ALLOWED_COLUMNS[query_mode])):
+                if not selected_field in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode].keys():
                     raise QueryParserException("Column \"" + selected_field + "\" is not allowed.")
+                for prefetch in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode][selected_field]:
+                    prefetch_related_fields.add(prefetch)
                 print "'%s'" % selected_field
                 selected_field = replace_by_list(selected_field, DINGOS_QUERY_ALIAS_LIST)
                 print "'%s'" % selected_field
@@ -171,7 +174,8 @@ class FormattedFilterCollection:
                 split['selected_fields'].append(selected_field)
         col_specs = split
         return {'columns':col_specs,
-                'kwargs':misc_args}
+                'kwargs':misc_args,
+                'prefetch_related':list(prefetch_related_fields)}
 
 
 class Expression:
@@ -202,7 +206,7 @@ class Condition:
 
     def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT, filter_type='object'):
         value = self.value
-        if not self.key[0] in ['[','@'] and not is_in_list(self.key, DINGOS_QUERY_ALLOWED_CONDITIONS):
+        if not is_in_list(self.key, DINGOS_QUERY_ALLOWED_KEYS[filter_type]):
             raise QueryParserException("Condition key \"" + self.key + "\" is not allowed to use.")
 
         if not self.key[0] in ['[','@']:
@@ -267,16 +271,17 @@ class Condition:
         q_query_prefix = ""
 
         if key[0] == '@' and key[1] == '[' and key[-1] == ']':
-            if filter_type != 'fact':
-                raise QueryParserException("@[attribute] <op> <value> shortcut is only allowed in fact-filters")
+            #if filter_type != 'fact':
+            #    raise QueryParserException("@[attribute] <op> <value> shortcut is only allowed in fact-filters")
             key = key[2:-1]
             sub_q_obj = Q(**{"fact_term__attribute__iregex": key})
             sub_q_obj = sub_q_obj & self.enrich_q_with_not(Q(**{"fact_values__value" + q_operator: value}))
             return Q(attributes__fact__in=Fact.objects.filter(sub_q_obj))
 
         if key[0] == "[" and key[-1] == "]":
-            if filter_type != 'fact':
-                raise QueryParserException("[term] <op> <value> shortcut is only allowed in fact-filters")
+            #if filter_type != 'fact':
+            #    raise QueryParserException("[term] <op> <value> shortcut is only allowed in fact-filters")
+
             #if query_mode == FilterCollection.INFO_OBJECT:
             #    q_query_prefix = "fact_thru__"
 

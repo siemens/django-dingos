@@ -494,6 +494,10 @@ class BasicCustomQueryView(BasicListView):
     def get(self, request, *args, **kwargs):
         self.form = CustomQueryForm(request.GET)
         self.queryset = []
+        if self.request.GET.get('nondistinct',False):
+            distinct = False
+        else:
+            distinct = self.distinct
 
         if 'execute_query' in request.GET and self.form.is_valid():
             if request.GET['query'] == "":
@@ -515,11 +519,12 @@ class BasicCustomQueryView(BasicListView):
                     objects = self.query_base.all()
                     objects = filter_collection.build_query(base=objects)
 
-                    if self.distinct:
-                        if isinstance(self.distinct, tuple):
+                    if distinct:
+                        if isinstance(distinct, tuple):
                             objects = objects.order_by(*list(self.distinct)).distinct(*list(self.distinct))
-                        elif self.distinct:
-                            objects = objects.distinct()
+                        elif isinstance(distinct,bool):
+                            if distinct:
+                                objects = objects.distinct()
                         else:
                             raise TypeError("'distinct' must either be True or a tuple of field names.")
 
@@ -529,23 +534,16 @@ class BasicCustomQueryView(BasicListView):
                     # Filter selected columns for export
                     formatting_arguments = formatted_filter_collection.build_format_arguments(query_mode=self.query_base.model.__name__)
 
+                    print "Formatting %s" % formatting_arguments
                     col_specs = formatting_arguments['columns']
                     misc_args = formatting_arguments['kwargs']
+                    prefetch = formatting_arguments['prefetch_related']
 
-                    if self.prefetch_related:
+
+                    if prefetch:
+                        objects = objects.prefetch_related(*prefetch)
+                    else:
                         if isinstance(self.prefetch_related, tuple):
-                            ## Prefetch displayed columns (they are needed in any case)
-                            #display_cols = col_specs['selected_fields']
-                            #filtered_cols = tuple()
-                            #for col in display_cols:
-                            #    filtered_col = replace_by_list(col, DINGOS_QUERY_PREFETCH_RELATED_MAPPING)
-                            #    if not filtered_col == '':
-                            #        filtered_cols = filtered_cols + (filtered_col,)
-
-                            #self.prefetch_related = self.prefetch_related + tuple(filtered_cols)
-                            ## Remove duplicate items
-                            #self.prefetch_related = tuple(set(self.prefetch_related))
-
                             objects = objects.prefetch_related(*list(self.prefetch_related))
                         else:
                             raise TypeError("'prefetch_related' must either be True or a tuple of field names.")

@@ -74,8 +74,8 @@ if settings.configured and 'DINGOS' in dir(settings):
                                                          dingos.DINGOS_QUERY_ALIAS_LIST)
 
 if settings.configured and 'DINGOS' in dir(settings):
-    dingos.DINGOS_QUERY_ALLOWED_CONDITIONS = settings.DINGOS.get('QUERY_ALLOWED_CONDITIONS',
-                                                                 dingos.DINGOS_QUERY_ALLOWED_CONDITIONS)
+    dingos.DINGOS_QUERY_ALLOWED_KEYS = settings.DINGOS.get('QUERY_ALLOWED_KEYS',
+                                                                 dingos.DINGOS_QUERY_ALLOWED_KEYS)
 
 if settings.configured and 'DINGOS' in dir(settings):
     dingos.DINGOS_QUERY_ALLOWED_COLUMNS = settings.DINGOS.get('QUERY_ALLOWED_COLUMNS',
