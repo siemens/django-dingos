@@ -1,0 +1,20 @@
+<!-- Example below taken from http://en.wikipedia.org/wiki/JSON#XML -->
+<!-- All values different to John Smith except first name-->
+
+<person>
+    <firstName>John</firstName>
+    <lastName>Doe</lastName>
+    <age>26</age>
+    <address>
+        <streetAddress>22 2nd Street</streetAddress>
+        <city>Anaheim</city>
+        <state>CA</state>
+        <postalCode>20021</postalCode>
+    </address>
+    <phoneNumbers>
+        <phoneNumber type="home">312 555-1234</phoneNumber>
+        <phoneNumber type="fax">746 555-4567</phoneNumber>
+    </phoneNumbers>
+</person>
+
+

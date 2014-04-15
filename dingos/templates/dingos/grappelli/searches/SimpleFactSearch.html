@@ -1,5 +1,26 @@
 {% extends "dingos/grappelli/lists/base_lists_two_column.html" %}
 
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+
+
+
 {% load dingos_tags %}
 
 {# Below, we fill out the form that queries the search parameters #}
@@ -85,16 +106,16 @@
       </td>
      {% endif %}
       <td>
-	<a href="{%url 'url.dingos.view.infoobject.redirect2highlight' pk=enrich2fact.iobject.id node=enrich2fact.node_id %}"> {{enrich2fact.iobject.name}} </a>
+	<a href="{%url 'url.dingos.view.infoobject.redirect2highlight' pk=enrich2fact.iobject.id node=enrich2fact.node_id %}"> {{enrich2fact.iobject.name  | insert_wbr }} </a>
     </td>
     <td >
 	{{enrich2fact.iobject.iobject_type.name}}
     </td>
     <td >
-	{{ enrich2fact.fact.fact_term }}
+	{{ enrich2fact.fact.fact_term | insert_wbr}} 
     </td>
     <td >
-	{{ enrich2fact.fact.fact_values.all|join:", " }}
+	{{ enrich2fact.fact.fact_values.all| join:", " | insert_wbr }}
     </td>
    </tr >
   {% endfor %}

@@ -1,0 +1,20 @@
+<!-- Example below taken from http://en.wikipedia.org/wiki/JSON#XML and somewhat modified -->
+
+<who:person 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:who='whoisthis.org'
+        xmlns:address='address.org'>
+    <who:firstName>John</who:firstName>
+    <who:lastName>Smith</who:lastName>
+    <who:age>25</who:age>
+    <who:address xsi:type="address">
+        <address:streetAddress>21 2nd Street</address:streetAddress>
+        <address:city>New York</address:city>
+        <address:state>NY</address:state>
+        <address:postalCode>10021</address:postalCode>
+    </who:address>
+    <who:phoneNumbers>
+        <who:phoneNumber type="home">212 555-1234</who:phoneNumber>
+        <who:phoneNumber type="fax">646 555-4567</who:phoneNumber>
+    </who:phoneNumbers>
+</who:person>

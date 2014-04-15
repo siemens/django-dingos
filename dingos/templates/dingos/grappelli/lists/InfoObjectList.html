@@ -51,10 +51,10 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 			    {% render_table_ordering "identifier__uid" "Identifier" %}
                         </th>
                         <th scope="col"  class="sortable column-timestamp">
-			    {% render_table_ordering "timestamp" "Timestamp" %}
+			    {% render_table_ordering "timestamp" "Object Timestamp" %}
                         </th>
                         <th scope="col"  class="sortable column-created">
-                            {% render_table_ordering "create_timestamp" "Created" %}
+                            {% render_table_ordering "create_timestamp" "Import Timestamp" %}
                         </th>
                         <th scope="col"  class="sortable column-name">
 			   {% render_table_ordering "name" "Name" %}
@@ -90,7 +90,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                             {{obj.create_timestamp | date:"Y-m-d H:i:s O"}}
                         </td>
                         <td>
-                            {{obj.name}}
+                            {{obj.name | insert_wbr }}
                         </td>
                         <td>
                             {{obj.iobject_type.name}}

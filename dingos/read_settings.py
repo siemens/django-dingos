@@ -69,3 +69,18 @@ if settings.configured and 'DINGOS' in dir(settings):
     dingos.DINGOS_DEFAULT_SAVED_SEARCHES = settings.DINGOS.get('DINGOS_DEFAULT_SAVED_SEARCHES',
                                                            dingos.DINGOS_DEFAULT_SAVED_SEARCHES)
 
+if settings.configured and 'DINGOS' in dir(settings):
+    dingos.DINGOS_QUERY_ALIAS_LIST = settings.DINGOS.get('QUERY_ALIAS_LIST',
+                                                         dingos.DINGOS_QUERY_ALIAS_LIST)
+
+if settings.configured and 'DINGOS' in dir(settings):
+    dingos.DINGOS_QUERY_ALLOWED_KEYS = settings.DINGOS.get('QUERY_ALLOWED_KEYS',
+                                                                 dingos.DINGOS_QUERY_ALLOWED_KEYS)
+
+if settings.configured and 'DINGOS' in dir(settings):
+    dingos.DINGOS_QUERY_ALLOWED_COLUMNS = settings.DINGOS.get('QUERY_ALLOWED_COLUMNS',
+                                                              dingos.DINGOS_QUERY_ALLOWED_COLUMNS)
+
+if settings.configured and 'DINGOS' in dir(settings):
+    dingos.DINGOS_QUERY_PREFETCH_RELATED_MAPPING = settings.DINGOS.get('QUERY_PREFETCH_RELATED_MAPPING',
+                                                                       dingos.DINGOS_QUERY_PREFETCH_RELATED_MAPPING)

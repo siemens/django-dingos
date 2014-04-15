@@ -1,0 +1,109 @@
+
+
+
+
+{% extends "dingos/grappelli/lists/base_lists_two_column.html" %}
+
+{% comment %}
+Copyright (c) Siemens AG, 2014
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+
+{% load dingos_tags %}
+{# Below, we fill out the form that queries the search parameters #}
+
+{% block list_title %} Fact Search {% endblock %}
+
+{% block search_options %}
+
+<form action="{% url "url.dingos.search.fact" %}" method="GET">
+  <div class="grp-module">   
+    <h2 class="grp-collapse-handler">Search Options</h2>  
+    <table class="grp-full-width">
+      <tr class="grp-row">
+	<th >
+	  <label for="id_q">Value</label>
+	</th>
+	<td >
+           <div class="c-2"><input type="text" class="vTextField" name = "q" id="id_q" value="{{request.GET.q}}"/></div>
+	</td>
+      </tr>
+    </table>
+    </div>
+  <div>
+    <input style="display:none" id="id_page" name="page" value="1"/>
+  </div>
+  <div class="grp-module grp-submit-row">
+    <header style="display:none"><h1>Submit Options</h1></header>
+    <ul>
+      <li class="grp-float-left"><button value = "Submit" class="grp-button" type="submit" onClick="{{ the_url }}">Search</button></li>
+    </ul>
+  </div>
+</form>
+
+{% endblock %}
+
+{# Below, fill out the #} 
+
+{% block objects %}
+   <div class="grp-module grp-changelist-results">
+    <table id="result_list" cellspacing="0" class="grp-sortable">
+     <thead>
+       <tr>
+	<th scope="col">
+	  IO-Type
+	</th>
+	<th scope="col">
+          Fact Term
+	</th>
+	<th scope="col">
+          Value
+	</th>
+	<th scope="col">
+          
+	</th>
+       </tr>
+     </thead>
+
+
+    <tbody>
+     {% for enrich2fact in object_list %}
+    <tr class="grp-row grp-row-{% cycle 'even' 'odd' %}">
+    <td >
+	{{enrich2fact.iobject.iobject_type.name}}
+    </td>
+    <td >
+	{{ enrich2fact.fact.fact_term | insert_wbr}} 
+    </td>
+    <td >
+	{{ enrich2fact.fact.fact_values.all| join:", " | insert_wbr }}
+    </td>
+    <td>
+      <a href="{% url "url.dingos.search.fact.simple" %}{{view.get_reduced_query_string}}&fact__fact_term__term={{enrich2fact.fact.fact_term | urlencode}}&fact__fact_values__value={{ enrich2fact.fact.fact_values.all.0 | urlencode}}">View all</a>
+    </td>
+   </tr >
+  {% endfor %}
+  </tbody>
+ </table>
+</div>
+{% endblock %}
+
+
+
+
+
+

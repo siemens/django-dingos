@@ -20,12 +20,26 @@ from django import forms
 from django.forms import widgets
 
 class EditSavedSearchesForm(forms.Form):
+    """
+    Form for editing a saved search. Used by the respective view.
+    """
     title = forms.CharField(required=False, # We allow empty titles -- otherwise
                                             # we cannot have the functionality
                                             # that a new saved search is removed
                                             # if no title is given.
                             max_length=100,
                             widget=widgets.TextInput(attrs={'size':'100','class':'vTextField'}))
-    parameter = forms.CharField(max_length=1024,widget=widgets.TextInput(attrs={'readonly':True,'class':'vTextField'}))
+    parameter = forms.CharField(max_length=1024,widget=widgets.TextInput(attrs={'class':'vTextField'}))
     view = forms.CharField(max_length=256,widget=widgets.HiddenInput)
     new_entry = forms.BooleanField(widget=widgets.HiddenInput,required=False)
+
+
+class CustomQueryForm(forms.Form):
+    query = forms.CharField(required=False,widget=widgets.Textarea(attrs={'cols':100,'rows':10,'style': 'height:auto; width:auto;'}))
+    paginate_by = forms.ChoiceField(choices=[(str(x), str(x)) for x in [50,100,200,300,400,500,1000,2]],required=False,initial='100')
+    page = forms.IntegerField(required=False,initial=1,widget=forms.HiddenInput)
+
+
+class EditInfoObjectFieldForm(forms.Form):
+    value = forms.CharField(required=True, widget=widgets.TextInput(attrs={'size':10,'class':'vTextField'}))
+

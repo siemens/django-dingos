@@ -15,6 +15,7 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import re
 
 def listify(x):
     """
@@ -140,3 +141,64 @@ def search_by_re_list(re_list, text):
         if m:
             return m.groupdict()
     return None
+
+
+def get_from_django_obj(obj, fields):
+    """
+    A function for retrieving values from a django object
+    with 'path' generated at runtime. For example, for
+    a Dingos 'InfoObject2Fact' object, the following
+    will extract the list of values associated with
+    the fact referenced in the given InfoObject2Fact
+    object::
+
+       get_from_django_obj(iobject_2_fact,['fact','fact_values','value'])
+
+    *Attention*: This function currently just covers
+    the cases required for its current usage in Dingos:
+    it is likely to mess up in more general cases...
+    """
+    if not fields:
+        return str(obj)
+    if 'Manager' in "%s" % obj.__class__:
+        return (map(lambda o: get_from_django_obj(o, fields[1:]), obj.all()))
+    else:
+        #print "Felder"
+        #print (fields)
+        return get_from_django_obj(getattr(obj, fields[0]), fields[1:])
+
+
+def replace_by_list(key, replacement_list):
+    """
+    Replaces all occurences of a regex pattern in the list with its replacement.
+    List record format: tuple("<regex_alias>", "<replacement>")
+    """
+    result = key
+    for alias, replacement in replacement_list:
+        result = re.sub(alias, replacement, result)
+
+    return result
+
+
+def is_in_list(value, pattern_list):
+    """
+    Searches for value in regex list.
+    """
+    for pattern in pattern_list:
+        if re.match(pattern, value):
+            return True
+    return False
+
+
+def lookup_in_re_list(re_list, text):
+    """
+    Given a list of compiled regular expressions paired
+    with some other value, try to search in text with each matcher until the first
+    match occurs. Return the paired element for the matching matcher.
+    """
+    for (matcher,elt) in re_list:
+        m = matcher.search(text)
+        if m:
+            return elt
+    return None
+

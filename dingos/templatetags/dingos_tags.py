@@ -19,9 +19,17 @@
 from django import template
 from django.utils.html import strip_tags
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.core.urlresolvers import reverse
+
+from django.utils.html import conditional_escape
+from django.utils.safestring import mark_safe
+
+from dingos.models import BlobStorage
+from dingos.core.utilities import get_from_django_obj
 
 from dingos import DINGOS_TEMPLATE_FAMILY
 
+    
 
 
 register = template.Library()
@@ -170,6 +178,28 @@ def node_indent_end(elt_name, node_id, fact_term, attribute):
 
 register.simple_tag(node_indent_end)
 
+@register.simple_tag
+def render_formset_form(formset, formindex, key, field):    
+    """ 
+    Outpts a (plain) rendered field of an formset.
+    The formindex[key] determines which form to take 
+    from the set. Only a given field will be rendered.
+    """
+    return formset[formindex[key][0]][field]
+
+
+
+
+
+@register.filter(needs_autoescape=True)
+def insert_wbr(value,autoescape=None):
+    """
+    """
+    if autoescape:
+        esc = conditional_escape
+    else:
+        esc = lambda x:x
+    return mark_safe(esc("%s" % value).replace('/','/<wbr>').replace('0','0<wbr>').replace('_','_<wbr>'))
 
 @register.filter
 def sliceupto(value, upto):
@@ -182,6 +212,8 @@ def sliceupto(value, upto):
         return value[0:upto]
     except (ValueError, TypeError):
         return value
+
+
 
 @register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_table_ordering(context, index, title):
@@ -206,6 +238,21 @@ def render_table_ordering(context, index, title):
 
     return new_context
 
+
+@register.simple_tag
+def lookup_blob(hash_value):
+    """
+    Combines all given arguments to create clean title-tags values.
+    All arguments are divided by a " " seperator and HTML tags
+    are to be removed.
+    """
+    try:
+        blob = BlobStorage.objects.get(sha256=hash_value)
+    except:
+        return "Blob not found"
+    return blob.content
+
+
 @register.simple_tag
 def create_title(*args):
     """
@@ -217,16 +264,31 @@ def create_title(*args):
     return strip_tags(seperator.join(args))
 
 
+#@register.simple_tag
+#def url_from_query(*args,url=None):
+#    
+#    if not remove:
+#        remove=[]
+#    request_string = context['view'].get_query_string(remove=remove)
+#    return "%s%s" % (reverse(url),request_string) 
+
 @register.inclusion_tag('dingos/%s/includes/_Paginator.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
-def render_paginator(context):
+def render_paginator(context,is_counting=True):
+    if 'counting_paginator' in dir(context['view']):
+        is_counting = context['view'].counting_paginator
+    else:
+        is_counting = True
+
     request_string = context['view'].get_query_string(remove=['page'])
-    return {'request_string':request_string,'paginator':context['paginator'],'page_obj':context['page_obj']}
+    return {'request_string':request_string,'paginator':context['paginator'],'page_obj':context['page_obj'],
+            'paginate_by': context['view'].paginate_by, 'object_list_len': context.get('object_list_len',0),
+            'counting_paginator': is_counting}
 
 # Below we register template tags that display
 # certain aspects of an InformationObject.
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectFactsDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
-def show_InfoObject(context, iobject, iobject2facts, highlight=None,show_NodeID=False):
+def show_InfoObject(context, iobject, iobject2facts, highlight=None, show_NodeID=False, formset=None, formindex=None):
     page = context['view'].request.GET.get('page')
 
     iobject2facts_paginator = Paginator(iobject2facts,200)
@@ -245,7 +307,6 @@ def show_InfoObject(context, iobject, iobject2facts, highlight=None,show_NodeID=
         # If page is out of range (e.g. 9999), deliver last page of results.
         iobject2facts = iobject2facts_paginator.page(iobject2facts_paginator.num_pages)
 
-
     return {'object': iobject,
             'view' : context['view'],
             'is_paginated' : is_paginated,
@@ -254,7 +315,9 @@ def show_InfoObject(context, iobject, iobject2facts, highlight=None,show_NodeID=
             'highlight' : highlight,
             'show_NodeID' : show_NodeID,
             'iobject2facts_paginator':iobject2facts_paginator,
-            'iobject2facts': iobject2facts}
+            'iobject2facts': iobject2facts,
+            'formindex' : formindex,
+            'formset' : formset }
 
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectRevisionListDisplay.html'% DINGOS_TEMPLATE_FAMILY)
@@ -290,3 +353,19 @@ def show_InfoObjectIDData(iobject, show_hyperlink=False,show_title=False):
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectMarkingsListDisplay.html'% DINGOS_TEMPLATE_FAMILY)
 def show_InfoObjectMarkings(iobject):
     return {'object': iobject}
+
+
+@register.simple_tag
+def show_InfoObjectField(oneObject, field):
+    """
+    Outputs one field of an InfoObject.
+    """
+    result = oneObject
+    fields = field.split('.')
+    result = get_from_django_obj(result,fields)
+    if isinstance(result,list):
+        return ', '.join(result)
+    else:
+        return result
+
+

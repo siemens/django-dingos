@@ -37,7 +37,7 @@ class Command(BaseCommand):
 
     """
     args = 'user_name user_name user_name ...'
-    help = 'Reset user customizations for specified users'
+    help = """Reset user customizations for specified users. When 'ALL' is passed as argument, the changes are carried out for all users."""
 
     option_list = BaseCommand.option_list + (
         make_option('-r', '--reset',
@@ -57,24 +57,32 @@ class Command(BaseCommand):
         if 'reset_target' in options:
             if options['reset_target'] in ['preferences','saved_searches', 'all']:
                 for user_name in args:
-                    user = None
-                    try:
-                        user = User.objects.get(username=user_name)
-                    except ObjectDoesNotExist:
-                        pass
-                    if user:
-                        if options['reset_target'] in ['preferences','all']:
-                            UserData.store_user_data(user=user,
-                                                     data_kind=DINGOS_USER_PREFS_TYPE_NAME,
-                                                     user_data=DINGOS_DEFAULT_USER_PREFS,
-                                                     iobject_name = "User preferences of user '%s'" % user_name)
-                            print "Resetting user preferences for user %s." % user_name
-                        if options['reset_target'] in ['saved_searches','all']:
-                            UserData.store_user_data(user=user,
-                                                     data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
-                                                     user_data=DINGOS_DEFAULT_SAVED_SEARCHES,
-                                                     iobject_name = "Saved searches of user '%s'" % user_name)
-                            print "Resetting saved searches for user %s." % user_name
+                    user_list = None
+                    if user_name == 'ALL':
+                        user_list = User.objects.all()
+                    else:
+                        try:
+                            user_list = [User.objects.get(username=user_name)]
+                        except ObjectDoesNotExist:
+                            print "User %s not found" % user_name
+
+                    if user_list:
+                        for user in user_list:
+
+                            if options['reset_target'] in ['preferences','all']:
+                                print "Resetting user preferences for user %s." % user.username
+                                UserData.store_user_data(user=user,
+                                                         data_kind=DINGOS_USER_PREFS_TYPE_NAME,
+                                                         user_data=DINGOS_DEFAULT_USER_PREFS,
+                                                         iobject_name = "User preferences of user '%s'" % user_name)
+
+                            if options['reset_target'] in ['saved_searches','all']:
+                                print "Resetting saved searches for user %s." % user.username
+                                UserData.store_user_data(user=user,
+                                                         data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
+                                                         user_data=DINGOS_DEFAULT_SAVED_SEARCHES,
+                                                         iobject_name = "Saved searches of user '%s'" % user_name)
+
             else:
                 print "Please specify valid option for reset."
 

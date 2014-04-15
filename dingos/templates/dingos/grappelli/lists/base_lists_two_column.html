@@ -32,15 +32,16 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% block content %}
 
-    <div class= {% if customization.horizontal.dingos.view.orientation != 'horizontal' %}
-                ""
-                {% else %}
+    <div class= {% if customization.horizontal.dingos.view.orientation == 'horizontal' %}
                 "l-2cr-fluid l-d-12"
-
+	        {% elif customization.horizontal.dingos.view.orientation == 'auto' %}
+                "l-2cr-responsive l-2cr-fluid l-d-12"
+                {% else %}
+                ""
                 {% endif %}
             >
         <div class="c-1">
-
+        {% block right_column %}
             <div class="grp-module">
                 <h2>{% block tool_title %}Filter Parameters {% endblock %}</h2>
                 {%  block list-tools %}
@@ -70,26 +71,30 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                 {% endblock %}
 
             </div>
+        {% endblock %}
         </div>
         <div class="c-2">
-            {% block frontmatter %}
-            {% endblock frontmatter %}
+        {% block left_column %}
+            {% block frontmatter %}{% endblock frontmatter %}
             <div class="grp-module">
-            <h2 class="grp-collapse-handler">{% block list_title %}Object List {% endblock %}</h2>
+                <h2 class="grp-collapse-handler">{% block list_title %}Object List {% endblock %}</h2>
 
-            {%  if is_paginated %}
-                {%  render_paginator  %}
-            {% endif %}
+                {% block in_list_tools %}{% endblock %}
 
-            {% block objects %}
-        {% endblock %}
-            {%  if is_paginated %}
-                {%  render_paginator  %}
-            {% endif %}
+                {% if is_paginated %}
+                    {%  render_paginator  %}
+                {% endif %}
+
+                {% block objects %}{% endblock %}
+
+                {% if is_paginated %}
+                    {% render_paginator  %}
+                {% endif %}
+
             </div>
+            {% block endmatter %}{% endblock endmatter %}
+        {% endblock %}
         </div>
-
-
 
         </div>
 
@@ -140,7 +145,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                       open: function (event, ui) { // needed because grappelli uses unclean zIndex values (which makes text visible on dialoge box)
                               $('#dialog').parent('.ui-dialog').css('zIndex', 99999).nextAll('.ui-widget-overlay').css('zIndex', 99999); 
                       },
-                      close: function(event, ui) { $('#action-submit'). ;$('#dialog').dialog('destroy'); },
+                      //close: function(event, ui) { $('#action-submit'). ;$('#dialog').dialog('destroy'); },
                     });
             });
 

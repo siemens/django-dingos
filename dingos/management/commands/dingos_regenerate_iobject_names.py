@@ -23,6 +23,9 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from dingos.models import InfoObject
 
+from django.utils.timezone import now
+from datetime import timedelta
+
 class Command(BaseCommand):
     """
     This class implements the command for importing a generic XML
@@ -40,9 +43,23 @@ class Command(BaseCommand):
                 help='String according to which the InfoObjects for which the name is to be generated'
                      'are restricted: only those InfoObjects are touched '
                      'types whose type name contains the provided expression.'),
+        make_option('-a', '--age_in_hours',
+                action='store',
+                dest='hours_age',
+                default=None,
+                help='Time span according to which the InfoObjects for which the name is to be generated'
+                     'are restricted: only those InfoObjects are touched '
+                     'types whose IMPORT date lies no more than the provided number of hours in the past.'),
     )
 
 
     def handle(self, *args, **options):
-        for io in InfoObject.objects.filter(iobject_type__name__icontains=options['restrict_by']):
+        if options['hours_age']:
+            iobjects = InfoObject.objects.filter(iobject_type__name__icontains=options['restrict_by'],create_timestamp__gt=now() - timedelta(hours=int(options['hours_age'])))
+        else:
+            iobjects = InfoObject.objects.filter(iobject_type__name__icontains=options['restrict_by'])
+        for io in iobjects:
+            current_name = io.name
+            print "Renaming %s with current name %s" % (io.identifier.uid,io.name)
             io.set_name()
+            print "Renaming %s from %s to %s. " % (io.identifier.uid,current_name,io.name)

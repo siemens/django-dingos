@@ -30,7 +30,8 @@ from models import DataTypeNameSpace,\
     IdentifierNameSpace,\
     UserData,\
     FactTermNamespaceMap,\
-    PositionalNamespace
+    PositionalNamespace,\
+    IdentifierNameSpaceSubstitutionMap
 
 
 
@@ -171,6 +172,8 @@ admin.site.register(IdentifierNameSpace)
 admin.site.register(InfoObjectType,InfoObjectTypeAdmin)
 admin.site.register(InfoObjectFamily,InfoObjectFamilyAdmin)
 admin.site.register(FactTerm2Type,FactTerm2TypeAdmin)
+
+admin.site.register(IdentifierNameSpaceSubstitutionMap)
 
 
 

@@ -11,7 +11,13 @@ try:
         DATABASES={
             "default": {
                 "ENGINE": "django.db.backends.sqlite3",
-            }
+        'ENGINE': 'django.db.backends.postgresql_psycopg2', #'django.db.backends.mysql', #'django.db.backends.postgresql_psycopg2', # 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'USER': 'mantis',                      # Not used with sqlite3.
+        'NAME': 'django',                      # Not used with sqlite3.
+        'PASSWORD': 'mantis',
+        'HOST': 'localhost',                      # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': '5432',                      # Set to empty string for default. Not used with sqlite3.
+    }
         },
         ROOT_URLCONF="dingos.urls",
         INSTALLED_APPS=[
@@ -32,7 +38,7 @@ except ImportError:
 
 def run_tests(*test_args):
     if not test_args:
-        test_args = ['tests']
+        test_args = ['tests.test_query']
 
     # Run tests
     test_runner = NoseTestSuiteRunner(verbosity=1)

@@ -15,49 +15,145 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+
+import csv
+
 import collections
 import copy
+import json
+
+from django import http
+
 
 from django.views.generic.base import ContextMixin
-from django.views.generic import DetailView, ListView, TemplateView
+from django.views.generic import DetailView, ListView, TemplateView, View
+
+from django.core.paginator import Paginator, EmptyPage
+
+from django.core.paginator import PageNotAnInteger
+
+
+from django.db import DataError
+
+
+from django.shortcuts import render_to_response
 
 from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
 
 from  django.core import urlresolvers
 
+from django.contrib import messages
+
 from django.utils.http import urlquote_plus
 
 from core.http_helpers import get_query_string
 
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
+
+
 
 from django_filters.views import FilterView
 
+from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
+
 from dingos.models import UserData
+
+from dingos.forms import CustomQueryForm
+
+from dingos.queryparser.result_formatting import to_csv
+
 from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_USER_PREFS_TYPE_NAME, \
     DINGOS_DEFAULT_USER_PREFS, \
     DINGOS_SAVED_SEARCHES_TYPE_NAME, \
-    DINGOS_DEFAULT_SAVED_SEARCHES
+    DINGOS_DEFAULT_SAVED_SEARCHES, \
+    DINGOS_QUERY_PREFETCH_RELATED_MAPPING
 
 from dingos.core.template_helpers import ConfigDictWrapper
 
-from dingos.core.utilities import get_dict
+from dingos.core.utilities import get_dict, replace_by_list
+
+from dingos.models import InfoObject
+
+from queryparser.queryparser import QueryParser
+
+
+class UncountingPaginator(Paginator):
+    """
+    Counting the number of existing data records can be incredibly slow
+    in postgresql. For list/filter views where we find no solution for
+    this problem, we disable the counting. For this, we need a modified
+    paginator that always returns a huge pagecount.
+
+    """
+
+    def validate_number(self, number):
+        """
+        Validates the given 1-based page number.
+        """
+        try:
+            number = int(number)
+        except (TypeError, ValueError):
+            raise PageNotAnInteger('That page number is not an integer')
+        if number < 1:
+            raise EmptyPage('That page number is less than 1')
+        if number > self.num_pages:
+            # The original paginator raises an exception here if
+            # the required page does not contain results. This
+            # we need to disable, of course
+            pass
+
+        return number
+
+    def page(self, number):
+        """
+        Returns a Page object for the given 1-based page number.
+        """
+        number = self.validate_number(number)
+        bottom = (number - 1) * self.per_page
+        top = bottom + self.per_page
+        # The original Paginator makes the test shown above;
+        # we disable this test. This does not cause problems:
+        # a queryset handles a too large upper bound gracefully.
+        #if top + self.orphans >= self.count:
+        #    top = self.count
+        return self._get_page(self.object_list[bottom:top], number, self)
+
+    count = 10000000000
+
+    num_pages = 10000000000
+
+    # Page-range: returns a 1-based range of pages for iterating through within
+    # a template for loop. For our modified paginator, we return an empty set.
+    # This is likely to lead to problems where the page_range is used. In our
+    # views, this is not the case, it seems.
+
+    page_range = []
+
 
 class CommonContextMixin(ContextMixin):
     """
     Each view passes a 'context' to the template with which the view
-    is rendered. By inluding this mixin in a class-based view, the
+    is rendered. By including this mixin in a class-based view, the
     context is enriched with the contents expected by all Dingos
     templates.
     """
+
+    object_list_len = None
+
     def get_context_data(self, **kwargs):
 
         context = super(CommonContextMixin, self).get_context_data(**kwargs)
 
         context['title'] = self.title if hasattr(self, 'title') else '[TITLE MISSING]'
 
+
         context['list_actions'] = self.list_actions if hasattr(self, 'list_actions') else []
+
+        if 'object_list' in context and self.object_list_len == None:
+            self.object_list_len = len(list(context['object_list']))
+        context['object_list_len'] = self.object_list_len
+
 
         user_data_dict = self.get_user_data()
 
@@ -75,13 +171,11 @@ class CommonContextMixin(ContextMixin):
         # not yield a different value.
 
         settings = self.request.session.get('customization')
-        #print " 1 Found Settings %s" % settings
 
         wrapped_settings = ConfigDictWrapper(config_dict=user_data_dict.get('customization',{}))
         wrapped_saved_searches = ConfigDictWrapper(config_dict=user_data_dict.get('saved_searches',{}))
 
         settings = self.request.session.get('customization')
-        #print " 2 Found Settings %s" % settings
 
         context['customization'] = wrapped_settings
         context['saved_searches'] = wrapped_saved_searches
@@ -106,7 +200,23 @@ class ViewMethodMixin(object):
         return get_query_string(self.request,*args,**kwargs)
 
     def get_user_data(self):
+        """
+        Extracts user data, either from user session or from
+        database (for each User, an InfoObject is used to
+        store data of a certain kind (e.g., user customization,
+        saved searches, etc.). If for a given user,
+        no InfoObject exists for a given type of user-specific data,
+        the default data is read from the settings and
+        an InfoObject with default settings is created.
 
+        The function returns a dictionary of form
+
+        {'customization': <dict with user customization>,
+         'saved_searches': <dict with saved searches>
+         }
+
+
+        """
 
         # Below, we retrieve user-specific data (user preferences, saved searches, etc.)
         # We take this data from the session -- if it has already been
@@ -123,7 +233,7 @@ class ViewMethodMixin(object):
         # 4.) authenticated user && anonymous settings --> load
 
         settings = self.request.session.get('customization')
-        print "Found Settings %s" % settings
+
         saved_searches = self.request.session.get('saved_searches')
         load_new_settings = False
 
@@ -141,7 +251,6 @@ class ViewMethodMixin(object):
 
         else:
             load_new_settings = True
-        print "Load is %s" % load_new_settings
 
         if load_new_settings:
             # Load user settings. If for the current user, no user settings have been
@@ -172,7 +281,7 @@ class ViewMethodMixin(object):
 
             saved_searches = UserData.get_user_data(user=self.request.user, data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
             if not saved_searches:
-                print "STORING DATA"
+
                 UserData.store_user_data(user=self.request.user,
                                          data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
                                          user_data=DINGOS_DEFAULT_SAVED_SEARCHES,
@@ -180,17 +289,23 @@ class ViewMethodMixin(object):
                 saved_searches = UserData.get_user_data(user=self.request.user, data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME)
 
 
-            print "Writing Customization %s %s" % (settings, saved_searches)
             self.request.session['customization'] = settings
             self.request.session['saved_searches'] = saved_searches
-            print "Written: %s" % self.request.session['customization']
 
         return {'customization': settings,
                 'saved_searches' : saved_searches}
 
 
     def _lookup_user_data(self,*args,**kwargs):
-        print 'Called lookup with %s %s' % (args,kwargs)
+        """
+        Generic function for looking up values in
+        a user-specific dictionary. Use as follows::
+
+           _lookup_user_data('path','to','desired','value','in','dictionary',
+                             default = <default value>,
+                             data_kind = 'customization'/'saved_searches')
+
+        """
         user_data = self.get_user_data()
         data_kind = kwargs.get('data_kind','customization')
         try:
@@ -211,21 +326,48 @@ class ViewMethodMixin(object):
             return result
 
     def lookup_customization(self,*args,**kwargs):
+        """
+        Lookup value in user-customization dictionary. Use as follows::
+
+             lookup_customization('path','to','desired','value','in','dictionary',
+                                 default = <default value>)
+        """
         kwargs['data_kind']='customization'
         return self._lookup_user_data(*args,**kwargs)
 
     def lookup_saved_searches(self,*args,**kwargs):
+        """
+        Lookup value in saved_searches dictionary. Use as follows::
+
+             lookup_customization('path','to','desired','value','in','dictionary',
+                                 default = <default value>)
+        """
+
         kwargs['data_kind']='saved_searches'
         return self._lookup_user_data(*args,**kwargs)
 
 
 class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
+    """
+    Basic class for defining list views: includes the necessary mixins
+    and code to read pagination information from user customization.
+    """
+
 
     login_url = "/admin"
 
     template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
 
     breadcrumbs = ()
+
+    counting_paginator = False
+
+    @property
+    def paginator_class(self):
+        if not self.counting_paginator:
+            return UncountingPaginator
+        else:
+            return super(BasicFilterView,self).paginator_class
 
     @property
     def paginate_by(self):
@@ -233,12 +375,28 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
         return item_count
 
 class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,FilterView):
+    """
+    Basic class for defining filter views: includes the necessary mixins
+    and code to
+
+    - read pagination information from user customization.
+    - save filter settings as saved search
+    """
 
     login_url = "/admin"
 
     template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
 
     breadcrumbs = ()
+
+    counting_paginator = False
+
+    @property
+    def paginator_class(self):
+        if not self.counting_paginator:
+            return UncountingPaginator
+        else:
+            return super(BasicFilterView,self).paginator_class
 
     @property
     def paginate_by(self):
@@ -274,7 +432,11 @@ class BasicDetailView(CommonContextMixin,
     breadcrumbs = (('Dingo',None),
                    ('View',None),
     )
-""
+
+    @property
+    def paginate_by(self):
+        return self.lookup_customization('dingos','view','pagination','lines',default=20)
+
 
 class BasicTemplateView(CommonContextMixin,
                        ViewMethodMixin,
@@ -287,5 +449,197 @@ class BasicTemplateView(CommonContextMixin,
     breadcrumbs = (('Dingo',None),
                    ('View',None),
     )
+
+
+
+class BasicCustomQueryView(BasicListView):
+    page_to_show = 1
+
+    counting_paginator = False
+
+    template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
+
+    title = 'Custom Info Object Search'
+
+    form = None
+    format = None
+    distinct = True
+
+    query_base = InfoObject.objects.exclude(latest_of=None)
+
+    prefetch_related = ('iobject_type',
+                        'iobject_type__iobject_family',
+                        'iobject_family',
+                        'identifier__namespace',
+                        'iobject_family_revision',
+                        'identifier')
+
+    paginate_by_value = 5
+
+    col_headers = ["Identifier", "Object Timestamp", "Import Timestamp", "Name", "Object Type", "Family"]
+    selected_cols = ["identifier", "timestamp", "create_timestamp", "name", "iobject_type.name", "iobject_family.name"]
+
+    @property
+    def paginate_by(self):
+        return self.paginate_by_value
+
+    def get_context_data(self, **kwargs):
+        """
+        Call 'get_context_data' from super and include the query form in the context
+        for the template to read and display.
+        """
+        context = super(BasicCustomQueryView, self).get_context_data(**kwargs)
+        context['form'] = self.form
+        context['col_headers'] = self.col_headers
+        context['selected_cols'] = self.selected_cols
+        context['query']= self.request.GET.get('query','')
+        if self.request.GET.get('nondistinct',False):
+            context['distinct'] = False
+        else:
+            context['distinct'] = True
+        return context
+
+    def get(self, request, *args, **kwargs):
+        self.form = CustomQueryForm(request.GET)
+        self.queryset = []
+        if self.request.GET.get('nondistinct',False):
+            distinct = False
+        else:
+            distinct = self.distinct
+
+        if 'execute_query' in request.GET and self.form.is_valid():
+            if request.GET['query'] == "":
+                messages.error(self.request, "Please enter a query.")
+            else:
+                try:
+                    # Parse query
+                    parser = QueryParser()
+                    query = self.form.cleaned_data['query']
+                    self.paginate_by_value = int(self.form.cleaned_data['paginate_by'])
+                    if self.form.cleaned_data['page']:
+                        self.page_to_show = int(self.form.cleaned_data['page'])
+
+                    # Generate and execute query
+                    formatted_filter_collection = parser.parse(str(query))
+
+                    filter_collection = formatted_filter_collection.filter_collection
+
+                    objects = self.query_base.all()
+                    objects = filter_collection.build_query(base=objects)
+
+                    if distinct:
+                        if isinstance(distinct, tuple):
+                            objects = objects.order_by(*list(self.distinct)).distinct(*list(self.distinct))
+                        elif isinstance(distinct,bool):
+                            if distinct:
+                                objects = objects.distinct()
+                        else:
+                            raise TypeError("'distinct' must either be True or a tuple of field names.")
+
+                    # Output format
+                    result_format = formatted_filter_collection.format
+
+                    # Filter selected columns for export
+                    formatting_arguments = formatted_filter_collection.build_format_arguments(query_mode=self.query_base.model.__name__)
+
+                    print "Formatting %s" % formatting_arguments
+                    col_specs = formatting_arguments['columns']
+                    misc_args = formatting_arguments['kwargs']
+                    prefetch = formatting_arguments['prefetch_related']
+
+
+                    if prefetch:
+                        objects = objects.prefetch_related(*prefetch)
+                    else:
+                        if isinstance(self.prefetch_related, tuple):
+                            objects = objects.prefetch_related(*list(self.prefetch_related))
+                        else:
+                            raise TypeError("'prefetch_related' must either be True or a tuple of field names.")
+
+                    self.queryset = objects
+
+                    if result_format == 'default':
+                        # Pretty useless case for live system but useful for tests
+                        return super(BasicListView, self).get(request, *args, **kwargs)
+                    elif result_format == 'csv':
+                        p = self.paginator_class(self.queryset, self.paginate_by_value)
+                        response = HttpResponse(content_type='text') # '/csv')
+                        #response['Content-Disposition'] = 'attachment; filename="result.csv"'
+                        writer = csv.writer(response)
+
+                        to_csv(p.page(self.page_to_show).object_list,
+                               writer,
+                               col_specs['headers'],
+                               col_specs['selected_fields'],
+                               **misc_args)
+
+                        return response
+                    elif result_format == 'table':
+                        self.col_headers = col_specs['headers']
+                        self.selected_cols = col_specs['selected_fields']
+                        return super(BasicListView, self).get(request, *args, **kwargs)
+                    else:
+                        raise ValueError('Unsupported output format')
+
+                except Exception as ex:
+                    messages.error(self.request, str(ex))
+        return super(BasicListView, self).get(request, *args, **kwargs)
+
+class BasicJSONView(CommonContextMixin,
+                    ViewMethodMixin,
+                    LoginRequiredMixin,
+                    View):
+
+    login_url = "/admin"
+
+    indent = 2
+
+    @property
+    def returned_obj(self):
+        return {"This":"That"}
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
+
+    def render_to_response(self, context):
+        returned_obj = self.returned_obj
+        if isinstance(returned_obj,basestring):
+            json_string = returned_obj
+        else:
+            json_string = json.dumps(returned_obj,indent=self.indent)
+
+        return self._get_json_response(json_string)
+
+
+
+    def _get_json_response(self, content, **httpresponse_kwargs):
+         return http.HttpResponse(content,
+                                  content_type='application/json',
+                                  **httpresponse_kwargs)
+
+
+class BasicView(CommonContextMixin,
+                ViewMethodMixin,
+                LoginRequiredMixin,
+                View):
+
+    login_url = "/admin"
+
+
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
+    def render_to_response(self, context):
+        raise NotImplementedError("No render_to_response method implemented!")
+
+
 
 

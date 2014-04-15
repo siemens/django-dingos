@@ -21,6 +21,12 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
 {% block fact %}
+
+   {% if formset and formindex %}
+     <form id="infoobject-edit" action="" method="post">{% csrf_token %}
+     {{ formset.management_form }}
+   {% endif %}
+
     <div class="grp-module grp-collapse grp-open">
         <h2 class="grp-collapse-handler">Facts</h2>
 
@@ -55,23 +61,28 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                             <a name="{{ k.node_id }}"> </a>
                         {% if k.fact.value_iobject_id %}
+                            {%  if k.fact.value_iobject_id.latest %}
                             <a href={% url 'url.dingos.view.infoobject' k.fact.value_iobject_id.latest.pk %}>
-                                {% if k.fact.value_iobject_id.latest.name == 'PLACEHOLDER' %}
+                                {% if k.fact.value_iobject_id.latest.name == '' or k.fact.value_iobject_id.latest.name == 'PLACEHOLDER' %}
                                     {{k.fact.value_iobject_id.latest.iobject_type.name}}
                                 {% else %}
                                     {{k.fact.value_iobject_id.latest.name}}
                                 {% endif %}</a>
-
+                            {%  else %}
+                                {{ k.fact.value_iobject_id.namespace.uri }}:{{ k.fact.value_iobject_id.uid }}
+                            {% endif %}
                         {% else %}
                             {%  for value in k.fact.fact_values.all %}
                                 {% if value.storage_location == 1 %}
                                     On Disk: {{ value.value }}
                                 {% elif value.storage_location == 2 %}
-                                    In Blob Table: {{ value.value }}
+                                    {%  lookup_blob value.value %}
+                                {% elif k.node_id.name in formindex %}
+                                    {% render_formset_form formset formindex k.node_id.name 'value' %}
                                 {% else %}
-                                    {{ value.value }}
-
+ 			                        {{ value.value }}
                                 {% endif %}
+
                                 {%  if not forloop.last %}
                                   ,<br/>
                                 {% endif %}
@@ -96,6 +107,13 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     </div>
 
+  {% if formset and formindex %}
+    <footer class="grp-module grp-submit-row grp-fixed-footer">
+    <header style="display:none"><h1>Submit Options</h1></header>
+      <ul><li><input class="grp-button grp-default" type="submit" value="Save"></input></li></ul>
+    </footer>
+  </form>
+  {% endif %}
 {% endblock %}
 
 
@@ -186,8 +204,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
         {% endfor %}
     </table>
-
-
 </div>
 
 

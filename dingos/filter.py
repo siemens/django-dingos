@@ -53,6 +53,10 @@ class ExtendedDateRangeFilter(django_filters.DateRangeFilter):
             '%s__gte' % name: now() - timedelta(minutes=5),
             '%s__lt' % name: now() + timedelta(minutes=5),
             }))),
+        (120, (_('Past hour'), lambda qs, name: qs.filter(**{
+            '%s__gte' % name: now() - timedelta(minutes=60),
+            '%s__lt' % name: now() + timedelta(minutes=60),
+            }))),
         (200, (_('Today'), lambda qs, name: qs.filter(**{
             '%s__year' % name: now().year,
             '%s__month' % name: now().month,
@@ -83,12 +87,21 @@ class ExtendedDateRangeFilter(django_filters.DateRangeFilter):
 
 class InfoObjectFilter(django_filters.FilterSet):
 
-    iobject_type_qs = \
-        InfoObjectType.objects. \
-            exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME). \
-            annotate(num_objects=Count('iobject_set')).\
-            filter(num_objects__gt=0).\
-            prefetch_related('iobject_family').order_by('iobject_family__name','name')
+    # We want to restrict the selection of InfoObject Types to those for which there are actually
+    # objects in the system. The first try to do so was the query below, but that becomes awfully
+    # slow with many objects in the system, because for some reason, Django makes the sQL query
+    # such that it orders as the very first on *all* objects.
+
+    #iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('iobject_set')). \
+    #    filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
+  
+
+    # The query below is a lot faster
+
+    iobject_type_qs_a = InfoObject.objects.values('iobject_type__id').distinct()
+    iobject_type_qs = InfoObjectType.objects.exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME).\
+                      filter(pk__in=iobject_type_qs_a.filter()).order_by('iobject_family__name','name').prefetch_related('iobject_family')
+
 
     iobject_type =  django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
                                                     required=None,
@@ -110,11 +123,14 @@ class InfoObjectFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(lookup_type='icontains',
                                                 label='Name contains')
 
+    iobject_type__name = django_filters.CharFilter(lookup_type='regex',
+                                                label='Object Type matches')
+
     identifier__uid = django_filters.CharFilter(lookup_type='icontains',
                                                 label='ID contains')
 
-    #marking_thru__marking__identifier__uid = django_filters.CharFilter(lookup_type='icontains',
-    #                                                                   label='Marking ID contains')
+    marking_thru__marking__identifier__uid = django_filters.CharFilter(lookup_type='icontains',
+                                                                       label='Marking ID contains')
 
     timestamp = ExtendedDateRangeFilter(label="Object Creation Timestamp")
 
@@ -123,8 +139,66 @@ class InfoObjectFilter(django_filters.FilterSet):
     class Meta:
         order_by = create_order_keyword_list(['identifier__uid','timestamp','create_timestamp','name','iobject_type','iobject_type__iobject_family'])
         model = InfoObject
-        fields = ['iobject_type','iobject_type__iobject_family','name',
-                  'identifier__namespace','identifier__uid','timestamp', 'create_timestamp']
+        fields = ['iobject_type','iobject_type__name','iobject_type__iobject_family','name',
+                  'identifier__namespace','identifier__uid','timestamp', 'create_timestamp','marking_thru__marking__identifier__uid']
+
+
+class CompleteInfoObjectFilter(django_filters.FilterSet):
+
+    # We want to restrict the selection of InfoObject Types to those for which there are actually
+    # objects in the system. The first try to do so was the query below, but that becomes awfully
+    # slow with many objects in the system, because for some reason, Django makes the sQL query
+    # such that it orders as the very first on *all* objects.
+
+    #iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('iobject_set')). \
+    #    filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
+  
+
+    # The query below is a lot faster
+
+    iobject_type_qs_a = InfoObject.objects.values('iobject_type__id').distinct()
+    iobject_type_qs = InfoObjectType.objects.\
+                      filter(pk__in=iobject_type_qs_a.filter()).order_by('iobject_family__name','name').prefetch_related('iobject_family')
+
+
+    iobject_type =  django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
+                                                    required=None,
+                                                    label="InfoObject Type",
+                                                    to_field_name='id')
+
+    iobject_type__iobject_family = django_filters.ModelChoiceFilter(
+        queryset= InfoObjectFamily.objects.all(),
+        required=None,
+        label="InfoObject Family",
+        to_field_name='id')
+
+    identifier__namespace = django_filters.ModelChoiceFilter(
+        queryset= IdentifierNameSpace.objects.all(),
+        required=None,
+        label="ID Namespace",
+        to_field_name='id')
+
+    name = django_filters.CharFilter(lookup_type='icontains',
+                                                label='Name contains')
+
+    iobject_type__name = django_filters.CharFilter(lookup_type='regex',
+                                                label='Object Type matches')
+
+    identifier__uid = django_filters.CharFilter(lookup_type='icontains',
+                                                label='ID contains')
+
+    marking_thru__marking__identifier__uid = django_filters.CharFilter(lookup_type='icontains',
+                                                                       label='Marking ID contains')
+
+    timestamp = ExtendedDateRangeFilter(label="Object Creation Timestamp")
+
+    create_timestamp = ExtendedDateRangeFilter(label="Import Timestamp")
+
+    class Meta:
+        order_by = create_order_keyword_list(['identifier__uid','timestamp','create_timestamp','name','iobject_type','iobject_type__iobject_family'])
+        model = InfoObject
+        fields = ['iobject_type','iobject_type__name','iobject_type__iobject_family','name',
+                  'identifier__namespace','identifier__uid','timestamp', 'create_timestamp','marking_thru__marking__identifier__uid']
 
 
 
@@ -152,29 +226,80 @@ class FactTermValueFilter(django_filters.FilterSet):
     fact__fact_values__value = django_filters.CharFilter(lookup_type='icontains',
                                                          label='Value contains')
 
-    fact__fact_term__term = django_filters.CharFilter(lookup_type='icontains',
-                                                     label='Fact term contains')
+    fact__fact_term__term = django_filters.CharFilter(lookup_type='regex',
+                                                     label='Fact term (w/o attribute) matches')
 
-    iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('iobject_set')). \
-        filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
+    fact__fact_term__attribute = django_filters.CharFilter(lookup_type='regex',
+                                                     label='Attribute matches')
+
+
+    iobject__name = django_filters.CharFilter(lookup_type='icontains',
+                                                     label='Object name contains')
+
+
+
+    # We want to restrict the selection of InfoObject Types to those for which there are actually
+    # objects in the system. The first try to do so was the query below, but that becomes awfully
+    # slow with many objects in the system, because for some reason, Django makes the sQL query
+    # such that it orders as the very first on *all* objects.
+
+    #iobject_type_qs = InfoObjectType.objects.annotate(num_objects=Count('iobject_set')). \
+    #    filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
+  
+    # The query below is a lot faster
+
+
+    iobject_type_qs_a = InfoObject.objects.values('iobject_type__id').distinct()
+    iobject_type_qs = InfoObjectType.objects.exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME).\
+                      filter(pk__in=iobject_type_qs_a.all()).order_by('iobject_family__name','name').prefetch_related('iobject_family')
+
 
     iobject__iobject_type = django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
                                                 required=None,
                                                 label="InfoObject Type",
                                                 to_field_name='id')
 
+
+
     iobject__timestamp = ExtendedDateRangeFilter(label='Object Timestamp')
 
-    iobject__created_timestamp = ExtendedDateRangeFilter(label='Create/Import Timestamp')
+    iobject__create_timestamp = ExtendedDateRangeFilter(label='Import Timestamp')
+
+    iobject__timestamp = ExtendedDateRangeFilter(label='Object Timestamp')
 
     #iobject__iobject_type = django_filters.ModelMultipleChoiceFilter()
+
+    iobject__identifier__namespace = django_filters.ModelChoiceFilter(
+        queryset= IdentifierNameSpace.objects.exclude(uri__exact=DINGOS_ID_NAMESPACE_URI),
+        required=None,
+        label="ID Namespace",
+        to_field_name='id')
+
+    iobject__iobject_type__name = django_filters.CharFilter(lookup_type='icontains',
+                                                     label='Object Type name contains')
+
+
+
+    iobject__marking_thru__marking__identifier__uid = django_filters.CharFilter(lookup_type='icontains',
+                                                                       label='Marking ID contains')
+
+
+    class Meta:
+        #order_by = create_order_keyword_list(['iobject__iobject_type__name','iobject__iobject_type','fact__fact_term__term', 'fact__fact_values__value'])
+        model = InfoObject2Fact
+
+        fields = ['fact__fact_term__term','fact__fact_term__attribute','fact__fact_values__value','iobject__name','iobject__timestamp','iobject__create_timestamp',
+                  'iobject__identifier__namespace','iobject__iobject_type','iobject__iobject_type__name','iobject__marking_thru__marking__identifier__uid']
+
+
+class OrderedFactTermValueFilter(FactTermValueFilter):
 
     class Meta:
         order_by = create_order_keyword_list(['iobject__iobject_type__name','iobject__iobject_type','fact__fact_term__term', 'fact__fact_values__value'])
         model = InfoObject2Fact
 
-        fields = ['fact__fact_term__term','fact__fact_values__value','iobject__name','iobject__timestamp','iobject__created_timestamp',
-                  'iobject__identifier__namespace','iobject__iobject_type','iobject__iobject_type__name',]
+        fields = ['fact__fact_term__term','fact__fact_term__attribute','fact__fact_values__value','iobject__name','iobject__timestamp','iobject__create_timestamp',
+                  'iobject__identifier__namespace','iobject__iobject_type','iobject__iobject_type__name','iobject__marking_thru__marking__identifier__uid']
 
 
 

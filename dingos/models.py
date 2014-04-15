@@ -34,6 +34,9 @@ from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.core.files.base import ContentFile
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.http import urlquote
+
+
 
 import dingos.read_settings
 
@@ -218,7 +221,7 @@ class DataTypeNameSpace(DingoModel):
     of "qualified names" as defined in the CybOx/STIX standards.
     """
 
-    uri = models.URLField(max_length=255,
+    uri = models.CharField(max_length=255,
                           unique=True,
                           help_text="URI of namespace. Example: 'http://stix.mitre.org/default_vocabularies-1'")
 
@@ -255,7 +258,7 @@ class IdentifierNameSpace(DingoModel):
     of "qualified names" as defined in the CybOx/STIX standards.
     """
 
-    uri = models.URLField(max_length=255,
+    uri = models.CharField(max_length=255,
                           unique=True,
                           help_text="URI of namespace. Example: 'http://stix.mitre.org/default_vocabularies-1'")
 
@@ -267,6 +270,8 @@ class IdentifierNameSpace(DingoModel):
                                          name: the name is completely exchangeable.""")
 
     description = models.TextField(blank=True)
+
+    is_substitution = models.BooleanField(default=False)
 
     def __unicode__(self):
         if self.name:
@@ -282,6 +287,64 @@ class IdentifierNameSpace(DingoModel):
 
 
 dingos_class_map["IdentifierNameSpace"] = IdentifierNameSpace
+
+
+class IdentifierNameSpaceSubstitutionMap(DingoModel):
+    """
+    There may be restrictions on the namespaces in which InfoObjects
+    may be created by a certain importer. If there is a violation of such a restriction,
+    we want to be able to carry out the import anyhow, but move the newly created object
+    to a substition namespace, for which we track the importer's (default) namespace as well as
+    the namespace that was desired by the importer (but not allowed due to existing restrictions.)
+    """
+
+    importer_namespace = models.ForeignKey(IdentifierNameSpace,
+                                           related_name='substituted_namespaces_thru')
+
+    desired_namespace = models.ForeignKey(IdentifierNameSpace,
+                                          related_name='importer_namespaces_thru')
+
+    substitution_namespace = models.ForeignKey(IdentifierNameSpace,
+                                               related_name='substitution_map')
+
+    class Meta:
+        unique_together = ('importer_namespace', 'desired_namespace', 'substitution_namespace')
+
+
+    def __unicode__(self):
+        return "%s imported by %s" % (self.desired_namespace,self.importer_namespace)
+
+    @staticmethod
+    def substitute_namespace(importer_ns_uri,desired_ns_uri):
+        try:
+            substitution_namespace_map = dingos_class_map['IdentifierNameSpaceSubstitutionMap'].objects.get(importer_namespace__uri=importer_ns_uri,
+                                                                                                            desired_namespace__uri=desired_ns_uri)
+            return substitution_namespace_map.substitution_namespace
+
+        except ObjectDoesNotExist:
+            substitution_namespace_uri = "%s?target=%s" % (importer_ns_uri,urlquote(desired_ns_uri))
+            # Make sure that we really create a new namespace, not by chance
+            # taking an already existing namespace that is *not* a substitution namespace
+            counter =''
+            created = False
+            while not created:
+                substitution_namespace_uri = "%s?target=%s%s" % (importer_ns_uri,urlquote(desired_ns_uri),counter)
+                substitution_namespace,created = dingos_class_map['IdentifierNameSpace'].objects.get_or_create(uri=substitution_namespace_uri,
+                                                                                                               defaults = {'is_substitution':True})
+                if not counter:
+                    counter = 1
+                else:
+                    counter += 1
+            importer_namespace,created = dingos_class_map['IdentifierNameSpace'].objects.get_or_create(uri=importer_ns_uri)
+            desired_namespace,created = dingos_class_map['IdentifierNameSpace'].objects.get_or_create(uri=desired_ns_uri)
+
+            dingos_class_map['IdentifierNameSpaceSubstitutionMap'].objects.get_or_create(importer_namespace=importer_namespace,
+                                                                                         desired_namespace=desired_namespace,
+                                                                                         substitution_namespace=substitution_namespace)
+            return substitution_namespace
+
+dingos_class_map["IdentifierNameSpaceSubstitutionMap"] = IdentifierNameSpaceSubstitutionMap
+
 
 
 
@@ -707,6 +770,28 @@ dingos_class_map["InfoObject2Fact"] = InfoObject2Fact
 
 
 class FactTermNamespaceMap(DingoModel):
+    """
+    A mapping of components in a fact term to the namespace from which
+    they originated. For example, consider the following piece of XML::
+
+             <FileObj:FileObjectType>
+           <FileObj:File_Name datatype="String" condition="Equals">UNITED NATIONS COMPENSATION SCHEME...pdf
+           </FileObj:File_Name>
+           <FileObj:Hashes>
+               <Common:Hash>
+                   <Common:Type datatype="String">SHA256</Common:Type>
+                   <Common:Simple_Hash_Value datatype="hexBinary" condition="Equals">
+                   586fea79dd23a352a14c3f8bf3dbc9eb732e1d54f804a29160894aec55df4bd5
+                   </Common:Simple_Hash_Value>
+               </Common:Hash>
+
+    Here, for the fact term `Hashes/Hash/Type`, the 0th component `Hashes` would
+    be mapped to the `FileObj` namespace (or rather, the URI associated with the
+    tag `FileObj`), and the 1st and 2nd components `Hash` and `Type` to the
+    namespace associated with `Common`.
+
+    We keep this information around in case we require it to reproduce XML output.
+    """
 
     fact_term = models.ForeignKey(FactTerm)
 
@@ -721,6 +806,12 @@ dingos_class_map["FactTermNamespaceMap"] = FactTermNamespaceMap
 
 
 class PositionalNamespace(DingoModel):
+    """
+    A through model that allows to annotate a mapping between fact term
+    and namespaces with positional information (thus specifying, with
+    which component in a fact term the namespace should be mapped.
+
+    """
     fact_term_namespace_map = models.ForeignKey("FactTermNamespaceMap",
                                related_name="namespaces_thru",
                              )
@@ -1228,6 +1319,12 @@ class InfoObject(DingoModel):
 
 
     def to_dict(self,include_node_id=False,no_attributes=False,track_namespaces=False):
+        """
+        This function is currently geared very much towards writing
+        STIX/CybOX objects to a dictionary. That should not be the case -- the function
+        needs to be generic just as the from_dict function.
+        TODO: make function generic.
+        """
         flat_result = []
 
         def make_ns_slug(name_counter,slug='n'):
@@ -1346,7 +1443,7 @@ class InfoObject(DingoModel):
                 result['@ns'] = namespace_mapping["%s-%s" % (self.iobject_type.namespace.uri,self.iobject_type_revision)]
                 #result['@@iobject_type'] = self.iobject_type.name
                 return {'namespaces': dict(map(lambda x : (x[1],x[0]), namespace_mapping.items())),
-                        'object' : result
+                        'objects' : [result]
                 }
         else:
             return result
@@ -1389,17 +1486,23 @@ class InfoObject(DingoModel):
                                                         'fact_term__term',
                                                         'fact_term__attribute',
                                                         'fact_values__value',
+                                                        'fact_values__storage_location',
                                                         'value_iobject_id__latest__name')
 
         # We build a dictionary that will then be used for the format string
 
         fact_dict = {}
         counter = 0
-        for (node_id, fact_term, attribute, value, related_obj_name) in fact_list:
+        for (node_id, fact_term, attribute, value, storage_location, related_obj_name) in fact_list:
             #print fact_list[counter]
             if type(value)==type([]):
                 value = "%s,..." % value
-            if related_obj_name:
+            if storage_location == dingos.DINGOS_BLOB_TABLE:
+                try:
+                    value = BlobStorage.objects.get(sha256=value).content
+                except:
+                    value = "In blob table %s" % value
+            elif related_obj_name:
                 value = related_obj_name
 
             if attribute:
@@ -1578,7 +1681,7 @@ class Identifier(DingoModel):
 
 
     def __unicode__(self):
-        return "%s (%s)" % (self.uid, self.namespace.uri)
+        return "%s:%s" % (self.namespace.uri,self.uid)
 
     class Meta:
         unique_together = ('uid', 'namespace',)
@@ -1959,15 +2062,35 @@ def get_or_create_fact(fact_term,
     # The double query is necessary, because the first count counts the number of selected
     # fact_value objects, not the number of total objects for each fact.
 
-    matching_facts = Fact.objects.filter(fact_values__in=value_objects). \
+
+    possibly_matching_facts = Fact.objects.filter(fact_values__in=value_objects,
+                                                  value_iobject_id=value_iobject_id,
+                                                  value_iobject_ts=value_iobject_ts,
+                                                  fact_term=fact_term
+    ).values_list('pk',flat=True)
+
+    matching_facts = Fact.objects.filter(pk__in=list(possibly_matching_facts)). \
         annotate(num_values=Count('fact_values')). \
         filter(num_values=len(value_objects)). \
-        filter(value_iobject_id=value_iobject_id). \
-        filter(value_iobject_ts=value_iobject_ts). \
-        filter(fact_term=fact_term). \
         exclude(id__in= \
-        Fact.objects.annotate(total_values=Count('fact_values')). \
+        Fact.objects.filter(pk__in=possibly_matching_facts).annotate(total_values=Count('fact_values')). \
             filter(total_values__gt=len(value_objects)))
+
+    # Below, for educational purposes, the original query until Dingos 0.2.0, which got *really*
+    # slow with lot's of objects in the system. The reason for this are the last three lines:
+    # the exclude-statement required the database to count the the number of values for each
+    # Fact in the system... but we are really only interested into facts with the same
+    # fact_term, value_iobject_id and value_iobject_ts...
+
+    #matching_facts = Fact.objects.filter(fact_values__in=value_objects). \
+    #    annotate(num_values=Count('fact_values')). \
+    #    filter(num_values=len(value_objects)). \
+    #    filter(value_iobject_id=value_iobject_id). \
+    #    filter(value_iobject_ts=value_iobject_ts). \
+    #    filter(fact_term=fact_term). \
+    #    exclude(id__in= \
+    #    Fact.objects.annotate(total_values=Count('fact_values')). \
+    #        filter(total_values__gt=len(value_objects)))
 
     created = True
     try:

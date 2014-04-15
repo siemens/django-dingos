@@ -16,9 +16,13 @@ from utils import deltaCalc
 
 from django import test
 
-from dingos.management.commands.dingo_generic_xml_import import Command
+from dingos.management.commands.dingos_generic_xml_import import Command
 
 import pprint
+
+from datetime import datetime
+
+now = datetime.now()
 
 pp = pprint.PrettyPrinter(indent=2)
 
@@ -37,7 +41,8 @@ class creation_Tests(test.TestCase):
                                 iobject_type_namespace_uri="http://test.org",
                                 iobject_type_revision_name='2',
                                 iobject_family_name="CybOX",
-                                iobject_family_revision_name="2.0")
+                                iobject_family_revision_name="2.0",
+                                timestamp=now)
 
 
         expected = [ ('DataTypeNameSpace', 1),
@@ -61,7 +66,8 @@ class InfoObject_Tests(test.TestCase):
                                                          iobject_type_namespace_uri="http://test.org",
                                                          iobject_type_revision_name='2',
                                                          iobject_family_name="CybOX",
-                                                         iobject_family_revision_name="2.0")
+                                                         iobject_family_revision_name="2.0",
+                                                         timestamp=now)
 
 
     def test_add_fact(self):
@@ -127,7 +133,7 @@ class XML_Import_Tests(test.TestCase):
     def setUp(self):
         self.command = Command()
 
-    def test_import(self):
+    def test_import_without_namespace(self):
 
         @deltaCalc
         def t_import(*args,**kwargs):
@@ -139,8 +145,8 @@ class XML_Import_Tests(test.TestCase):
                                   placeholder_fillers=[],
                                   identifier_ns_uri=None,
                                   marking_json='tests/testdata/markings/import_info.json')
-        print "Import Test"
-        pp.pprint(delta)
+        #print "Import Test"
+        #pp.pprint(delta)
 
         expected = [ ('DataTypeNameSpace', 2),
                      ('Fact', 17),
@@ -165,7 +171,7 @@ class XML_Import_Tests(test.TestCase):
                                   placeholder_fillers=[],
                                   identifier_ns_uri=None,
                                   marking_json='tests/testdata/markings/import_info.json')
-        print "Import Test"
+        #print "Import Test"
 
         expected = [ ('Identifier', 1),
                      ('InfoObject', 2),
@@ -174,5 +180,60 @@ class XML_Import_Tests(test.TestCase):
 
         self.assertEqual(delta,expected)
 
-        pp.pprint(delta)
+        #pp.pprint(delta)
+
+
+
+    def test_import_with_namespace(self):
+
+        @deltaCalc
+        def t_import(*args,**kwargs):
+            return self.command.handle(*args,**kwargs)
+
+
+        (delta,result) = t_import('tests/testdata/xml/person_with_namespaces.xml',
+                                  uid='youhou',
+                                  placeholder_fillers=[],
+                                  identifier_ns_uri=None,
+                                  marking_json='tests/testdata/markings/import_info.json')
+        #print "Import with namespace"
+        #pp.pprint(delta)
+
+        expected = [ ('DataTypeNameSpace', 3),
+                     ('Fact', 18),
+                     ('FactDataType', 1),
+                     ('FactTerm', 16),
+                     ('FactTerm2Type', 16),
+                     ('FactTermNamespaceMap', 10),
+                     ('FactValue', 18),
+                     ('Identifier', 2),
+                     ('IdentifierNameSpace', 1),
+                     ('InfoObject', 2),
+                     ('InfoObject2Fact', 18),
+                     ('InfoObjectFamily', 2),
+                     ('InfoObjectType', 2),
+                     ('Marking2X', 1),
+                     ('NodeID', 17),
+                     ('PositionalNamespace', 16),
+                     ('Revision', 2)]
+
+        self.assertEqual(delta,expected)
+
+        (delta,result) = t_import('tests/testdata/xml/person_with_namespaces.xml',
+                                  uid='youhou',
+                                  placeholder_fillers=[],
+                                  identifier_ns_uri=None,
+                                  marking_json='tests/testdata/markings/import_info.json')
+        #print "Import Test"
+
+        expected = [ ('Identifier', 1),
+                     ('InfoObject', 2),
+                     ('InfoObject2Fact', 18),
+                     ('Marking2X', 1)]
+
+        self.assertEqual(delta,expected)
+
+        #pp.pprint(delta)
+
+
 
