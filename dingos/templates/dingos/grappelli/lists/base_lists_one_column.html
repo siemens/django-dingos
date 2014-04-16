@@ -76,7 +76,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     {%  render_paginator  %}
                 {% endif %}
 
+                {% if list_actions %}<form id="action-form" method="post">{% csrf_token %}{% endif %}
                 {% block objects %}{% endblock %}
+                {% if list_actions %}</form>{% endif %}
 
                 {% if is_paginated %}
                     {% render_paginator  %}
@@ -90,132 +92,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     </div>
 
-    {% if list_actions %}
-        <script charset="utf-8" type="text/javascript">
-
-            // CHANGE HERE TO ENABLE USER-SETTING BASED BEHAVIOR
-            var _enable_button = true;
-
-            // needed for mapping actions to submition styles (ajax vs. plain form submit e.g.)
-            var _submit_style = { {% for action in list_actions %} {{action.0}} : {{action.2}}, {% endfor %} }
-
-            // this is the function where the submit actually happens
-            // add implementations of new submit-styles here
-            //
-            // form    : jQuery object of the form to serialize
-            // url     : the url to submit to
-            // method  : GET|POST
-            // info    : jQuery object to show meta information
-            // style   : values are stored in
-            //           _submit_style($("#action-target option:selected").text())
-            //           Valid implemented styles are:
-            //              0 : STANDARD FORM SUBMIT
-            //              1 : AJAX ASYNCHRONOUS SUBMIT
-            function submit_action(form, url, style, info, method) {
-
-                $ = grp.jQuery; // use grappellis jQuery in a standard way instead of custom namespace
-
-                // AJAX ASYNCHRONOUS REQUEST (TYPE 1 and TYPE 2)
-                if (style == 1 || style == 2) {
-                    var ajax = $.ajax({
-                        url: url,
-                        data: form.serialize(),
-                        type: method,
-                        success: function(data,state){ info.html("Submition "+state); },
-                        error: function(data, state, error) { info.html("Submition error: "+error); }
-                    });
-
-                    if (style == 2)
-                        ajax.done(function(data){ $('<div id="dialog"></div>').html(data).dialog(
-                                { modal: true,
-                                    title: "Results",
-                                    width: 330,
-                                    resizeable: true,
-                                    autoOpen: true,
-                                    open: function (event, ui) { // needed because grappelli uses unclean zIndex values (which makes text visible on dialoge box)
-                                        $('#dialog').parent('.ui-dialog').css('zIndex', 99999).nextAll('.ui-widget-overlay').css('zIndex', 99999);
-                                    },
-                                    //close: function(event, ui) { $('#action-submit'). ;$('#dialog').dialog('destroy'); },
-                                });
-                        });
-
-                    return false;
-                }
-
-                // DEFAULT REQUEST (TYPE 0)
-                else {
-                    form.attr("action", url);
-                    form.attr("method", method);
-                    form.submit();
-                    return true;
-                }
-            }
-
-            // prepares the submit and only triggers it if there is something to submit
-            function submit_prepare($) {
-                var _action_val = $("#action-target").val();
-                var _form = $("#action-form");
-                var infofield = $('footer .grp-action-counter span'); // field to show infos
-                console.info('Preparation called with ', _action_val, (_action_val != ""), $('input[type="checkbox"]:checked', _form).length);
-                if ( _action_val != "") {
-                    console.info('Entering treatment with ', _action_val);
-                    if($('input[type="checkbox"]:checked', _form).length >= 1) {
-                        console.info('Calling submit action with ',_submit_style[$("#action-target option:selected").text()]);
-                        return submit_action(_form, _action_val,_submit_style[$("#action-target option:selected").text()], infofield, "POST");
-                    }
-                    infofield.html("No objects selected");
-                    return false;
-                }
-            }
-
-
-            // button-based
-            if ( _enable_button ) {
-
-                (function($) {
-                    $(document).on('click', '#action-submit', function() { console.info('Button pressed'); submit_prepare($); });
-                })(grp.jQuery);
-
-            }
-
-            // grappelli standard
-            else {
-
-                (function($) {
-                    $(document).ready(function() {
-                        $('#action-submit-row').hide();
-                    });
-                })(grp.jQuery);
-
-                (function($) {
-                    $(document).on('change', '#action-target', function() { submit_prepare($); });
-                })(grp.jQuery);
-
-            }
-        </script>
-        <footer class="grp-module grp-submit-row grp-fixed-footer" id="submit">
-            <header style="display:none"><h1>Submit Options</h1></header>
-            <ul>
-                <li class="grp-float-left grp-changelist-actions">
-                    <div class="grp-changelist-actions">
-                        <select name="action" autocomplete="off" id="action-target">
-                            <option selected="selected" value="">---------</option>
-                            {% for action in list_actions %}
-                                <option value="{% url action.1 %}">{{action.0}}</option>
-                            {% endfor %}
-                        </select>
-                        <input type="hidden" value="0" name="select_across" class="select-across">
-                        <script type="text/javascript">var _actions_icnt="{{ request.session.customization.dingos.view.pagination.lines }}";</script>
-                        <ul class="grp-horizontal-list grp-float-left">
-                            <li class="grp-action-counter"><span class="grp-button grp-button-state-inactive grp-action-counter">0 of {{ request.session.customization.dingos.view.pagination.lines }} selected</span></li>
-                        </ul>
-                    </div>
-                </li>
-                <li id="action-submit-row"><input class="grp-button grp-default" type="button" value="Submit" id="action-submit"></li>
-            </ul>
-
-        </footer>
-    {% endif %}
+    {% include "dingos/grappelli/includes/CheckboxActionFooter.html" %}
 
 
 

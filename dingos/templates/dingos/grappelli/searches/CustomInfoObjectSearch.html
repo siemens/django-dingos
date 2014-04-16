@@ -20,17 +20,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% load dingos_tags %}
 
-{% block extrahead %}
-    <script type="text/javascript" src="/admin/jsi18n/"></script>
-    <script src="/static/admin/js/actions.js" type="text/javascript"></script>
-    <script charset="utf-8" type="text/javascript">
-        (function($) {
-            $(document).ready(function() {
-                $("tr input.action-select").actions();
-            });
-        })(grp.jQuery);
-    </script>
-{% endblock %}
+
 
 
 {% block content_title %}
@@ -54,17 +44,14 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% block objects %}
     {% if object_list %}
         <div class="grp-module grp-changelist-results">
-            {% if list_actions %}<form id="action-form" method="post">{% csrf_token %}{% endif %}
+
             <table id="result_list" cellspacing="0" class="grp-sortable">
 
                 {% block header_row %}
                     <thead>
                         <tr>
-                            {% if list_actions %}
-                                <th scope="col" class="action-checkbox-column">
-                                    <div class="grp-text"><span><input id="action-toggle" type="checkbox"></span></div>
-                                </th>
-                            {% endif %}
+                            {% include "dingos/grappelli/includes/CheckboxActionColumn.html" %}
+
                             {% for col_header in col_headers %}
                                 <th scope="col" class="sortable column-identifier">{{ col_header }}</th>
                             {% endfor %}
@@ -77,11 +64,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     <tbody>
                         {% for obj in object_list %}
                             <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
-                                {% if list_actions %}
-                                    <td class="action-input">
-                                        <input class="action-select" name="_selected_action" value="{{obj.pk}}" type="checkbox">
-                                    </td>
-                                {% endif %}
+
+                                {% include "dingos/grappelli/includes/CheckboxActionColumn.html" %}
+
                                 {% for selected_col in selected_cols %}
 
                                     <td>
@@ -97,7 +82,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                 {% endblock %}
 
             </table>
-            {% if list_actions %}</form>{% endif %}
+
         </div>
     {%  endif %}
 {% endblock %}

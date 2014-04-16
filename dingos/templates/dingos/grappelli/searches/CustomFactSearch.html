@@ -41,9 +41,11 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% block objects %}
     {% if object_list %}
         <div class="grp-module grp-changelist-results">
+
             <table id="result_list" cellspacing="0" class="grp-sortable">
                 <thead>
                     <tr>
+                        {% include "dingos/grappelli/includes/CheckboxActionColumn.html" %}
                         {% for col_header in col_headers %}
                             <th scope="col">{{ col_header }}</th>
                         {% endfor %}
@@ -53,6 +55,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                 <tbody>
                     {% for enrich2fact in object_list %}
                         <tr class="grp-row grp-row-{% cycle 'even' 'odd' %}">
+                            {% include "dingos/grappelli/includes/CheckboxActionColumn.html" %}
                             {% for selected_col in selected_cols %}
                                 <td>
                                     {% show_InfoObjectField enrich2fact selected_col %}

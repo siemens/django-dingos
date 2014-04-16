@@ -26,6 +26,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% load dingos_tags %}
 {# Below, we fill out the form that queries the search parameters #}
 
+
+
 {% block list_title %} Fact Search {% endblock %}
 
 {% block search_options %}
@@ -64,6 +66,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     <table id="result_list" cellspacing="0" class="grp-sortable">
      <thead>
        <tr>
+           {% include "dingos/grappelli/includes/CheckboxActionHeaderColumn.html" %}
 	<th scope="col">
 	  IO-Type
 	</th>
@@ -83,6 +86,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     <tbody>
      {% for enrich2fact in object_list %}
     <tr class="grp-row grp-row-{% cycle 'even' 'odd' %}">
+        {% include "dingos/grappelli/includes/CheckboxActionColumn.html" %}
     <td >
 	{{enrich2fact.iobject.iobject_type.name}}
     </td>

@@ -353,6 +353,11 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
     and code to read pagination information from user customization.
     """
 
+    list_actions = [ ('dummy0', 'url.dingos.action_demo', 0),
+                     ('Blah', 'url.dingos.action_demo', 0),
+                     ('dummy1', 'url.dingos.action_demo', 1),
+                     ('dummy2', 'url.dingos.action_demo', 2) ]
+
 
     login_url = "/admin"
 
@@ -382,6 +387,12 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
     - read pagination information from user customization.
     - save filter settings as saved search
     """
+
+    list_actions = [ ('dummy0', 'url.dingos.action_demo', 0),
+                     ('Blah', 'url.dingos.action_demo', 0),
+                     ('dummy1', 'url.dingos.action_demo', 1),
+                     ('dummy2', 'url.dingos.action_demo', 2) ]
+
 
     login_url = "/admin"
 
