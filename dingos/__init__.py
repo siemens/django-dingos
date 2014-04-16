@@ -175,7 +175,7 @@ DINGOS_DEFAULT_SAVED_SEARCHES = {'dingos': []}
 
 # Replacements for queries (order of processing: top-down)
 DINGOS_QUERY_ALIAS_LIST = (("object","iobject"),
-                           ("^fact_term$", "fact.fact_term"),
+                           ("^fact_term$", "fact.fact_term.term"),
                            ("^value$", "fact.fact_values.value"),
                            #("^object_type", "iobject_type"),
                            ("^iobject_family", "iobject_family.name"),

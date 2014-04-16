@@ -200,7 +200,7 @@ class Condition:
     def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT, filter_type='object'):
         value = self.value
         if not self.key[0] in ['[','@'] and not is_in_list(self.key, DINGOS_QUERY_ALLOWED_CONDITIONS):
-            raise QueryParserException("Condition key \"" + self.key + "\" is not allowed to use.")
+            raise QueryParserException("Condition key \"" + self.key + "\" is not allowed.")
 
         if not self.key[0] in ['[','@']:
             key = replace_by_list(self.key, DINGOS_QUERY_ALIAS_LIST)

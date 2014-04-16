@@ -573,7 +573,7 @@ class BasicCustomQueryView(BasicListView):
                     else:
                         raise ValueError('Unsupported output format')
 
-                except DataError as ex:
+                except Exception as ex:
                     messages.error(self.request, str(ex))
         return super(BasicListView, self).get(request, *args, **kwargs)
 
