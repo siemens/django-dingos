@@ -53,8 +53,8 @@ class Comparator:
 
 
 class FilterCollection:
-    INFO_OBJECT = InfoObject
-    INFO_OBJECT_2_FACT = InfoObject2Fact
+    INFO_OBJECT = 'InfoObject'
+    INFO_OBJECT_2_FACT = 'InfoObject2Fact'
 
     def __init__(self):
         self.filter_list = []
@@ -72,7 +72,7 @@ class FilterCollection:
         else:
             objects = base
 
-        query_mode = objects.model
+        query_mode = objects.model.__name__
 
         for oneFilter in self.filter_list:
 
@@ -139,16 +139,17 @@ class FormattedFilterCollection:
     def __init__(self, filter_collection, format_args=[], output_format='default'):
         self.filter_collection = filter_collection
         self.format = output_format
+        self.format_args = format_args
 
+    def build_format_arguments(self,query_mode=FilterCollection.INFO_OBJECT):
         # Split format_args into col_specs and misc_args (contains additional output configuration)
         col_specs = []
         misc_args = {}
-        for format_arg in format_args:
+        for format_arg in self.format_args:
             if type(format_arg) is dict:
                 misc_args[format_arg['key']] = format_arg['value']
             else:
                 col_specs.append(format_arg)
-        self.misc_args = misc_args
 
         # Reformat structure of column specifications
         split = {'headers': [], 'selected_fields': []}
@@ -161,14 +162,16 @@ class FormattedFilterCollection:
                     # Use selected_field as header
                     header = selected_field = spec
                 split['headers'].append(header)
-                if not is_in_list(selected_field, DINGOS_QUERY_ALLOWED_COLUMNS):
+                if not is_in_list(selected_field, map (lambda x: x[0], DINGOS_QUERY_ALLOWED_COLUMNS[query_mode])):
                     raise QueryParserException("Column \"" + selected_field + "\" is not allowed.")
                 print "'%s'" % selected_field
                 selected_field = replace_by_list(selected_field, DINGOS_QUERY_ALIAS_LIST)
                 print "'%s'" % selected_field
 
                 split['selected_fields'].append(selected_field)
-        self.col_specs = split
+        col_specs = split
+        return {'columns':col_specs,
+                'kwargs':misc_args}
 
 
 class Expression:

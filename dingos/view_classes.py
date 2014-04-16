@@ -527,8 +527,10 @@ class BasicCustomQueryView(BasicListView):
                     result_format = formatted_filter_collection.format
 
                     # Filter selected columns for export
-                    col_specs = formatted_filter_collection.col_specs
-                    misc_args = formatted_filter_collection.misc_args
+                    formatting_arguments = formatted_filter_collection.build_format_arguments(query_mode=self.query_base.model.__name__)
+
+                    col_specs = formatting_arguments['columns']
+                    misc_args = formatting_arguments['kwargs']
 
                     if self.prefetch_related:
                         if isinstance(self.prefetch_related, tuple):
