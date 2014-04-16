@@ -175,14 +175,14 @@ DINGOS_DEFAULT_SAVED_SEARCHES = {'dingos': []}
 
 # Replacements for queries (order of processing: top-down)
 DINGOS_QUERY_ALIAS_LIST = (("object","iobject"),
-                           ("^fact_term$", "fact.fact_term.term"),
-                           ("^value$", "fact.fact_values.value"),
+                           ("^fact_term$", "fact_term.term"),
+                           ("^value$", "fact_values.value"),
                            ("^iobject_family", "iobject_family.name"),
                            ("^iobject_type.namespace", "iobject_type.namespace.uri"),
-                           ("^attribute", "fact.fact_term.attribute"),
+                           ("^attribute", "fact_term.attribute"),
                            ("^identifier\.namespace$", "identifier.namespace.uri"),
                            ("^import_timestamp$", "create_timestamp"),
-                           ("^fact_term_with_attribute$", "fact.fact_term")
+                           ("^fact_term_with_attribute$", "fact_term")
                            )
 
 # Allowed keys for query conditions

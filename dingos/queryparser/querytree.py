@@ -95,11 +95,11 @@ class FilterCollection:
                 #print expression_repr.__class__
                 fact_q_obj = expression_repr.build_q_obj(query_mode=self.INFO_OBJECT, filter_type=filter_type)
                 if query_mode == self.INFO_OBJECT:
-                    q_key = 'fact_thru__in'
+                    q_key = 'facts__in'
                 elif query_mode == self.INFO_OBJECT_2_FACT:
-                    q_key = 'pk__in'
+                    q_key = 'fact__in'
                 #print "Expression %s %s" % (expression_repr, fact_q_obj)
-                sub_query = InfoObject2Fact.objects.filter(fact_q_obj)
+                sub_query = Fact.objects.filter(fact_q_obj)
                 q_obj = Q(**{q_key: sub_query})
                 if negation:
                     objects = getattr(objects, 'exclude')(q_obj)
@@ -276,7 +276,7 @@ class Condition:
             key = key[2:-1]
             sub_q_obj = Q(**{"fact_term__attribute__iregex": key})
             sub_q_obj = sub_q_obj & self.enrich_q_with_not(Q(**{"fact_values__value" + q_operator: value}))
-            return Q(attributes__fact__in=Fact.objects.filter(sub_q_obj))
+            return Q(iobject_thru__attributes__fact__in=Fact.objects.filter(sub_q_obj))
 
         if key[0] == "[" and key[-1] == "]":
             #if filter_type != 'fact':
@@ -290,12 +290,12 @@ class Condition:
             if "@" in key:
                 # Condition for an attribute in the fact term
                 fact_term, fact_attribute = key.split("@")
-                result = Q(**{q_query_prefix + "fact__fact_term__term__iregex": fact_term})
-                result = result & Q(**{q_query_prefix + "fact__fact_term__attribute__iregex": fact_attribute})
+                result = Q(**{q_query_prefix + "fact_term__term__iregex": fact_term})
+                result = result & Q(**{q_query_prefix + "fact_term__attribute__iregex": fact_attribute})
             else:
-                result = Q(**{q_query_prefix + "fact__fact_term__term__iregex": key})
+                result = Q(**{q_query_prefix + "fact_term__term__iregex": key})
             result = result & self.enrich_q_with_not(
-                Q(**{q_query_prefix + "fact__fact_values__value" + q_operator: value}))
+                Q(**{q_query_prefix + "fact_values__value" + q_operator: value}))
         else:
             # Field condition
             key = key.replace(".", "__")
