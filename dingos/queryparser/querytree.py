@@ -110,7 +110,7 @@ class FilterCollection:
                 query_repr = expr_or_query
 
                 #print "\t%s: negation=%s {" % (filter_type, negation)
-                sub_query = query_repr.build_query(base=self.INFO_OBJECT.objects.exclude(latest_of=None))
+                sub_query = query_repr.build_query(base=InfoObject.objects.exclude(latest_of=None))
 
                 q_key = ''
                 if query_mode == self.INFO_OBJECT_2_FACT:
@@ -164,7 +164,7 @@ class FormattedFilterCollection:
                     header = selected_field = spec
                 split['headers'].append(header)
                 if not selected_field in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode].keys():
-                    raise QueryParserException("Column \"" + selected_field + "\" is not allowed.")
+                    raise QueryParserException("Column \"" + selected_field + "\" is not allowed; please restrict yourself to the following columns: %s" % ", ".join(DINGOS_QUERY_ALLOWED_COLUMNS[query_mode].keys()))
                 for prefetch in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode][selected_field]:
                     prefetch_related_fields.add(prefetch)
                 print "'%s'" % selected_field
@@ -207,7 +207,7 @@ class Condition:
     def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT, filter_type='object'):
         value = self.value
         if not is_in_list(self.key, DINGOS_QUERY_ALLOWED_KEYS[filter_type]):
-            raise QueryParserException("Condition key \"" + self.key + "\" is not allowed to use.")
+            raise QueryParserException("Key \"" + self.key + "\" is not allowed; please restrict yourself to keys of the following form: %s" % ", ".join(map( lambda x : x.replace('\\','').replace('^','').replace('$',''),DINGOS_QUERY_ALLOWED_KEYS[filter_type])))
 
         if not self.key[0] in ['[','@']:
             key = replace_by_list(self.key, DINGOS_QUERY_ALIAS_LIST)
