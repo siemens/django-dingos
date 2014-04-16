@@ -166,8 +166,11 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
           var _action_val = $("#action-target").val();
           var _form = $("#action-form");
           var infofield = $('footer .grp-action-counter span'); // field to show infos
+          console.info('Preparation called with ', _action_val, (_action_val != ""), $('input[type="checkbox"]:checked', _form).length);
           if ( _action_val != "") {
-            if($('input[type="checkbox"]:checked', _form).length > 1) {
+            console.info('Entering treatment with ', _action_val);
+            if($('input[type="checkbox"]:checked', _form).length >= 1) {
+              console.info('Calling submit action with ',_submit_style[$("#action-target option:selected").text()]);
               return submit_action(_form, _action_val,_submit_style[$("#action-target option:selected").text()], infofield, "POST");
             }
           infofield.html("No objects selected");
@@ -180,7 +183,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     if ( _enable_button ) {
 
       (function($) {
-        $(document).on('click', '#action-submit', function() { submit_prepare($); });
+        $(document).on('click', '#action-submit', function() { console.info('Button pressed'); submit_prepare($); });
       })(grp.jQuery);
 
     }
