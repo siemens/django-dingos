@@ -674,7 +674,7 @@ class SimpleMarkingAdditionView(BasicListView):
 
     marked_class = InfoObject
 
-    queryset = InfoObject.objects.all()[0:20]
+    queryset = None#InfoObject.objects.all()[0:20]
 
     template_name = 'dingos/%s/actions/SimpleMarkingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
 
@@ -692,8 +692,10 @@ class SimpleMarkingAdditionView(BasicListView):
 
     def post(self, request, *args, **kwargs):
 
-        if 'action_objects' in self.request.POST.dict():
-            selected_objects = self.request.POST['action_objects']
+        if 'action_objects' in self.request.POST:
+            print "Found"
+            selected_objects = self.request.POST.getlist('action_objects')
+            self.queryset = InfoObject.objects.filter(pk__in = selected_objects)
             self.form = SimpleMarkingAdditionForm(request,
                                                   markings= self.m_queryset,
                                                   checked_objects=selected_objects)

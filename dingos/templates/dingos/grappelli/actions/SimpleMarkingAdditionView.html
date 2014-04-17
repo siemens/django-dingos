@@ -47,7 +47,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                    <tr>
                     <th>{{form.marking_to_add.label_tag}}</th>
                     <td>{{form.marking_to_add.errors}} {{form.marking_to_add}}</td>
-                       blah {{ form.checked_objects }}
                    </tr>
 
 
@@ -77,7 +76,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
        {% for obj in object_list %}
            <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
 
-
+               <td>
+               <input id="id_checked_objects_{{ forloop.counter }}" name="checked_objects" type="checkbox" value={{ obj.pk }} />
+               </td>
                <td>
                    <a href="{%url 'url.dingos.view.infoobject' pk=obj.pk %}">{{ obj.identifier }}</a>
                </td>

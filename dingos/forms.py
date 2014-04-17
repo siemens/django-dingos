@@ -53,10 +53,10 @@ class SimpleMarkingAdditionForm(forms.Form):
             checked_objects = kwargs['checked_objects']
             del(kwargs['checked_objects'])
         else:
-            checked_objects = [(1,14),(2,24),(3,34)]
+            checked_objects = []
         super(SimpleMarkingAdditionForm, self).__init__(*args, **kwargs)
         self.fields['marking_to_add'] = forms.ChoiceField(choices=marking_choices)
-        self.fields['checked_objects'] = forms.MultipleChoiceField(choices=checked_objects,
+        self.fields['checked_objects'] = forms.MultipleChoiceField(choices=(map(lambda x: (x,x),checked_objects)),
                                                                    widget=forms.CheckboxSelectMultiple)
 
 
