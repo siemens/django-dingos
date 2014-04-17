@@ -354,10 +354,6 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
     and code to read pagination information from user customization.
     """
 
-    list_actions = [ ('dummy0', 'url.dingos.action_demo', 0),
-                     ('Blah', 'url.dingos.action_demo', 0),
-                     ('dummy1', 'url.dingos.action_demo', 1),
-                     ('dummy2', 'url.dingos.action_demo', 2) ]
 
 
     login_url = "/admin"
@@ -659,6 +655,8 @@ class SimpleMarkingAdditionView(BasicListView):
 
     paginate_by = 100
 
+    marked_object_class = InfoObject
+
     marking_queryset = InfoObject.objects.filter(iobject_type__name__contains='Marking')
     marking_query = """object: object_type.name = 'Marking' && identifier.namespace contains 'cert.siemens.com'"""
 
@@ -695,7 +693,7 @@ class SimpleMarkingAdditionView(BasicListView):
         if 'action_objects' in self.request.POST:
             print "Found"
             selected_objects = self.request.POST.getlist('action_objects')
-            self.queryset = InfoObject.objects.filter(pk__in = selected_objects)
+            self.queryset = self.marked_object_class.objects.filter(pk__in = selected_objects)
             self.form = SimpleMarkingAdditionForm(request,
                                                   markings= self.m_queryset,
                                                   checked_objects=selected_objects)
