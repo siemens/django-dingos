@@ -24,6 +24,7 @@ import json
 
 from django import http
 
+from forms import SimpleMarkingAdditionForm
 
 from django.views.generic.base import ContextMixin
 from django.views.generic import DetailView, ListView, TemplateView, View
@@ -372,7 +373,7 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
         if not self.counting_paginator:
             return UncountingPaginator
         else:
-            return super(BasicFilterView,self).paginator_class
+            return super(BasicListView,self).paginator_class
 
     @property
     def paginate_by(self):
@@ -652,5 +653,102 @@ class BasicView(CommonContextMixin,
         raise NotImplementedError("No render_to_response method implemented!")
 
 
+class SimpleMarkingAdditionView(BasicListView):
+
+    counting_paginator = True
+
+    paginate_by = 100
+
+    marking_queryset = InfoObject.objects.filter(iobject_type__name__contains='Marking')
+    marking_query = """object: object_type.name = 'Marking' && identifier.namespace contains 'cert.siemens.com'"""
 
 
+    form = None
+
+    @property
+    def m_queryset(self):
+        if self.marking_queryset:
+            return self.marking_queryset.values_list('pk','name')[0:20]
+        else:
+            raise StandardError("Not yet implemented")
+
+    marked_class = InfoObject
+
+    queryset = InfoObject.objects.all()[0:20]
+
+    template_name = 'dingos/%s/actions/SimpleMarkingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
+
+    def get_context_data(self, **kwargs):
+        context = super(SimpleMarkingAdditionView, self).get_context_data(**kwargs)
+
+        context['form'] = self.form
+
+        return context
+
+
+    def get(self, request, *args, **kwargs):
+        # for testing
+        return self.post(request,*args,**kwargs)
+
+    def post(self, request, *args, **kwargs):
+
+        if 'action_objects' in self.request.POST.dict():
+            selected_objects = self.request.POST['action_objects']
+            self.form = SimpleMarkingAdditionForm(request,
+                                                  markings= self.m_queryset,
+                                                  checked_objects=selected_objects)
+        else:
+            self.form = SimpleMarkingAdditionForm(request,
+                                                  markings = self.m_queryset)
+            if self.form.is_valid():
+                form_data = self.form.cleaned_data
+
+
+
+
+
+        return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
+
+
+
+        user_data = self.get_user_data()
+        self.formset = self.form_class(request.POST.dict())
+        saved_searches = user_data['saved_searches']
+
+        if self.formset.is_valid() and request.user.is_authenticated():
+            dingos_saved_searches = []
+
+            for form in self.formset.ordered_forms:
+                search = form.cleaned_data
+                # Search has the following form::
+                #
+                #     {'view': u'url.dingos.list.infoobject.generic',
+                #      'parameter': u'iobject_type=72',
+                #      u'ORDER': None,
+                #      u'DELETE': False,
+                #     'title': u'Filter for STIX Packages'
+                #     }
+                #
+
+                if (search['title'] != '' or not search['new_entry']) and not search['DELETE']:
+                    dingos_saved_searches.append( { 'view' : search['view'],
+                                                    'parameter' : search['parameter'],
+                                                    'title' : search['title'],
+                                                    }
+                    )
+
+            saved_searches['dingos'] = dingos_saved_searches
+            UserData.store_user_data(user=request.user,
+                                     data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
+                                     user_data=saved_searches,
+                                     iobject_name = "Saved searches of user '%s'" % request.user.username)
+
+            # enforce reload of session
+            del request.session['customization']
+            request.session.modified = True
+
+        else:
+            # Form was not valid, we return the form as is
+
+            return super(BasicTemplateView,self).get(request, *args, **kwargs)
+        return self.get(request, *args, **kwargs)

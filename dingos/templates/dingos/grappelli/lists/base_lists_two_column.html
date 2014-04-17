@@ -32,6 +32,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% block content %}
 
+    {% block content_frontmatter %}
+    {% endblock %}
     <div class= {% if customization.horizontal.dingos.view.orientation == 'horizontal' %}
                 "l-2cr-fluid l-d-12"
 	        {% elif customization.horizontal.dingos.view.orientation == 'auto' %}
@@ -50,16 +52,16 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                             <form action="" method="get">
                                 <table>
-                                  <tbody>
+                                    <tbody>
                                     {% for field in filter.form %}
-                                      {% if not field.id_for_label == 'id_o' %}
-				        <tr>
-                                          <th>{{field.label_tag}}</th>
-                                          <td>{{field.errors}} {{field}}</td>
-                                        </tr>
-                                      {% endif %}
+                                        {% if not field.id_for_label == 'id_o' %}
+                                            <tr>
+                                                <th>{{field.label_tag}}</th>
+                                                <td>{{field.errors}} {{field}}</td>
+                                            </tr>
+                                        {% endif %}
                                     {% endfor %}
-                                  </tbody>
+                                    </tbody>
                                 </table>
 				<div style="padding-top:10px;text-align:right;">
                                   <input name="action" value="Submit Query" type="submit" />
@@ -103,6 +105,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     </div>
 
     {% include "dingos/grappelli/includes/CheckboxActionFooter.html" %}
- 
+
+    {% block content_backmatter %}
+    {% endblock %}
 
 {% endblock %}

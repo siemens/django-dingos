@@ -21,6 +21,9 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 
 from dingos import views
+
+from dingos.view_classes import SimpleMarkingAdditionView
+
 from dingos import filter
 from dingos.models import InfoObject
 
@@ -42,6 +45,9 @@ urlpatterns = patterns('',
     url(r'^View/InfoObject/(?P<pk>\d*)/json$',
         views.InfoObjectJSONView.as_view(),
         name= "url.dingos.view.infoobject.json"),
+    url(r'^Action/AddMarking$',
+        SimpleMarkingAdditionView.as_view(),
+        name= "url.dingos.action.add_marking"),
     url(r'^Search/SimpleFactSearch$',
         views.SimpleFactSearch.as_view(),
         name="url.dingos.search.fact.simple"),

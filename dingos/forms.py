@@ -43,3 +43,24 @@ class CustomQueryForm(forms.Form):
 class EditInfoObjectFieldForm(forms.Form):
     value = forms.CharField(required=True, widget=widgets.TextInput(attrs={'size':10,'class':'vTextField'}))
 
+class SimpleMarkingAdditionForm(forms.Form):
+    def __init__(self, request, *args, **kwargs):
+        print "Form request"
+        print request.POST.dict()
+        marking_choices = kwargs['markings']
+        del(kwargs['markings'])
+        if 'checked_objects' in kwargs:
+            checked_objects = kwargs['checked_objects']
+            del(kwargs['checked_objects'])
+        else:
+            checked_objects = [(1,14),(2,24),(3,34)]
+        super(SimpleMarkingAdditionForm, self).__init__(*args, **kwargs)
+        self.fields['marking_to_add'] = forms.ChoiceField(choices=marking_choices)
+        self.fields['checked_objects'] = forms.MultipleChoiceField(choices=checked_objects,
+                                                                   widget=forms.CheckboxSelectMultiple)
+
+
+
+
+
+

@@ -61,30 +61,30 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     <tbody>
 
                     {% for obj in object_list %}
-                      <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
-                          {% include "dingos/grappelli/includes/CheckboxActionColumn.html" %}
+                        <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+                            {% include "dingos/grappelli/includes/CheckboxActionColumn.html" %}
 
-                        <td>
-                            <a href="{%url 'url.dingos.view.infoobject' pk=obj.pk %}">{{ obj.identifier }}</a>
-                        </td>
-                        <td>
-                            {{obj.timestamp | date:"Y-m-d H:i:s O"}}
-                        </td>
-                        <td>
-                            {{obj.create_timestamp | date:"Y-m-d H:i:s O"}}
-                        </td>
-                        <td>
-                            {{obj.name | insert_wbr }}
-                        </td>
-                        <td>
-                            {{obj.iobject_type.name}}
-                        </td>
-                        <td>
-                            {{obj.iobject_family.name}}  {{obj.iobject_family_revision.name}}
-                        </td>
-                     </tr>
+                            <td>
+                                <a href="{%url 'url.dingos.view.infoobject' pk=obj.pk %}">{{ obj.identifier }}</a>
+                            </td>
+                            <td>
+                                {{obj.timestamp | date:"Y-m-d H:i:s O"}}
+                            </td>
+                            <td>
+                                {{obj.create_timestamp | date:"Y-m-d H:i:s O"}}
+                            </td>
+                            <td>
+                                {{obj.name | insert_wbr }}
+                            </td>
+                            <td>
+                                {{obj.iobject_type.name}}
+                            </td>
+                            <td>
+                                {{obj.iobject_family.name}}  {{obj.iobject_family_revision.name}}
+                            </td>
+                        </tr>
                     {% endfor %}
-                  </tbody>
+                    </tbody>
                 {% endblock %}
             </table>
             {% if list_actions %}</form>{% endif %}

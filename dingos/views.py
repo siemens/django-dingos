@@ -387,6 +387,9 @@ class UserPrefsView(BasicInfoObjectEditView):
         # We delete the session data in  order to achieve a reload
         # when viewing this page.
 
+
+
+
         try:
             del(self.request.session['customization'])
             del(self.request.session['customization_for_authenticated'])
@@ -463,16 +466,16 @@ class CustomSearchesEditView(BasicTemplateView):
 
                 if (search['title'] != '' or not search['new_entry']) and not search['DELETE']:
                     dingos_saved_searches.append( { 'view' : search['view'],
-                        'parameter' : search['parameter'],
-                        'title' : search['title'],
-                        }
-                        )
+                                                    'parameter' : search['parameter'],
+                                                    'title' : search['title'],
+                                                    }
+                    )
 
             saved_searches['dingos'] = dingos_saved_searches
             UserData.store_user_data(user=request.user,
-                                 data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
-                                 user_data=saved_searches,
-                                 iobject_name = "Saved searches of user '%s'" % request.user.username)
+                                     data_kind=DINGOS_SAVED_SEARCHES_TYPE_NAME,
+                                     user_data=saved_searches,
+                                     iobject_name = "Saved searches of user '%s'" % request.user.username)
 
             # enforce reload of session
             del request.session['customization']
