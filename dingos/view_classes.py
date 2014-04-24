@@ -683,7 +683,6 @@ class SimpleMarkingAdditionView(BasicListView):
 
         return context
 
-
     def get(self, request, *args, **kwargs):
         # for testing
         return self.post(request,*args,**kwargs)
@@ -692,27 +691,38 @@ class SimpleMarkingAdditionView(BasicListView):
 
         if 'action_objects' in self.request.POST:
             print "Found"
-            selected_objects = self.request.POST.getlist('action_objects')
+            self.request.POST.getlist('action_objects')
+            selected_objects= request.POST.getlist('action_objects')
             self.queryset = self.marked_object_class.objects.filter(pk__in = selected_objects)
-            self.form = SimpleMarkingAdditionForm(request,
+            self.form = SimpleMarkingAdditionForm({'checked_objects_choices': ','.join(selected_objects)},
                                                   markings= self.m_queryset,
-                                                  checked_objects=selected_objects)
+                                                  checked_objects_choices=selected_objects)
+            return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
         else:
-            self.form = SimpleMarkingAdditionForm(request,
-                                                  markings = self.m_queryset)
+            print request.POST.dict()
+            selected_objects =  request.POST.dict().get('checked_objects_choices').split(',')
+            print "Found %s" % selected_objects
+            self.queryset = self.marked_object_class.objects.filter(pk__in = selected_objects)
+            self.form = SimpleMarkingAdditionForm(request.POST,
+                                                  markings = self.m_queryset,
+                                                  checked_objects_choices=selected_objects)
+            print "Valid?"
+            print self.form.is_valid()
+
             if self.form.is_valid():
                 form_data = self.form.cleaned_data
+                print form_data
 
 
 
 
-
-        return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
+                return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
+            return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
 
 
 
         user_data = self.get_user_data()
-        self.formset = self.form_class(request.POST.dict())
+
         saved_searches = user_data['saved_searches']
 
         if self.formset.is_valid() and request.user.is_authenticated():

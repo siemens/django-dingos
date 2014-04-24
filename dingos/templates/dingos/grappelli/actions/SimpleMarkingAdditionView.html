@@ -28,6 +28,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% block content_frontmatter %}
 <form action="{% url "url.dingos.action.add_marking" %}" method="POST">
+    {% csrf_token %}
 {% endblock %}
 
 {% block list_title %} Selected Objects {% endblock %}
@@ -45,14 +46,15 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     <table class="grp-full-width">
         <tbody>
                    <tr>
-                    <th>{{form.marking_to_add.label_tag}}</th>
+                       <th>{{form.marking_to_add.label_tag}}</th>
                     <td>{{form.marking_to_add.errors}} {{form.marking_to_add}}</td>
                    </tr>
-
+                   {{form.checked_objects_choices}}
 
         </tbody>
     </table>
   </div>
+    <input type="submit" name="execute_query" value="Add Marking" />
 </div>
 
 
@@ -70,10 +72,11 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
        </tr>
      </thead>
 
-
+        <div id="id_checked_objects">
        <tbody>
 
        {% for obj in object_list %}
+
            <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
 
                <td>
@@ -89,7 +92,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
            </tr>
        {% endfor %}
        </tbody>
-
+     </div>
  </table>
 
 </div>
