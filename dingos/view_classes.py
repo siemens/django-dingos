@@ -935,7 +935,7 @@ class SimpleMarkingAdditionView(BasicListActionView):
                                     (success,action_msg) = action_function(marking_obj,obj_to_be_marked)
                                 if success or ((not success) and mark_after_failure):
                                     if self.debug_marking:
-                                        created = existing_marking
+                                        created = not existing_marking
                                     else:
                                         marking2x, created = Marking2X.objects.get_or_create(object_id=obj_pk,
                                                                                              content_type = content_type,
