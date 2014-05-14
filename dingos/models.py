@@ -1463,39 +1463,22 @@ class InfoObject(DingoModel):
 
         return list(fact_terms)
 
-    def extract_name(self):
-        """
-        We want to dynamically name the iobject based on its type and
-        selected facts. This is, what this function does: it collects
-        all facts that have "naming" set and concatenates them in the
-        order given by the "naming" argument.
-        If no fact has such a flag, the type is used
-
-        """
-        name = None
-
-        name_schemas = self._DCM["InfoObjectNaming"].objects.filter(iobject_type=self.iobject_type).order_by(
-            'position').values_list('format_string', flat=True)
-
-        name_components = []
-
-        # We retrieve all facts of the object
-
-        fact_list = self._DCM['Fact'].objects.filter(iobject_thru__iobject=self).order_by(
-            'iobject_thru__node_id__name').values_list('iobject_thru__node_id__name',
-                                                        'fact_term__term',
-                                                        'fact_term__attribute',
-                                                        'fact_values__value',
-                                                        'fact_values__storage_location',
-                                                        'value_iobject_id__latest__name')
-
-        # We build a dictionary that will then be used for the format string
-
+    @staticmethod
+    def name_from_facts(fact_list,name_schemas,default_name='InfoObject'):
         fact_dict = {}
-        counter = 0
-        for (node_id, fact_term, attribute, value, storage_location, related_obj_name) in fact_list:
-            #print fact_list[counter]
-            if type(value)==type([]):
+        fact_counter = 0
+        for fact_details in fact_list:
+            if isinstance(fact_details,tuple):
+                (node_id, fact_term, attribute, value, storage_location, related_obj_name) = fact_details
+            else:
+                node_id = fact_details['node_id']
+                fact_term = fact_details['fact_term']
+                attribute = fact_details['attribute']
+                value = fact_details['value']
+                storage_location = fact_details.get('storage_location')
+                related_obj_name = fact_details.get('related_obj_name')
+
+            if isinstance(value,list):
                 value = "%s,..." % value
             if storage_location == dingos.DINGOS_BLOB_TABLE:
                 try:
@@ -1517,12 +1500,12 @@ class InfoObject(DingoModel):
 
             fact_dict["term_of_node_%s" % node_id] = fact_term
             fact_dict["value_of_node_%s" % node_id] = value
-            if counter < 10:
-                fact_dict["term_of_fact_num_%01d" % counter] = fact_term
-                fact_dict["value_of_fact_num_%01d" % counter] = value
-            counter += 1
-        fact_dict["fact_count_equal_%s?" % counter] = ""
-        fact_dict["fact_count"] = "%s" % counter
+            if fact_counter < 10:
+                fact_dict["term_of_fact_num_%01d" % fact_counter] = fact_term
+                fact_dict["value_of_fact_num_%01d" % fact_counter] = value
+            fact_counter += 1
+        fact_dict["fact_count_equal_%s?" % fact_counter] = ""
+        fact_dict["fact_count"] = "%s" % fact_counter
 
         name_found = False
 
@@ -1548,13 +1531,45 @@ class InfoObject(DingoModel):
             except:
                 continue
 
-        if not name_found:
-            if self.iobject_type.name == 'PLACEHOLDER':
-                return "PLACEHOLDER"
-            else:
-                return "%s (%s facts)" % (self.iobject_type.name,counter)
-        else:
+        if name_found:
             return name
+        else:
+            return "%s (%s facts)" % (default_name,fact_counter)
+
+
+    def extract_name(self):
+        """
+        We want to dynamically name the iobject based on its type and
+        selected facts. This is, what this function does: it collects
+        all facts that have "naming" set and concatenates them in the
+        order given by the "naming" argument.
+        If no fact has such a flag, the type is used
+
+        """
+        name = None
+
+
+        name_schemas = self._DCM["InfoObjectNaming"].objects.filter(iobject_type=self.iobject_type).order_by(
+            'position').values_list('format_string', flat=True)
+
+        name_components = []
+
+        # We retrieve all facts of the object
+
+        fact_list = self._DCM['Fact'].objects.filter(iobject_thru__iobject=self).order_by(
+            'iobject_thru__node_id__name').values_list('iobject_thru__node_id__name',
+                                                        'fact_term__term',
+                                                        'fact_term__attribute',
+                                                        'fact_values__value',
+                                                        'fact_values__storage_location',
+                                                        'value_iobject_id__latest__name')
+
+        # We build a dictionary that will then be used for the format string
+
+
+        name = self.name_from_facts(fact_list,name_schemas,self.iobject_type.name)
+
+        return name
 
     def set_name(self,name=None):
         """
