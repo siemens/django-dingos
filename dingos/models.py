@@ -2214,17 +2214,22 @@ def write_large_value(value,storage_location=dingos.DINGOS_LARGE_VALUE_DESTINATI
 
 
 
-def find_ancestors(source_objects,found_identifiers=[],skip_terms=[('related','icontains')]):
+def find_ancestors(iobject_pks,ancestor_iobject_identifier_pks=None,skip_terms=None):
+
+    if not ancestor_iobject_identifier_pks:
+        ancestor_iobject_identifier_pks = []
+
+    if skip_terms==None:
+        skip_terms = {'term':'related',
+                      'operator':'icontains'}
 
 
-    
-
-    Q_skip_terms = Q(facts__fact_term__term__icontains='adfasdfasdf')
+        Q_skip_terms = Q(facts__fact_term__term__icontains='adfasdfasdf')
 
     ancestors = InfoObject. \
-        objects.exclude(identifier_id__in=found_identifiers). \
+        objects.exclude(identifier_id__in=ancestor_iobject_identifier_pks). \
         filter(~Q_skip_terms &
-               (Q(facts__value_iobject_id__latest__in=source_objects,
+               (Q(facts__value_iobject_id__latest__in=iobject_pks,
                   facts__value_iobject_ts=None)
                )
         ).prefetch_related('identifier')
@@ -2242,9 +2247,9 @@ def find_ancestors(source_objects,found_identifiers=[],skip_terms=[('related','i
     print "Ancestor Ids %s" % ancestor_identifiers
 
     if ancestor_info == []:
-        return found_identifiers
+        return ancestor_iobject_identifier_pks
     else:
-        return find_ancestors(ancestor_objects,found_identifiers=found_identifiers+ancestor_identifiers)
+        return find_ancestors(ancestor_objects, ancestor_iobject_identifier_pks=ancestor_iobject_identifier_pks+ancestor_identifiers)
 
 def find_descendants(source_objects,
                      found_objects=[],
