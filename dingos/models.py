@@ -25,7 +25,7 @@ import base64
 import copy
 
 from django.db import models
-from django.db.models import Count, F
+from django.db.models import Count, F, Q
 from django.contrib.auth.models import User, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
@@ -1030,6 +1030,10 @@ class InfoObject(DingoModel):
             'fact__value_iobject_ts',
             'fact__fact_term__term', 
             'node_id__name').distinct()
+
+
+
+
 
     def add_fact(self,
                  fact_term_name,
@@ -2207,4 +2211,67 @@ def write_large_value(value,storage_location=dingos.DINGOS_LARGE_VALUE_DESTINATI
 
 
 
+
+
+
+def find_ancestors(source_objects,found_identifiers=[],skip_terms=[('related','icontains')]):
+
+
+    
+
+    Q_skip_terms = Q(facts__fact_term__term__icontains='adfasdfasdf')
+
+    ancestors = InfoObject. \
+        objects.exclude(identifier_id__in=found_identifiers). \
+        filter(~Q_skip_terms &
+               (Q(facts__value_iobject_id__latest__in=source_objects,
+                  facts__value_iobject_ts=None)
+               )
+        ).prefetch_related('identifier')
+
+    ancestor_info = map(lambda x: (x.pk,x.identifier.pk), ancestors)
+
+    print "Ancestors: %s" % ancestor_info
+
+    #ancestor_list = list(ancestors.values_list('identifier__id',flat=True))
+
+    ancestor_identifiers = map(lambda x : x[1],ancestor_info)
+
+    ancestor_objects = map(lambda x : x[0],ancestor_info)
+
+    print "Ancestor Ids %s" % ancestor_identifiers
+
+    if ancestor_info == []:
+        return found_identifiers
+    else:
+        return find_ancestors(ancestor_objects,found_identifiers=found_identifiers+ancestor_identifiers)
+
+def find_descendants(source_objects,
+                     found_objects=[],
+                     skip_terms=[('related','icontains')]):
+
+    Q_skip_terms = Q(fact__fact_term__term__icontains='adfasdfasdf')
+
+    descendant_info = InfoObject2Fact.\
+        objects.filter(iobject_id__in=source_objects).\
+        filter(~(Q_skip_terms | Q(fact__value_iobject_id=None)) &
+               Q(fact__value_iobject_ts=None)).\
+        prefetch_related('iobject__identifier').\
+        values_list('fact__value_iobject_id__latest__pk','fact__value_iobject_ts')
+
+
+
+    descendants = list(InfoObject.objects.exclude(pk__in=found_objects)\
+                    .filter(pk__in=map (lambda x: x[0],descendant_info)).\
+                    values_list('pk',flat=True))
+
+    print "Descendants: %s" % descendants
+
+    #ancestor_list = list(ancestors.values_list('identifier__id',flat=True))
+
+
+    if descendants == []:
+        return found_objects
+    else:
+        return find_descendants(descendants,found_objects=found_objects+descendants)
 
