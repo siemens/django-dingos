@@ -207,7 +207,7 @@ class Condition:
     def build_q_obj(self, query_mode=FilterCollection.INFO_OBJECT, filter_type='object'):
         value = self.value
         if not is_in_list(self.key, map(lambda x: x[0],DINGOS_QUERY_ALLOWED_KEYS[filter_type])):
-            raise QueryParserException("Key \"" + self.key + "\" is not allowed; please restrict yourself to keys of the following form: %s" % ", ".join(map( lambda x : x.replace('\\','').replace('^','').replace('$',''),DINGOS_QUERY_ALLOWED_KEYS[filter_type])))
+            raise QueryParserException("Key \"" + self.key + "\" is not allowed; please restrict yourself to keys of the following form: %s" % ", ".join(map( lambda x : x[0].replace('\\','').replace('^','').replace('$',''),DINGOS_QUERY_ALLOWED_KEYS[filter_type])))
 
         if not self.key[0] in ['[','@']:
             key = replace_by_list(self.key, DINGOS_QUERY_ALLOWED_KEYS[filter_type])
