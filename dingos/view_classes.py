@@ -67,6 +67,8 @@ from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAddi
 
 from dingos.queryparser.result_formatting import to_csv
 
+from dingos import graph_traversal
+
 from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_USER_PREFS_TYPE_NAME, \
     DINGOS_DEFAULT_USER_PREFS, \
@@ -689,6 +691,8 @@ class BasicListActionView(BasicListView):
 
     form_class = BasicListActionForm
 
+    preprocess_action_objects = None
+
     ### Class code below
 
     # We do not paginate: there should be no need, because all objects that are displayed
@@ -702,6 +706,7 @@ class BasicListActionView(BasicListView):
 
 
 
+
     # The queryset (required for the BasicListView) will be filled in the post-method
     # below, but we need to declare it here.
 
@@ -709,6 +714,8 @@ class BasicListActionView(BasicListView):
 
     def _set_initial_form(self,*args,**kwargs):
         object_set= self.request.POST.getlist('action_objects')
+        if self.preprocess_action_objects:
+            object_set = self.preprocess_action_objects(object_set)
         self.queryset = self.action_model_class.objects.filter(pk__in = object_set)
         # We create the form
         kwargs['checked_objects_choices'] = object_set
@@ -851,6 +858,7 @@ class SimpleMarkingAdditionView(BasicListActionView):
         # this is indeed the first call.
 
         if 'action_objects' in self.request.POST:
+
             self._set_initial_form(markings= self.m_queryset,
                                    allow_multiple_markings=self.allow_multiple_markings)
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)

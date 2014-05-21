@@ -56,7 +56,7 @@ def follow_references(iobject_pks,
 
     Q_skip_terms = None
 
-    node_dict = {}
+
 
     if len(skip_term_queries) >= 1:
         Q_skip_terms = reduce(lambda x, y : (x & y),skip_term_queries[1:],skip_term_queries[0])
@@ -88,7 +88,7 @@ def follow_references(iobject_pks,
         ]
 
 
-    def follow_references_rec(iobject_pks,reachable_iobject_pks,direction,depth):
+    def follow_references_rec(iobject_pks,reachable_iobject_pks,direction,depth,graph_edge_list):
 
 
         if direction == 'down':
@@ -105,7 +105,7 @@ def follow_references(iobject_pks,
 
         print reference_fact_infos
 
-        hop_node_dict = {}
+        edge_list = []
         hop_node_set = set()
 
         if direction == 'down':
@@ -120,12 +120,12 @@ def follow_references(iobject_pks,
                     hop_node_set.add(dest)
                 else:
 
-                    hop_node_dict[dest] = {'source': x[0],
+                    edge = {'source': x[0],
 
                     'term': x[3],
                     'attribute': x[4],
                     'fact_node_id': x[5],
-
+                    'dest' : dest,
                     'source_identifier_ns': x[6],
                     'source_identifier_uid': x[7],
                     'source_name': x[8],
@@ -133,10 +133,11 @@ def follow_references(iobject_pks,
                     }
 
                     if True: # TODO  second branch once model has been changed
-                        hop_node_dict[dest]['dest_identifier_ns'] = x[10]
-                        hop_node_dict[dest]['dest_identifier_uid'] = x[11]
-                        hop_node_dict[dest]['dest_name'] = x[12]
-                        hop_node_dict[dest]['dest_iobject_type'] = x[13]
+                        edge['dest_identifier_ns'] = x[10]
+                        edge['dest_identifier_uid'] = x[11]
+                        edge['dest_name'] = x[12]
+                        edge['dest_iobject_type'] = x[13]
+                    edge_list.append(edge)
 
         else:
             for x in reference_fact_infos:
@@ -150,28 +151,29 @@ def follow_references(iobject_pks,
                     else:
                         source = x[2]
 
-                    hop_node_dict[x[0]] = {'source': source,
-                                           'term': x[3],
-                                           'attribute': x[4],
-                                           'fact_node_id': x[5],
-
-                                           'dest_identifier_ns': x[6],
-                                           'dest_identifier_uid': x[7],
-                                           'dest_name': x[8],
-                                           'dest_iobject_type': x[9],}
+                    edge = {'source': source,
+                            'term': x[3],
+                            'attribute': x[4],
+                            'fact_node_id': x[5],
+                            'dest' : x[0],
+                            'dest_identifier_ns': x[6],
+                            'dest_identifier_uid': x[7],
+                            'dest_name': x[8],
+                            'dest_iobject_type': x[9],}
 
                     if True: # TODO  second branch once model has been changed
-                        hop_node_dict[x[0]]['source_identifier_ns'] = x[10]
-                        hop_node_dict[x[0]]['source_identifier_uid'] = x[11]
-                        hop_node_dict[x[0]]['source_name'] = x[12]
-                        hop_node_dict[x[0]]['source_iobject_type'] = x[13]
+                        edge['source_identifier_ns'] = x[10]
+                        edge['source_identifier_uid'] = x[11]
+                        edge['source_name'] = x[12]
+                        edge['source_iobject_type'] = x[13]
+                    edge_list.append(edge)
 
 
         if keep_graph_info:
-            next_hop_iobject_pks = set(hop_node_dict.keys())
+            next_hop_iobject_pks = set([x['dest'] for x in edge_list])
 
 
-            node_dict.update(hop_node_dict)
+            graph_edge_list = graph_edge_list + edge_list
 
         else:
             next_hop_iobject_pks = hop_node_set
@@ -179,16 +181,17 @@ def follow_references(iobject_pks,
 
         if next_hop_iobject_pks.issubset(reachable_iobject_pks) or depth-1 <=0 :
             if keep_graph_info:
-                return node_dict
+                return graph_edge_list
             else:
                 return reachable_iobject_pks | next_hop_iobject_pks
         else:
             return follow_references_rec(next_hop_iobject_pks - reachable_iobject_pks,
                                         reachable_iobject_pks | next_hop_iobject_pks,
                                          direction,
-                                         depth-1 )
+                                         depth-1,
+                                         graph_edge_list)
 
-    return follow_references_rec(iobject_pks,reachable_iobject_pks,direction,depth)
+    return follow_references_rec(iobject_pks,reachable_iobject_pks,direction,depth,graph_edge_list = [])
 
 
 
