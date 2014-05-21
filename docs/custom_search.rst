@@ -11,7 +11,7 @@ This section explains the use of the DINGOS custom search feature.
 The feature allows you to search for InfoObjects or facts within
 InfoObjects by issuing queries like this::
 
-      object: iobject_type.name = 'TTP' && import_timestamp younger '2d'
+      object: object_type.name = 'TTP' && import_timestamp younger '2d'
     | fact: [Intended_Effect/Value] = "Advantage - Economic" 
     | marked_by: (fact: [Marking_Structure@color]='WHITE')
     |F> csv('identifier','name')
@@ -48,7 +48,7 @@ represented in the following figure.
 
 Let us now return to the example query from above::
 
-      object: iobject_type.name = 'TTP' && import_timestamp younger '2d'
+      object: object_type.name = 'TTP' && import_timestamp younger '2d'
     | fact: [Intended_Effect/Value] = "Advantage - Economic" 
     | marked_by: (fact: [Marking_Structure@color]='WHITE')
     |F> csv('identifier','name')
@@ -110,16 +110,10 @@ Filter Types
 =============== ================================================================================================================================
   ``object``     when querying objects: object must have the characteristics specified in ``<filter>``
                  when querying facts: fact must occur in an object that has the characteristics specified in ``<filter>``
- ``!object``     when querying objects: object may not have the characteristics specified in ``<filter``>
-                 when querying facts: fact may not occur in an object that has the characteristics specified in ``<filter>``
  ``fact``        when querying objects: object must contain fact with characteristics as specified in ``<filter>``
                  when querying facts: fact must have the characteristics specified in ``<filter>``
- ``!fact``       when querying objects: object may not contain fact with characteristics as specified in ``<filter>``
-                 when querying facts: fact may not have the characteristics specified in ``<filter>``
  ``marked_by``   when querying objects: object must be marked by an object that has the characteristics specified in ``<filter>``
                  when querying facts: fact must occur in an object marked by an object that has the characteristics specified in ``<filter>``
- ``!marked_by``  when querying objects: object must not be marked by an object that has the characteristics specified in ``<filter>``
-                 when querying facts: fact may not occur in an object marked by an object that has the characteristics specified in ``<filter>``
 =============== ================================================================================================================================
 
 
@@ -132,14 +126,14 @@ Filters
 
 
 
-``object`` and ``!object`` filters
-,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+``object`` filters
+,,,,,,,,,,,,,,,,,,
 
-``object`` or ``!object`` filters have the following form::
+``object``  filters have the following form::
 
            <key> <operator> <value> && <key> <operator> <value> || ...
 
-where ``key`` denotes an object characteristic such as ``identifier.uri`` or ``iobject_type.name`` and the ``<operator>`` 
+where ``key`` denotes an object characteristic such as ``identifier.uri`` or ``object_type.name`` and the ``<operator>`` 
 is an operator such as ``=``, ``contains``, ... -- a complete list of operators is given below. These key-value
 constraints can be joined by boolean operators ``&&`` (*and*) and ``||`` (*or*).
 
@@ -157,10 +151,10 @@ object_family         InfoObject family
 ===================== ======================================================================================
 
 
-``fact`` and ``!fact`` filters
-,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+``fact`` filters
+,,,,,,,,,,,,,,,,
 
-For ``fact`` or ``!fact`` filters, in addition to the key-value constraints, the following additional constraints
+For ``fact``  filters, in addition to the key-value constraints, the following additional constraints
 can be specified:
 
 - ``[<fact_term>] <operator> <value>``
@@ -216,10 +210,10 @@ value                 Value of a fact or attribute, e.g. ``InclusiveBetween`` or
 
 
 
-``marked_by`` and ``!marked_by`` filters
-,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+``marked_by`` filters
+,,,,,,,,,,,,,,,,,,,,,
 
-For ``marked_by`` and ``!marked_by``, the ``<filter>`` must be a complete sub-query of form ``<filter_type>: <filter> | ... | ...``;
+For ``marked_by``, the ``<filter>`` must be a complete sub-query of form ``<filter_type>: <filter> | ... | ...``;
 the query **must** be enclosed in parentheses: ``marked_by: (object: ...| ...)`` is correct, whereas ``marked_by: object: ...`` is not. 
 
 Operators
@@ -298,22 +292,21 @@ object_family         InfoObject family
 Columns for fact queries
 ,,,,,,,,,,,,,,,,,,,,,,,,
 
-
 ============================= ======================================================================================
 fact_term                     fact term of fact
 attribute                     attribute of fact
 value                         value of fact
 fact_term_with_attribute      fact term and attribute of fact printed as "<fact_term>@<attribute>"
-iobject.identifier.namespace  Namespace of the object identifier, e.g. ``http://mandiant.com``
-iobject.identifier.uid        UID of the object identifier, e.g., ``ttp-c63f31ac-871b-4846-aa25-de1926f4f3c8``
-iobject.identifier            Identifier, printed as ``<namespace>:<uid>``
-iobject.object_type.name      Name of the InfoObject type, e.g., ``TTP``
-iobject.object_type.namespace Namespace of the InfoObject type, e.g., "stix.mitre.org"
-iobject.object_type           InfoObject type, printed as ``<namespace>:<name>``
-iobject.name                  InfoObject name
-iobject.timestamp             InfoObject timestamp (as given in object's revision info)
-iobject.import_timestamp      Timestamp when InfoObject was imported into the system.
-iobject.object_family         InfoObject family 
+object.identifier.namespace  Namespace of the object identifier, e.g. ``http://mandiant.com``
+object.identifier.uid        UID of the object identifier, e.g., ``ttp-c63f31ac-871b-4846-aa25-de1926f4f3c8``
+object.identifier            Identifier, printed as ``<namespace>:<uid>``
+object.object_type.name      Name of the InfoObject type, e.g., ``TTP``
+object.object_type.namespace Namespace of the InfoObject type, e.g., "stix.mitre.org"
+object.object_type           InfoObject type, printed as ``<namespace>:<name>``
+object.name                  InfoObject name
+object.timestamp             InfoObject timestamp (as given in object's revision info)
+object.import_timestamp      Timestamp when InfoObject was imported into the system.
+object.object_family         InfoObject family 
 ============================= ======================================================================================
 
 
