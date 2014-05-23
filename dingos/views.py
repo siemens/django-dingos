@@ -247,6 +247,8 @@ class InfoObjectView_wo_login(BasicDetailView):
 
 
 
+
+
     template_name = 'dingos/%s/details/InfoObjectDetails.html' % DINGOS_TEMPLATE_FAMILY
 
     title = 'Info Object Details'

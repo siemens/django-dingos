@@ -44,9 +44,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                         {% if show_NodeID %}
                         <td></td>
                         {% endif %}
-                            {%    node_indent "th"  k.node_id.name "" "" %}
+                            {%    node_indent2 "th"  k.node_id.name "" "" %}
                                 Value
-                            {%    node_indent_end "th"  k.node_id.name "" "" %}
+                            {%    node_indent2_end "th"  k.node_id.name "" "" %}
                             <th >
                                 Datatype
                             </th>
@@ -57,7 +57,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     {% if show_NodeID%}
                     <td>{{k.node_id}}</td>
                     {% endif %}
-                    {%     node_indent "td"  k.node_id.name k.fact.fact_term.term k.fact.fact_term.attribute highlight %}
+                    {%     node_indent2 "td"  k.node_id.name k.fact.fact_term.term k.fact.fact_term.attribute highlight %}
 
                             <a name="{{ k.node_id }}"> </a>
                         {% if k.fact.value_iobject_id %}
@@ -94,7 +94,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                         {% endif %}
 
-                    {%     node_indent_end "td"  k.node_id.name k.fact.fact_term.term k.fact.fact_term.attribute %}
+                    {%     node_indent2_end "td"  k.node_id.name k.fact.fact_term.term k.fact.fact_term.attribute %}
                     <td >
                          {{k.fact.fact_values.all.0.fact_data_type.name}}
                     </td>
