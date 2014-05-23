@@ -131,6 +131,7 @@ def node_indent(context, elt_name, node_id, fact_term, attribute, highlight_node
     sticky_color =None
     previous_color= None
 
+
     for node in node_ids:
 
         is_attr = False
@@ -184,6 +185,7 @@ def node_indent(context, elt_name, node_id, fact_term, attribute, highlight_node
         previous_color = color
 
     highlight = "style='background: #FF0000;'" if highlight_node == node_id else None
+
 
     result.append("<%(elt_name)s colspan='%(colspan)s' %(highlight)s>" % {'elt_name': elt_name, 'colspan': (indents - counter), 'highlight' : highlight})
 
