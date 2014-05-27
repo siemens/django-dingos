@@ -398,8 +398,6 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
     - save filter settings as saved search
     """
 
-
-
     login_url = "/admin"
 
     template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
@@ -685,13 +683,71 @@ class BasicListActionView(BasicListView):
     description = """Provide here a brief description for the user of what to do -- this will be displayed
                      in the view."""
 
-    template_name = 'dingos/%s/actions/SimpleMarkingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
+    template_name = 'dingos/%s/actions/base_action_on_selected_list.html' % DINGOS_TEMPLATE_FAMILY
 
-    action_model_class = InfoObject
+
+    # The query below will be used by the view to retrieve the model instances to be acted upon
+    # from the database.
+    #
+    # IMPORTANT: You must provide a query that restricts the model instances to those instances
+    # that the user in question really allowed to act upon -- otherwise, a malicious user may
+    # fiddle with the POST request and insert primary keys of instances he should not have access to.
+    #
+    # In order to implement such a restriction, you will almost certainly have to use hte ``@property``
+    # mechanism of Python when specifying the query, because you will need to access the view  via
+    # ``self`` (e.g. to extract the user via ``self.request.user`` ::
+    #
+    #         @property:
+    #         def action_model_query(self):
+    #             query = <build your query>
+    #             return query
+    #
+
+    action_model_query = InfoObject.objects.all()
 
     form_class = BasicListActionForm
 
     preprocess_action_objects = None
+
+
+    # kwargs dict to be passed to form for initialization;
+    # Use this to dynamically adapt a more form to this particular view
+    # by modifying the form according to the arguments passed to its
+    # __init__ function.
+
+    form_init_dict = {}
+
+    # Action List
+
+    # Elements of the list should have the following form:
+    # {'action_predicate': <function taking form_data and object to be acted upon,
+    #                       returning True or False
+    #                       whether action is to be carried out on the given object>,
+    #  'action_function': <function taking cleaned form data  and object to be acted upon
+    #                      Should return
+    #                         (True, 'Success message')
+    #                      for successful execution or
+    #                         (False, 'Error message')
+    #                      for problem in executing action
+    #
+    # For each marking to be added, the list is traversed; the first action for which the
+    # predicate returned True is carried out.
+
+
+    action_list = []
+
+
+
+    # If no action could be found (and 'apply_marking_wo_action' is set to False)
+    # we return the following error message. Use this to provide the user with more
+    # information about why you think that no actions could be found.
+
+    no_action_error_message = "No valid action could be found for the object."
+
+
+    # If True, action is not actually carried out
+    debug_action = False
+
 
     ### Class code below
 
@@ -705,8 +761,6 @@ class BasicListActionView(BasicListView):
     form = None
 
 
-
-
     # The queryset (required for the BasicListView) will be filled in the post-method
     # below, but we need to declare it here.
 
@@ -716,10 +770,10 @@ class BasicListActionView(BasicListView):
         object_set= self.request.POST.getlist('action_objects')
         if self.preprocess_action_objects:
             object_set = self.preprocess_action_objects(object_set)
-        self.queryset = self.action_model_class.objects.filter(pk__in = object_set)
+        self.queryset = self.action_model_query.filter(pk__in = object_set)
         # We create the form
         kwargs['checked_objects_choices'] = object_set
-        self.form = SimpleMarkingAdditionForm({# We need a way to remember all objects that can be selected;
+        self.form = self.form_class({# We need a way to remember all objects that can be selected;
                                                # for this, we abuse a hidden field in which we collect a list
                                                # of object pks.
                                                'checked_objects_choices': ','.join(object_set),
@@ -737,7 +791,7 @@ class BasicListActionView(BasicListView):
 
         # Set the queryset for redisplaying the view with these objects
 
-        self.queryset = self.action_model_class.objects.filter(pk__in = object_set)
+        self.queryset = self.action_model_query.filter(pk__in = object_set)
 
         kwargs['checked_objects_choices'] = object_set
 
@@ -746,7 +800,62 @@ class BasicListActionView(BasicListView):
                                     *args,
                                     **kwargs)
 
+    def post(self, request, *args, **kwargs):
 
+        # If this is the first time, the view is rendered, it has been
+        # called as action from another view; in that case, there must be
+        # the result of the multiple-choice field with which objects
+        # to perform the action on were selected in the POST request.
+        # So we use the presence of 'action_objects' to see whether
+        # this is indeed the first call.
+
+        if 'action_objects' in self.request.POST:
+
+            self._set_initial_form()
+            return super(BasicListActionView,self).get(request, *args, **kwargs)
+        else:
+            # So the view has been called a second time by submitting the form in the view
+            # rather than from a different view. So we need to process the data in the form
+
+
+            self._set_post_form(request.POST,
+                                **self.form_init_dict)
+
+            # React on a valid form
+            if self.form.is_valid():
+                form_data = self.form.cleaned_data
+                for obj_pk in form_data['checked_objects']:
+
+                    obj_to_be_acted_upon = self.action_model_query.get(pk=obj_pk)
+                    action_list = self.action_list
+
+                    found_action = False
+                    for action  in action_list:
+                        if found_action:
+                            break
+                        action_predicate = action['action_predicate']
+                        action_function = action['action_function']
+
+                        if action_predicate(form_data,obj_to_be_acted_upon):
+                            found_action = True
+
+                            if self.debug_action:
+                                (success,action_msg) = (True,"DEBUG: Action has not been carried out")
+                            else:
+                                (success,action_msg) = action_function(form_data,obj_to_be_acted_upon)
+                            if success:
+                                messages.success(self.request, action_msg)
+                            else:
+                                messages.error(self.request, action_msg)
+
+                    if not found_action:
+                        messages.error(self.request,self.no_action_error_message)
+
+
+                form_data['checked_objects'] = []
+                self._set_post_form(form_data,**self.form_init_dict)
+                return super(BasicListActionView,self).get(request, *args, **kwargs)
+            return super(BasicListActionView,self).get(request, *args, **kwargs)
 
 
 class SimpleMarkingAdditionView(BasicListActionView):
@@ -760,7 +869,7 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
     template_name = 'dingos/%s/actions/SimpleMarkingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
 
-    action_model_class = InfoObject
+    action_model_query = InfoObject.objects.all()
 
     def marked_obj_name_function(self,x):
         return x.name
@@ -877,7 +986,7 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
                 # For creating markings, we need to use the Django Content-Type mechanism
 
-                content_type = ContentType.objects.get_for_model(self.action_model_class)
+                content_type = ContentType.objects.get_for_model(self.action_model_query.model)
 
                 if isinstance(form_data['marking_to_add'],list):
                     markings_to_add = form_data['marking_to_add']
@@ -979,8 +1088,8 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
                 form_data['checked_objects'] = []
                 self._set_post_form(form_data,
-                                     markings = self.m_queryset,
-                                     allow_multiple_markings= self.allow_multiple_markings)
+                                    markings = self.m_queryset,
+                                    allow_multiple_markings= self.allow_multiple_markings)
 
 
                 return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
