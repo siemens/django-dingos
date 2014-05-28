@@ -164,9 +164,9 @@ def node_indent(context, elt_name, node_id, fact_term, attribute, highlight_node
                     attr_color = """style='background: %s'""" % previous_color
                 else:
                     attr_color = ''
-                result.append("<%(elt_name)s %(color)s rowspan='%(row_span)s'> %(fact_term_component)s</%(elt_name)s>" % {
+                result.append("<%(elt_name)s %(color)s rowspan='%(row_span)s'>  %(fact_term_component)s</%(elt_name)s>" % {
                     'elt_name': elt_name,
-                    'fact_term_component': fact_components.get(counter, ''),
+                    'fact_term_component': insert_wbr(fact_components.get(counter, '')),
                     'color': attr_color, #color,
                     'row_span': row_span})
             else:
@@ -177,7 +177,7 @@ def node_indent(context, elt_name, node_id, fact_term, attribute, highlight_node
                     "<%(elt_name)s style='width:1px; margin: 0px ; background : %(color)s' rowspan='%(row_span)s'>%(fact_term_component)s</%(elt_name)s>" % {
                         'elt_name': elt_name,
                         'color': color,
-                        'fact_term_component': fact_components.get(counter, ''),
+                        'fact_term_component': insert_wbr(fact_components.get(counter, '')),
                         'row_span': row_span
                     })
 

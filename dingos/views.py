@@ -238,6 +238,9 @@ class InfoObjectView_wo_login(BasicDetailView):
 
     title = 'Info Object Details'
 
+    show_datatype = False
+
+
     @property
     def iobject2facts(self):
         return self.object.fact_thru.all().prefetch_related('fact__fact_term',
@@ -260,6 +263,7 @@ class InfoObjectView_wo_login(BasicDetailView):
 
         context = super(InfoObjectView_wo_login, self).get_context_data(**kwargs)
 
+        context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
         context['iobject2facts'] = self.iobject2facts
         try:

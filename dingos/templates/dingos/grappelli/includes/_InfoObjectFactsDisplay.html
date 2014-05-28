@@ -47,10 +47,11 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                             <th colspan='100'>
 
                             </th>
-
+                        {% if show_datatype %}
                             <th >
                                 Datatype
                             </th>
+                        {% endif %}
                         </tr>
                     {% endif %}
 
@@ -96,9 +97,11 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                         {% endif %}
 
                     {%     node_indent_end "td"  k.node_id.name k.fact.fact_term.term k.fact.fact_term.attribute %}
+                    {% if show_datatype %}
                     <td >
                          {{k.fact.fact_values.all.0.fact_data_type.name}}
                     </td>
+                    {% endif %}
                 {% endfor %}
             </table>
         </div>

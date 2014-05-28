@@ -52,9 +52,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                         <th scope="col"  class="sortable column-objecttype">
                             {% render_table_ordering "iobject_type" "Object Type" %}
                         </th>
-                        <th scope="col"  class="sortable column-family">
-                            {% render_table_ordering "iobject_type__iobject_family" "Family" %}
-                        </th>
                     </tr>
 		  </thead>
                 {% endblock %}
@@ -81,9 +78,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                             </td>
                             <td>
                                 {{obj.iobject_type.name}}
-                            </td>
-                            <td>
-                                {{obj.iobject_family.name}}  {{obj.iobject_family_revision.name}}
                             </td>
                         </tr>
                     {% endfor %}

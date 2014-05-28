@@ -104,3 +104,21 @@
 .iobject-graph-canvas div.details-box .desc td:first-child{
     padding-right: 3px;
 }
+
+.rotate{
+    -moz-transform: rotate(-90deg);                 /*FF*/
+    -o-transform: rotate(-90deg);                   /*Opera*/
+    -webkit-transform: rotate(-90deg);              /*Safari, Chrome*/
+    -ms-transform: rotate(-90deg) !important;       /*IE9*/
+    transform: rotate(-90deg);                      /*CSS3 default*/
+    background-color:transparent;
+
+    zoom: 1;
+    z-index:1; /*NEEDED FOR IE8*/
+
+    width: 191px;
+
+    position:absolute;
+
+    padding     : 45px 10px 15px 10px;
+}
