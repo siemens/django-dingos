@@ -354,6 +354,10 @@ def show_InfoObjectIDData(iobject, show_hyperlink=False,show_title=False):
 def show_InfoObjectMarkings(iobject):
     return {'object': iobject}
 
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectGraphDisplay.html'% DINGOS_TEMPLATE_FAMILY)
+def show_InfoObjectGraph(iobject):
+    return {'object': iobject}
+
 
 @register.simple_tag
 def show_InfoObjectField(oneObject, field):

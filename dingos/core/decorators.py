@@ -30,12 +30,12 @@ def print_arguments():
     """
     def decorator(function):
         def inner(*args, **kwargs):
-            if args:
-                print "Passed arguments:"
-                for i in args:
-                    pp.pprint(i)
-            print "Passed keyword arguments:"
-            pp.pprint(kwargs)
+            # if args:
+            #     print "Passed arguments:"
+            #     for i in args:
+            #         pp.pprint(i)
+            # print "Passed keyword arguments:"
+            # pp.pprint(kwargs)
             return function(*args, **kwargs)
         return inner
     return decorator

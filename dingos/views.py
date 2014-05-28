@@ -29,6 +29,7 @@ from django.core.exceptions import FieldError
 from braces.views import SuperuserRequiredMixin
 
 from dingos.models import InfoObject2Fact, InfoObject, UserData, get_or_create_fact
+from dingos.view_classes import BasicJSONView
 
 import csv
 
@@ -44,6 +45,8 @@ from queryparser.queryparser import QueryParser
 from queryparser.querylexer import QueryLexerException
 from queryparser.querytree import FilterCollection, QueryParserException
 
+
+from dingos.graph_traversal import follow_references
 
 
 class InfoObjectList(BasicFilterView):
@@ -352,7 +355,6 @@ class BasicInfoObjectEditView(LoginRequiredMixin,InfoObjectView_wo_login):
                                                       )
                         io2f.fact = new_fact
                         io2f.save()
-                        print io2f.fact
 
         return super(InfoObjectView_wo_login,self).get(request, *args, **kwargs)
 
@@ -532,3 +534,33 @@ class CustomFactSearchView(BasicCustomQueryView):
                         'fact__value_iobject_id__latest__iobject_type',
                         'node_id')
     pass
+
+
+
+class InfoObjectJSONGraph(BasicJSONView):
+    """
+    View for JSON representation of InfoObjects Graph data. Used in the front-end detail view to display a graph of the current InfoObject
+    """
+    @property
+    def returned_obj(self):
+        res = {
+            'status': False,
+            'msg': 'An error occured.',
+            'data': None
+        }
+
+
+        iobject_id = self.kwargs.get('pk', None)
+        if not iobject_id:
+            POST = self.request.POST
+            iobject_id = POST.get('iobject_id', None)
+        
+        if iobject_id:
+            res['status'] = True
+            res['data'] = {
+                'node_id': iobject_id,
+                #'d': follow_references([iobject_id], direction='down')
+                'd': follow_references([iobject_id], direction='up') + follow_references([iobject_id], direction='down') 
+            }
+
+        return res

@@ -17,18 +17,25 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
 
-{% with marking_count=object.marking_thru.count %}
+<div class="grp-module iobject-graph" data-iobject_id="{{ object.id }}" style="display:none;">
+  <h2 class="grp-collapse-handler">Object Graph</h2>
+  <div class="iobject-graph-canvas">
 
-<div class="grp-module {% if marking_count > 0 %}grp-collapse{% endif %}">
-<h2 class="grp-collapse-handler">{{ marking_count }} marking{% if marking_count != 1 %}s{% endif %}</h2>
- {% for k in object.marking_thru.all %}
-   <div class='grp-row'>
-     <a href={% url 'url.dingos.view.infoobject' k.marking.pk %}>{{ k.marking.identifier.namespace.uri }}:{{k.marking.name}}</a>
-   </div>
- {% endfor %}
+    <div class="details-box clearfix">
+      <span class="ui-icon ui-icon-close pull-right"></span>
+      <div class="title"></div>
+      <div class="content">
+	<table><tr>
+            <td><img src="" style="width:30px; max-height:30px;"></img></td>
+            <td><div class="desc">text text text</div></td>
+	</tr></table>
+      </div>
+    </div>
+
+
+  </div>
 </div>
 
-{%  endwith %}
 
 
 

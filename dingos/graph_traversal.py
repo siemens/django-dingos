@@ -50,7 +50,7 @@ def follow_references(iobject_pks,
         reachable_iobject_pks = set()
 
     if not skip_terms:
-        skip_terms = [] #[{'term':'','operator':'icontains'},{'attribute':''}]
+        skip_terms = [{'attribute':'kill_chain_id'},{'term':'Kill_Chain','operator':'icontains'}]
 
     skip_term_queries = map(_build_skip_query,skip_terms)
 
@@ -59,7 +59,7 @@ def follow_references(iobject_pks,
 
 
     if len(skip_term_queries) >= 1:
-        Q_skip_terms = reduce(lambda x, y : (x & y),skip_term_queries[1:],skip_term_queries[0])
+        Q_skip_terms = reduce(lambda x, y : (x | y),skip_term_queries[1:],skip_term_queries[0])
 
     values_list = ['iobject_id',                            #0
                    'fact__value_iobject_id__latest__id',    #1
@@ -99,11 +99,10 @@ def follow_references(iobject_pks,
 
         if Q_skip_terms:
             fact_query = ~Q_skip_terms & fact_query
-
         reference_fact_infos = InfoObject2Fact. \
             objects.filter(fact_query).values_list(*values_list)
 
-        print reference_fact_infos
+        #print reference_fact_infos
 
         edge_list = []
         hop_node_set = set()
