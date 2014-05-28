@@ -67,21 +67,22 @@ class InfoObjectList(BasicFilterView):
     title = 'List of Info Objects (generic filter)'
 
 
-    queryset = InfoObject.objects.\
-        exclude(latest_of=None)
-    
-    if exclude_internal_objects:
-        query_set = queryset.exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME)
+    @property
+    def queryset(self):
+        queryset = InfoObject.objects.\
+            exclude(latest_of=None)
 
-    queryset = queryset.prefetch_related(
-        'iobject_type',
-        'iobject_type__iobject_family',
-        'iobject_family',
-        'identifier__namespace',
-        'iobject_family_revision',
-        'identifier').order_by('-latest_of__pk')
-        ### JG/STB: edit for performance
-        #'identifier').select_related().distinct().order_by('-latest_of__pk')
+        if self.exclude_internal_objects:
+            queryset = queryset.exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME)
+
+        queryset = queryset.prefetch_related(
+            'iobject_type',
+            'iobject_type__iobject_family',
+            'iobject_family',
+            'identifier__namespace',
+            'iobject_family_revision',
+            'identifier').order_by('-latest_of__pk')
+        return queryset
 
 class InfoObjectListIncludingInternals(SuperuserRequiredMixin,InfoObjectList):
 
@@ -143,8 +144,6 @@ class InfoObjectsEmbedded(BasicListView):
 
 
 class SimpleFactSearch(BasicFilterView):
-
-
 
     counting_paginator = False
 
@@ -545,8 +544,15 @@ class CustomFactSearchView(BasicCustomQueryView):
 
 class InfoObjectJSONGraph(BasicJSONView):
     """
-    View for JSON representation of InfoObjects Graph data. Used in the front-end detail view to display a graph of the current InfoObject
+    View for JSON representation of InfoObjects Graph data.
+    Used in the front-end detail view to display a reference graph of the current InfoObject
     """
+
+    # When building the graph, we skip references to the kill chain. This is because
+    # in STIX reports where the kill chain information is consistently used, it completly
+    # messes up the graph display.
+
+    skip_terms = [{'attribute':'kill_chain_id'},{'term':'Kill_Chain','operator':'icontains'}]
     @property
     def returned_obj(self):
         res = {
@@ -563,14 +569,15 @@ class InfoObjectJSONGraph(BasicJSONView):
         
         if iobject_id:
             res['status'] = True
+            res['msg'] = "Object graph"
             res['data'] = {
                 'node_id': iobject_id,
                 #'d': follow_references([iobject_id], direction='down')
                 'd': follow_references([iobject_id],
-                                       skip_terms = [{'attribute':'kill_chain_id'},{'term':'Kill_Chain','operator':'icontains'}],
+                                       skip_terms = self.skip_terms,
                                        direction='up',reverse=True) +
                                        follow_references([iobject_id],
-                                                         skip_terms = [{'attribute':'kill_chain_id'},{'term':'Kill_Chain','operator':'icontains'}],
+                                                         skip_terms = skip_terms,
                                                          direction='down')
             }
 

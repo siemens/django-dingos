@@ -21,6 +21,17 @@ from dingos.models import InfoObject2Fact, InfoObject
 
 
 def _build_skip_query(skip_info):
+    """
+    Function taking a dictionary of the following form::
+
+          {'term': 'term_to_be_skipped', 'attribute': 'attribute_to_be_skippe', 'operator': 'comparison_operator'}
+
+    (where either 'term' or 'attribute' may be empty, but not both at the same time).
+
+    The function generates a Django Q-object query matching facts in a InfoObject2Fact object with the
+    given term and attribute (using the given comparions operator).
+
+    """
     Q_term = None
     Q_attr = None
 
@@ -40,12 +51,59 @@ def _build_skip_query(skip_info):
 
 
 def follow_references(iobject_pks,
-                      reachable_iobject_pks=None,
                       direction = 'down',
                       skip_terms=None,
                       depth=100000,
                       keep_graph_info=True,
                       reverse=False):
+    """
+    Given a list of primary keys of InfoObject instances, the function calculates a reachability graph based
+    on referencing of InfoObjects within a fact. The function has the following parameters:
+
+    - direction
+
+      Either 'down' or 'up'. 
+
+      'down' means that the graph is built by finding all InfoObjects referenced within
+      a fact of one of the InfoObjects within the given list of InfoObject instances, 
+      and then recursing on these newly found InfoObjects.
+           
+      'up' means that the graph is built by finding all InfoObjects (only in their latest revision) that
+      contain a reference to one of the InfoObjects contained in the given list of InfoObjects.
+
+      Note that a fact can either reference an InfoObject by its identifier (meaning that always the
+      latest revision is referred to) or by it primary key (meaning that a certain revision is referenced).
+      Hence: the downward search may yield InfoObjects instances that do not represent the latest revision
+      of an InfoObject; the upward search, conversely, can only yield InfoObject instances that represent
+      the latest revision of an InfoObject.
+
+    - skip terms:
+
+
+      A list of dictionaries of the following form::
+
+          {'term': 'term_to_be_skipped', 'attribute': 'attribute_to_be_skippe', 'operator': 'comparison_operator'}
+
+      Each such dictionary specifies a query on term and/or attribute of a fact term. Facts with fact_terms/attributes 
+      that match at least one of the specified ``skip_terms`` are ignored when building the graph.
+
+    - depth:
+
+      Maximal recursion depth in building the graph
+
+    - keep_graph_info
+
+      If set to 'True', only the list of primary keys of reachable InfoObjects is returned; otherwise, full information
+      about the graph (nodes and edges) is provided.
+
+
+    - reverse
+
+      If set to ``True``, source and destination of an edge are reversed. This is useful if the results of an upward-traversal
+      and a downward-traversal are to be combined into a single graph.
+    """
+
+
 
     if not reverse:
         source_label = 'source'
@@ -54,20 +112,31 @@ def follow_references(iobject_pks,
         source_label = 'dest'
         dest_label = 'source'
 
-    if not reachable_iobject_pks:
-        reachable_iobject_pks = set()
+
+    reachable_iobject_pks = set()
 
     if not skip_terms:
         skip_terms = []
 
+
+    # build a Q-object for each skip-term
     skip_term_queries = map(_build_skip_query,skip_terms)
 
     Q_skip_terms = None
 
 
-
+    # join all Q-objects by the 'or' operator '|'
     if len(skip_term_queries) >= 1:
+        # ``reduce`` is the Python version of ``foldr`` as known in functional programming::
+        #
+        #        reduce(+,[1,2,3,4,5],6) = (1 + (2 + (3 + (4 + (5 + 6)))))
         Q_skip_terms = reduce(lambda x, y : (x | y),skip_term_queries[1:],skip_term_queries[0])
+    else:
+        Q_skip_terms = skip_term_queries[0]
+
+
+    # We compile the list of values we want to query
+    # The query will be over InfObject2Fact instances.
 
     values_list = ['iobject_id',                            #0
                    'fact__value_iobject_id__latest__id',    #1
@@ -92,18 +161,35 @@ def follow_references(iobject_pks,
 
         ]
 
+    # The real work is done in the recursive function defined below
 
     def follow_references_rec(iobject_pks,reachable_iobject_pks,direction,depth,graph_edge_list):
 
 
         if direction == 'down':
-            fact_query = Q(iobject_id__in=iobject_pks) & ( ~Q(fact__value_iobject_id=None)  | ~Q(fact__value_iobject_ts=None))
-        else: # we go up
-                                                                            # uncomment below once model has been changed
+            # When going down, we need to query for IO2F instances which have one of the
+            # specified list of primary keys as primary key of the InfoObject
+            # to which the IO2F instance is attached
+            # Furthermore, we are only interested into IO2F instances, that constitute a reference,
+            # i.e., they contain a Foreignkey to an InfoObject identifier or an InfoObject revision.
+
+            # TODO The part of the query commented out below must be added in once it is decided on how
+            # to model references to specific revisions of an InfoObject
+            fact_query = Q(iobject_id__in=iobject_pks) & ( ~Q(fact__value_iobject_id=None) )# | ~Q(fact__value_iobject_ts=None))
+        else: 
+            # When going up, it is the pk of the InfoObject referenced in the IO2F instance that must be contained in the
+            # specified list of primary keys
+
+            # TODO The part of the query commented out below must be added in once it is decided on how
+            # to model references to specific revisions of an InfoObject
+
             fact_query = Q(iobject__latest_of__isnull=False) & Q(fact__value_iobject_id__latest__id__in=iobject_pks) #| Q(fact__value_iobject_ts__id__in=iobject_pks)
 
         if Q_skip_terms:
+            # We enrich the query with restrictions upon the fact terms to be considered
             fact_query = ~Q_skip_terms & fact_query
+
+
         reference_fact_infos = InfoObject2Fact. \
             objects.filter(fact_query).values_list(*values_list)
 
@@ -135,7 +221,8 @@ def follow_references(iobject_pks,
                     '%s_iobject_type' % source_label: x[9],
                     }
 
-                    if True: # TODO  second branch once model has been changed
+                    if True: # TODO  second branch once it has been decided on how to model
+                             # references to specific revisions of an InfoObject
                         edge['%s_identifier_ns'% dest_label] = x[10]
                         edge['%s_identifier_uid' % dest_label] = x[11]
                         edge['%s_name' % dest_label] = x[12]
@@ -164,7 +251,8 @@ def follow_references(iobject_pks,
                             '%s_name'% dest_label: x[8],
                             '%s_iobject_type'% dest_label: x[9],}
 
-                    if True: # TODO  second branch once model has been changed
+                    if True: # TODO  second branch once it has been decided on how to model
+                             # references to specific revisions of an InfoObject
                         edge['%s_identifier_ns' % source_label] = x[10]
                         edge['%s_identifier_uid'% source_label] = x[11]
                         edge['%s_name'% source_label] = x[12]
