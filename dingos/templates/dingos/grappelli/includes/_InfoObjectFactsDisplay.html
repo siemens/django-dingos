@@ -44,9 +44,10 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                         {% if show_NodeID %}
                         <td></td>
                         {% endif %}
-                            {%    node_indent "th"  k.node_id.name "" "" %}
-                                Value
-                            {%    node_indent_end "th"  k.node_id.name "" "" %}
+                            <th colspan='100'>
+
+                            </th>
+
                             <th >
                                 Datatype
                             </th>
@@ -63,11 +64,13 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                         {% if k.fact.value_iobject_id %}
                             {%  if k.fact.value_iobject_id.latest %}
                             <a href={% url 'url.dingos.view.infoobject' k.fact.value_iobject_id.latest.pk %}>
+                                <img src="/static/admin/img/selector-search.gif" alt="Lookup" height="16" width="16">
+                            </a>
                                 {% if k.fact.value_iobject_id.latest.name == '' or k.fact.value_iobject_id.latest.name == 'PLACEHOLDER' %}
                                     {{k.fact.value_iobject_id.latest.iobject_type.name}}
                                 {% else %}
                                     {{k.fact.value_iobject_id.latest.name}}
-                                {% endif %}</a>
+                                {% endif %}
                             {%  else %}
                                 {{ k.fact.value_iobject_id.namespace.uri }}:{{ k.fact.value_iobject_id.uid }}
                             {% endif %}

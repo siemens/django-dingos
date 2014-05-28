@@ -27,7 +27,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
 {% block content_frontmatter %}
-<form  method="POST">
+<form method="POST" xmlns="http://www.w3.org/1999/html">
     {% csrf_token %}
     {{view.form.checked_objects_choices}}
 {% endblock %}
@@ -41,10 +41,17 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 <div class="grp-module">
     <h2>{% block tool_title %} Action {% endblock %}</h2>
 
+<div class="grp_row">
+   {% block action_description %}
+   {% endblock %}
+</div>
 
   <div class="grp-module">
       {% block action_form_fields %}show fields of action form here
     <table class="grp-full-width">
+
+
+
 
         <tbody>
 
@@ -76,22 +83,35 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     <table id="result_list" cellspacing="0" class="grp-sortable">
 
+        {% block header_row %}
+            <thead>
+            <tr>
+            <th/>
+            <th>Identifier</th>
+            <th>Name</th>
+            </tr>
+            </thead>
+
+        {% endblock %}
+
         <div id="id_checked_objects">
+
+
        <tbody>
 
        {% for checkbox in view.form.checked_objects %}
          {% with pk=checkbox.choice_label %}
-         {% obj_by_pk pk as instance %}
+         {% obj_by_pk pk as obj %}
 
 
            <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
                <td> {{ checkbox.tag }}</td>
                {% block instance_columns %}
                <td>
-                   <a href="{%url 'url.dingos.view.infoobject' pk=instance.pk %}">{{ instance.identifier }}</a>
+                   <a href="{%url 'url.dingos.view.infoobject' pk=obj.pk %}">{{ obj.identifier }}</a>
                </td>
                <td>
-                   {{instance.name | insert_wbr }}
+                   {{obj.name | insert_wbr }}
                </td>
                {% endblock %}
 

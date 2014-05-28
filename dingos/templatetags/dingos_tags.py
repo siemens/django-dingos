@@ -29,13 +29,15 @@ from dingos.core.utilities import get_from_django_obj
 from dingos.core import http_helpers
 from dingos import DINGOS_TEMPLATE_FAMILY
 
+from django.utils import html
     
 
 
 register = template.Library()
 
 
-def node_indent(elt_name, node_id, fact_term, attribute, highlight_node=None):
+
+def node_indent(context, elt_name, node_id, fact_term, attribute, highlight_node=None):
     """
     This tag uses a table structure to display indentation
     of fact terms based on the information contained in the
@@ -126,7 +128,12 @@ def node_indent(elt_name, node_id, fact_term, attribute, highlight_node=None):
 
     result = []
     counter = 0
+    sticky_color =None
+    previous_color= None
+
+
     for node in node_ids:
+
         is_attr = False
         if len(node) >= 1:
             if node[0] == 'A':
@@ -142,31 +149,56 @@ def node_indent(elt_name, node_id, fact_term, attribute, highlight_node=None):
             node_mod = 2
         else:
             node_mod = node_nr % 2
-        if is_attr:
-            result.append("<%(elt_name)s style='background: %(color)s'>%(fact_term_component)s</%(elt_name)s>" % {
-                'elt_name': elt_name,
-                'fact_term_component': fact_components.get(counter, ''),
-                'color': color_dict[2][max(14 - counter,4)]})
+
+        if sticky_color:
+            color = sticky_color
         else:
-            result.append(
-                "<%(elt_name)s style='width:1px; margin: 0px ; background : %(color)s'>%(fact_term_component)s</%(elt_name)s>" % {
+            color = color_dict[node_mod][max(14 - counter,4)]
+
+
+        if counter in context['row_map'][tuple(node_ids)]:
+
+            if is_attr:
+                row_span = 1
+                if previous_color:
+                    attr_color = """style='background: %s'""" % previous_color
+                else:
+                    attr_color = ''
+                result.append("<%(elt_name)s %(color)s rowspan='%(row_span)s'> %(fact_term_component)s</%(elt_name)s>" % {
                     'elt_name': elt_name,
-                    'color': color_dict[node_mod][max(14 - counter,4)],
-                    'fact_term_component': fact_components.get(counter, '')})
+                    'fact_term_component': fact_components.get(counter, ''),
+                    'color': attr_color, #color,
+                    'row_span': row_span})
+            else:
+                row_span = context['row_map'][tuple(node_ids)][counter]
+                if row_span == 1:
+                    sticky_color = color
+                result.append(
+                    "<%(elt_name)s style='width:1px; margin: 0px ; background : %(color)s' rowspan='%(row_span)s'>%(fact_term_component)s</%(elt_name)s>" % {
+                        'elt_name': elt_name,
+                        'color': color,
+                        'fact_term_component': fact_components.get(counter, ''),
+                        'row_span': row_span
+                    })
 
         counter += 1
+        previous_color = color
 
     highlight = "style='background: #FF0000;'" if highlight_node == node_id else None
+
 
     result.append("<%(elt_name)s colspan='%(colspan)s' %(highlight)s>" % {'elt_name': elt_name, 'colspan': (indents - counter), 'highlight' : highlight})
 
     return "".join(result)
 
 
-register.simple_tag(node_indent)
+register.simple_tag(node_indent,takes_context=True)
 
 
-def node_indent_end(elt_name, node_id, fact_term, attribute):
+
+
+
+def node_indent_end(context, elt_name, node_id, fact_term, attribute):
     """
     Closing tag for the node_indent tag. Currently, only the
     parameter elt_name is used: we keep the other around in
@@ -176,7 +208,9 @@ def node_indent_end(elt_name, node_id, fact_term, attribute):
     """
     return "</%s>" % elt_name
 
-register.simple_tag(node_indent_end)
+register.simple_tag(node_indent_end,takes_context=True)
+
+
 
 @register.simple_tag
 def render_formset_form(formset, formindex, key, field):    
@@ -250,7 +284,7 @@ def lookup_blob(hash_value):
         blob = BlobStorage.objects.get(sha256=hash_value)
     except:
         return "Blob not found"
-    return blob.content
+    return html.escape(blob.content)
 
 
 @register.simple_tag
@@ -288,8 +322,72 @@ def render_paginator(context,is_counting=True):
 # certain aspects of an InformationObject.
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectFactsDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
-def show_InfoObject(context, iobject, iobject2facts, highlight=None, show_NodeID=False, formset=None, formindex=None):
+def show_InfoObject(context, formset=None, formindex=None):
     page = context['view'].request.GET.get('page')
+
+    iobject = context['view'].object
+    iobject2facts = context['view'].iobject2facts
+    highlight = context['highlight']
+    show_NodeID = context['show_NodeID']
+
+    def rowspan_map(iobject2facts):
+        """
+        When displaying the fact-term--value pairs, we want to
+        use row-spans. Instead of
+
+        +-------------+-----------------+
+        | blah | foo  |                 |
+        +------+------+-----------------+
+        | blah | bar  |                 |
+        +------+------+-----------------+
+
+
+        we want to display
+
+        +-------------+-----------------+
+        |      | foo  |                 |
+        | blah |------+-----------------+
+        |      | bar  |                 |
+        +------+------+-----------------+
+
+        Since we iterate through the fact-term--value pairs with a loop,
+        and the rowspan has to be specified in the very first row,
+        we have to precalculate the row-span per indentation level.
+        This is what this function does: for each node identifier,
+        it calculates a dictionary mapping indentation levels to
+        rowspans like so::
+
+           rowspan_map[('N000','N000','N000')] = {0: 9, 1: 9, 2: 1}
+
+        This means that on level 0, there should be a row span of 9,
+        at level 1, also of 9 and at level 2 of 1.
+
+        """
+
+        row_map = {}
+        row_span_start = {}
+        previous_node = []
+        for io2f in iobject2facts:
+            node_id = io2f.node_id.name.split(':')
+            node_id_tuple = tuple(node_id)
+            row_map[node_id_tuple] = {}
+            comparison = zip(previous_node,node_id)
+            counter = 0
+            wipe = False
+
+            for (previous,this) in comparison:
+                if previous == this and not wipe:
+                    row_map[row_span_start[counter]][counter] += 1
+                else:
+                    row_span_start[counter] = node_id_tuple
+                    row_map[node_id_tuple][counter] = 1
+                    wipe = True
+                counter += 1
+            for i in range(counter,len(node_id)):
+                row_span_start[i] = node_id_tuple
+                row_map[node_id_tuple][i] = 1
+            previous_node = node_id
+        return row_map
 
     iobject2facts_paginator = Paginator(iobject2facts,200)
     if iobject2facts_paginator.num_pages == 1:
@@ -316,11 +414,12 @@ def show_InfoObject(context, iobject, iobject2facts, highlight=None, show_NodeID
             'show_NodeID' : show_NodeID,
             'iobject2facts_paginator':iobject2facts_paginator,
             'iobject2facts': iobject2facts,
+            'row_map' : rowspan_map(iobject2facts),
             'formindex' : formindex,
             'formset' : formset }
 
 
-@register.inclusion_tag('dingos/%s/includes/_InfoObjectRevisionListDisplay.html'% DINGOS_TEMPLATE_FAMILY)
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectRevisionListDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def show_InfoObjectRevisions(iobject):
     return {'object': iobject}
 
