@@ -566,7 +566,12 @@ class InfoObjectJSONGraph(BasicJSONView):
             res['data'] = {
                 'node_id': iobject_id,
                 #'d': follow_references([iobject_id], direction='down')
-                'd': follow_references([iobject_id], direction='up') + follow_references([iobject_id], direction='down') 
+                'd': follow_references([iobject_id],
+                                       skip_terms = [{'attribute':'kill_chain_id'},{'term':'Kill_Chain','operator':'icontains'}],
+                                       direction='up',reverse=True) +
+                                       follow_references([iobject_id],
+                                                         skip_terms = [{'attribute':'kill_chain_id'},{'term':'Kill_Chain','operator':'icontains'}],
+                                                         direction='down')
             }
 
         return res

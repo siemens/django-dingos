@@ -44,13 +44,21 @@ def follow_references(iobject_pks,
                       direction = 'down',
                       skip_terms=None,
                       depth=100000,
-                      keep_graph_info=True):
+                      keep_graph_info=True,
+                      reverse=False):
+
+    if not reverse:
+        source_label = 'source'
+        dest_label = 'dest'
+    else:
+        source_label = 'dest'
+        dest_label = 'source'
 
     if not reachable_iobject_pks:
         reachable_iobject_pks = set()
 
     if not skip_terms:
-        skip_terms = [{'attribute':'kill_chain_id'},{'term':'Kill_Chain','operator':'icontains'}]
+        skip_terms = []
 
     skip_term_queries = map(_build_skip_query,skip_terms)
 
@@ -81,10 +89,7 @@ def follow_references(iobject_pks,
                                      'fact__value_iobject_id__latest__name', #12
                                      'fact__value_iobject_id__latest__iobject_type__name', #13
 
-                                     #'fact__value_iobject_ts__identifier__namespace__uri',
-                                     #'fact__value_iobject_ts__identifier__uid',
-                                     #'fact__value_iobject_ts__name',
-                                     #'fact__value_iobject_ts__iobject_type__name',
+
         ]
 
 
@@ -95,14 +100,13 @@ def follow_references(iobject_pks,
             fact_query = Q(iobject_id__in=iobject_pks) & ( ~Q(fact__value_iobject_id=None)  | ~Q(fact__value_iobject_ts=None))
         else: # we go up
                                                                             # uncomment below once model has been changed
-            fact_query = Q(fact__value_iobject_id__latest__id__in=iobject_pks) #| Q(fact__value_iobject_ts__id__in=iobject_pks)
+            fact_query = Q(iobject__latest_of__isnull=False) & Q(fact__value_iobject_id__latest__id__in=iobject_pks) #| Q(fact__value_iobject_ts__id__in=iobject_pks)
 
         if Q_skip_terms:
             fact_query = ~Q_skip_terms & fact_query
         reference_fact_infos = InfoObject2Fact. \
             objects.filter(fact_query).values_list(*values_list)
 
-        #print reference_fact_infos
 
         edge_list = []
         hop_node_set = set()
@@ -119,23 +123,23 @@ def follow_references(iobject_pks,
                     hop_node_set.add(dest)
                 else:
 
-                    edge = {'source': x[0],
+                    edge = {source_label: x[0],
 
                     'term': x[3],
                     'attribute': x[4],
                     'fact_node_id': x[5],
-                    'dest' : dest,
-                    'source_identifier_ns': x[6],
-                    'source_identifier_uid': x[7],
-                    'source_name': x[8],
-                    'source_iobject_type': x[9],
+                    dest_label : dest,
+                    '%s_identifier_ns' % source_label: x[6],
+                    '%s_identifier_uid' % source_label: x[7],
+                    '%s_name'% source_label: x[8],
+                    '%s_iobject_type' % source_label: x[9],
                     }
 
                     if True: # TODO  second branch once model has been changed
-                        edge['dest_identifier_ns'] = x[10]
-                        edge['dest_identifier_uid'] = x[11]
-                        edge['dest_name'] = x[12]
-                        edge['dest_iobject_type'] = x[13]
+                        edge['%s_identifier_ns'% dest_label] = x[10]
+                        edge['%s_identifier_uid' % dest_label] = x[11]
+                        edge['%s_name' % dest_label] = x[12]
+                        edge['%s_iobject_type' % dest_label] = x[13]
                     edge_list.append(edge)
 
         else:
@@ -150,26 +154,26 @@ def follow_references(iobject_pks,
                     else:
                         source = x[2]
 
-                    edge = {'source': source,
+                    edge = {source_label: source,
                             'term': x[3],
                             'attribute': x[4],
                             'fact_node_id': x[5],
-                            'dest' : x[0],
-                            'dest_identifier_ns': x[6],
-                            'dest_identifier_uid': x[7],
-                            'dest_name': x[8],
-                            'dest_iobject_type': x[9],}
+                            dest_label : x[0],
+                            '%s_identifier_ns' % dest_label: x[6],
+                            '%s_identifier_uid' % dest_label: x[7],
+                            '%s_name'% dest_label: x[8],
+                            '%s_iobject_type'% dest_label: x[9],}
 
                     if True: # TODO  second branch once model has been changed
-                        edge['source_identifier_ns'] = x[10]
-                        edge['source_identifier_uid'] = x[11]
-                        edge['source_name'] = x[12]
-                        edge['source_iobject_type'] = x[13]
+                        edge['%s_identifier_ns' % source_label] = x[10]
+                        edge['%s_identifier_uid'% source_label] = x[11]
+                        edge['%s_name'% source_label] = x[12]
+                        edge['%s_iobject_type' % source_label] = x[13]
                     edge_list.append(edge)
 
 
         if keep_graph_info:
-            next_hop_iobject_pks = set([x['dest'] for x in edge_list])
+            next_hop_iobject_pks = set([x[dest_label] for x in edge_list])
 
 
             graph_edge_list = graph_edge_list + edge_list
