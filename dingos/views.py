@@ -577,7 +577,7 @@ class InfoObjectJSONGraph(BasicJSONView):
                                        skip_terms = self.skip_terms,
                                        direction='up',reverse=True) +
                                        follow_references([iobject_id],
-                                                         skip_terms = skip_terms,
+                                                         skip_terms = self.skip_terms,
                                                          direction='down')
             }
 
