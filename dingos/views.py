@@ -572,13 +572,12 @@ class InfoObjectJSONGraph(BasicJSONView):
             res['msg'] = "Object graph"
             res['data'] = {
                 'node_id': iobject_id,
-                #'d': follow_references([iobject_id], direction='down')
                 'd': follow_references([iobject_id],
                                        skip_terms = self.skip_terms,
-                                       direction='up',reverse=True) +
-                                       follow_references([iobject_id],
-                                                         skip_terms = self.skip_terms,
-                                                         direction='down')
+                                       direction='up',reverse_direction=True) +
+                     follow_references([iobject_id],
+                                       skip_terms = self.skip_terms,
+                                       direction='down')
             }
 
         return res

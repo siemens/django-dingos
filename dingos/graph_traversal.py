@@ -16,7 +16,7 @@
 #
 
 from django.db.models import Count, F, Q
-
+from django.core.urlresolvers import reverse
 from dingos.models import InfoObject2Fact, InfoObject
 
 
@@ -55,7 +55,7 @@ def follow_references(iobject_pks,
                       skip_terms=None,
                       depth=100000,
                       keep_graph_info=True,
-                      reverse=False):
+                      reverse_direction=False):
     """
     Given a list of primary keys of InfoObject instances, the function calculates a reachability graph based
     on referencing of InfoObjects within a fact. The function has the following parameters:
@@ -97,7 +97,7 @@ def follow_references(iobject_pks,
       about the graph (nodes and edges) is provided.
 
 
-    - reverse
+    - reverse_direction
 
       If set to ``True``, source and destination of an edge are reversed. This is useful if the results of an upward-traversal
       and a downward-traversal are to be combined into a single graph.
@@ -105,7 +105,7 @@ def follow_references(iobject_pks,
 
 
 
-    if not reverse:
+    if not reverse_direction:
         source_label = 'source'
         dest_label = 'dest'
     else:
@@ -209,16 +209,18 @@ def follow_references(iobject_pks,
                     hop_node_set.add(dest)
                 else:
 
-                    edge = {source_label: x[0],
-
-                    'term': x[3],
-                    'attribute': x[4],
-                    'fact_node_id': x[5],
-                    dest_label : dest,
-                    '%s_identifier_ns' % source_label: x[6],
-                    '%s_identifier_uid' % source_label: x[7],
-                    '%s_name'% source_label: x[8],
-                    '%s_iobject_type' % source_label: x[9],
+                    edge = {
+                        source_label: x[0],
+                        '%s_url' % source_label: reverse('url.dingos.view.infoobject', args=[x[0]]),
+                        'term': x[3],
+                        'attribute': x[4],
+                        'fact_node_id': x[5],
+                        dest_label : dest,
+                        '%s_url' % dest_label: reverse('url.dingos.view.infoobject', args=[dest]),
+                        '%s_identifier_ns' % source_label: x[6],
+                        '%s_identifier_uid' % source_label: x[7],
+                        '%s_name'% source_label: x[8],
+                        '%s_iobject_type' % source_label: x[9]
                     }
 
                     if True: # TODO  second branch once it has been decided on how to model
@@ -241,15 +243,19 @@ def follow_references(iobject_pks,
                     else:
                         source = x[2]
 
-                    edge = {source_label: source,
-                            'term': x[3],
-                            'attribute': x[4],
-                            'fact_node_id': x[5],
-                            dest_label : x[0],
-                            '%s_identifier_ns' % dest_label: x[6],
-                            '%s_identifier_uid' % dest_label: x[7],
-                            '%s_name'% dest_label: x[8],
-                            '%s_iobject_type'% dest_label: x[9],}
+                    edge = {
+                        source_label: source,
+                        '%s_url' % source_label: reverse('url.dingos.view.infoobject', args=[source]),
+                        'term': x[3],
+                        'attribute': x[4],
+                        'fact_node_id': x[5],
+                        dest_label : x[0],
+                        '%s_url' % dest_label: reverse('url.dingos.view.infoobject', args=[x[0]]),
+                        '%s_identifier_ns' % dest_label: x[6],
+                        '%s_identifier_uid' % dest_label: x[7],
+                        '%s_name'% dest_label: x[8],
+                        '%s_iobject_type'% dest_label: x[9]
+                    }
 
                     if True: # TODO  second branch once it has been decided on how to model
                              # references to specific revisions of an InfoObject
