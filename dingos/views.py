@@ -553,14 +553,13 @@ class InfoObjectJSONGraph(BasicJSONView):
         iobject_id = self.kwargs.get('pk', None)
         if not iobject_id:
             POST = self.request.POST
-            iobject_id = POST.get('iobject_id', None)
-        
-        if iobject_id:
+            iobject_id = POST.get('iobject_id', None)        
+
+        if iobject_id:            
             res['status'] = True
             res['data'] = {
                 'node_id': iobject_id,
-                #'d': follow_references([iobject_id], direction='down')
-                'd': follow_references([iobject_id], direction='up') + follow_references([iobject_id], direction='down') 
+                'd': follow_references([iobject_id], direction='up') + follow_references([iobject_id], direction='down')
             }
 
         return res

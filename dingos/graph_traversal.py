@@ -15,8 +15,8 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from django.core.urlresolvers import reverse
 from django.db.models import Count, F, Q
-
 from dingos.models import InfoObject2Fact, InfoObject
 
 
@@ -120,15 +120,17 @@ def follow_references(iobject_pks,
                 else:
 
                     edge = {'source': x[0],
-
-                    'term': x[3],
-                    'attribute': x[4],
-                    'fact_node_id': x[5],
-                    'dest' : dest,
-                    'source_identifier_ns': x[6],
-                    'source_identifier_uid': x[7],
-                    'source_name': x[8],
-                    'source_iobject_type': x[9],
+                            'source_url': reverse('url.dingos.view.infoobject', args=[x[0]]),
+                            'term': x[3],
+                            'attribute': x[4],
+                            'fact_node_id': x[5],
+                            'dest' : dest,
+                            'dest_url': reverse('url.dingos.view.infoobject', args=[dest]),
+                            'source_identifier_ns': x[6],
+                            'source_identifier_uid': x[7],
+                            'source_name': x[8],
+                            'source_iobject_type': x[9],
+                            'direction': 'down'
                     }
 
                     if True: # TODO  second branch once model has been changed
@@ -150,15 +152,20 @@ def follow_references(iobject_pks,
                     else:
                         source = x[2]
 
-                    edge = {'source': source,
-                            'term': x[3],
-                            'attribute': x[4],
-                            'fact_node_id': x[5],
-                            'dest' : x[0],
-                            'dest_identifier_ns': x[6],
-                            'dest_identifier_uid': x[7],
-                            'dest_name': x[8],
-                            'dest_iobject_type': x[9],}
+                    edge = {
+                        'source': source,
+                        'source_url': reverse('url.dingos.view.infoobject', args=[source]),
+                        'term': x[3],
+                        'attribute': x[4],
+                        'fact_node_id': x[5],
+                        'dest' : x[0],
+                        'dest_url': reverse('url.dingos.view.infoobject', args=[x[0]]),
+                        'dest_identifier_ns': x[6],
+                        'dest_identifier_uid': x[7],
+                        'dest_name': x[8],
+                        'dest_iobject_type': x[9],
+                        'direction': 'up'
+                    }
 
                     if True: # TODO  second branch once model has been changed
                         edge['source_identifier_ns'] = x[10]

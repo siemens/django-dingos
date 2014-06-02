@@ -380,29 +380,32 @@
 
 		    // Compute the nodes and the links.
 		    gdata.forEach(function(link) {
-			if(!(link.source in nodes)){
-			    nodes[link.source] = {}
-			    if(link.source == root_id)
-				nodes[link.source]['fixed'] = true;
-			    $.each(link, function(i,v){
-				if(i.startsWith('source_'))
-				    nodes[link.source][i.replace('source_', '')] = v;
-			    });
-			    nodes[link.source]['id'] = link.source;
-			}
-			if(!(link.dest in nodes)){
-			    nodes[link.dest] = {}
-			    if(link.dest == root_id)
-				nodes[link.dest]['fixed'] = true;
-			    $.each(link, function(i,v){
-				if(i.startsWith('dest_'))
-				    nodes[link.dest][i.replace('dest_', '')] = v;
-			    });
-			    nodes[link.dest]['id'] = link.dest;
-			}
+		    	if(!(link.source in nodes)){
+		    	    nodes[link.source] = {}
+		    	    if(link.source == root_id)
+		    		nodes[link.source]['fixed'] = true;
+		    	    $.each(link, function(i,v){
+		    		if(i.startsWith('source_'))
+		    		    nodes[link.source][i.replace('source_', '')] = v;
+		    	    });
+		    	    nodes[link.source]['id'] = link.source;
+		    	}
+		    	if(!(link.dest in nodes)){
+		    	    nodes[link.dest] = {}
+		    	    if(link.dest == root_id)
+		    		nodes[link.dest]['fixed'] = true;
+		    	    $.each(link, function(i,v){
+		    		if(i.startsWith('dest_'))
+		    		    nodes[link.dest][i.replace('dest_', '')] = v;
+		    	    });
+		    	    nodes[link.dest]['id'] = link.dest;
+		    	}
 		    });
 		    gdata.forEach(function(link) {
-			links.push({source: nodes[link.source], target: nodes[link.dest]});
+			if(link.direction=='up')
+			    links.push({target: nodes[link.source], source: nodes[link.dest]});
+			else
+			    links.push({source: nodes[link.source], target: nodes[link.dest]});
 			linkedByIndex[link.source + ',' + link.dest] = 1;
 		    }); 
 
@@ -455,7 +458,6 @@
 			.charge(-1500)
 			.on("tick", tick)
 			.size([width, height]);
-//			.start();
 
 
 		    var link = svg.selectAll(".link")
@@ -467,7 +469,6 @@
 		    var node = svg.selectAll(".node")
 			.data(force.nodes())
 			.enter().append("g")
-			//.call(force.drag)
 			.attr("class", "node")
 			.each(function(d, i) {
 			    var t = d3.select(this);
@@ -494,13 +495,6 @@
 		     		    .attr("y", -8)
 		     		    .attr("width", 16)
 		     		    .attr("height", 16);
-			    // }else if(d.iobject_type.endsWith('Object')){
-			    // 	t_core = t.append("image")
-			    // 	    .attr("xlink:href", "/static/img/stix/observable.svg")
-		     	    // 	    .attr("x", -8)
-		     	    // 	    .attr("y", -8)
-		     	    // 	    .attr("width", 16)
-		     	    // 	    .attr("height", 16);
 			    }else if(d.iobject_type == 'Observable'){
 				t_core = t.append("image")
 				    .attr("xlink:href", "/static/img/stix/observable.svg")
@@ -539,14 +533,12 @@
 				.on('mouseout', fade(1, 'out'))
 				.on('click', node_click);
 
-
 			    t.append('rect')
 			    	.attr('class', 'toggle-hover')
 			    	.attr('height' , '14px')
 			    	.attr('fill', '#ddd')
 		    	    	.attr("x", 10)
 			    	.attr("opacity", "0");
-			    	//.attr('width' , function(d) { return d.name.length * 7 });
 			    
 			    t.append("text")
 			    	.attr("class", "toggle-hover")
@@ -572,11 +564,10 @@
 			
 			el.find('.title').text(e.iobject_type + ': ' + e.name);
 			el.find('img').attr('src', img);
-			
 			var itmpl = '<table><tbody> \
 			      <tr><td>NS:</td> <td>'+ e.identifier_ns +'</td></tr> \
 			      <tr><td>ID:</td> <td>'+ e.identifier_uid +'</td></tr> \
-			      <tr><td>Link:</td> <td><a href="#">'+ e.id +'</a></td></tr> \
+			      <tr><td>Link:</td> <td><a href="'+ e.url +'">'+ e.id +'</a></td></tr> \
 			      </tbody></table> \
                         ';
 			el.find('.desc').html(itmpl);
