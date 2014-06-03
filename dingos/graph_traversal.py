@@ -52,12 +52,26 @@ def _build_skip_query(skip_info):
         return None
 
 
+def derive_image_info(node_dict):
+
+    image_info= {}
+    image_info["xlink:href"] = "/static/img/stix/stix.png"
+    image_info["x"] = -15
+    image_info["y"] = -15
+    image_info["width"] = 30
+    image_info["height"] = 30
+
+    return image_info
+
+
 def follow_references(iobject_pks,
                       direction = 'down',
                       skip_terms=None,
                       depth=100000,
+                      max_nodes=0,
                       keep_graph_info=True,
-                      reverse_direction=False):
+                      reverse_direction=False,
+                      graph = None):
     """
     Given a list of primary keys of InfoObject instances, the function calculates a reachability graph based
     on referencing of InfoObjects within a fact. The function has the following parameters:
@@ -105,9 +119,11 @@ def follow_references(iobject_pks,
       and a downward-traversal are to be combined into a single graph.
     """
 
+    if not graph:
+
+        graph = networkx.MultiGraph()
 
 
-    graph = networkx.MultiGraph()
 
     if not reverse_direction:
         source_label = 'source'
@@ -167,8 +183,9 @@ def follow_references(iobject_pks,
 
     # The real work is done in the recursive function defined below
 
-    def follow_references_rec(iobject_pks,reachable_iobject_pks,direction,depth,graph_edge_list):
+    def follow_references_rec(iobject_pks,reachable_iobject_pks,direction,depth,graph):
 
+        node_count = len(graph.nodes())
 
         if direction == 'down':
             # When going down, we need to query for IO2F instances which have one of the
@@ -199,16 +216,18 @@ def follow_references(iobject_pks,
 
 
         edge_list = []
-        hop_node_set = set()
+
+        next_hop_iobject_pks = set()
 
         for x in reference_fact_infos:
             if keep_graph_info:
                 edge_dict = {}
+
                 node_dict = {}
                 rnode_dict = {}
 
                 edge_dict['term'] = x[3],
-                edge__dict['attribute'] = x[4]
+                edge_dict['attribute'] = x[4]
                 edge_dict['fact_node_id'] = x[5]
 
             node = x[0]
@@ -218,41 +237,57 @@ def follow_references(iobject_pks,
             else:
                 rnode = x[2]
 
-            if direction == 'down' and not reverse_direction:
-                hop_node_set.add(rnode)
+            if direction == 'down':
+                next_hop_iobject_pks.add(rnode)
             else:
-                hop_node_set.add(node)
+                next_hop_iobject_pks.add(node)
 
             if keep_graph_info:
-                if not node in graph:
-                    node_dict['url'] = reverse('url.dingos.view.infoobject', args=[source])
-                    node_dict['identifier_ns'] =  x[6]
-                    node_dict['identifier_uid'] =  x[7]
-                    node_dict['name'] = x[8]
-                    node_dict['iobject_type'] = x[9]
+
+                node_dict['url'] = reverse('url.dingos.view.infoobject', args=[node])
+                node_dict['identifier_ns'] =  x[6]
+                node_dict['identifier_uid'] =  x[7]
+                node_dict['name'] = x[8]
+                node_dict['iobject_type'] = x[9]
+
+                graph.add_node(node,**node_dict)
 
 
-
-                if not rnode in graph:
-                    if True: # TODO  second branch once it has been decided on how to model
+                if True: # TODO  second branch once it has been decided on how to model
                     # references to specific revisions of an InfoObject
-                        rnode_dict['url'] = reverse('url.dingos.view.infoobject', args=[dest])
-                        rnode_dict['identifier_ns'] = x[10]
-                        rnode_dict['identifier_uid'] = x[11]
-                        rnode_dict['name'] = x[12]
-                        rnode_dict['iobject_type'] = x[13]
+                    rnode_dict['url'] = reverse('url.dingos.view.infoobject', args=[rnode])
+                    rnode_dict['identifier_ns'] = x[10]
+                    rnode_dict['identifier_uid'] = x[11]
+                    rnode_dict['name'] = x[12]
+                    rnode_dict['iobject_type'] = x[13]
 
-                    graph.add_node(rnode,**rnode_dict)
+                graph.add_node(rnode,**rnode_dict)
 
                 if direction == 'down' and not reverse_direction:
+                    edge_dict['direction'] = 'refers_to'
                     graph.add_edge(node,rnode,**edge_dict)
                 else:
+                    edge_dict['direction'] = 'refered_to_by'
                     graph.add_edge(rnode,node,**edge_dict)
+            if max_nodes and (node_count + len(next_hop_iobject_pks) >= max_nodes):
+                break
 
 
-
-        if next_hop_iobject_pks.issubset(reachable_iobject_pks) or depth-1 <=0 :
+        if (next_hop_iobject_pks.issubset(reachable_iobject_pks)
+            or depth-1 <=0
+            or (max_nodes and (node_count + len(next_hop_iobject_pks) >= max_nodes))
+            ):
             if keep_graph_info:
+                if (max_nodes and (node_count + len(next_hop_iobject_pks) >= max_nodes)):
+                    graph.graph['max_nodes_reached'] = True
+                else:
+                    graph.graph['max_nodes_reached'] = False
+
+                # add image info
+
+                for n in graph.nodes():
+                    graph.node[n]['image'] = derive_image_info(graph.node[n])
+
                 return graph
             else:
                 return reachable_iobject_pks | next_hop_iobject_pks
@@ -261,9 +296,9 @@ def follow_references(iobject_pks,
                                         reachable_iobject_pks | next_hop_iobject_pks,
                                          direction,
                                          depth-1,
-                                         graph_edge_list)
+                                         graph)
 
-    return follow_references_rec(iobject_pks,reachable_iobject_pks,direction,depth,graph_edge_list = [])
+    return follow_references_rec(iobject_pks,reachable_iobject_pks,direction,depth,graph)
 
 
 

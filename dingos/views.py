@@ -553,6 +553,8 @@ class InfoObjectJSONGraph(BasicJSONView):
     # messes up the graph display.
 
     skip_terms = [{'attribute':'kill_chain_id'},{'term':'Kill_Chain','operator':'icontains'}]
+
+    max_objects = 100
     @property
     def returned_obj(self):
         res = {
@@ -566,18 +568,33 @@ class InfoObjectJSONGraph(BasicJSONView):
         if not iobject_id:
             POST = self.request.POST
             iobject_id = POST.get('iobject_id', None)
-        
+
+
+
+
+        graph = follow_references([iobject_id],
+                                  skip_terms = self.skip_terms,
+                                  direction='up',
+                                  reverse_direction=True,
+                                  max_nodes=self.max_objects)
+
+        follow_references([iobject_id],
+                          skip_terms = self.skip_terms,
+                          direction='down',
+                          max_nodes=self.max_objects,
+                          graph=graph)
+
         if iobject_id:
             res['status'] = True
-            res['msg'] = "Object graph"
+            if graph.graph['max_nodes_reached']:
+                res['msg'] = "Partial reference graph (%s InfoObjects)" % self.max_objects
+            else:
+                res['msg'] = "Reference graph"
+
             res['data'] = {
                 'node_id': iobject_id,
-                'd': follow_references([iobject_id],
-                                       skip_terms = self.skip_terms,
-                                       direction='up',reverse_direction=True) +
-                     follow_references([iobject_id],
-                                       skip_terms = self.skip_terms,
-                                       direction='down')
+                'nodes': graph.nodes(data=True),
+                'edges': graph.edges(data=True),
             }
 
         return res

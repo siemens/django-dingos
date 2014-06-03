@@ -70,7 +70,6 @@
 		// Callback function for rendering graph/tree
 		var BAKrender_graph = function(gdata){
 		    graph_box.toggle(); // Show the box. Needed to get the canvas dimensions
-		    gdata = gdata.d;
 
 		    var nodes = {},
 		        links = [], 
@@ -79,27 +78,28 @@
 		        duration = 300,
 		        rectW = 60,
 		        rectH = 30;
+		        node_data = gdata.nodes;
+		        edge_data = gdata.edges;
+
 
 		    // Compute the nodes and the links.
-		    gdata.forEach(function(link) {
-			if(!(link.source in nodes)){
-			    nodes[link.source] = {}
-			    $.each(link, function(i,v){
-				if(i.startsWith('source_'))
-				    nodes[link.source][i.replace('source_', '')] = v;
+		    node_data.forEach(function(node) {
+			if(!(node[0] in nodes)){
+			    nodes[node[0]] = {}
+			    if(node[0] == root_id)
+				nodes[node[0]]['fixed'] = true;
+			    $.each(node[1], function(i,v){
+				    nodes[node[0]][i] = v;
 			    });
+			    nodes[node[0]]['id'] = node[0];
 			}
-			if(!(link.dest in nodes)){
-			    nodes[link.dest] = {}
-			    $.each(link, function(i,v){
-				if(i.startsWith('dest_'))
-				    nodes[link.dest][i.replace('dest_', '')] = v;
-			    });
-			}
+
 		    });
-		    gdata.forEach(function(link) {
-			links.push({source: nodes[link.source], target: nodes[link.dest]});
-		    });
+		    edge_data.forEach(function(edge) {
+			links.push({source: nodes[edge[0]], target: nodes[edge[1]]});
+			linkedByIndex[edge[0] + ',' + edge[1]] = 1;
+		    }); 
+
 
 
 		    var svg = d3.select(graph_canvas.get(0))
@@ -189,35 +189,24 @@
 		        duration = 300,
 		        root_id = gdata.node_id,
 		        linkedByIndex = {};
-
-		    gdata = gdata.d;
-
+		        node_data = gdata.nodes;
+   		        edge_data = gdata.edges;
 		    // Compute the nodes and the links.
-		    gdata.forEach(function(link) {
-			if(!(link.source in nodes)){
-			    nodes[link.source] = {}
-			    if(link.source == root_id)
-				nodes[link.source]['fixed'] = true;
-			    $.each(link, function(i,v){
-				if(i.startsWith('source_'))
-				    nodes[link.source][i.replace('source_', '')] = v;
+		    node_data.forEach(function(node) {
+			if(!(node[0] in nodes)){
+			    nodes[node[0]] = {}
+			    if(node[0] == root_id)
+				nodes[node[0]]['fixed'] = true;
+			    $.each(node[1], function(i,v){
+				    nodes[node[0]][i] = v;
 			    });
-			    nodes[link.source]['id'] = link.source;
+			    nodes[node[0]]['id'] = node[0];
 			}
-			if(!(link.dest in nodes)){
-			    nodes[link.dest] = {}
-			    if(link.dest == root_id)
-				nodes[link.dest]['fixed'] = true;
-			    $.each(link, function(i,v){
-				if(i.startsWith('dest_'))
-				    nodes[link.dest][i.replace('dest_', '')] = v;
-			    });
-			    nodes[link.dest]['id'] = link.dest;
-			}
+
 		    });
-		    gdata.forEach(function(link) {
-			links.push({source: nodes[link.source], target: nodes[link.dest]});
-			linkedByIndex[link.source + ',' + link.dest] = 1;
+		    edge_data.forEach(function(edge) {
+			links.push({source: nodes[edge[0]], target: nodes[edge[1]]});
+			linkedByIndex[edge[0] + ',' + edge[1]] = 1;
 		    }); 
 
 		    function isConnected(a, b) {
@@ -374,44 +363,27 @@
 		        duration = 300,
 		        root_id = gdata.node_id,
 		        linkedByIndex = {},
+    		        node_data = gdata.nodes,
+		        edge_data = gdata.edges,
 		        self_index = 0;
 
-		    gdata = gdata.d;
-
 		    // Compute the nodes and the links.
-		    gdata.forEach(function(link) {
-		    	if(!(link.source in nodes)){
-		    	    nodes[link.source] = {}
-		    	    if(link.source == root_id)
-		    		nodes[link.source]['fixed'] = true;
-		    	    $.each(link, function(i,v){
-		    		if(i.startsWith('source_'))
-		    		    nodes[link.source][i.replace('source_', '')] = v;
-		    	    });
-		    	    nodes[link.source]['id'] = link.source;
-		    	}
-		    	if(!(link.dest in nodes)){
-		    	    nodes[link.dest] = {}
-		    	    if(link.dest == root_id)
-		    		nodes[link.dest]['fixed'] = true;
-		    	    $.each(link, function(i,v){
-		    		if(i.startsWith('dest_'))
-		    		    nodes[link.dest][i.replace('dest_', '')] = v;
-		    	    });
-		    	    nodes[link.dest]['id'] = link.dest;
-		    	}
-		    });
-		    gdata.forEach(function(link) {
-			if(link.direction=='up')
-			    links.push({target: nodes[link.source], source: nodes[link.dest]});
-			else
-			    links.push({source: nodes[link.source], target: nodes[link.dest]});
-			linkedByIndex[link.source + ',' + link.dest] = 1;
-		    }); 
+		    node_data.forEach(function(node) {
+			if(!(node[0] in nodes)){
+			    nodes[node[0]] = {}
+			    if(node[0] == root_id)
+				nodes[node[0]]['fixed'] = true;
+			    $.each(node[1], function(i,v){
+				    nodes[node[0]][i] = v;
+			    });
+			    nodes[node[0]]['id'] = node[0];
+			}
 
-		    function isConnected(a, b) {
-			return linkedByIndex[a.id + "," + b.id] || linkedByIndex[b.id + "," + a.id] || a.id == b.id;
-		    }
+		    });
+		    edge_data.forEach(function(edge) {
+			links.push({source: nodes[edge[0]], target: nodes[edge[1]]});
+			linkedByIndex[edge[0] + ',' + edge[1]] = 1;
+		    }); 
 
 
 		    var svg = d3.select(graph_canvas.get(0))
