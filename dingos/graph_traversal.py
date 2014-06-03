@@ -15,6 +15,8 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import networkx
+
 from django.db.models import Count, F, Q
 from django.core.urlresolvers import reverse
 from dingos.models import InfoObject2Fact, InfoObject
@@ -104,6 +106,8 @@ def follow_references(iobject_pks,
     """
 
 
+
+    graph = networkx.MultiGraph()
 
     if not reverse_direction:
         source_label = 'source'
@@ -197,88 +201,59 @@ def follow_references(iobject_pks,
         edge_list = []
         hop_node_set = set()
 
-        if direction == 'down':
+        for x in reference_fact_infos:
+            if keep_graph_info:
+                edge_dict = {}
+                node_dict = {}
+                rnode_dict = {}
 
-            for x in reference_fact_infos:
-                if x[1]:
-                    dest = x[1]
-                else:
-                    dest = x[2]
+                edge_dict['term'] = x[3],
+                edge__dict['attribute'] = x[4]
+                edge_dict['fact_node_id'] = x[5]
 
-                if not keep_graph_info:
-                    hop_node_set.add(dest)
-                else:
+            node = x[0]
 
-                    edge = {
-                        source_label: x[0],
-                        '%s_url' % source_label: reverse('url.dingos.view.infoobject', args=[x[0]]),
-                        'term': x[3],
-                        'attribute': x[4],
-                        'fact_node_id': x[5],
-                        dest_label : dest,
-                        '%s_url' % dest_label: reverse('url.dingos.view.infoobject', args=[dest]),
-                        '%s_identifier_ns' % source_label: x[6],
-                        '%s_identifier_uid' % source_label: x[7],
-                        '%s_name'% source_label: x[8],
-                        '%s_iobject_type' % source_label: x[9]
-                    }
+            if x[1]:
+                rnode = x[1]
+            else:
+                rnode = x[2]
 
+            if direction == 'down' and not reverse_direction:
+                hop_node_set.add(rnode)
+            else:
+                hop_node_set.add(node)
+
+            if keep_graph_info:
+                if not node in graph:
+                    node_dict['url'] = reverse('url.dingos.view.infoobject', args=[source])
+                    node_dict['identifier_ns'] =  x[6]
+                    node_dict['identifier_uid'] =  x[7]
+                    node_dict['name'] = x[8]
+                    node_dict['iobject_type'] = x[9]
+
+
+
+                if not rnode in graph:
                     if True: # TODO  second branch once it has been decided on how to model
-                             # references to specific revisions of an InfoObject
-                        edge['%s_identifier_ns'% dest_label] = x[10]
-                        edge['%s_identifier_uid' % dest_label] = x[11]
-                        edge['%s_name' % dest_label] = x[12]
-                        edge['%s_iobject_type' % dest_label] = x[13]
-                    edge_list.append(edge)
+                    # references to specific revisions of an InfoObject
+                        rnode_dict['url'] = reverse('url.dingos.view.infoobject', args=[dest])
+                        rnode_dict['identifier_ns'] = x[10]
+                        rnode_dict['identifier_uid'] = x[11]
+                        rnode_dict['name'] = x[12]
+                        rnode_dict['iobject_type'] = x[13]
 
-        else:
-            for x in reference_fact_infos:
-                if not keep_graph_info:
-                    hop_node_set.add(x[0])
+                    graph.add_node(rnode,**rnode_dict)
+
+                if direction == 'down' and not reverse_direction:
+                    graph.add_edge(node,rnode,**edge_dict)
                 else:
+                    graph.add_edge(rnode,node,**edge_dict)
 
-                    if x[1]:
-                        source = x[1]
-
-                    else:
-                        source = x[2]
-
-                    edge = {
-                        source_label: source,
-                        '%s_url' % source_label: reverse('url.dingos.view.infoobject', args=[source]),
-                        'term': x[3],
-                        'attribute': x[4],
-                        'fact_node_id': x[5],
-                        dest_label : x[0],
-                        '%s_url' % dest_label: reverse('url.dingos.view.infoobject', args=[x[0]]),
-                        '%s_identifier_ns' % dest_label: x[6],
-                        '%s_identifier_uid' % dest_label: x[7],
-                        '%s_name'% dest_label: x[8],
-                        '%s_iobject_type'% dest_label: x[9]
-                    }
-
-                    if True: # TODO  second branch once it has been decided on how to model
-                             # references to specific revisions of an InfoObject
-                        edge['%s_identifier_ns' % source_label] = x[10]
-                        edge['%s_identifier_uid'% source_label] = x[11]
-                        edge['%s_name'% source_label] = x[12]
-                        edge['%s_iobject_type' % source_label] = x[13]
-                    edge_list.append(edge)
-
-
-        if keep_graph_info:
-            next_hop_iobject_pks = set([x[dest_label] for x in edge_list])
-
-
-            graph_edge_list = graph_edge_list + edge_list
-
-        else:
-            next_hop_iobject_pks = hop_node_set
 
 
         if next_hop_iobject_pks.issubset(reachable_iobject_pks) or depth-1 <=0 :
             if keep_graph_info:
-                return graph_edge_list
+                return graph
             else:
                 return reachable_iobject_pks | next_hop_iobject_pks
         else:
