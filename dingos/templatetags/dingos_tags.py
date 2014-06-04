@@ -453,6 +453,16 @@ def show_InfoObjectIDData(iobject, show_hyperlink=False,show_title=False):
 def show_InfoObjectMarkings(iobject):
     return {'object': iobject}
 
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectAuthoredDataDisplay_vertical.html'% DINGOS_TEMPLATE_FAMILY)
+def show_AuthoringSource(iobject):
+    if 'yielded_by' in dir(iobject):
+        authored_data_info = iobject.yielded_by.all().order_by('-timestamp')
+    else:
+        authored_data_info = None
+    return {'authored_data_info': authored_data_info}
+
+
+
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectGraphDisplay.html'% DINGOS_TEMPLATE_FAMILY)
 def show_InfoObjectGraph(iobject):
     return {'object': iobject}
@@ -488,3 +498,11 @@ def nice_name(user):
         Hi, {{ user|nice_name }}
     """
     return user.get_full_name() or user.username
+
+
+@register.simple_tag
+def highlight_if_equal(v1,v2):
+    if str(v1)==str(v2):
+        return "style='background: #FF0000;'"
+    else:
+        return ""
