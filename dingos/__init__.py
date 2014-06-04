@@ -233,5 +233,52 @@ DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject2Fact'] = {
     "object.object_type": ("iobject.iobject_type",['iobject__iobject_type','iobject__iobject_type__namespace']),
 }
 
+# DINGOS_OBJECTTYPE_ICON_MAPPING
+#
+# A mapping used to associate InfoObject types with icons
+# that are displayed in the graph view.
+#
+# The InfoObject-type icon mapping has the form::
+#
+#     { <object-type namespace uri> : {<object-type name>) : <image info dict>,
+#                                     ...},
+#        ...
+#     }
+#
+# where the image-info dict is a key-value mapping of image attributes like so::
+#
+#      {'xlink:href': "/static/img/...',
+#        'x': -15,
+#        'y': -15,
+#        'width': 30,
+#        'height' : 30
+#      }
+#
 
+DINGOS_OBJECTTYPE_ICON_MAPPING = {}
 
+# DINGOS_OBJECTTYPE_ICON_RELIST_MAPPING
+#
+# Used to find map an InfoObject type to an icon,
+# in case the DINGOS_OBJECTTYPE_ICON_MAPPING yielded
+# no result.
+#
+# The mapping has the form::
+#
+#     { <object-type namespace uri> : [(<regexp>, <image info dict>),
+#                                     ...],
+#        ...
+#     }
+#
+# where the regular expression is to match on Infoobject type names and
+# the image-info dict is a key-value mapping of image attributes like so::
+#
+#      {'xlink:href': "/static/img/...',
+#        'x': -15,
+#        'y': -15,
+#        'width': 30,
+#        'height' : 30
+#      }
+#
+
+DINGOS_OBJECTTYPE_ICON_RELIST_MAPPING = {}

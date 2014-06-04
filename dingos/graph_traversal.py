@@ -21,6 +21,7 @@ from django.db.models import Count, F, Q
 from django.core.urlresolvers import reverse
 from dingos.models import InfoObject2Fact, InfoObject
 
+from dingos import DINGOS_OBJECTTYPE_ICON_MAPPING
 
 def _build_skip_query(skip_info):
     """
@@ -52,14 +53,15 @@ def _build_skip_query(skip_info):
         return None
 
 
+print DINGOS_OBJECTTYPE_ICON_MAPPING
+
 def derive_image_info(node_dict):
 
-    image_info= {}
-    image_info["xlink:href"] = "/static/img/stix/stix.png"
-    image_info["x"] = -15
-    image_info["y"] = -15
-    image_info["width"] = 30
-    image_info["height"] = 30
+    print DINGOS_OBJECTTYPE_ICON_MAPPING
+    image_info = DINGOS_OBJECTTYPE_ICON_MAPPING.get(node_dict['iobject_type_family'],{}).\
+        get(node_dict['iobject_type'])
+
+    print (node_dict['iobject_type_family'],node_dict['iobject_type'],image_info)
 
     return image_info
 
@@ -172,11 +174,13 @@ def follow_references(iobject_pks,
                                      'iobject__identifier__uid',              #7
                                      'iobject__name',                         #8
                                      'iobject__iobject_type__name',           #9
+                                     'iobject__iobject_type__iobject_family__name', #10
 
-                                     'fact__value_iobject_id__latest__identifier__namespace__uri', #10
-                                     'fact__value_iobject_id__latest__identifier__uid', # 11
-                                     'fact__value_iobject_id__latest__name', #12
-                                     'fact__value_iobject_id__latest__iobject_type__name', #13
+                                     'fact__value_iobject_id__latest__identifier__namespace__uri', #11
+                                     'fact__value_iobject_id__latest__identifier__uid', # 12
+                                     'fact__value_iobject_id__latest__name', #13
+                                     'fact__value_iobject_id__latest__iobject_type__name', #14
+                                     'fact__value_iobject_id__latest__iobject_type__iobject_family__name', #15
 
 
         ]
@@ -219,6 +223,8 @@ def follow_references(iobject_pks,
 
         next_hop_iobject_pks = set()
 
+        print reference_fact_infos
+
         for x in reference_fact_infos:
             if keep_graph_info:
                 edge_dict = {}
@@ -249,6 +255,7 @@ def follow_references(iobject_pks,
                 node_dict['identifier_uid'] =  x[7]
                 node_dict['name'] = x[8]
                 node_dict['iobject_type'] = x[9]
+                node_dict['iobject_type_family'] = x[10]
 
                 graph.add_node(node,**node_dict)
 
@@ -256,10 +263,11 @@ def follow_references(iobject_pks,
                 if True: # TODO  second branch once it has been decided on how to model
                     # references to specific revisions of an InfoObject
                     rnode_dict['url'] = reverse('url.dingos.view.infoobject', args=[rnode])
-                    rnode_dict['identifier_ns'] = x[10]
-                    rnode_dict['identifier_uid'] = x[11]
-                    rnode_dict['name'] = x[12]
-                    rnode_dict['iobject_type'] = x[13]
+                    rnode_dict['identifier_ns'] = x[11]
+                    rnode_dict['identifier_uid'] = x[12]
+                    rnode_dict['name'] = x[13]
+                    rnode_dict['iobject_type'] = x[14]
+                    rnode_dict['iobject_type_family'] = x[15]
 
                 graph.add_node(rnode,**rnode_dict)
 
@@ -272,7 +280,8 @@ def follow_references(iobject_pks,
             if max_nodes and (node_count + len(next_hop_iobject_pks) >= max_nodes):
                 break
 
-
+        print next_hop_iobject_pks
+        print graph.nodes()
         if (next_hop_iobject_pks.issubset(reachable_iobject_pks)
             or depth-1 <=0
             or (max_nodes and (node_count + len(next_hop_iobject_pks) >= max_nodes))
@@ -288,6 +297,7 @@ def follow_references(iobject_pks,
                 for n in graph.nodes():
                     graph.node[n]['image'] = derive_image_info(graph.node[n])
 
+                print "Result:%s" % graph.nodes()
                 return graph
             else:
                 return reachable_iobject_pks | next_hop_iobject_pks

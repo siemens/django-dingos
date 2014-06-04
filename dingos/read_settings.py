@@ -75,5 +75,15 @@ if settings.configured and 'DINGOS' in dir(settings):
 
 if settings.configured and 'DINGOS' in dir(settings):
     dingos.DINGOS_QUERY_ALLOWED_COLUMNS = settings.DINGOS.get('QUERY_ALLOWED_COLUMNS',
-                                                              dingos.DINGOS_QUERY_ALLOWED_COLUMNS)
+                                                             dingos.DINGOS_QUERY_ALLOWED_COLUMNS)
+
+
+if settings.configured and'DINGOS' in dir(settings):
+    dingos.DINGOS_OBJECTTYPE_ICON_MAPPING = settings.DINGOS.get('OBJECTTYPE_ICON_MAPPING',
+                                                                dingos.DINGOS_OBJECTTYPE_ICON_MAPPING)
+
+if settings.configured and'DINGOS' in dir(settings):
+    dingos.DINGOS_OBJECTTYPE_ICON_RELIST_MAPPING = settings.DINGOS.get('OBJECTTYPE_ICON_RELIST_MAPPING',
+                                                                dingos.DINGOS_OBJECTTYPE_ICON_RELIST_MAPPING)
+
 

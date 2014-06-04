@@ -569,20 +569,19 @@ class InfoObjectJSONGraph(BasicJSONView):
             POST = self.request.POST
             iobject_id = POST.get('iobject_id', None)
 
-
-
-
         graph = follow_references([iobject_id],
                                   skip_terms = self.skip_terms,
                                   direction='up',
                                   reverse_direction=True,
                                   max_nodes=self.max_objects)
 
-        follow_references([iobject_id],
-                          skip_terms = self.skip_terms,
-                          direction='down',
-                          max_nodes=self.max_objects,
-                          graph=graph)
+        print "Intermediate %s" % graph.nodes()
+
+        graph= follow_references([iobject_id],
+                                 skip_terms = self.skip_terms,
+                                 direction='down',
+                                 max_nodes=self.max_objects,
+                                 graph=graph)
 
         if iobject_id:
             res['status'] = True
