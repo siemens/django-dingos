@@ -71,6 +71,7 @@
 
 		// Callback function for rendering graph/graph
 		var render_graph = function(gdata){
+
 		    // If we do not have any nodes, don't draw.
 		    if(gdata.nodes.length == 0)
 			return;
