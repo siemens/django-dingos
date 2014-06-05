@@ -365,6 +365,9 @@
 
 		// Callback function for rendering graph/graph
 		var render_graph = function(gdata){
+		    if(gdata.d.length > 50)
+			return;
+
 		    graph_box.toggle(); // Show the box. Needed to get the canvas dimensions
 
 		    var nodes = {},
