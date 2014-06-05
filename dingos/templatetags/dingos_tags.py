@@ -480,4 +480,11 @@ def saved_search_url(search):
 def obj_by_pk(context, *args,**kwargs):
     return getattr(context['view'],'obj_by_pk')(*args,**kwargs)
 
-
+@register.filter
+def nice_name(user):
+    """
+    Example::
+    
+        Hi, {{ user|nice_name }}
+    """
+    return user.get_full_name() or user.username
