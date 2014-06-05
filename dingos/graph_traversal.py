@@ -236,6 +236,10 @@ def follow_references(iobject_pks,
             else:
                 rnode = x[2]
 
+            if node == None or rnode == None:
+                # we uncovered a link to a node that is not in the system
+                continue
+
             if direction == 'down':
                 next_hop_iobject_pks.add(rnode)
             else:
@@ -243,7 +247,11 @@ def follow_references(iobject_pks,
 
             if keep_graph_info:
 
-                node_dict['url'] = reverse('url.dingos.view.infoobject', args=[node])
+                try:
+                    url = reverse('url.dingos.view.infoobject', args=[node])
+                except:
+                    url = None
+                node_dict['url'] = url 
                 node_dict['identifier_ns'] =  x[6]
                 node_dict['identifier_uid'] =  x[7]
                 node_dict['name'] = x[8]
@@ -255,7 +263,11 @@ def follow_references(iobject_pks,
 
                 if True: # TODO  second branch once it has been decided on how to model
                     # references to specific revisions of an InfoObject
-                    rnode_dict['url'] = reverse('url.dingos.view.infoobject', args=[rnode])
+                    try:
+                        url = reverse('url.dingos.view.infoobject', args=[rnode])
+                    except:
+                        url = None
+                    rnode_dict['url'] = url
                     rnode_dict['identifier_ns'] = x[11]
                     rnode_dict['identifier_uid'] = x[12]
                     rnode_dict['name'] = x[13]
