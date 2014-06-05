@@ -148,9 +148,6 @@ def follow_references(iobject_pks,
         #
         #        reduce(+,[1,2,3,4,5],6) = (1 + (2 + (3 + (4 + (5 + 6)))))
         Q_skip_terms = reduce(lambda x, y : (x | y),skip_term_queries[1:],skip_term_queries[0])
-    else:
-        Q_skip_terms = skip_term_queries[0]
-
 
     # We compile the list of values we want to query
     # The query will be over InfObject2Fact instances.

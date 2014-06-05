@@ -297,16 +297,16 @@ fact_term                     fact term of fact
 attribute                     attribute of fact
 value                         value of fact
 fact_term_with_attribute      fact term and attribute of fact printed as "<fact_term>@<attribute>"
-object.identifier.namespace  Namespace of the object identifier, e.g. ``http://mandiant.com``
-object.identifier.uid        UID of the object identifier, e.g., ``ttp-c63f31ac-871b-4846-aa25-de1926f4f3c8``
-object.identifier            Identifier, printed as ``<namespace>:<uid>``
-object.object_type.name      Name of the InfoObject type, e.g., ``TTP``
-object.object_type.namespace Namespace of the InfoObject type, e.g., "stix.mitre.org"
-object.object_type           InfoObject type, printed as ``<namespace>:<name>``
-object.name                  InfoObject name
-object.timestamp             InfoObject timestamp (as given in object's revision info)
-object.import_timestamp      Timestamp when InfoObject was imported into the system.
-object.object_family         InfoObject family 
+object.identifier.namespace   Namespace of the object identifier, e.g. ``http://mandiant.com``
+object.identifier.uid         UID of the object identifier, e.g., ``ttp-c63f31ac-871b-4846-aa25-de1926f4f3c8``
+object.identifier             Identifier, printed as ``<namespace>:<uid>``
+object.object_type.name       Name of the InfoObject type, e.g., ``TTP``
+object.object_type.namespace  Namespace of the InfoObject type, e.g., "stix.mitre.org"
+object.object_type            InfoObject type, printed as ``<namespace>:<name>``
+object.name                   InfoObject name
+object.timestamp              InfoObject timestamp (as given in object's revision info)
+object.import_timestamp       Timestamp when InfoObject was imported into the system.
+object.object_family          InfoObject family 
 ============================= ======================================================================================
 
 
