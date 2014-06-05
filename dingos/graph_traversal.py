@@ -53,15 +53,10 @@ def _build_skip_query(skip_info):
         return None
 
 
-print DINGOS_OBJECTTYPE_ICON_MAPPING
-
 def derive_image_info(node_dict):
 
-    print DINGOS_OBJECTTYPE_ICON_MAPPING
     image_info = DINGOS_OBJECTTYPE_ICON_MAPPING.get(node_dict['iobject_type_family'],{}).\
         get(node_dict['iobject_type'])
-
-    print (node_dict['iobject_type_family'],node_dict['iobject_type'],image_info)
 
     return image_info
 
@@ -223,8 +218,6 @@ def follow_references(iobject_pks,
 
         next_hop_iobject_pks = set()
 
-        print reference_fact_infos
-
         for x in reference_fact_infos:
             if keep_graph_info:
                 edge_dict = {}
@@ -280,8 +273,6 @@ def follow_references(iobject_pks,
             if max_nodes and (node_count + len(next_hop_iobject_pks) >= max_nodes):
                 break
 
-        print next_hop_iobject_pks
-        print graph.nodes()
         if (next_hop_iobject_pks.issubset(reachable_iobject_pks)
             or depth-1 <=0
             or (max_nodes and (node_count + len(next_hop_iobject_pks) >= max_nodes))
@@ -297,7 +288,6 @@ def follow_references(iobject_pks,
                 for n in graph.nodes():
                     graph.node[n]['image'] = derive_image_info(graph.node[n])
 
-                print "Result:%s" % graph.nodes()
                 return graph
             else:
                 return reachable_iobject_pks | next_hop_iobject_pks
