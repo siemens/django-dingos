@@ -118,7 +118,7 @@ def follow_references(iobject_pks,
 
     if not graph:
 
-        graph = networkx.MultiGraph()
+        graph = networkx.MultiDiGraph()
 
 
 
