@@ -15,74 +15,41 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import csv, collections, copy, json
+from queryparser.queryparser import QueryParser
 
-import csv
-
-import collections
-import copy
-import json
-
-from django import http
-
-from django import forms
-
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
-
-from django.views.generic.base import ContextMixin
-from django.views.generic import DetailView, ListView, TemplateView, View
-
-from django.core.paginator import Paginator, EmptyPage
-
-from django.core.paginator import PageNotAnInteger
-
-
-from django.db import DataError
-
-
-from django.shortcuts import render_to_response
-
-from django.contrib.contenttypes.models import ContentType
-
-from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
-
-from  django.core import urlresolvers
-
+from django import forms, http
 from django.contrib import messages
-
-from django.utils.http import urlquote_plus
-
-from core.http_helpers import get_query_string
-
+from django.contrib.contenttypes.models import ContentType
+from django.core import urlresolvers
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+from django.core.paginator import PageNotAnInteger, Paginator, EmptyPage
+from django.db import DataError
 from django.http import HttpResponseRedirect, HttpResponse
-
-
-
+from django.shortcuts import render_to_response
+from django.utils.http import urlquote_plus
+from django.views.generic import DetailView, ListView, TemplateView, View
+from django.views.generic.base import ContextMixin
 from django_filters.views import FilterView
 
 from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
 
-from dingos.models import UserData, Marking2X
-
+from dingos import DINGOS_TEMPLATE_FAMILY, \
+                   DINGOS_USER_PREFS_TYPE_NAME, \
+                   DINGOS_DEFAULT_USER_PREFS, \
+                   DINGOS_SAVED_SEARCHES_TYPE_NAME, \
+                   DINGOS_DEFAULT_SAVED_SEARCHES
+from dingos import graph_traversal
+from dingos.core.template_helpers import ConfigDictWrapper
+from dingos.core.utilities import get_dict, replace_by_list
 from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm
-
+from dingos.models import InfoObject, UserData, Marking2X
 from dingos.queryparser.result_formatting import to_csv
 
-from dingos import graph_traversal
-
-from dingos import DINGOS_TEMPLATE_FAMILY, \
-    DINGOS_USER_PREFS_TYPE_NAME, \
-    DINGOS_DEFAULT_USER_PREFS, \
-    DINGOS_SAVED_SEARCHES_TYPE_NAME, \
-    DINGOS_DEFAULT_SAVED_SEARCHES
+from core.http_helpers import get_query_string
 
 
-from dingos.core.template_helpers import ConfigDictWrapper
 
-from dingos.core.utilities import get_dict, replace_by_list
-
-from dingos.models import InfoObject
-
-from queryparser.queryparser import QueryParser
 
 class UncountingPaginator(Paginator):
     """

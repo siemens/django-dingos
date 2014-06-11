@@ -1,6 +1,4 @@
-{% extends "admin/base_site.html" %}
-
-
+{% extends "mantis/grappelli/base.html" %}
 
 {% comment %}
 Copyright (c) Siemens AG, 2013
@@ -21,50 +19,19 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
 
+{% load static %}
+{% load dingos_tags %}
 
-{% load staticfiles %}
+{% block title %}
+  {% create_title title %}
+{% endblock %}
 
 {% block stylesheets %}
-{{ block.super }}
-<link href="{% static "dingos/css/django-dingos.css" %}" rel="stylesheet" type="text/css" media="screen" />
+  {{ block.super }}
+  <link href="{% static 'dingos/css/django-dingos.css' %}" rel="stylesheet" type="text/css" media="screen" />
 {% endblock %}
-
-
-
-{% block userlinks %}
-{% endblock %}
-
-{%  load dingos_tags %}
 
 {% block content_title %}
-    <h1>{{ title }}</h1>
+  <h1>{{ title }}</h1>
 {% endblock %}
 
-{% block title %}{% create_title title %} {% endblock %}
-
-{% block breadcrumbs %}
-
-
-    <ul xmlns="http://www.w3.org/1999/html">
-   {% if view.breadcrumbs %}
-    {% for breadcrumb in view.breadcrumbs %}
-        <li>
-          {% if forloop.last %}
-	   {% block last_crumb %}
-             <a href={{request.get_full_path}}>{{breadcrumb.0}}</a>
-           {% endblock %}
-          {% elif breadcrumb.1 %}
-           <a href="{% url breadcrumb.1 %}">{{breadcrumb.0}}</a>
-          {% else %}
-	   {{breadcrumb.0}}
-	  {% endif %}
-        </li>
-    {% endfor %}
-   {% else %}
-	<li>
-           <a href={{request.get_full_path}}>RELOAD</a>
-	</li>
-   {% endif %}
-    </ul>
-
-{% endblock %}

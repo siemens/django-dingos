@@ -93,3 +93,4 @@ urlpatterns = patterns('',
     url(r'^View/InfoObject/(?P<pk>\d*)/graph$', views.InfoObjectJSONGraph.as_view(), name= "url.dingos.view.infoobject.json_graph"),
 
     )
+

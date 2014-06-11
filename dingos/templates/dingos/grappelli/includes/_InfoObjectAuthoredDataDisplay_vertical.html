@@ -19,45 +19,26 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {%  load dingos_tags %}
 
 {% block authored_data %}
-
-{% if authored_data_info %}
-
-
-<div class ="grp-module grp-collapse">
-<h2 class="grp-collapse-handler"> Authored/Modified by:
-  </h2>
-     {% for k in authored_data_info %}
-
-
-                        <table class="grp-full-width">
-                            <tr class="grp-row">
-
-                                <td >
-                                    {{k.timestamp}}
-                                </td>
-                                <td>
-                                    {{ k.user | nice_name }}
-                                </td>
-                                <td>
-                                    {{ k.group }}
-                                </td>
-                                <td>
-
-                                </td>
-                                <td >
-                                    <a href="{%url 'dingos_authoring.view.authored_object.history' id=k.identifier.name%}?highlight={{ k.pk }}"><img src="/static/admin/img/selector-search.gif" alt="Lookup" height="16" width="16"></a>
-                                </td>
-                            </tr>
-                        </table>
-
-
-                {% endfor %}
-
-
-    </div>
-
-{% endif %}
-
+    {% if authored_data_info %}
+	<div class ="grp-module grp-collapse">
+	  <h2 class="grp-collapse-handler"> Authored/Modified by:</h2>
+	  {% for k in authored_data_info %}
+	      <table class="grp-full-width">
+		<tr class="grp-row">
+		  <td> {{k.timestamp}} </td>
+		  <td> {{ k.user | nice_name }} </td>
+		  <td> {{ k.group }} </td>
+		  <td> </td>
+		  <td>
+		    <a href="{%url 'url.dingos_authoring.view.authored_object.history' id=k.identifier.name%}?highlight={{ k.pk }}">
+                        <img src="/static/admin/img/selector-search.gif" alt="Lookup" height="16" width="16">
+		    </a>
+		  </td>
+		</tr>
+	      </table>
+	  {% endfor %}
+	</div>
+    {% endif %}
 {% endblock %}
 
 

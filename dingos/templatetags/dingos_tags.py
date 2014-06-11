@@ -15,26 +15,20 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
 from django import template
-from django.utils.html import strip_tags
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.urlresolvers import reverse
-
-from django.utils.html import conditional_escape
+from django.utils import html
+from django.utils.html import conditional_escape, strip_tags
 from django.utils.safestring import mark_safe
 
-from dingos.models import BlobStorage
-from dingos.core.utilities import get_from_django_obj
-from dingos.core import http_helpers
 from dingos import DINGOS_TEMPLATE_FAMILY
-
-from django.utils import html
-    
+from dingos.core import http_helpers
+from dingos.core.utilities import get_from_django_obj
+from dingos.models import BlobStorage
 
 
 register = template.Library()
-
 
 
 def node_indent(context, elt_name, node_id, fact_term, attribute, highlight_node=None):
@@ -481,10 +475,6 @@ def show_InfoObjectField(oneObject, field):
     else:
         return result
 
-
-@register.simple_tag()
-def saved_search_url(search):
-    return http_helpers.saved_search_url(search)
 
 @register.assignment_tag(takes_context=True)
 def obj_by_pk(context, *args,**kwargs):

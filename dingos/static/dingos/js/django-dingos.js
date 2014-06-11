@@ -1,5 +1,6 @@
 (function ($) {
     'use strict';
+
     $(function() {
 
 	window.getCookie = function(name){
@@ -275,12 +276,12 @@
 
 
 		    function tick(e) {
+			// Gravity?
 			// var kx = .4 * e.alpha, ky = 1.4 * e.alpha;
 			//     links.forEach(function(d, i) {
 			//       d.target.x += (d.source.x - d.target.x) * kx;
 			//       d.target.y += (d.source.y + 80 - d.target.y) * ky;
 			//     });
-
 
 			node.attr("transform", function(d) { 
 			    
@@ -306,9 +307,8 @@
 
 		    }
 
-
 		    force.start();
-		    for(var i=0; i<400; i++){
+		    for(var i=0; i<300; i++){
 		    	force.tick();
 		    }
 		    force.stop();
@@ -330,8 +330,6 @@
 
 	    });
 	}
-
-
 
     });
 }(django.jQuery)); // Reuse django injected jQuery library
