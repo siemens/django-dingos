@@ -172,7 +172,7 @@ class ViewMethodMixin(object):
         """
         return get_query_string(self.request,*args,**kwargs)
 
-    def get_user_data(self):
+    def get_user_data(self,load_new_settings=False):
         """
         Extracts user data, either from user session or from
         database (for each User, an InfoObject is used to
@@ -208,9 +208,8 @@ class ViewMethodMixin(object):
         settings = self.request.session.get('customization')
 
         saved_searches = self.request.session.get('saved_searches')
-        load_new_settings = False
 
-        if settings:
+        if settings and not load_new_settings:
 
             # case 1.)
             if (not self.request.user.is_authenticated()) \

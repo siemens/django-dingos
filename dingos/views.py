@@ -410,7 +410,7 @@ class CustomSearchesEditView(BasicTemplateView):
         return context
 
     def get(self, request, *args, **kwargs):
-        user_data = self.get_user_data()
+        user_data = self.get_user_data(load_new_settings=True)
         saved_searches = user_data['saved_searches'].get('dingos',[])
 
         initial = []
@@ -507,10 +507,10 @@ class InfoObjectJSONView(BasicDetailView):
 
 
 class CustomInfoObjectSearchView(BasicCustomQueryView):
-    list_actions = [ ('Share', 'url.dingos.action_demo', 0),
-                     ('Do something else', 'url.dingos.action_demo', 0),
-                     ('Or yet something else', 'url.dingos.action_demo', 2),
-                      ]
+    #list_actions = [ ('Share', 'url.dingos.action_demo', 0),
+    #                 ('Do something else', 'url.dingos.action_demo', 0),
+    #                 ('Or yet something else', 'url.dingos.action_demo', 2),
+    #                  ]
 
     pass
 

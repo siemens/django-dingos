@@ -18,7 +18,7 @@
 
 from  django.core import urlresolvers
 
-from django.utils.http import urlencode, urlquote_plus
+from django.utils.http import urlencode, urlquote
 
 
 
@@ -78,7 +78,7 @@ def saved_search_url(search):
     view_url = urlresolvers.reverse(search.get('view',''))
     result = "%s?" % view_url
     if search.get('custom_query',''):
-        result += 'query=%s' % urlquote_plus(search['custom_query'])
+        result += 'query=%s' % urlquote(search['custom_query'])
     if search.get('parameter',''):
         result += '&%s' % search['parameter']
     return result
