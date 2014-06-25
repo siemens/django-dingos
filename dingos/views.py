@@ -242,7 +242,6 @@ class InfoObjectView_wo_login(BasicDetailView):
 
     @property
     def iobject2facts(self):
-        self.graph_iobject2facts()
         return self.object.fact_thru.all().prefetch_related(
                                                              'fact__fact_term',
                                                              'fact__fact_values',
