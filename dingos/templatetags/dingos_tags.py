@@ -316,11 +316,12 @@ def render_paginator(context,is_counting=True):
 # certain aspects of an InformationObject.
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectFactsDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
-def show_InfoObject(context, formset=None, formindex=None):
+def show_InfoObject(context, formset=None, formindex=None,iobject2facts=None):
     page = context['view'].request.GET.get('page')
 
     iobject = context['view'].object
-    iobject2facts = context['view'].iobject2facts
+    if not iobject2facts:
+        iobject2facts = context['view'].iobject2facts
     highlight = context['highlight']
     show_NodeID = context['show_NodeID']
 

@@ -220,7 +220,9 @@ def follow_references(iobject_pks,
                 edge_dict = {}
 
                 node_dict = {}
+
                 rnode_dict = {}
+
 
                 edge_dict['term'] = x[3],
                 edge_dict['attribute'] = x[4]
@@ -254,6 +256,7 @@ def follow_references(iobject_pks,
                 node_dict['name'] = x[8]
                 node_dict['iobject_type'] = x[9]
                 node_dict['iobject_type_family'] = x[10]
+
 
                 graph.add_node(node,**node_dict)
 

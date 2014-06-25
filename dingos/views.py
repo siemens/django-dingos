@@ -242,7 +242,9 @@ class InfoObjectView_wo_login(BasicDetailView):
 
     @property
     def iobject2facts(self):
-        return self.object.fact_thru.all().prefetch_related('fact__fact_term',
+        self.graph_iobject2facts()
+        return self.object.fact_thru.all().prefetch_related(
+                                                             'fact__fact_term',
                                                              'fact__fact_values',
                                                              'fact__fact_values__fact_data_type',
                                                              'fact__value_iobject_id',
@@ -250,6 +252,17 @@ class InfoObjectView_wo_login(BasicDetailView):
                                                              'fact__value_iobject_id__latest__iobject_type',
                                                              'node_id')
 
+
+
+    def graph_iobject2facts(self):
+        obj_pk = self.object.id
+        graph = InfoObject.annotated_graph([obj_pk])
+        edges_from_top = graph.edges(nbunch=[obj_pk], data = True)
+        # show edges to/from top-level object
+        print edges_from_top
+        # extract nodes that are 'Indicators'
+        indicators =  [e[1] for e in edges_from_top if "Indicator" in e[2]['term'][0]]
+        return graph.node[indicators[0]]['facts']
 
 
 
@@ -552,7 +565,16 @@ class InfoObjectJSONGraph(BasicJSONView):
     # in STIX reports where the kill chain information is consistently used, it completly
     # messes up the graph display.
 
-    skip_terms = [{'attribute':'kill_chain_id'},{'term':'Kill_Chain','operator':'icontains'}]
+    skip_terms = [
+        # The kill chain links completely mess up the graph
+        {'attribute':'kill_chain_id'},
+        {'term':'Kill_Chain','operator':'icontains'},
+        # Since most STIX Packages list all observables in the 'Observables' element,
+        # displaying these links makes the display really messy.
+        # The better way to deal with this would be to go through the graph
+        # and remove all links from STIX-Package to Observables/Observable, where
+        # there is a second such link to from the Observable to something else.
+        {'term':'Observables/Observable'}]
 
     max_objects = 100
     @property
@@ -575,7 +597,6 @@ class InfoObjectJSONGraph(BasicJSONView):
                                   reverse_direction=True,
                                   max_nodes=self.max_objects)
 
-        print "Intermediate %s" % graph.nodes()
 
         graph= follow_references([iobject_id],
                                  skip_terms = self.skip_terms,

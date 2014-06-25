@@ -1667,6 +1667,41 @@ class InfoObject(DingoModel):
 
         return relation
 
+    @staticmethod
+    def annotated_graph(iobject_pks,
+                        graph_traversal_kargs = None
+                        ):
+
+        from .graph_traversal import follow_references
+        if not graph_traversal_kargs:
+            graph_traversal_kargs = {'max_nodes':100,
+                                     'direction':'down'}
+
+        graph_traversal_kargs['iobject_pks'] = iobject_pks
+        G = follow_references(**graph_traversal_kargs)
+
+        for node in G.nodes_iter():
+            G.node[node]['facts'] = []
+
+
+
+        facts= InfoObject2Fact.objects.filter(iobject__id__in=G.nodes()).prefetch_related( 'iobject',
+                                                                                            'iobject__identifier',
+                                                                                            'iobject__identifier__namespace',
+                                                                                            'fact__fact_term',
+                                                                                            'fact__fact_values',
+                                                                                            'fact__fact_values__fact_data_type',
+                                                                                            'fact__value_iobject_id',
+                                                                                            'fact__value_iobject_id__latest',
+                                                                                            'fact__value_iobject_id__latest__iobject_type',
+                                                                                            'node_id').order_by('iobject__id','node_id__name')
+
+        for fact in facts:
+            G.node[fact.iobject.id]['iobject'] = fact.iobject
+            G.node[fact.iobject.id]['facts'].append(fact)
+
+        return G
+
     @property
     def view_link(self):
         """
