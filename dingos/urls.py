@@ -67,6 +67,10 @@ urlpatterns = patterns('',
         views.CustomFactSearchView.as_view(),
         name="url.dingos.admin.customfactsearch"),
 
+    url(r'^View/InfoObject/(?P<pk>\d*)/indicatorbased$',
+        views.IndicatorBasedView.as_view(),
+        name= "url.dingos.view.infoobject.indicator_based"),
+
     # Uncommenting below enables an edit view for InfoObjects
     # that will overwrite an InfoObject without creating an
     # new revision!!!

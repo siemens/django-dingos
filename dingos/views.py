@@ -243,13 +243,13 @@ class InfoObjectView_wo_login(BasicDetailView):
     @property
     def iobject2facts(self):
         return self.object.fact_thru.all().prefetch_related(
-                                                             'fact__fact_term',
-                                                             'fact__fact_values',
-                                                             'fact__fact_values__fact_data_type',
-                                                             'fact__value_iobject_id',
-                                                             'fact__value_iobject_id__latest',
-                                                             'fact__value_iobject_id__latest__iobject_type',
-                                                             'node_id')
+            'fact__fact_term',
+            'fact__fact_values',
+            'fact__fact_values__fact_data_type',
+            'fact__value_iobject_id',
+            'fact__value_iobject_id__latest',
+            'fact__value_iobject_id__latest__iobject_type',
+            'node_id')
 
 
 
@@ -261,6 +261,8 @@ class InfoObjectView_wo_login(BasicDetailView):
         print edges_from_top
         # extract nodes that are 'Indicators'
         indicators =  [e[1] for e in edges_from_top if "Indicator" in e[2]['term'][0]]
+        print indicators
+
         return graph.node[indicators[0]]['facts']
 
 
@@ -283,6 +285,58 @@ class InfoObjectView_wo_login(BasicDetailView):
             context['highlight'] = None
 
         return context
+
+
+class IndicatorBasedView(LoginRequiredMixin,BasicDetailView):
+
+    model = InfoObject
+
+    template_name = 'dingos/%s/details/IndicatorBasedView.html' % DINGOS_TEMPLATE_FAMILY
+
+    title = 'Indicator-based View'
+
+
+    def get_context_data(self, **kwargs):
+
+        context = super(IndicatorBasedView, self).get_context_data(**kwargs)
+
+        # Generate graph starting with this object
+
+        obj_pk = self.object.id
+        graph = InfoObject.annotated_graph([obj_pk])
+
+        # get all edges that originate from this object
+
+        edges_from_top = graph.edges(nbunch=[obj_pk], data = True)
+
+        # show edges to/from top-level object in console to see what
+        # they look like
+        print edges_from_top
+
+        # We want to center this view around indicators. So let us
+        # view which indicators are on top-level of the report
+
+        # extract nodes that are 'Indicators'
+        indicator_nodes =  [e[1] for e in edges_from_top if "Indicator" in e[2]['term'][0]]
+        print indicator_nodes
+
+        indicator_info = []
+
+        for indicator_node in indicator_nodes:
+            indicator_info.append(graph.node[indicator_node]['facts'])
+
+        context['indicators'] = indicator_info
+
+        context['show_datatype'] = self.request.GET.get('show_datatype',False)
+        context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
+
+        try:
+            context['highlight'] = self.request.GET['highlight']
+        except KeyError:
+            context['highlight'] = None
+
+        return context
+
 
 
 class InfoObjectView(LoginRequiredMixin,InfoObjectView_wo_login):
