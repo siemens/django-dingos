@@ -37,7 +37,7 @@ from dingos.view_classes import BasicJSONView
 import csv
 
 from dingos.filter import InfoObjectFilter, CompleteInfoObjectFilter,FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
-from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm,  CustomQueryForm, OAuthInfoForm
+from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm,  CustomQueryForm, OAuthInfoForm, OAuthNewClientForm
 
 from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME, DINGOS_SAVED_SEARCHES_TYPE_NAME, DINGOS_DEFAULT_SAVED_SEARCHES
 
@@ -413,7 +413,7 @@ class CustomSearchesEditView(BasicTemplateView):
         return context
 
     def get(self, request, *args, **kwargs):
-        user_data = self.get_user_data()
+        user_data = self.get_user_data(load_new_settings=True)
         saved_searches = user_data['saved_searches'].get('dingos',[])
 
         initial = []
@@ -510,10 +510,10 @@ class InfoObjectJSONView(BasicDetailView):
 
 
 class CustomInfoObjectSearchView(BasicCustomQueryView):
-    list_actions = [ ('Share', 'url.dingos.action_demo', 0),
-                     ('Do something else', 'url.dingos.action_demo', 0),
-                     ('Or yet something else', 'url.dingos.action_demo', 2),
-                      ]
+    #list_actions = [ ('Share', 'url.dingos.action_demo', 0),
+    #                 ('Do something else', 'url.dingos.action_demo', 0),
+    #                 ('Or yet something else', 'url.dingos.action_demo', 2),
+    #                  ]
 
     pass
 
@@ -616,16 +616,21 @@ class OAuthInfo(BasicTemplateView):
     def get_context_data(self, **kwargs):
         context = super(OAuthInfo, self).get_context_data(**kwargs)
         context['formset'] = self.formset
+        context['newclientform'] = OAuthNewClientForm
         return context
 
     def get(self, request, *args, **kwargs):
         initial = []
 
-        # TODO Show key pairs from database instead of inserting test data
-        for counter in range(10):
-            user = User.objects.get(username=request.user.username)
-            client_name = "TestClient " + str(counter)
-            client = Client(user=user, name=client_name, client_type=1)
+        # Show all client key pairs for the current user
+        user = User.objects.get(username=request.user.username)
+
+        # Insert test clients
+        #for counter in range(10):
+        #    Client(user=user, name="Testclient" + str(counter), client_type=1).save()
+
+        clients = Client.objects.all().filter(user=user)
+        for client in clients:
             initial.append({"client_name": client.name,
                             "client_id": client.client_id,
                             "client_secret": client.client_secret})
@@ -637,11 +642,34 @@ class OAuthInfo(BasicTemplateView):
         initial = []
         self.formset = self.form_class(request.POST.dict())
         if self.formset.is_valid() and request.user.is_authenticated():
-            for form in self.formset.ordered_forms:
-                initial.append({"client_name": form.cleaned_data["client_name"],
-                                "client_id": form.cleaned_data["client_id"],
-                                "client_secret": form.cleaned_data["client_secret"]})
-                # TODO Save these clients for the current user (in order to delete and update clients)
-            # TODO Reordering the saved clients does not work yet.
+            user = User.objects.get(username=request.user.username)
+
+            if "generate_new_client" in request.POST:
+                client_name = request.POST.dict()["new_client"]
+                client = Client(user=user, name=client_name, client_type=1)
+                client.save()
+            elif 'update_clients' in request.POST:
+                # TODO It would be better to update the existing clients instead of delete&insert
+                # Delete all clients
+                clients = Client.objects.all().filter(user=user)
+                for client in clients:
+                    client.delete()
+
+                # Insert all clients again
+                for form in self.formset.ordered_forms:
+                    client = Client(user=user,
+                                    name=form.cleaned_data["client_name"],
+                                    client_id=form.cleaned_data["client_id"],
+                                    client_secret=form.cleaned_data["client_secret"],
+                                    client_type=1)
+                    client.save()
+
+            # Initialize client page
+            clients = Client.objects.all().filter(user=user)
+            for client in clients:
+                initial.append({"client_name": client.name,
+                                "client_id": client.client_id,
+                                "client_secret": client.client_secret})
+
             self.formset = self.form_class(initial=initial)
         return super(BasicTemplateView, self).get(request, *args, **kwargs)

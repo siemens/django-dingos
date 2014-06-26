@@ -273,7 +273,7 @@ def follow_references(iobject_pks,
 
                 graph.add_node(rnode,**rnode_dict)
 
-                if direction == 'down' and not reverse_direction:
+                if direction == 'down' or reverse_direction:
                     edge_dict['direction'] = 'refers_to'
                     graph.add_edge(node,rnode,**edge_dict)
                 else:

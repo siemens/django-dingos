@@ -33,9 +33,9 @@ Menu.add_item( "mantis_main",
                             MenuItem("Fact Search (simple)", reverse("url.dingos.search.fact.simple"),  ),
                             MenuItem("Fact Search (unique)", reverse("url.dingos.search.fact.simple.unique"),  ),
                             MenuItem("Info Object Query", reverse("url.dingos.admin.custominfoobjectsearch"), 
-                                     check=lambda request: not request.user.is_superuser),
+                                     ),
                             MenuItem("Fact Query", reverse("url.dingos.admin.customfactsearch"), 
-                                     check=lambda request: request.user.is_superuser),
+                                     ),
                         ),
                         check = lambda request: request.user.is_authenticated()
                     )

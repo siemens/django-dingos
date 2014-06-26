@@ -145,6 +145,7 @@ class DingoImportHandling(object):
             raise StandardError("You must supply an identifier namespace.")
 
         if allowed_identifier_ns_uris and (not identifier_ns_uri in allowed_identifier_ns_uris):
+
             if substitute_unallowed_namespaces:
 
                 substitution_namespace = dingos_class_map['IdentifierNameSpaceSubstitutionMap'].substitute_namespace(importer_ns_uri=default_identifier_ns_uri,desired_ns_uri=identifier_ns_uri)

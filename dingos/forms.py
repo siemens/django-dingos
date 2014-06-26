@@ -79,3 +79,10 @@ class OAuthInfoForm(forms.Form):
     client_name = forms.CharField(required=True, max_length=100, widget=widgets.TextInput(attrs={'size': '100', 'class': 'vTextField'}))
     client_id = forms.CharField(required=True, max_length=100, widget=widgets.TextInput(attrs={'size': '100', 'class': 'vTextField'}))
     client_secret = forms.CharField(required=True, max_length=200, widget=widgets.TextInput(attrs={'size': '200', 'class': 'vTextField'}))
+
+
+class OAuthNewClientForm(forms.Form):
+    """
+    Form to generate a new OAuth client. Used by the respective view.
+    """
+    new_client = forms.CharField(required=True, max_length=100, widget=widgets.TextInput(attrs={'size': '100', 'class': 'vTextField'}))
