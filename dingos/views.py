@@ -25,6 +25,9 @@ from django.forms.formsets import formset_factory
 from django.contrib import messages
 from django.db import DataError
 from django.core.exceptions import FieldError
+from django.contrib.auth.models import User
+
+from provider.oauth2.models import Client
 
 from braces.views import SuperuserRequiredMixin
 
@@ -34,7 +37,7 @@ from dingos.view_classes import BasicJSONView
 import csv
 
 from dingos.filter import InfoObjectFilter, CompleteInfoObjectFilter,FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
-from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm,  CustomQueryForm
+from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm,  CustomQueryForm, OAuthInfoForm
 
 from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME, DINGOS_SAVED_SEARCHES_TYPE_NAME, DINGOS_DEFAULT_SAVED_SEARCHES
 
@@ -597,3 +600,48 @@ class InfoObjectJSONGraph(BasicJSONView):
             }
 
         return res
+
+
+class OAuthInfo(BasicTemplateView):
+    """
+    View for editing the OAuth information.
+    """
+
+    template_name = 'dingos/%s/edits/OAuthInfoEdit.html' % DINGOS_TEMPLATE_FAMILY
+    title = 'Edit OAuth Keys'
+
+    form_class = formset_factory(OAuthInfoForm, can_order=True, can_delete=True, extra=0)
+    formset = None
+
+    def get_context_data(self, **kwargs):
+        context = super(OAuthInfo, self).get_context_data(**kwargs)
+        context['formset'] = self.formset
+        return context
+
+    def get(self, request, *args, **kwargs):
+        initial = []
+
+        # TODO Show key pairs from database instead of inserting test data
+        for counter in range(10):
+            user = User.objects.get(username=request.user.username)
+            client_name = "TestClient " + str(counter)
+            client = Client(user=user, name=client_name, client_type=1)
+            initial.append({"client_name": client.name,
+                            "client_id": client.client_id,
+                            "client_secret": client.client_secret})
+
+        self.formset = self.form_class(initial=initial)
+        return super(BasicTemplateView, self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        initial = []
+        self.formset = self.form_class(request.POST.dict())
+        if self.formset.is_valid() and request.user.is_authenticated():
+            for form in self.formset.ordered_forms:
+                initial.append({"client_name": form.cleaned_data["client_name"],
+                                "client_id": form.cleaned_data["client_id"],
+                                "client_secret": form.cleaned_data["client_secret"]})
+                # TODO Save these clients for the current user (in order to delete and update clients)
+            # TODO Reordering the saved clients does not work yet.
+            self.formset = self.form_class(initial=initial)
+        return super(BasicTemplateView, self).get(request, *args, **kwargs)

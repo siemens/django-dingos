@@ -72,5 +72,10 @@ class SimpleMarkingAdditionForm(BasicListActionForm):
             self.fields['marking_to_add'] = forms.ChoiceField(choices=marking_choices)
 
 
-
-
+class OAuthInfoForm(forms.Form):
+    """
+    Form for editing the OAuth information. Used by the respective view.
+    """
+    client_name = forms.CharField(required=True, max_length=100, widget=widgets.TextInput(attrs={'size': '100', 'class': 'vTextField'}))
+    client_id = forms.CharField(required=True, max_length=100, widget=widgets.TextInput(attrs={'size': '100', 'class': 'vTextField'}))
+    client_secret = forms.CharField(required=True, max_length=200, widget=widgets.TextInput(attrs={'size': '200', 'class': 'vTextField'}))
