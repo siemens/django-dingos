@@ -70,7 +70,3 @@ class SimpleMarkingAdditionForm(BasicListActionForm):
             self.fields['marking_to_add'] = forms.MultipleChoiceField(choices=marking_choices)
         else:
             self.fields['marking_to_add'] = forms.ChoiceField(choices=marking_choices)
-
-
-
-

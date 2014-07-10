@@ -25,6 +25,9 @@ from django.forms.formsets import formset_factory
 from django.contrib import messages
 from django.db import DataError
 from django.core.exceptions import FieldError
+from django.contrib.auth.models import User
+
+from provider.oauth2.models import Client
 
 from braces.views import SuperuserRequiredMixin
 
@@ -34,10 +37,9 @@ from dingos.view_classes import BasicJSONView
 import csv
 
 from dingos.filter import InfoObjectFilter, CompleteInfoObjectFilter,FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
-from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm,  CustomQueryForm
+from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm
 
 from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME, DINGOS_SAVED_SEARCHES_TYPE_NAME, DINGOS_DEFAULT_SAVED_SEARCHES
-
 
 from braces.views import LoginRequiredMixin
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView, BasicCustomQueryView
