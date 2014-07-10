@@ -27,8 +27,6 @@ from django.db import DataError
 from django.core.exceptions import FieldError
 from django.contrib.auth.models import User
 
-from provider.oauth2.models import Client
-
 from braces.views import SuperuserRequiredMixin
 
 from dingos.models import InfoObject2Fact, InfoObject, UserData, get_or_create_fact
