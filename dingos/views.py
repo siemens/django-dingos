@@ -316,6 +316,15 @@ class IndicatorBasedView(LoginRequiredMixin,BasicDetailView):
         # We want to center this view around indicators. So let us
         # view which indicators are on top-level of the report
 
+        # get Package Info
+
+        package_node_data = graph.node[obj_pk]
+
+        context['package'] = {'node' : package_node_data,
+                              'filter' : [(lambda x: 'STIX_Header' in x.fact.fact_term.term)]}
+
+
+
         # extract nodes that are 'Indicators'
         indicator_nodes =  [e[1] for e in edges_from_top if "Indicator" in e[2]['term'][0]]
         print indicator_nodes
@@ -323,7 +332,9 @@ class IndicatorBasedView(LoginRequiredMixin,BasicDetailView):
         indicator_info = []
 
         for indicator_node in indicator_nodes:
-            indicator_data = {'node' : graph.node[indicator_node]}
+            indicator_node_data = graph.node[indicator_node]
+            indicator_data = {'node' : indicator_node_data,
+                              'title' : "Indicator: %s" % indicator_node_data['name'] }
 
             # calculate reachable objects
             from .graph_utils import dfs_preorder_nodes
@@ -343,7 +354,7 @@ class IndicatorBasedView(LoginRequiredMixin,BasicDetailView):
                     obj_list.append(obj_data)
 
             indicator_data['objects'] = obj_list
-            indicator_data['filter'] =  [(lambda x: 'Title' in x.fact.fact_term.term or 'Description' in x.fact.fact_term.term)]
+            indicator_data['filter'] =  [(lambda x: 'Description' in x.fact.fact_term.term)]
 
             indicator_info.append(indicator_data)
 

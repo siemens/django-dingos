@@ -323,9 +323,12 @@ def show_InfoObject(context,
                     iobject2facts=None,
                     title='Facts',
                     fold_status='open',
-                    header_level='2',
-                    io2f_pred = None):
-    print "Pred %s" % io2f_pred
+                    header_level=2,
+                    io2f_pred = None,
+                    close_div=True,
+                    inner_collapsible = False,
+                    inner_fold_status = 'open'):
+
     page = context['view'].request.GET.get('page')
 
     iobject = context['view'].object
@@ -426,7 +429,10 @@ def show_InfoObject(context,
             'formset' : formset,
             'fold_status' : fold_status,
             'title': title,
-            'header_level' : header_level}
+            'header_level' : map(str, range(header_level,10)),
+            'close_div' : close_div,
+            'inner_collapsible': inner_collapsible,
+            'inner_fold_status': inner_fold_status}
 
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectRevisionListDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)

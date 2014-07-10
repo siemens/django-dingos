@@ -28,19 +28,22 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
    {% endif %}
 
     <div class="grp-module grp-collapse grp-{{fold_status}}">
-        <h{{ header_level }} class="grp-collapse-handler">{{ title }}</h{{ header_level }}>
+        <h{{ header_level.0 }} class="grp-collapse-handler">{{ title }}</h{{ header_level.0 }}>
 
         {%  if is_paginated %}
             {%  render_paginator %}
         {% endif %}
-        <div class="grp-module grp-collapse grp-open">
 
+        {% if inner_collapsible %}
+        <div class="grp-module grp-collapse grp-{{ inner_fold_status }}">
+            <h{{ header_level.1 }} class="grp-collapse-handler">{{ inner_collapsible }}</h{{ header_level.1 }}>
+        {% endif %}
             <table>
 
 
                 {% for k in iobject2facts %}
-                    {% if forloop.first %}
-                        <tr class="grp-collapse-handler">
+                    {% if False %}
+                        <tr>
                         {% if show_NodeID %}
                         <td></td>
                         {% endif %}
@@ -104,14 +107,16 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     {% endif %}
                 {% endfor %}
             </table>
+        {% if inner_collapsible %}
         </div>
-
+        {% endif %}
         {%  if is_paginated %}
             {%  render_paginator %}
         {% endif %}
 
-
+  {% if close_div %}
     </div>
+  {% endif %}
 
   {% if formset and formindex %}
     <footer class="grp-module grp-submit-row grp-fixed-footer">
