@@ -31,7 +31,8 @@ from dingos.models import BlobStorage
 register = template.Library()
 
 
-def node_indent(context, elt_name, node_id, fact_term, attribute, highlight_node=None):
+def node_indent(context,
+                elt_name, node_id, fact_term, attribute, highlight_node=None):
     """
     This tag uses a table structure to display indentation
     of fact terms based on the information contained in the
@@ -316,7 +317,15 @@ def render_paginator(context,is_counting=True):
 # certain aspects of an InformationObject.
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectFactsDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
-def show_InfoObject(context, formset=None, formindex=None,iobject2facts=None):
+def show_InfoObject(context,
+                    formset=None,
+                    formindex=None,
+                    iobject2facts=None,
+                    title='Facts',
+                    fold_status='open',
+                    header_level='2',
+                    io2f_pred = None):
+    print "Pred %s" % io2f_pred
     page = context['view'].request.GET.get('page')
 
     iobject = context['view'].object
@@ -400,6 +409,9 @@ def show_InfoObject(context, formset=None, formindex=None,iobject2facts=None):
         # If page is out of range (e.g. 9999), deliver last page of results.
         iobject2facts = iobject2facts_paginator.page(iobject2facts_paginator.num_pages)
 
+    if io2f_pred:
+        iobject2facts = [io2f for io2f in iobject2facts if io2f_pred[0](io2f)]
+
     return {'object': iobject,
             'view' : context['view'],
             'is_paginated' : is_paginated,
@@ -411,7 +423,10 @@ def show_InfoObject(context, formset=None, formindex=None,iobject2facts=None):
             'iobject2facts': iobject2facts,
             'row_map' : rowspan_map(iobject2facts),
             'formindex' : formindex,
-            'formset' : formset }
+            'formset' : formset,
+            'fold_status' : fold_status,
+            'title': title,
+            'header_level' : header_level}
 
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectRevisionListDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)

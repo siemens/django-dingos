@@ -323,9 +323,33 @@ class IndicatorBasedView(LoginRequiredMixin,BasicDetailView):
         indicator_info = []
 
         for indicator_node in indicator_nodes:
-            indicator_info.append(graph.node[indicator_node]['facts'])
+            indicator_data = {'node' : graph.node[indicator_node]}
+
+            # calculate reachable objects
+            from .graph_utils import dfs_preorder_nodes
+            obj_pk_list = list(dfs_preorder_nodes(graph,
+                                                  source=int(indicator_node),
+                                                  edge_pred= (lambda x : not 'Related' in x['term'][0])
+                                                  )
+                                                  )
+            obj_list = []
+            for obj_pk in obj_pk_list:
+
+                obj_node_data = graph.node[obj_pk]
+                if 'Object' in obj_node_data['iobject_type']:
+                    obj_data = {'node': obj_node_data,
+                                'title': "%s: %s" % (obj_node_data['iobject_type'].replace('Object',''),obj_node_data['name'])}
+                    obj_data['filter'] =  [(lambda x: not 'Related' in x.fact.fact_term.term)]
+                    obj_list.append(obj_data)
+
+            indicator_data['objects'] = obj_list
+            indicator_data['filter'] =  [(lambda x: 'Title' in x.fact.fact_term.term or 'Description' in x.fact.fact_term.term)]
+
+            indicator_info.append(indicator_data)
 
         context['indicators'] = indicator_info
+
+
 
         context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
@@ -663,6 +687,24 @@ class InfoObjectJSONGraph(BasicJSONView):
                 res['msg'] = "Partial reference graph (%s InfoObjects)" % self.max_objects
             else:
                 res['msg'] = "Reference graph"
+
+            from networkx.algorithms.traversal.depth_first_search import dfs_preorder_nodes
+            from .graph_utils import dfs_preorder_nodes
+
+
+
+            print list(dfs_preorder_nodes(graph,
+                                          source=int(iobject_id),
+                                          edge_pred= (lambda x : not 'Related' in x['term'][0])
+                                          )
+                                          )
+
+            # test-code for showing only objects and their relations
+            #nodes_to_remove = []
+            #for (n,d) in graph.nodes(data=True):
+            #    if not 'Object' in d['iobject_type']:
+            #        nodes_to_remove.append(n)
+            #graph.remove_nodes_from(nodes_to_remove)
 
             res['data'] = {
                 'node_id': iobject_id,

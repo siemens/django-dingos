@@ -56,7 +56,10 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
   <div class="c-2">
     {% show_InfoObjectIDData object %}
     {%  for indicator in indicators %}
-      {% show_InfoObject iobject2facts=indicator %}
+      {% show_InfoObject iobject2facts=indicator.node.facts title=indicator.node.name io2f_pred=indicator.filter%}
+        {%  for obj in indicator.objects %}
+            {% show_InfoObject iobject2facts=obj.node.facts title=obj.title fold_status='closed' io2f_pred=obj.filter %}
+        {% endfor %}
     {%  endfor %}
 
   </div>

@@ -27,8 +27,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
      {{ formset.management_form }}
    {% endif %}
 
-    <div class="grp-module grp-collapse grp-open">
-        <h2 class="grp-collapse-handler">Facts</h2>
+    <div class="grp-module grp-collapse grp-{{fold_status}}">
+        <h{{ header_level }} class="grp-collapse-handler">{{ title }}</h{{ header_level }}>
 
         {%  if is_paginated %}
             {%  render_paginator %}
@@ -40,7 +40,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                 {% for k in iobject2facts %}
                     {% if forloop.first %}
-                        <tr >
+                        <tr class="grp-collapse-handler">
                         {% if show_NodeID %}
                         <td></td>
                         {% endif %}
@@ -121,96 +121,3 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
   </form>
   {% endif %}
 {% endblock %}
-
-{% comment %}
-
-<div class="grp-module">
-    <h2 class="grp-collapse-handler">Related InfoObjects where this is the source</h2>
-
-    <table>
-
-
-        {% for k in object.yields_via.all %}
-            {% if forloop.first %}
-                <tr >
-                    <th >
-                        Reason
-                    </th>
-                    <th >
-                        Related Observable
-                    </th>
-                    <th >
-                        Date
-                    </th>
-
-
-                </tr>
-            {% endif %}
-
-            <tr >
-            <td >
-                <p><em>This </em>{{ k.relation_type.fact_values.all|join:"</p><p><em>This </em></p>"|lower }} </p>
-            </td>
-            <td >
-                <a href={% url 'url.dingos.view.infoobject' k.target_id.latest.pk %}>{{k.target_id.latest}}</a>
-            </td>
-
-
-
-        {% endfor %}
-    </table>
-
-
-</div>
-
-<div class="grp-module">
-    <h2 class="grp-collapse-handler">Related Observables where this is the target</h2>
-
-    <table>
-
-        {% for k in object.identifier.yielded_by_via.all %}
-            {% if forloop.first %}
-                <tr >
-                    <th >
-                        Related Observable
-                    </th>
-
-                    <th >
-                        Reason
-                    </th>
-
-                    <th >
-                        Date
-                    </th>
-                    <th >
-                        Relating Investigation Step
-                    </th>
-                    <th >
-                        Investigation-Step Metadata
-                    </th>
-
-
-                </tr>
-            {% endif %}
-            <tr >
-            <td >
-                <a href={% url 'url.dingos.view.infoobject' k.source_iobject.pk %}>{{k.source_iobject.name}}</a>
-            </td>
-            <td >
-                <p>{{ k.relation_type.fact_values.all|join:"<em> this</em></p><p>"|lower }} <em>this</em></p>
-            </td>
-
-            <td>{{k.investigation_step_thru.all.0.investigation_step.date|date}}</td>
-            <td>{{k.investigation_step_thru.all.0.investigation_step.name}}</td>
-            {% for e in k.investigation_step_thru.all.0.investigation_step.metadata.object_set.all %}
-                <td >
-                    <p>{{ e.facts.all|join:"</p><p>" }}</p>
-                </td>
-            {% endfor %}
-
-        {% endfor %}
-    </table>
-</div>
-
-{% endcomment %}
-
