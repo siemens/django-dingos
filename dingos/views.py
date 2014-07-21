@@ -21,6 +21,9 @@ from django import http
 from django.http import HttpResponse
 from django.db.models import F
 from django.forms.formsets import formset_factory
+from django.shortcuts import get_object_or_404
+from django.views.generic import RedirectView
+
 
 from django.contrib import messages
 from django.db import DataError
@@ -37,7 +40,12 @@ import csv
 from dingos.filter import InfoObjectFilter, CompleteInfoObjectFilter,FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
 from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm
 
-from dingos import DINGOS_TEMPLATE_FAMILY, DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_USER_PREFS_TYPE_NAME, DINGOS_SAVED_SEARCHES_TYPE_NAME, DINGOS_DEFAULT_SAVED_SEARCHES
+from dingos import DINGOS_TEMPLATE_FAMILY, \
+    DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, \
+    DINGOS_USER_PREFS_TYPE_NAME, \
+    DINGOS_SAVED_SEARCHES_TYPE_NAME, \
+    DINGOS_DEFAULT_SAVED_SEARCHES, \
+    DINGOS_OBJECTTYPE_VIEW_MAPPING
 
 from braces.views import LoginRequiredMixin
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView, BasicCustomQueryView
@@ -206,6 +214,31 @@ class UniqueSimpleFactSearch(BasicFilterView):
 
 
 
+
+class InfoObjectRedirect(RedirectView):
+
+    permanent = False
+
+    @property
+    def pattern_name(self):
+        object = get_object_or_404(InfoObject, pk=self.kwargs['pk'])
+
+        iobject_type_name = object.iobject_type.name
+        iobject_type_family_name = object.iobject_family.name
+
+        print DINGOS_OBJECTTYPE_VIEW_MAPPING
+
+        object_specific_view = DINGOS_OBJECTTYPE_VIEW_MAPPING.get(iobject_type_family_name,{}). \
+                                      get(iobject_type_name)
+
+        if object_specific_view:
+            return object_specific_view
+        else:
+            return 'url.dingos.view.infoobject'
+
+
+
+
 class InfoObjectView_wo_login(BasicDetailView):
     """
     View for viewing an InfoObject.
@@ -216,8 +249,6 @@ class InfoObjectView_wo_login(BasicDetailView):
     is treated leads to a prefetching of *all* facts, even though
     pagination only displays 100 or 200 or so.
     """
-
-
 
     # Config for Prefetch/SelectRelated Mixins_
     select_related = ()
@@ -257,9 +288,7 @@ class InfoObjectView_wo_login(BasicDetailView):
         obj_pk = self.object.id
         graph = InfoObject.annotated_graph([obj_pk])
         edges_from_top = graph.edges(nbunch=[obj_pk], data = True)
-        # show edges to/from top-level object
-        print edges_from_top
-        # extract nodes that are 'Indicators'
+
         indicators =  [e[1] for e in edges_from_top if "Indicator" in e[2]['term'][0]]
         print indicators
 
@@ -287,90 +316,6 @@ class InfoObjectView_wo_login(BasicDetailView):
         return context
 
 
-class IndicatorBasedView(LoginRequiredMixin,BasicDetailView):
-
-    model = InfoObject
-
-    template_name = 'dingos/%s/details/IndicatorBasedView.html' % DINGOS_TEMPLATE_FAMILY
-
-    title = 'Indicator-based View'
-
-
-    def get_context_data(self, **kwargs):
-
-        context = super(IndicatorBasedView, self).get_context_data(**kwargs)
-
-        # Generate graph starting with this object
-
-        obj_pk = self.object.id
-        graph = InfoObject.annotated_graph([obj_pk])
-
-        # get all edges that originate from this object
-
-        edges_from_top = graph.edges(nbunch=[obj_pk], data = True)
-
-        # show edges to/from top-level object in console to see what
-        # they look like
-        print edges_from_top
-
-        # We want to center this view around indicators. So let us
-        # view which indicators are on top-level of the report
-
-        # get Package Info
-
-        package_node_data = graph.node[obj_pk]
-
-        context['package'] = {'node' : package_node_data,
-                              'filter' : [(lambda x: 'STIX_Header' in x.fact.fact_term.term)]}
-
-
-
-        # extract nodes that are 'Indicators'
-        indicator_nodes =  [e[1] for e in edges_from_top if "Indicator" in e[2]['term'][0]]
-        print indicator_nodes
-
-        indicator_info = []
-
-        for indicator_node in indicator_nodes:
-            indicator_node_data = graph.node[indicator_node]
-            indicator_data = {'node' : indicator_node_data,
-                              'title' : "Indicator: %s" % indicator_node_data['name'] }
-
-            # calculate reachable objects
-            from .graph_utils import dfs_preorder_nodes
-            obj_pk_list = list(dfs_preorder_nodes(graph,
-                                                  source=int(indicator_node),
-                                                  edge_pred= (lambda x : not 'Related' in x['term'][0])
-                                                  )
-                                                  )
-            obj_list = []
-            for obj_pk in obj_pk_list:
-
-                obj_node_data = graph.node[obj_pk]
-                if 'Object' in obj_node_data['iobject_type']:
-                    obj_data = {'node': obj_node_data,
-                                'title': "%s: %s" % (obj_node_data['iobject_type'].replace('Object',''),obj_node_data['name'])}
-                    obj_data['filter'] =  [(lambda x: not 'Related' in x.fact.fact_term.term)]
-                    obj_list.append(obj_data)
-
-            indicator_data['objects'] = obj_list
-            indicator_data['filter'] =  [(lambda x: 'Description' in x.fact.fact_term.term)]
-
-            indicator_info.append(indicator_data)
-
-        context['indicators'] = indicator_info
-
-
-
-        context['show_datatype'] = self.request.GET.get('show_datatype',False)
-        context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
-
-        try:
-            context['highlight'] = self.request.GET['highlight']
-        except KeyError:
-            context['highlight'] = None
-
-        return context
 
 
 
@@ -679,18 +624,21 @@ class InfoObjectJSONGraph(BasicJSONView):
             POST = self.request.POST
             iobject_id = POST.get('iobject_id', None)
 
-        graph = follow_references([iobject_id],
-                                  skip_terms = self.skip_terms,
-                                  direction='up',
-                                  reverse_direction=True,
-                                  max_nodes=self.max_objects)
+        #graph = follow_references([iobject_id],
+        #                          skip_terms = self.skip_terms,
+        #                          direction='up',
+        #                          reverse_direction=True,
+        #                          max_nodes=self.max_objects)
 
 
         graph= follow_references([iobject_id],
                                  skip_terms = self.skip_terms,
-                                 direction='down',
+                                 direction='both',
                                  max_nodes=self.max_objects,
-                                 graph=graph)
+                                 )
+
+
+
 
         if iobject_id:
             res['status'] = True
@@ -699,16 +647,6 @@ class InfoObjectJSONGraph(BasicJSONView):
             else:
                 res['msg'] = "Reference graph"
 
-            from networkx.algorithms.traversal.depth_first_search import dfs_preorder_nodes
-            from .graph_utils import dfs_preorder_nodes
-
-
-
-            print list(dfs_preorder_nodes(graph,
-                                          source=int(iobject_id),
-                                          edge_pred= (lambda x : not 'Related' in x['term'][0])
-                                          )
-                                          )
 
             # test-code for showing only objects and their relations
             #nodes_to_remove = []

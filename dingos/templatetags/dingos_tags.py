@@ -189,10 +189,6 @@ def node_indent(context,
 
 register.simple_tag(node_indent,takes_context=True)
 
-
-
-
-
 def node_indent_end(context, elt_name, node_id, fact_term, attribute):
     """
     Closing tag for the node_indent tag. Currently, only the

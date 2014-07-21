@@ -36,9 +36,12 @@ urlpatterns = patterns('',
     url(r'^View/InfoObject/All/?$',
         views.InfoObjectListIncludingInternals.as_view(),
         name="url.dingos.list.infoobject.all.generic"),
-    url(r'^View/InfoObject/(?P<pk>\d*)/$',
+    url(r'^View/InfoObject/(?P<pk>\d*)/standard$',
         views.InfoObjectView.as_view(),
         name= "url.dingos.view.infoobject"),
+    url(r'^View/InfoObject/(?P<pk>\d*)/$',
+        views.InfoObjectRedirect.as_view(),
+        name= "url.dingos.view.infoobject.redirect"),
     url(r'^Admin/ViewUserPrefs/?$',
         views.UserPrefsView.as_view(),
         name= "url.dingos.admin.view.userprefs"),
@@ -67,10 +70,6 @@ urlpatterns = patterns('',
         views.CustomFactSearchView.as_view(),
         name="url.dingos.admin.customfactsearch"),
 
-    url(r'^View/InfoObject/(?P<pk>\d*)/indicatorbased$',
-        views.IndicatorBasedView.as_view(),
-        name= "url.dingos.view.infoobject.indicator_based"),
-
     # Uncommenting below enables an edit view for InfoObjects
     # that will overwrite an InfoObject without creating an
     # new revision!!!
@@ -94,7 +93,7 @@ urlpatterns = patterns('',
 
     url(r'^View/InfoOject/Embedded/(?P<pk>\d*)/$', views.InfoObjectsEmbedded.as_view(), name="url.dingos.view.infoobject.embedded"),
 
-    url(r'^View/InfoObject/(?P<pk>\d*)/graph$', views.InfoObjectJSONGraph.as_view(), name= "url.dingos.view.infoobject.json_graph"),
+    url(r'^View/InfoObject/(?P<pk>\d*)(/specific)?/graph$', views.InfoObjectJSONGraph.as_view(), name= "url.dingos.view.infoobject.json_graph"),
 
     )
 

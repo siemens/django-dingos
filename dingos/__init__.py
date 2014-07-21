@@ -257,6 +257,22 @@ DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject2Fact'] = {
 
 DINGOS_OBJECTTYPE_ICON_MAPPING = {}
 
+
+# DINGOS_OBJECTTYPE_VIEW_MAPPING
+#
+# A mapping used to associate InfoObject types with specialized views
+#
+# The InfoObject-type icon mapping has the form::
+#
+#     { <object-type namespace uri> : {<object-type name>) : <view name>
+#                                     ...},
+#        ...
+#     }
+
+
+DINGOS_OBJECTTYPE_VIEW_MAPPING = {}
+
+
 # DINGOS_OBJECTTYPE_ICON_RELIST_MAPPING
 #
 # Used to find map an InfoObject type to an icon,

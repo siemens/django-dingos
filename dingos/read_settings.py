@@ -83,6 +83,10 @@ if settings.configured and'DINGOS' in dir(settings):
                                                                 dingos.DINGOS_OBJECTTYPE_ICON_MAPPING)
 
 if settings.configured and'DINGOS' in dir(settings):
+    dingos.DINGOS_OBJECTTYPE_VIEW_MAPPING = settings.DINGOS.get('OBJECTTYPE_VIEW_MAPPING',
+                                                                dingos.DINGOS_OBJECTTYPE_VIEW_MAPPING)
+
+if settings.configured and'DINGOS' in dir(settings):
     dingos.DINGOS_OBJECTTYPE_ICON_RELIST_MAPPING = settings.DINGOS.get('OBJECTTYPE_ICON_RELIST_MAPPING',
                                                                 dingos.DINGOS_OBJECTTYPE_ICON_RELIST_MAPPING)
 

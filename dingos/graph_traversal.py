@@ -179,11 +179,11 @@ def follow_references(iobject_pks,
 
     # The real work is done in the recursive function defined below
 
-    def follow_references_rec(iobject_pks,reachable_iobject_pks,direction,depth,graph):
+    def follow_references_rec(iobject_pks,reachable_iobject_pks,edge_set,direction,depth,graph):
 
         node_count = len(graph.nodes())
 
-        if direction == 'down':
+        if direction in ['down','both']:
             # When going down, we need to query for IO2F instances which have one of the
             # specified list of primary keys as primary key of the InfoObject
             # to which the IO2F instance is attached
@@ -192,98 +192,114 @@ def follow_references(iobject_pks,
 
             # TODO The part of the query commented out below must be added in once it is decided on how
             # to model references to specific revisions of an InfoObject
-            fact_query = Q(iobject_id__in=iobject_pks) & ( ~Q(fact__value_iobject_id=None) )# | ~Q(fact__value_iobject_ts=None))
-        else: 
+            fact_query_down = Q(iobject_id__in=iobject_pks) & ( ~Q(fact__value_iobject_id=None) )# | ~Q(fact__value_iobject_ts=None))
+
+        if direction in ['up','both']:
             # When going up, it is the pk of the InfoObject referenced in the IO2F instance that must be contained in the
             # specified list of primary keys
 
             # TODO The part of the query commented out below must be added in once it is decided on how
             # to model references to specific revisions of an InfoObject
 
-            fact_query = Q(iobject__latest_of__isnull=False) & Q(fact__value_iobject_id__latest__id__in=iobject_pks) #| Q(fact__value_iobject_ts__id__in=iobject_pks)
+            fact_query_up = Q(iobject__latest_of__isnull=False) & Q(fact__value_iobject_id__latest__id__in=iobject_pks) #| Q(fact__value_iobject_ts__id__in=iobject_pks)
 
-        if Q_skip_terms:
-            # We enrich the query with restrictions upon the fact terms to be considered
-            fact_query = ~Q_skip_terms & fact_query
-
-
-        reference_fact_infos = InfoObject2Fact. \
-            objects.filter(fact_query).values_list(*values_list)
-
-
-        edge_list = []
+        if direction == 'both':
+            turns = ['down','up']
+        else:
+            turns = [direction]
 
         next_hop_iobject_pks = set()
-
-        for x in reference_fact_infos:
-            if keep_graph_info:
-                edge_dict = {}
-
-                node_dict = {}
-
-                rnode_dict = {}
-
-
-                edge_dict['term'] = x[3],
-                edge_dict['attribute'] = x[4]
-                edge_dict['fact_node_id'] = x[5]
-
-            node = x[0]
-
-            if x[1]:
-                rnode = x[1]
+        for turn in turns:
+            if turn == 'down':
+                fact_query = fact_query_down
             else:
-                rnode = x[2]
+                fact_query = fact_query_up
 
-            if node == None or rnode == None:
-                # we uncovered a link to a node that is not in the system
-                continue
-
-            if direction == 'down':
-                next_hop_iobject_pks.add(rnode)
-            else:
-                next_hop_iobject_pks.add(node)
-
-            if keep_graph_info:
-
-                try:
-                    url = reverse('url.dingos.view.infoobject', args=[node])
-                except:
-                    url = None
-                node_dict['url'] = url 
-                node_dict['identifier_ns'] =  x[6]
-                node_dict['identifier_uid'] =  x[7]
-                node_dict['name'] = x[8]
-                node_dict['iobject_type'] = x[9]
-                node_dict['iobject_type_family'] = x[10]
+            if Q_skip_terms:
+                # We enrich the query with restrictions upon the fact terms to be considered
+                fact_query = ~Q_skip_terms & fact_query
 
 
-                graph.add_node(node,**node_dict)
+
+            reference_fact_infos = InfoObject2Fact. \
+                objects.filter(fact_query).values_list(*values_list)
 
 
-                if True: # TODO  second branch once it has been decided on how to model
-                    # references to specific revisions of an InfoObject
+            edge_list = []
+
+            for x in reference_fact_infos:
+                if keep_graph_info:
+                    edge_dict = {}
+
+                    node_dict = {}
+
+                    rnode_dict = {}
+
+
+                    edge_dict['term'] = x[3],
+                    edge_dict['attribute'] = x[4]
+                    edge_dict['fact_node_id'] = x[5]
+
+                node = x[0]
+
+                if x[1]:
+                    rnode = x[1]
+                else:
+                    rnode = x[2]
+
+                if node == None or rnode == None:
+                    # we uncovered a link to a node that is not in the system
+                    continue
+
+                if turn == 'down':
+                    next_hop_iobject_pks.add(rnode)
+                else:
+                    next_hop_iobject_pks.add(node)
+
+                if keep_graph_info:
+
                     try:
-                        url = reverse('url.dingos.view.infoobject', args=[rnode])
+                        url = reverse('url.dingos.view.infoobject', args=[node])
                     except:
                         url = None
-                    rnode_dict['url'] = url
-                    rnode_dict['identifier_ns'] = x[11]
-                    rnode_dict['identifier_uid'] = x[12]
-                    rnode_dict['name'] = x[13]
-                    rnode_dict['iobject_type'] = x[14]
-                    rnode_dict['iobject_type_family'] = x[15]
+                    node_dict['url'] = url
+                    node_dict['identifier_ns'] =  x[6]
+                    node_dict['identifier_uid'] =  x[7]
+                    node_dict['name'] = x[8]
+                    node_dict['iobject_type'] = x[9]
+                    node_dict['iobject_type_family'] = x[10]
 
-                graph.add_node(rnode,**rnode_dict)
 
-                if direction == 'down' or reverse_direction:
-                    edge_dict['direction'] = 'refers_to'
-                    graph.add_edge(node,rnode,**edge_dict)
-                else:
-                    edge_dict['direction'] = 'refered_to_by'
-                    graph.add_edge(rnode,node,**edge_dict)
-            if max_nodes and (node_count + len(next_hop_iobject_pks) >= max_nodes):
-                break
+                    graph.add_node(node,**node_dict)
+
+
+                    if True: # TODO  second branch once it has been decided on how to model
+                        # references to specific revisions of an InfoObject
+                        try:
+                            url = reverse('url.dingos.view.infoobject', args=[rnode])
+                        except:
+                            url = None
+                        rnode_dict['url'] = url
+                        rnode_dict['identifier_ns'] = x[11]
+                        rnode_dict['identifier_uid'] = x[12]
+                        rnode_dict['name'] = x[13]
+                        rnode_dict['iobject_type'] = x[14]
+                        rnode_dict['iobject_type_family'] = x[15]
+
+                    graph.add_node(rnode,**rnode_dict)
+
+                    if turn == 'down' or reverse_direction or direction=='both':
+                        edge_dict['direction'] = 'refers_to'
+                        if not (node,rnode,edge_dict['fact_node_id']) in edge_set:
+                            graph.add_edge(node,rnode,**edge_dict)
+                            edge_set.add((node,rnode,edge_dict['fact_node_id']))
+                    else:
+                        edge_dict['direction'] = 'refered_to_by'
+                        if not (rnode,node,edge_dict['fact_node_id']) in edge_set:
+                            edge_set.add((rnode,node,edge_dict['fact_node_id']))
+                            graph.add_edge(rnode,node,**edge_dict)
+                if max_nodes and (node_count + len(next_hop_iobject_pks) >= max_nodes):
+                    break
 
         if (next_hop_iobject_pks.issubset(reachable_iobject_pks)
             or depth-1 <=0
@@ -306,11 +322,14 @@ def follow_references(iobject_pks,
         else:
             return follow_references_rec(next_hop_iobject_pks - reachable_iobject_pks,
                                         reachable_iobject_pks | next_hop_iobject_pks,
+                                         edge_set,
                                          direction,
                                          depth-1,
                                          graph)
 
-    return follow_references_rec(iobject_pks,reachable_iobject_pks,direction,depth,graph)
+    edge_set = set()
+
+    return follow_references_rec(iobject_pks,reachable_iobject_pks,edge_set,direction,depth,graph)
 
 
 
