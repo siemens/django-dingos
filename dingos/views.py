@@ -234,7 +234,7 @@ class InfoObjectRedirect(RedirectView):
         if object_specific_view:
             return object_specific_view
         else:
-            return 'url.dingos.view.infoobject'
+            return 'url.dingos.view.infoobject.standard'
 
 
 
