@@ -42,7 +42,8 @@ setup(
                       'lxml>=3.2.1',
                       'django-filter>=0.7',
                       'python-dateutil>=2.2',
-                      'ply>=3.4'
+                      'ply>=3.4',
+                      'networkx>=1.9',
     ],
     license="GPLv2+",
     zip_safe=False,

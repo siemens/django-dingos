@@ -29,4 +29,4 @@ python-dateutil>=2.2
 
 ply>=3.4
 
-
+networkx>=1.9
