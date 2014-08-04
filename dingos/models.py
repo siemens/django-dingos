@@ -1674,7 +1674,7 @@ class InfoObject(DingoModel):
 
         from .graph_traversal import follow_references
         if not graph_traversal_kargs:
-            graph_traversal_kargs = {'max_nodes':300,
+            graph_traversal_kargs = {'max_nodes':400,
                                      'direction':'down'}
 
         graph_traversal_kargs['iobject_pks'] = iobject_pks

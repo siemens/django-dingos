@@ -602,14 +602,9 @@ class InfoObjectJSONGraph(BasicJSONView):
         # The kill chain links completely mess up the graph
         {'attribute':'kill_chain_id'},
         {'term':'Kill_Chain','operator':'icontains'},
-        # Since most STIX Packages list all observables in the 'Observables' element,
-        # displaying these links makes the display really messy.
-        # The better way to deal with this would be to go through the graph
-        # and remove all links from STIX-Package to Observables/Observable, where
-        # there is a second such link to from the Observable to something else.
-        {'term':'Observables/Observable'}]
+        ]
 
-    max_objects = 100
+    max_objects = 400
     @property
     def returned_obj(self):
         res = {
