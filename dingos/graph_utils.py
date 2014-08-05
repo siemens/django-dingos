@@ -77,7 +77,7 @@ def dfs_labeled_edges(G, source=None,edge_pred=None):
         adjacent_nodes = G.adj[node]
         result = []
         for n in adjacent_nodes.keys():
-            print adjacent_nodes[n].values()
+
             valid_edges = [e for e in adjacent_nodes[n].values() if edge_pred(e)]
             if valid_edges:
                 result.append(n)

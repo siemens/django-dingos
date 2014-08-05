@@ -226,7 +226,7 @@ class InfoObjectRedirect(RedirectView):
         iobject_type_name = object.iobject_type.name
         iobject_type_family_name = object.iobject_family.name
 
-        print DINGOS_OBJECTTYPE_VIEW_MAPPING
+
 
         object_specific_view = DINGOS_OBJECTTYPE_VIEW_MAPPING.get(iobject_type_family_name,{}). \
                                       get(iobject_type_name)
@@ -290,7 +290,7 @@ class InfoObjectView_wo_login(BasicDetailView):
         edges_from_top = graph.edges(nbunch=[obj_pk], data = True)
 
         indicators =  [e[1] for e in edges_from_top if "Indicator" in e[2]['term'][0]]
-        print indicators
+
 
         return graph.node[indicators[0]]['facts']
 
