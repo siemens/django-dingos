@@ -15,7 +15,7 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import csv, collections, copy, json, StringIO
+import csv, collections, copy, json, StringIO, importlib
 from queryparser.queryparser import QueryParser
 
 from django import forms, http
@@ -38,7 +38,9 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
                    DINGOS_USER_PREFS_TYPE_NAME, \
                    DINGOS_DEFAULT_USER_PREFS, \
                    DINGOS_SAVED_SEARCHES_TYPE_NAME, \
-                   DINGOS_DEFAULT_SAVED_SEARCHES
+                   DINGOS_DEFAULT_SAVED_SEARCHES,\
+                   DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
+
 from dingos import graph_traversal
 from dingos.core.template_helpers import ConfigDictWrapper
 from dingos.core.utilities import get_dict, replace_by_list
@@ -48,7 +50,14 @@ from dingos.queryparser.result_formatting import to_csv
 
 from core.http_helpers import get_query_string
 
+POSTPROCESSOR_REGISTRY = {}
 
+
+for (processor_name,(module,function_name)) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
+    my_module = importlib.import_module(module)
+    POSTPROCESSOR_REGISTRY[processor_name] = getattr(my_module,function_name)
+
+print POSTPROCESSOR_REGISTRY
 
 
 class UncountingPaginator(Paginator):
@@ -560,9 +569,29 @@ class BasicCustomQueryView(BasicListView):
 
                     self.queryset = objects
 
+                    print result_format
+                    if result_format in POSTPROCESSOR_REGISTRY:
+                        p = self.paginator_class(self.queryset, self.paginate_by_value)
+                        response = HttpResponse(content_type='text') # '/csv')
+
+                        postprocessor = POSTPROCESSOR_REGISTRY[result_format]
+                        print postprocessor
+                        (content_type,result) = postprocessor(p.page(self.page_to_show).object_list,
+                                                              **misc_args)
+                        print "After call"
+
+                        if kwargs.get('api_call'):
+                            self.api_result = result
+                            self.api_result_content_type = content_type
+                            self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
+                            return super(BasicListView, self).get(request, *args, **kwargs)
+                        else:
+                            response = HttpResponse(content_type=content_type) # '/csv')
+                            response.write(result)
+                            return response
 
 
-                    if result_format == 'csv' or kwargs.get('api_call'):
+                    elif result_format == 'csv' or kwargs.get('api_call'):
                         p = self.paginator_class(self.queryset, self.paginate_by_value)
                         response = HttpResponse(content_type='text') # '/csv')
                         #response['Content-Disposition'] = 'attachment; filename="result.csv"'
