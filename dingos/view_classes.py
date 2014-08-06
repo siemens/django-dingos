@@ -548,8 +548,6 @@ class BasicCustomQueryView(BasicListView):
                     if col_specs['headers']:
                         self.col_headers = col_specs['headers']
                         self.selected_cols = col_specs['selected_fields']
-                    print "Col Headers %s" % self.col_headers
-                    print "Selected Cols %s" % self.selected_cols
                     prefetch = formatting_arguments['prefetch_related']
 
                     if prefetch:
@@ -588,9 +586,9 @@ class BasicCustomQueryView(BasicListView):
                             self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
                             return super(BasicListView, self).get(request, *args, **kwargs)
                         else:
-                            print p.page(self.page_to_show).object_list
+
                             return response
-                    if result_format == 'default':
+                    elif result_format == 'default':
                         # Pretty useless case for live system but useful for tests
                         return super(BasicListView, self).get(request, *args, **kwargs)
                     elif result_format == 'table':
