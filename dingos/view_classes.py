@@ -15,7 +15,7 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import csv, collections, copy, json
+import csv, collections, copy, json, StringIO
 from queryparser.queryparser import QueryParser
 
 from django import forms, http
@@ -542,9 +542,15 @@ class BasicCustomQueryView(BasicListView):
 
 
                     col_specs = formatting_arguments['columns']
-                    misc_args = formatting_arguments['kwargs']
-                    prefetch = formatting_arguments['prefetch_related']
 
+                    misc_args = formatting_arguments['kwargs']
+
+                    if col_specs['headers']:
+                        self.col_headers = col_specs['headers']
+                        self.selected_cols = col_specs['selected_fields']
+                    print "Col Headers %s" % self.col_headers
+                    print "Selected Cols %s" % self.selected_cols
+                    prefetch = formatting_arguments['prefetch_related']
 
                     if prefetch:
                         objects = objects.prefetch_related(*prefetch)
@@ -556,22 +562,37 @@ class BasicCustomQueryView(BasicListView):
 
                     self.queryset = objects
 
-                    if result_format == 'default':
-                        # Pretty useless case for live system but useful for tests
-                        return super(BasicListView, self).get(request, *args, **kwargs)
-                    elif result_format == 'csv':
+
+
+                    if result_format == 'csv' or kwargs.get('api_call'):
                         p = self.paginator_class(self.queryset, self.paginate_by_value)
                         response = HttpResponse(content_type='text') # '/csv')
                         #response['Content-Disposition'] = 'attachment; filename="result.csv"'
-                        writer = csv.writer(response)
+
+                        if kwargs.get('api_call'):
+                            output = StringIO.StringIO()
+                            writer = csv.writer(output)
+                        else:
+                            writer = csv.writer(response)
+
 
                         to_csv(p.page(self.page_to_show).object_list,
                                writer,
-                               col_specs['headers'],
-                               col_specs['selected_fields'],
+                               self.col_headers,
+                               self.selected_cols,
                                **misc_args)
 
-                        return response
+                        if kwargs.get('api_call'):
+                            self.api_result = output.getvalue()
+                            self.api_result_content_type = 'text/csv'
+                            self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
+                            return super(BasicListView, self).get(request, *args, **kwargs)
+                        else:
+                            print p.page(self.page_to_show).object_list
+                            return response
+                    if result_format == 'default':
+                        # Pretty useless case for live system but useful for tests
+                        return super(BasicListView, self).get(request, *args, **kwargs)
                     elif result_format == 'table':
                         self.col_headers = col_specs['headers']
                         self.selected_cols = col_specs['selected_fields']
