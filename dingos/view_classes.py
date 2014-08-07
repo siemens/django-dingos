@@ -517,12 +517,23 @@ class BasicCustomQueryView(BasicListView):
                     if self.form.cleaned_data['page']:
                         self.page_to_show = int(self.form.cleaned_data['page'])
 
-                    # Generate and execute query
-                    formatted_filter_collection = parser.parse(str(query))
+                    # Generate and execute queries
+                    filter_collections = parser.parse(str(query))
 
+                    # Preprocessing for referency-by query
+                    refby_filter_collection = filter_collections.refby_filter_collection.filter_collection
+                    objects = self.query_base.all()
+                    objects = refby_filter_collection.build_query(base=objects)
+                    objects = objects.distinct()
+                    # Retrieve pk list out of the object list
+                    pks = [one.pk for one in objects]
+                    pks = graph_traversal.follow_references(pks)
+
+                    # Processing for main query
+                    formatted_filter_collection = filter_collections.formatted_filter_collection
                     filter_collection = formatted_filter_collection.filter_collection
 
-                    objects = self.query_base.all()
+                    objects = self.query_base.all().filter(pk__in=pks)
                     objects = filter_collection.build_query(base=objects)
 
                     if distinct:

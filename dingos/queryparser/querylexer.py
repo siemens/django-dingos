@@ -39,6 +39,7 @@ class QueryLexer:
         "fact": "FACTFILTER",
         #"fact_exclude": "FACTEXCLUDE",
         "marked_by": "MARKED_BY",
+        "referenced_by": "REFERENCED_BY",
         "range": "RANGE",
         "younger": "YOUNGER",
         "True": "TRUE",
@@ -59,7 +60,8 @@ class QueryLexer:
               "COMMA",
               "NOT",
               "LOWERTHAN",
-              "FORMATSIGN"] + list(reserved.values())
+              "FORMATSIGN",
+              "REFBYSIGN"] + list(reserved.values())
 
     def t_ID(self, t):
         r"[a-zA-Z0-9_\.]+"
@@ -81,6 +83,7 @@ class QueryLexer:
     t_NOT = (r"\!")
     t_LOWERTHAN = (r"\<")
     t_FORMATSIGN = (r"\|F\>")
+    t_REFBYSIGN = (r"\|P\>")
 
 
     # Ignore whitespaces

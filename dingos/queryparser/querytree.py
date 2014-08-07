@@ -135,6 +135,12 @@ class FilterCollection:
         return result
 
 
+class ReferencedByFilterCollection:
+    def __init__(self, formatted_filter_collection, refby_filter_collection = None):
+        self.formatted_filter_collection = formatted_filter_collection
+        self.refby_filter_collection = refby_filter_collection
+
+
 class FormattedFilterCollection:
     def __init__(self, filter_collection, format_args=[], output_format='default'):
         self.filter_collection = filter_collection
