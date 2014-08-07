@@ -43,25 +43,25 @@ class QueryParser:
     '''
         QUERY LANGUAGE GRAMMAR
         ======================
+        refbyrequest: request
+        refbyrequest: REFERENCED_BY COLON OPEN request CLOSE REFBYSIGN request
         request:    query
         request:    query FORMATSIGN ID OPEN formatargs CLOSE
         formatargs: formatarg COMMA formatargs
         formatargs: formatarg
         formatarg:  VALUE
-        formatarg:  ID EQUALS BOOL
+        formatarg:  ID EQUALS TRUE
+                    | ID EQUALS FALSE
+                    | ID EQUALS VALUE
         query:
         query:      expr
         query:      expr PIPE query
         query:      FILTER COLON expr
-                    | EXCLUDE COLON expr
                     | FACTFILTER COLON expr
-                    | FACTEXCLUDE COLON expr
-        query:      MARKED_BY COLON OPEN query CLOSE
-        #query:      NOT MARKED_BY COLON OPEN query CLOSE
-        query:      FILTER COLON expr PIPE query
-                    | EXCLUDE COLON expr PIPE query
-        query:      MARKED_BY COLON OPEN query CLOSE PIPE query
-        #query:      NOT MARKED_BY COLON OPEN query CLOSE PIPE query
+                    | MARKED_BY COLON OPEN query CLOSE
+        query:      query PIPE FILTER COLON expr
+                    | query PIPE FACTFILTER COLON expr
+                    | query PIPE MARKED_BY COLON OPEN query CLOSE
         expr:       OPEN expr CLOSE
         expr:       expr AND expr
                     |expr OR expr
