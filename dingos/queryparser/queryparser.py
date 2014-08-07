@@ -44,7 +44,9 @@ class QueryParser:
         QUERY LANGUAGE GRAMMAR
         ======================
         refbyrequest: request
-        refbyrequest: REFERENCED_BY COLON OPEN request CLOSE REFBYSIGN request
+        refbyrequest: REFERENCED_BY refbyargs COLON OPEN request CLOSE REFBYSIGN request
+        refbyargs:
+        refbyargs:  OPEN formatargs CLOSE
         request:    query
         request:    query FORMATSIGN ID OPEN formatargs CLOSE
         formatargs: formatarg COMMA formatargs
@@ -89,8 +91,16 @@ class QueryParser:
         p[0] = ReferencedByFilterCollection(p[1])
 
     def p_refby_request(self, p):
-        """refbyrequest : REFERENCED_BY COLON OPEN request CLOSE REFBYSIGN request"""
-        p[0] = ReferencedByFilterCollection(p[7], p[4])
+        """refbyrequest : REFERENCED_BY refbyargs COLON OPEN request CLOSE REFBYSIGN request"""
+        p[0] = ReferencedByFilterCollection(p[8], p[5], p[2])
+
+    def p_refbyargs_empty(self, p):
+        """refbyargs :"""
+        p[0] = []
+
+    def p_refbyargs(self, p):
+        """refbyargs : OPEN formatargs CLOSE"""
+        p[0] = p[2]
 
     def p_simple_request(self, p):
         """request : query"""

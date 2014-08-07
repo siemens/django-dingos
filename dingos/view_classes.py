@@ -530,7 +530,7 @@ class BasicCustomQueryView(BasicListView):
                         objects = objects.distinct()
                         # Retrieve pk list out of the object list
                         pks = [one.pk for one in objects]
-                        pks = graph_traversal.follow_references(pks)
+                        pks = graph_traversal.follow_references(pks, **filter_collections.refby_filter_args)
 
                         # Filter objects
                         objects = self.query_base.all().filter(pk__in=pks)

@@ -22,6 +22,7 @@ from django.utils.dateparse import parse_datetime
 from datetime import timedelta
 from dingos.core.utilities import replace_by_list, is_in_list
 from dingos import DINGOS_QUERY_ALLOWED_KEYS, DINGOS_QUERY_ALLOWED_COLUMNS
+import re
 
 
 class QueryParserException(Exception):
@@ -136,9 +137,21 @@ class FilterCollection:
 
 
 class ReferencedByFilterCollection:
-    def __init__(self, formatted_filter_collection, refby_filter_collection = None):
+    def __init__(self, formatted_filter_collection, refby_filter_collection = None, refby_filter_args = None):
         self.formatted_filter_collection = formatted_filter_collection
         self.refby_filter_collection = refby_filter_collection
+
+        self.refby_filter_args = {}
+        for arg in refby_filter_args:
+            arg_value = arg['value'][1:-1]
+            if re.match('true', arg_value, flags=re.IGNORECASE):
+                self.refby_filter_args[arg['key']] = True
+            elif re.match('false', arg_value, flags=re.IGNORECASE):
+                self.refby_filter_args[arg['key']] = False
+            elif re.match('\d+', arg_value):
+                self.refby_filter_args[arg['key']] = int(arg_value)
+            else:
+                self.refby_filter_args[arg['key']] = arg_value
 
 
 class FormattedFilterCollection:
