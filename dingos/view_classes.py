@@ -57,8 +57,6 @@ for (processor_name,(module,function_name)) in DINGOS_SEARCH_POSTPROCESSOR_REGIS
     my_module = importlib.import_module(module)
     POSTPROCESSOR_REGISTRY[processor_name] = getattr(my_module,function_name)
 
-print POSTPROCESSOR_REGISTRY
-
 
 class UncountingPaginator(Paginator):
     """

@@ -96,4 +96,3 @@ if settings.configured and'DINGOS' in dir(settings):
                                                                 dingos.DINGOS_SEARCH_POSTPROCESSOR_REGISTRY)
 
 
-
