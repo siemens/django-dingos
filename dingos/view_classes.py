@@ -20,6 +20,7 @@ from queryparser.queryparser import QueryParser
 from queryparser.placeholder_parser import PlaceholderParser
 
 import re
+from datetime import date, timedelta
 
 from django import forms, http
 from django.contrib import messages
@@ -528,8 +529,18 @@ class BasicCustomQueryView(BasicListView):
                         self.placeholder_form = PlaceholderForm(request.GET, placeholders=placeholders)
 
                         for one in placeholders:
-                            if one["parsed"]["field_name"] in request.GET:
-                                query = query.replace(one["raw"], "\"%s\"" % request.GET[one["parsed"]["field_name"]])
+                            placeholder = one["parsed"]
+                            if placeholder["field_name"] in request.GET:
+                                field_value = request.GET[placeholder["field_name"]]
+                                if "interpret_as" in placeholder.keys() and placeholder["interpret_as"] == "date":
+                                    field_value = field_value.strip()
+                                    if field_value.startswith("today"):
+                                        the_date = date.today()
+                                        if re.match("today( )*(\-|\+)( )*\d+", field_value):
+                                            delta_days = field_value.split("today")[1].strip()
+                                            the_date = the_date - timedelta(days=int(delta_days)*(-1))
+                                        field_value = the_date.strftime("%Y-%m-%d")
+                                query = query.replace(one["raw"], "\"%s\"" % field_value)
 
                     if not "{{" in query and not "}}" in query:
                         # Parse query
@@ -616,7 +627,7 @@ class BasicCustomQueryView(BasicListView):
                         else:
                             raise ValueError('Unsupported output format')
 
-                except DataError as ex:
+                except Exception as ex:
                     messages.error(self.request, str(ex))
         return super(BasicListView, self).get(request, *args, **kwargs)
 

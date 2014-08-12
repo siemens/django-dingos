@@ -52,22 +52,24 @@ class PlaceholderForm(forms.Form):
 
         for i, one in enumerate(placeholders):
             placeholder = one["parsed"]
-            if 'widget' in placeholder.keys():
-                if placeholder['widget'] == 'TextInput':
-                    widget = widgets.TextInput(attrs={'size': '100',
-                                                      'class': 'vTextField',
-                                                      'value': placeholder['default']})
-                    self.fields[placeholder['field_name']] = forms.CharField(label=placeholder['human_readable'],
-                                                                        required=False,
-                                                                        max_length=100,
-                                                                        widget=widget)
-                else:
-                    raise PlaceholderException("Widget \"%s\" is not supported." % placeholder.widget)
-            else:
-                # Default if widget is not defined by user
+
+            if placeholder['widget'] == 'TextInput':
+                widget = widgets.TextInput(attrs={'size': '100',
+                                                  'class': 'vTextField',
+                                                  'value': placeholder['default']})
                 self.fields[placeholder['field_name']] = forms.CharField(label=placeholder['human_readable'],
-                                                                    required=False,
-                                                                    max_length=100)
+                                                                         required=False,
+                                                                         max_length=100,
+                                                                         widget=widget)
+            elif placeholder['widget'] == 'DateInput':
+                widget = widgets.DateInput(attrs={'size': '10',
+                                                  'value': placeholder['default']})
+                self.fields[placeholder['field_name']] = forms.CharField(label=placeholder['human_readable'],
+                                                                         required=False,
+                                                                         max_length=10,
+                                                                         widget=widget)
+            else:
+                raise PlaceholderException("Widget \"%s\" is not supported." % placeholder.widget)
 
 
 class EditInfoObjectFieldForm(forms.Form):
