@@ -528,8 +528,8 @@ class BasicCustomQueryView(BasicListView):
                         self.placeholder_form = PlaceholderForm(request.GET, placeholders=placeholders)
 
                         for one in placeholders:
-                            if one["parsed"]["field"] in request.GET:
-                                query = query.replace(one["raw"], "\"%s\"" % request.GET[one["parsed"]["field"]])
+                            if one["parsed"]["field_name"] in request.GET:
+                                query = query.replace(one["raw"], "\"%s\"" % request.GET[one["parsed"]["field_name"]])
 
                     if not "{{" in query and not "}}" in query:
                         # Parse query
@@ -616,7 +616,7 @@ class BasicCustomQueryView(BasicListView):
                         else:
                             raise ValueError('Unsupported output format')
 
-                except Exception as ex:
+                except DataError as ex:
                     messages.error(self.request, str(ex))
         return super(BasicListView, self).get(request, *args, **kwargs)
 

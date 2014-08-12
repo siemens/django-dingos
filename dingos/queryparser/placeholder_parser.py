@@ -23,9 +23,9 @@ logger = logging.getLogger(__name__)
 
 class PlaceholderLexer:
     # Reserved words
-    reserved = {
-        "field": "FIELD"
-    }
+    #reserved = {
+    #    "field": "FIELD"
+    #}
 
     # Tokens
     tokens = ["ID",
@@ -33,12 +33,12 @@ class PlaceholderLexer:
               "CLOSE",
               "VALUE",
               "COLON",
-              "COMMA"] + list(reserved.values())
+              "COMMA"]# + list(reserved.values())
 
     def t_ID(self, t):
-        r"[a-zA-Z0-9_\.]+"
+        r"[a-zA-Z0-9_\. ]+"
         # Check for reserved words
-        t.type = self.reserved.get(t.value, 'ID')
+        #t.type = self.reserved.get(t.value, 'ID')
         return t
 
     t_OPEN = (r"\(")
@@ -89,9 +89,10 @@ class PlaceholderParser:
             raise PlaceholderException("Syntax error: Cannot parse anything.")
 
     def p_placeholder(self, p):
-        """placeholder : FIELD OPEN ID CLOSE COLON params"""
+        """placeholder : ID OPEN ID CLOSE COLON params"""
         params = p[6]
-        params[p[1]] = p[3]
+        params['field_name'] = p[1]
+        params['human_readable'] = p[3]
         p[0] = params
 
     def p_params(self, p):

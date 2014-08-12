@@ -57,7 +57,7 @@ class PlaceholderForm(forms.Form):
                     widget = widgets.TextInput(attrs={'size': '100',
                                                       'class': 'vTextField',
                                                       'value': placeholder['default']})
-                    self.fields[placeholder['field']] = forms.CharField(label=placeholder['field'],
+                    self.fields[placeholder['field_name']] = forms.CharField(label=placeholder['human_readable'],
                                                                         required=False,
                                                                         max_length=100,
                                                                         widget=widget)
@@ -65,7 +65,7 @@ class PlaceholderForm(forms.Form):
                     raise PlaceholderException("Widget \"%s\" is not supported." % placeholder.widget)
             else:
                 # Default if widget is not defined by user
-                self.fields[placeholder['field']] = forms.CharField(label=placeholder['field'],
+                self.fields[placeholder['field_name']] = forms.CharField(label=placeholder['human_readable'],
                                                                     required=False,
                                                                     max_length=100)
 
