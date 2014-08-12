@@ -78,7 +78,10 @@ class QueryParser:
                     | ISTARTSWITH
                     | ENDSWITH
                     | IENDSWITH
+                    | LOWEREQUAL
                     | LOWERTHAN
+                    | GREATEREQUAL
+                    | GREATERTHAN
                     | RANGE
                     | YOUNGER
         value:      VALUE
@@ -200,7 +203,10 @@ class QueryParser:
                 | ISTARTSWITH
                 | ENDSWITH
                 | IENDSWITH
+                | LOWEREQUAL
                 | LOWERTHAN
+                | GREATEREQUAL
+                | GREATERTHAN
                 | RANGE
                 | YOUNGER"""
         p[0] = p[1]

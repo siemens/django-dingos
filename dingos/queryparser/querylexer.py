@@ -59,7 +59,10 @@ class QueryLexer:
               "COLON",
               "COMMA",
               "NOT",
+              "LOWEREQUAL",
               "LOWERTHAN",
+              "GREATEREQUAL",
+              "GREATERTHAN",
               "FORMATSIGN",
               "REFBYSIGN"] + list(reserved.values())
 
@@ -81,7 +84,10 @@ class QueryLexer:
     t_COLON = (r"\:")
     t_COMMA = (r"\,")
     t_NOT = (r"\!")
+    t_LOWEREQUAL = (r"\<\=")
     t_LOWERTHAN = (r"\<")
+    t_GREATEREQUAL = (r"\>\=")
+    t_GREATERTHAN = (r"\>")
     t_FORMATSIGN = (r"\|F\>")
     t_REFBYSIGN = (r"\|P\>")
 

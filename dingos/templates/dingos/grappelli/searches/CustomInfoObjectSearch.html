@@ -21,15 +21,20 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% load dingos_tags %}
 
 
-
-
 {% block content_title %}
     <h1>Custom Info Object Search</h1>
 {% endblock %}
 
 {% block list-tools %}
     <form id="query-executor" action="" method="get">{% csrf_token %}
-        <div class="grp-row">
+        {% if placeholder_form %}
+            <div class="grp-row grp-collapse grp-opened">
+                <h3 class="grp-collapse-handler">Placeholders</h3>
+                {{ placeholder_form.as_p }}
+            </div>
+        {% endif %}
+        <div class="grp-row grp-collapse {% if placeholder_form %}grp-closed{% else %}grp-opened{% endif %}">
+            <h3 class="grp-collapse-handler">Query</h3>
             {{ form.query }}
         </div>
         <div class="grp-row">
@@ -47,7 +52,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
         <div class="grp-module grp-changelist-results">
 
             <table id="result_list" cellspacing="0" class="grp-sortable">
-
                 {% block header_row %}
                     <thead>
                         <tr>
@@ -81,7 +85,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                         {% endfor %}
                     </tbody>
                 {% endblock %}
-
             </table>
 
         </div>
