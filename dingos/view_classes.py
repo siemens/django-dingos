@@ -537,6 +537,7 @@ class BasicCustomQueryView(BasicListView):
 
                         for one in placeholders:
                             placeholder = one["parsed"]
+
                             if placeholder["field_name"] in request.GET:
                                 field_value = request.GET[placeholder["field_name"]]
                                 if "interpret_as" in placeholder.keys() and placeholder["interpret_as"] == "date":
@@ -549,99 +550,71 @@ class BasicCustomQueryView(BasicListView):
                                         field_value = the_date.strftime("%Y-%m-%d")
                                 query = query.replace(one["raw"], "\"%s\"" % field_value)
 
-                    if not "{{" in query and not "}}" in query:
-                        # Parse query
-                        parser = QueryParser()
-                        self.paginate_by_value = int(self.form.cleaned_data['paginate_by'])
-                        if self.form.cleaned_data['page']:
-                            self.page_to_show = int(self.form.cleaned_data['page'])
 
-                        # Generate and execute queries
-                        filter_collections = parser.parse(str(query))
+                    parser = QueryParser()
+                    self.paginate_by_value = int(self.form.cleaned_data['paginate_by'])
+                    if self.form.cleaned_data['page']:
+                        self.page_to_show = int(self.form.cleaned_data['page'])
 
-                        objects = self.query_base.all()
+                    # Generate and execute queries
 
-                        # If the user defined a referenced_by-preprocessing
-                        if filter_collections.refby_filter_collection:
-                            # Preprocessing for referenced-by query
-                            refby_filter_collection = filter_collections.refby_filter_collection.filter_collection
-                            objects = refby_filter_collection.build_query(base=objects)
-                            objects = objects.distinct()
-                            # Retrieve pk list out of the object list
-                            pks = [one.pk for one in objects]
-                            pks = graph_traversal.follow_references(pks, **filter_collections.refby_filter_args)
+                    filter_collections = parser.parse(str(query))
 
-                            # Filter objects
-                            objects = self.query_base.all().filter(pk__in=pks)
+                    objects = self.query_base.all()
 
-                        # Processing for main query
-                        formatted_filter_collection = filter_collections.formatted_filter_collection
-                        filter_collection = formatted_filter_collection.filter_collection
+                    # If the user defined a referenced_by-preprocessing
+                    if filter_collections.refby_filter_collection:
+                        # Preprocessing for referenced-by query
+                        refby_filter_collection = filter_collections.refby_filter_collection.filter_collection
+                        objects = refby_filter_collection.build_query(base=objects)
+                        objects = objects.distinct()
+                        # Retrieve pk list out of the object list
+                        pks = [one.pk for one in objects]
+                        pks = graph_traversal.follow_references(pks, **filter_collections.refby_filter_args)
 
-                        objects = filter_collection.build_query(base=objects)
+                        # Filter objects
+                        objects = self.query_base.all().filter(pk__in=pks)
 
-                        if distinct:
-                            if isinstance(distinct, tuple):
-                                objects = objects.order_by(*list(self.distinct)).distinct(*list(self.distinct))
-                            elif isinstance(distinct,bool):
-                                if distinct:
-                                    objects = objects.distinct()
-                            else:
-                                raise TypeError("'distinct' must either be True or a tuple of field names.")
+                    # Processing for main query
+                    formatted_filter_collection = filter_collections.formatted_filter_collection
+                    filter_collection = formatted_filter_collection.filter_collection
 
-                        # Output format
-                        result_format = formatted_filter_collection.format
+                    objects = filter_collection.build_query(base=objects)
 
-                        # Filter selected columns for export
-                        formatting_arguments = formatted_filter_collection.build_format_arguments(query_mode=self.query_base.model.__name__)
+                    if distinct:
+                        if isinstance(distinct, tuple):
+                            objects = objects.order_by(*list(self.distinct)).distinct(*list(self.distinct))
+                        elif isinstance(distinct,bool):
+                            if distinct:
+                                objects = objects.distinct()
+                        else:
+                            raise TypeError("'distinct' must either be True or a tuple of field names.")
+
+                    # Output format
+                    result_format = formatted_filter_collection.format
+
+                    # Filter selected columns for export
+                    formatting_arguments = formatted_filter_collection.build_format_arguments(query_mode=self.query_base.model.__name__)
+
+                    col_specs = formatting_arguments['columns']
+                    misc_args = formatting_arguments['kwargs']
+                    prefetch = formatting_arguments['prefetch_related']
 
 
-
-                        col_specs = formatting_arguments['columns']
-                        misc_args = formatting_arguments['kwargs']
-                        prefetch = formatting_arguments['prefetch_related']
 
                     if col_specs['headers']:
                         self.col_headers = col_specs['headers']
                         self.selected_cols = col_specs['selected_fields']
-                        prefetch = formatting_arguments['prefetch_related']
 
                         if prefetch:
                             objects = objects.prefetch_related(*prefetch)
+                    else:
+                        if isinstance(self.prefetch_related, tuple):
+                            objects = objects.prefetch_related(*list(self.prefetch_related))
                         else:
-                            if isinstance(self.prefetch_related, tuple):
-                                objects = objects.prefetch_related(*list(self.prefetch_related))
-                            else:
-                                raise TypeError("'prefetch_related' must either be True or a tuple of field names.")
-
-                        self.queryset = objects
-
-                        if result_format == 'default':
-                            # Pretty useless case for live system but useful for tests
-                            return super(BasicListView, self).get(request, *args, **kwargs)
-                        elif result_format == 'csv':
-                            p = self.paginator_class(self.queryset, self.paginate_by_value)
-                            response = HttpResponse(content_type='text') # '/csv')
-                            #response['Content-Disposition'] = 'attachment; filename="result.csv"'
-                            writer = csv.writer(response)
-
-                            to_csv(p.page(self.page_to_show).object_list,
-                                   writer,
-                                   col_specs['headers'],
-                                   col_specs['selected_fields'],
-                                   **misc_args)
-
-                            return response
-                        elif result_format == 'table':
-                            self.col_headers = col_specs['headers']
-                            self.selected_cols = col_specs['selected_fields']
-                            return super(BasicListView, self).get(request, *args, **kwargs)
-                        else:
-
-                            raise ValueError('Unsupported output format')
+                            raise TypeError("'prefetch_related' must either be True or a tuple of field names.")
 
                     self.queryset = objects
-
 
                     if result_format in POSTPROCESSOR_REGISTRY:
                         p = self.paginator_class(self.queryset, self.paginate_by_value)
@@ -655,11 +628,12 @@ class BasicCustomQueryView(BasicListView):
                                                                     **misc_args)
 
 
+
                         if kwargs.get('api_call'):
                             self.api_result = result
                             self.api_result_content_type = content_type
                             self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
-                            return super(BasicListView, self).get(request, *args, **kwargs)
+                            return super(BasicCustomQueryView, self).get(request, *args, **kwargs)
                         else:
                             response = HttpResponse(content_type=content_type) # '/csv')
                             response.write(result)
@@ -698,6 +672,7 @@ class BasicCustomQueryView(BasicListView):
                     elif result_format == 'table':
                         self.col_headers = col_specs['headers']
                         self.selected_cols = col_specs['selected_fields']
+                        print self.selected_cols
                         return super(BasicListView, self).get(request, *args, **kwargs)
                     else:
                         raise ValueError('Unsupported output format')

@@ -53,7 +53,7 @@ class PlaceholderForm(forms.Form):
         for i, one in enumerate(placeholders):
             placeholder = one["parsed"]
 
-            if placeholder['widget'] == 'TextInput':
+            if placeholder.get('widget','TextInput') == 'TextInput':
                 widget = widgets.TextInput(attrs={'size': '100',
                                                   'class': 'vTextField',
                                                   'value': placeholder['default']})
