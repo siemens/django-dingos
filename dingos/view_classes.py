@@ -53,9 +53,9 @@ from core.http_helpers import get_query_string
 POSTPROCESSOR_REGISTRY = {}
 
 
-for (processor_name,(module,function_name)) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
+for (processor_name,(module,class_name)) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
     my_module = importlib.import_module(module)
-    POSTPROCESSOR_REGISTRY[processor_name] = getattr(my_module,function_name)
+    POSTPROCESSOR_REGISTRY[processor_name] = getattr(my_module,class_name)
 
 
 class UncountingPaginator(Paginator):
@@ -567,16 +567,18 @@ class BasicCustomQueryView(BasicListView):
 
                     self.queryset = objects
 
-                    print result_format
+
                     if result_format in POSTPROCESSOR_REGISTRY:
                         p = self.paginator_class(self.queryset, self.paginate_by_value)
                         response = HttpResponse(content_type='text') # '/csv')
 
-                        postprocessor = POSTPROCESSOR_REGISTRY[result_format]
-                        print postprocessor
-                        (content_type,result) = postprocessor(p.page(self.page_to_show).object_list,
-                                                              **misc_args)
-                        print "After call"
+                        postprocessor_class = POSTPROCESSOR_REGISTRY[result_format]
+                        postprocessor = postprocessor_class(object_list=p.page(self.page_to_show).object_list)
+
+
+                        (content_type,result) = postprocessor.export(*col_specs['selected_fields'],
+                                                                    **misc_args)
+
 
                         if kwargs.get('api_call'):
                             self.api_result = result
