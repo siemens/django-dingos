@@ -83,6 +83,8 @@ def set_dict(dictionary, value, command='set', *keys):
             existing = existing[keys[i]]
     if command == 'set':
         existing[keys[len(keys) - 1]] = value
+    if command == 'set_value':
+        existing[keys[len(keys) - 1]] = {'_value': value}
     elif command == 'append':
         if keys[len(keys) - 1] in existing:
             existing[keys[len(keys) - 1]].append(value)
