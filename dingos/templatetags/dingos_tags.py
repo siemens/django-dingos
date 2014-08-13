@@ -528,15 +528,16 @@ def reachable_packages(context, current_node):
     if not view.graph:
         object_list = context['object_list']
         pks = [one.pk for one in object_list]
-        view.graph = follow_references(pks, direction="up")
+        view.graph = InfoObject.annotated_graph(pks, graph_traversal_kargs={'direction': 'up'})
 
     # Search reachable InfoObjects
-    nodes = list(dfs_preorder_nodes(view.graph, source=current_node))
-    result = ""
+    node_ids = list(dfs_preorder_nodes(view.graph, source=current_node))
 
     # Search STIX Packages
-    for one in nodes:
-        for object in InfoObject.objects.all().filter(pk=one):
-            if str(object.iobject_type).endswith("STIX_Package"):
-                result = result + str(object.name) + "<br>"
-    return result
+    result = []
+    for id in node_ids:
+        node = view.graph.node[id]
+        if "STIX_Package" in node['iobject_type']:
+            result.append(node['name'])
+
+    return "<br/>".join(result)
