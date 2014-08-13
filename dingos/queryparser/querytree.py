@@ -163,13 +163,15 @@ class FormattedFilterCollection:
                     # Use selected_field as header
                     header = selected_field = spec
                 split['headers'].append(header)
-                if not selected_field in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode].keys():
+                if self.format in ['csv','json','table'] and not selected_field in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode].keys():
                     raise QueryParserException("Column \"" + selected_field + "\" is not allowed; please restrict yourself to the following columns: %s" % ", ".join(DINGOS_QUERY_ALLOWED_COLUMNS[query_mode].keys()))
-                for prefetch in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode][selected_field][1]:
-                    prefetch_related_fields.add(prefetch)
-                print "'%s'" % selected_field
-                selected_field = DINGOS_QUERY_ALLOWED_COLUMNS[query_mode][selected_field][0]
-                print "'%s'" % selected_field
+
+                if self.format in ['csv','json','table']:
+                    for prefetch in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode][selected_field][1]:
+                        prefetch_related_fields.add(prefetch)
+                if self.format in ['csv','json','table']:
+                    selected_field = DINGOS_QUERY_ALLOWED_COLUMNS[query_mode][selected_field][0]
+
 
                 split['selected_fields'].append(selected_field)
         col_specs = split

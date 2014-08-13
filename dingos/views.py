@@ -33,7 +33,7 @@ from django.contrib.auth.models import User
 from braces.views import SuperuserRequiredMixin
 
 from dingos.models import InfoObject2Fact, InfoObject, UserData, get_or_create_fact
-from dingos.view_classes import BasicJSONView
+from dingos.view_classes import BasicJSONView, POSTPROCESSOR_REGISTRY
 
 import csv
 
@@ -584,7 +584,65 @@ class CustomFactSearchView(BasicCustomQueryView):
                         'fact__value_iobject_id__latest',
                         'fact__value_iobject_id__latest__iobject_type',
                         'node_id')
-    pass
+
+
+
+
+class InfoObjectExportsView(BasicTemplateView):
+    # When building the graph, we skip references to the kill chain. This is because
+    # in STIX reports where the kill chain information is consistently used, it completly
+    # messes up the graph display.
+
+    skip_terms = [
+        # We do not want to follow 'Related Object' links and similar
+        {'term':'Related','operator':'icontains'},
+        ]
+
+    max_objects = None
+
+
+    def get(self,request,*args,**kwargs):
+
+        api_test = self.kwargs.get('api_call', None)
+
+
+
+        iobject_id = self.kwargs.get('pk', None)
+
+        graph= follow_references([iobject_id],
+                                 skip_terms = self.skip_terms,
+                                 direction='down',
+                                 max_nodes=self.max_objects,
+                                 )
+
+
+        exporter = self.kwargs.get('exporter', None)
+
+        if exporter in POSTPROCESSOR_REGISTRY:
+            postprocessor_class = POSTPROCESSOR_REGISTRY[exporter]
+            postprocessor = postprocessor_class(graph=graph)
+
+            if 'columns' in self.request.GET:
+                columns = self.request.GET.get('columns')
+                columns = map(lambda x: x.strip(),columns.split(','))
+
+            else:
+                columns = []
+            (content_type,result) = postprocessor.export(*columns,**self.request.GET)
+        else:
+            content_type = None
+            result = 'NO EXPORTER %s DEFINED' % exporter
+
+        if api_test:
+            self.api_result = result
+            self.api_result_content_type = content_type
+            self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
+            return super(InfoObjectExportsView, self).get(request, *args, **kwargs)
+        else:
+            response = HttpResponse(content_type=content_type)
+            response.write(result)
+            return response
+
 
 
 
