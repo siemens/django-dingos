@@ -91,3 +91,8 @@ if settings.configured and'DINGOS' in dir(settings):
                                                                 dingos.DINGOS_OBJECTTYPE_ICON_RELIST_MAPPING)
 
 
+if settings.configured and'DINGOS' in dir(settings):
+    dingos.DINGOS_SEARCH_POSTPROCESSOR_REGISTRY = settings.DINGOS.get('SEARCH_POSTPROCESSOR_REGISTRY',
+                                                                dingos.DINGOS_SEARCH_POSTPROCESSOR_REGISTRY)
+
+

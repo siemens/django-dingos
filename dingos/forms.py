@@ -19,6 +19,8 @@ from django import forms
 
 from django.forms import widgets
 
+from dingos.queryparser.placeholder_parser import PlaceholderException
+
 class EditSavedSearchesForm(forms.Form):
     """
     Form for editing a saved search. Used by the respective view.
@@ -39,6 +41,35 @@ class CustomQueryForm(forms.Form):
     query = forms.CharField(required=False,widget=widgets.Textarea(attrs={'cols':100,'rows':10,'style': 'height:auto; width:auto;'}))
     paginate_by = forms.ChoiceField(choices=[(str(x), str(x)) for x in [50,100,200,300,400,500,1000,2]],required=False,initial='100')
     page = forms.IntegerField(required=False,initial=1,widget=forms.HiddenInput)
+
+
+class PlaceholderForm(forms.Form):
+    fields = None
+
+    def __init__(self, *args, **kwargs):
+        placeholders = kwargs.pop("placeholders")
+        super(PlaceholderForm, self).__init__(*args, **kwargs)
+
+        for i, one in enumerate(placeholders):
+            placeholder = one["parsed"]
+
+            if placeholder['widget'] == 'TextInput':
+                widget = widgets.TextInput(attrs={'size': '100',
+                                                  'class': 'vTextField',
+                                                  'value': placeholder['default']})
+                self.fields[placeholder['field_name']] = forms.CharField(label=placeholder['human_readable'],
+                                                                         required=False,
+                                                                         max_length=100,
+                                                                         widget=widget)
+            elif placeholder['widget'] == 'DateInput':
+                widget = widgets.DateInput(attrs={'size': '10',
+                                                  'value': placeholder['default']})
+                self.fields[placeholder['field_name']] = forms.CharField(label=placeholder['human_readable'],
+                                                                         required=False,
+                                                                         max_length=10,
+                                                                         widget=widget)
+            else:
+                raise PlaceholderException("Widget \"%s\" is not supported." % placeholder.widget)
 
 
 class EditInfoObjectFieldForm(forms.Form):

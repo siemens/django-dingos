@@ -48,7 +48,10 @@ class Comparator:
     ISTARTSWITH = "istartswith"
     ENDSWITH = "endswith"
     IENDSWITH = "iendswith"
+    LOWEREQUAL = "<="
     LOWERTHAN = "<"
+    GREATEREQUAL = ">="
+    GREATERTHAN = ">"
     RANGE = "range"
     YOUNGER = "younger"
 
@@ -137,7 +140,7 @@ class FilterCollection:
 
 
 class ReferencedByFilterCollection:
-    def __init__(self, formatted_filter_collection, refby_filter_collection = None, refby_filter_args = None):
+    def __init__(self, formatted_filter_collection, refby_filter_collection = None, refby_filter_args = []):
         self.formatted_filter_collection = formatted_filter_collection
         self.refby_filter_collection = refby_filter_collection
 
@@ -182,13 +185,15 @@ class FormattedFilterCollection:
                     # Use selected_field as header
                     header = selected_field = spec
                 split['headers'].append(header)
-                if not selected_field in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode].keys():
+                if self.format in ['csv','json','table'] and not selected_field in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode].keys():
                     raise QueryParserException("Column \"" + selected_field + "\" is not allowed; please restrict yourself to the following columns: %s" % ", ".join(DINGOS_QUERY_ALLOWED_COLUMNS[query_mode].keys()))
-                for prefetch in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode][selected_field][1]:
-                    prefetch_related_fields.add(prefetch)
-                print "'%s'" % selected_field
-                selected_field = DINGOS_QUERY_ALLOWED_COLUMNS[query_mode][selected_field][0]
-                print "'%s'" % selected_field
+
+                if self.format in ['csv','json','table']:
+                    for prefetch in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode][selected_field][1]:
+                        prefetch_related_fields.add(prefetch)
+                if self.format in ['csv','json','table']:
+                    selected_field = DINGOS_QUERY_ALLOWED_COLUMNS[query_mode][selected_field][0]
+
 
                 split['selected_fields'].append(selected_field)
         col_specs = split
@@ -253,11 +258,26 @@ class Condition:
             q_operator = "__endswith"
         elif self.comparator == Comparator.IENDSWITH:
             q_operator = "__iendswith"
+        elif self.comparator == Comparator.LOWEREQUAL:
+            q_operator = "__lte"
+            # Value format:
+            # YYYY-mm-dd
+            value = generate_date_value(value + " 23:59:59")
         elif self.comparator == Comparator.LOWERTHAN:
             q_operator = "__lt"
             # Value format:
-            # YYYY:mm:dd
+            # YYYY-mm-dd
             value = generate_date_value(value + " 00:00:00")
+        elif self.comparator == Comparator.GREATEREQUAL:
+            q_operator = "__gte"
+            # Value format:
+            # YYYY-mm-dd
+            value = generate_date_value(value + " 00:00:00")
+        elif self.comparator == Comparator.GREATERTHAN:
+            q_operator = "__gt"
+            # Value format:
+            # YYYY-mm-dd
+            value = generate_date_value(value + " 23:59:59")
         elif self.comparator == Comparator.RANGE:
             q_operator = "__range"
             # Value format:
