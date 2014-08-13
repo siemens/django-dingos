@@ -1688,6 +1688,8 @@ class InfoObject(DingoModel):
         facts= InfoObject2Fact.objects.filter(iobject__id__in=G.nodes()).prefetch_related( 'iobject',
                                                                                             'iobject__identifier',
                                                                                             'iobject__identifier__namespace',
+                                                                                            'iobject__iobject_family',
+                                                                                            'iobject__iobject_type',
                                                                                             'fact__fact_term',
                                                                                             'fact__fact_values',
                                                                                             'fact__fact_values__fact_data_type',

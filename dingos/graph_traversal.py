@@ -329,8 +329,32 @@ def follow_references(iobject_pks,
 
     edge_set = set()
 
-    return follow_references_rec(iobject_pks,reachable_iobject_pks,edge_set,direction,depth,graph)
+    follow_references_rec(iobject_pks,reachable_iobject_pks,edge_set,direction,depth,graph)
 
+    nodes_without_edges = []
+    for obj_pk in iobject_pks:
+        if not obj_pk in graph.node:
+            nodes_without_edges.append(obj_pk)
+        if nodes_without_edges:
+            node_infos = InfoObject.objects.filter(pk__in=nodes_without_edges).prefetch_related( 'identifier__namespace',
+                                     'iobject_type',
+                                     'iobject_type__iobject_family')
+
+            for node_info in node_infos:
+                node_dict = {}
+                try:
+                    url = reverse('url.dingos.view.infoobject', args=[node_info.pk])
+                except:
+                    url = None
+                node_dict['url'] = url
+                node_dict['identifier_ns'] =  node_info.identifier.namespace.uri
+                node_dict['identifier_uid'] =  node_info.identifier.uid
+                node_dict['name'] = node_info.name
+                node_dict['iobject_type'] = node_info.iobject_type.name
+                node_dict['iobject_type_family'] = node_info.iobject_type.iobject_family.name
+                graph.add_node(node_info.pk,node_dict)
+
+    return graph
 
 
 
