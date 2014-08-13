@@ -27,6 +27,11 @@ from dingos.core import http_helpers
 from dingos.core.utilities import get_from_django_obj
 from dingos.models import BlobStorage
 
+from dingos.graph_traversal import follow_references
+from dingos.graph_utils import dfs_preorder_nodes
+
+from dingos.models import InfoObject
+
 
 register = template.Library()
 
@@ -514,3 +519,24 @@ def highlight_if_equal(v1,v2):
         return "style='background: #FF0000;'"
     else:
         return ""
+
+@register.simple_tag(takes_context=True)
+def reachable_packages(context, current_node):
+    view = context["view"]
+
+    # The graph is generated just once per search request
+    if not view.graph:
+        object_list = context['object_list']
+        pks = [one.pk for one in object_list]
+        view.graph = follow_references(pks, direction="up")
+
+    # Search reachable InfoObjects
+    nodes = list(dfs_preorder_nodes(view.graph, source=current_node))
+    result = ""
+
+    # Search STIX Packages
+    for one in nodes:
+        for object in InfoObject.objects.all().filter(pk=one):
+            if str(object.iobject_type).endswith("STIX_Package"):
+                result = result + str(object.name) + "<br>"
+    return result

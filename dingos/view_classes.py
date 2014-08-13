@@ -372,6 +372,8 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
 
     counting_paginator = False
 
+    graph = None
+
     @property
     def paginator_class(self):
         if not self.counting_paginator:

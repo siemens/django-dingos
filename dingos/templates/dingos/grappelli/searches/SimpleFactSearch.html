@@ -80,6 +80,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 	<th scope="col"  class="sortable column-value">
           {% render_table_ordering "fact__fact_values__value" "Value" %}
 	</th>
+	<th scope="col"  class="column-value">
+          Packages
+	</th>
        </tr>
      </thead>
 
@@ -99,6 +102,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     </td>
     <td >
 	{{ enrich2fact.fact.fact_values.all| join:", " | insert_wbr }}
+    </td>
+    <td >
+    {%reachable_packages enrich2fact.pk %}
     </td>
    </tr >
   {% endfor %}

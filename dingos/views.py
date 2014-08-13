@@ -628,7 +628,7 @@ class InfoObjectJSONGraph(BasicJSONView):
 
         graph= follow_references([iobject_id],
                                  skip_terms = self.skip_terms,
-                                 direction='both',
+                                 direction='up',
                                  max_nodes=self.max_objects,
                                  )
 
