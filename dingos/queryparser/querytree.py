@@ -184,8 +184,11 @@ class FormattedFilterCollection:
             postprocessor_class = POSTPROCESSOR_REGISTRY[self.format]
             postprocessor = postprocessor_class(query_mode=query_mode)
             allowed_columns = postprocessor.allowed_columns
+            if postprocessor.query_mode_restriction and not query_mode in postprocessor.query_mode_restriction:
+                raise QueryParserException("Postprocessor %s cannot be used for %s queries" % (self.format,query_mode))
         else:
-            postprocessor = None
+            raise QueryParserException("Unknown postprocessor %s" % (self.format))
+
 
 
         # Split format_args into col_specs and misc_args (contains additional output configuration)

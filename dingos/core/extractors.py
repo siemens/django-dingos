@@ -82,19 +82,22 @@ class InfoObjectDetails(object):
 
 
     allowed_columns = {}
-
     enrich_details = True
     format = None
+    query_mode = None
+    query_mode_restriction = ['InfoObject']
 
 
     def __init__(self,*args,**kwargs):
         self.object_list = kwargs.pop('object_list',[])
+        self.io2fs = kwargs.pop('io2f_list',[])
         self.graph = kwargs.pop('graph',None)
+        self.enrich_details = kwargs.pop('enrich_details',self.enrich_details)
         self.query_mode = kwargs.pop('query_mode','InfoObject')
 
 
         self.iobject_map = None
-        self.io2fs = []
+
         self.results = []
 
         self.node_map = None
@@ -145,7 +148,7 @@ class InfoObjectDetails(object):
 
 
         def fill_row(result,columns,mode='json'):
-
+            print result
             if self.query_mode == 'InfoObject':
                 model_key = '_object'
             else:
@@ -155,6 +158,7 @@ class InfoObjectDetails(object):
             else:
                 row = []
             for column in columns:
+                print self.allowed_columns
                 column_key = self.allowed_columns[column][1]
                 if column_key in result:
                     column_content = result.get(column_key)
@@ -263,6 +267,7 @@ class InfoObjectDetails(object):
             G.node[fact.iobject.id]['facts'].append(fact)
 
         self.iobject_map = G.node
+        self.object_list = map (lambda x : G.node[x]['iobject'], G.node.keys())
 
 
     def set_iobject_map(self):
@@ -341,6 +346,8 @@ class InfoObjectDetails(object):
 
 
 class csv_export(InfoObjectDetails):
+
+    query_mode_restriction = []
     @property
     def  default_columns(self):
         return map(lambda x: (x[0],x[1][0]), self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode].items())
@@ -349,20 +356,33 @@ class csv_export(InfoObjectDetails):
     format = 'csv'
     def extractor(self,**kwargs):
         self.results = []
-        for obj in self.object_list:
-            self.results.append(self.init_result_dict(obj))
+        if self.object_list:
+            for obj in self.object_list:
+                self.results.append(self.init_result_dict(obj))
+        else:
+            for io2f in self.io2fs:
+                self.results.append(self.init_result_dict(io2f))
+
 
 class json_export(InfoObjectDetails):
     @property
     def  default_columns(self):
         return map(lambda x: (x[0],x[1][0]), self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode].items())
 
+
+    query_mode_restriction = []
     enrich_details = False
     format = 'json'
     def extractor(self,**kwargs):
+        print self.object_list
         self.results = []
-        for obj in self.object_list:
-            self.results.append(self.init_result_dict(obj))
+        if self.object_list:
+            for obj in self.object_list:
+                self.results.append(self.init_result_dict(obj))
+        else:
+            for io2f in self.io2fs:
+                self.results.append(self.init_result_dict(io2f))
+
 
 
 

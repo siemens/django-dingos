@@ -627,8 +627,12 @@ class BasicCustomQueryView(BasicListView):
 
 
                         postprocessor = formatting_arguments['postprocessor']
-                        postprocessor.object_list = p.page(self.page_to_show).object_list
-                        postprocessor.initialize_object_details()
+                        if postprocessor.query_mode == 'InfoObject':
+                            postprocessor.object_list = p.page(self.page_to_show).object_list
+                            postprocessor.initialize_object_details()
+                        else:
+                            postprocessor.io2fs = p.page(self.page_to_show).object_list
+
 
                         (content_type,result) = postprocessor.export(*col_specs['selected_fields'],
                                                                     **misc_args)
