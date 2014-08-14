@@ -70,15 +70,21 @@ class InfoObjectDetails(object):
         "attribute": ("","fact.fact_term.attribute",['fact__fact_term']),
         "object.import_timestamp": ("","iobject.create_timestamp",['iobject']),
         "object.timestamp": ("","iobject.timestamp",['iobject']),
-        "object.identifier.namespace": ("","iobject.identifier.namspace.uri",['iobject__identifier__namespace']),
+        "object.identifier.namespace": ("","iobject.identifier.namespace.uri",['iobject__identifier__namespace']),
         "object.name": ("","iobject.name",['iobject']),
         "object.object_type.name": ("","iobject.iobject_type.name",['iobject__iobject_type']),
-        "object.object_type.namespace": ("","iobject.iobject_type.namespace.uri",['iobject__iobject_type.namespace']),
+        "object.object_type.namespace": ("","iobject.iobject_type.namespace.uri",['iobject__iobject_type__namespace']),
         "object.identifier.uid": ("","iobject.identifier.uid",['iobject__identifier']),
         "object.object_family": ("","iobject.iobject_family",['iobject__iobject_family']),
         "object.identifier": ("","iobject.identifier",['iobject__identifier','iobject__identifier__namespace']),
         "object.object_type": ("","iobject.iobject_type",['iobject__iobject_type','iobject__iobject_type__namespace']),
     }
+
+
+    allowed_columns = {}
+
+    enrich_details = True
+    format = None
 
 
     def __init__(self,*args,**kwargs):
@@ -96,19 +102,22 @@ class InfoObjectDetails(object):
         self.initialize_allowed_columns()
 
     def initialize_object_details(self):
-        if self.object_list:
-            self.io2fs = self._get_io2fs(map(lambda o:o.pk,list(self.object_list)))
-            self.set_iobject_map()
+        if self.enrich_details:
+            if self.object_list:
+                self.io2fs = self._get_io2fs(map(lambda o:o.pk,list(self.object_list)))
+                self.set_iobject_map()
 
-        elif self.graph:
-            self.io2fs = self._get_io2fs(self.graph.nodes())
-            self._annotate_graph(self.graph)
+            elif self.graph:
+                self.io2fs = self._get_io2fs(self.graph.nodes())
+                self._annotate_graph(self.graph)
 
 
     def initialize_allowed_columns(self):
-        self.allowed_columns = self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode].copy()
-        for (col,col_name) in self.default_columns:
-            self.allowed_columns[col] = (col_name,col,[])
+        if not self.allowed_columns:
+            for (col,col_name) in self.default_columns:
+                self.allowed_columns[col] = (col_name,col,[])
+
+        self.allowed_columns.update(self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode])
 
         self.allowed_columns['object_url'] = ('Object URL','_object_url',[])
 
@@ -118,16 +127,17 @@ class InfoObjectDetails(object):
             iobject = obj_or_io2f.iobject
             io2f = obj_or_io2f
         else:
-            iobject = obj_or_io2f.iobject
+            iobject = obj_or_io2f
             io2f = None
 
         return {'_object':iobject,
+                '_io2f' : io2f,
                 '_object_url': reverse('url.dingos.view.infoobject', args=[iobject.pk])}
 
 
     def export(self,*args,**kwargs):
 
-        def recursive_join(xxs, join_string):
+        def recursive_join(xxs, join_string=','):
             if isinstance(xxs, list):
                 return join_string.join(map(lambda yys: recursive_join(yys, join_string), xxs))
             else:
@@ -135,6 +145,11 @@ class InfoObjectDetails(object):
 
 
         def fill_row(result,columns,mode='json'):
+
+            if self.query_mode == 'InfoObject':
+                model_key = '_object'
+            else:
+                model_key = '_io2f'
             if mode == 'json':
                 row = {}
             else:
@@ -145,10 +160,10 @@ class InfoObjectDetails(object):
                     column_content = result.get(column_key)
                 else:
                     field_components = column_key.split('.')
-                    value = get_from_django_obj(result['_object'], field_components)
+                    value = get_from_django_obj(result[model_key], field_components)
                     if isinstance(value, list):
                         if len(result) > 1:
-                            column_content = recursive_join(value, kwargs.get(','))
+                            column_content = recursive_join(value)
                         else:
                             column_content = value[0]
                     else:
@@ -171,10 +186,14 @@ class InfoObjectDetails(object):
 
         self.extractor(**kwargs)
 
-        format = kwargs.pop('format','json')
+        if self.format:
+            format = self.format
+        else:
+            format = kwargs.pop('format','json')
         output = []
 
         if 'json' in format:
+
 
             if not args:
                 columns = map(lambda x: x[0], self.default_columns)
@@ -319,5 +338,31 @@ class InfoObjectDetails(object):
                         if sibling:
                             results.append(sibling)
         return results
+
+
+class csv_export(InfoObjectDetails):
+    @property
+    def  default_columns(self):
+        return map(lambda x: (x[0],x[1][0]), self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode].items())
+
+    enrich_details = False
+    format = 'csv'
+    def extractor(self,**kwargs):
+        self.results = []
+        for obj in self.object_list:
+            self.results.append(self.init_result_dict(obj))
+
+class json_export(InfoObjectDetails):
+    @property
+    def  default_columns(self):
+        return map(lambda x: (x[0],x[1][0]), self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode].items())
+
+    enrich_details = False
+    format = 'json'
+    def extractor(self,**kwargs):
+        self.results = []
+        for obj in self.object_list:
+            self.results.append(self.init_result_dict(obj))
+
 
 

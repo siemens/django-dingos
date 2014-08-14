@@ -184,6 +184,8 @@ class FormattedFilterCollection:
             postprocessor_class = POSTPROCESSOR_REGISTRY[self.format]
             postprocessor = postprocessor_class(query_mode=query_mode)
             allowed_columns = postprocessor.allowed_columns
+        else:
+            postprocessor = None
 
 
         # Split format_args into col_specs and misc_args (contains additional output configuration)
@@ -197,8 +199,10 @@ class FormattedFilterCollection:
 
         # Reformat structure of column specifications
         prefetch_related_fields = set()
+
         split = {'headers': [], 'selected_fields': []}
         if len(col_specs) is not 0:
+
             header = None
             for spec in col_specs:
                 if ':' in spec:
@@ -210,7 +214,7 @@ class FormattedFilterCollection:
 
 
 
-                print postprocessor.allowed_columns
+
                 if not selected_field in postprocessor.allowed_columns.keys():
                     raise QueryParserException("Column \"" + selected_field + "\" is not allowed; "
                                                                               "please restrict yourself to the "
@@ -224,12 +228,23 @@ class FormattedFilterCollection:
                 split['headers'].append(header)
 
                 split['selected_fields'].append(selected_field)
+
+        else:
+            for i in postprocessor.default_columns:
+                split['headers'].append(i[1])
+                split['selected_fields'].append(i[0])
+                for prefetch in postprocessor.allowed_columns[i[0]][2]:
+                    prefetch_related_fields.add(prefetch)
+
+
         col_specs = split
-        return {'columns':col_specs,
+        result = {'columns':col_specs,
                 'kwargs':misc_args,
                 'prefetch_related':list(prefetch_related_fields),
                 'postprocessor' : postprocessor}
 
+        print result
+        return result
 
 class Expression:
     def __init__(self, left, operator, right):
