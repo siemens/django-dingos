@@ -30,7 +30,7 @@ from dingos.models import BlobStorage
 from dingos.graph_traversal import follow_references
 from dingos.graph_utils import dfs_preorder_nodes
 
-from dingos.models import InfoObject
+from dingos.models import InfoObject, InfoObject2Fact
 
 
 register = template.Library()
@@ -526,18 +526,31 @@ def reachable_packages(context, current_node):
 
     # The graph is generated just once per search request
     if not view.graph:
-        object_list = context['object_list']
-        pks = [one.pk for one in object_list]
-        view.graph = InfoObject.annotated_graph(pks, graph_traversal_kargs={'direction': 'up'})
 
-    # Search reachable InfoObjects
+        object_list = context['object_list']
+
+
+        if object_list:
+
+            if isinstance(object_list[0],InfoObject):
+                pks = [one.pk for one in object_list]
+            elif isinstance(object_list[0],InfoObject2Fact):
+                pks = [one.iobject.pk for one in object_list]
+            else:
+                pks = []
+        view.graph = follow_references(pks, direction= 'up')
+
     node_ids = list(dfs_preorder_nodes(view.graph, source=current_node))
 
-    # Search STIX Packages
-    result = []
-    for id in node_ids:
-        node = view.graph.node[id]
-        if "STIX_Package" in node['iobject_type']:
-            result.append(node['name'])
+    if view.graph.node:
+        result = []
+        for id in node_ids:
+            node = view.graph.node[id]
+            # TODO: Below is STIX-specific and should be factored out
+            # by making the iobject type configurable
+            if "STIX_Package" in node['iobject_type']:
+                result.append("<a href='%s'>%s</a>" % (node['url'], node['name']))
 
-    return "<br/>".join(result)
+        return ",<br/> ".join(result)
+    else:
+        return ''
