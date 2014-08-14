@@ -660,6 +660,7 @@ class InfoObjectJSONGraph(BasicJSONView):
         # The kill chain links completely mess up the graph
         {'attribute':'kill_chain_id'},
         {'term':'Kill_Chain','operator':'icontains'},
+        {'term':'KillChain','operator':'icontains'},
         ]
 
     max_objects = 400
@@ -686,7 +687,7 @@ class InfoObjectJSONGraph(BasicJSONView):
 
         graph= follow_references([iobject_id],
                                  skip_terms = self.skip_terms,
-                                 direction='both',
+                                 direction='full',
                                  max_nodes=self.max_objects,
                                  )
 

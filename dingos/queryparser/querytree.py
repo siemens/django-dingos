@@ -22,6 +22,7 @@ from django.utils.dateparse import parse_datetime
 from datetime import timedelta
 from dingos.core.utilities import replace_by_list, is_in_list
 from dingos import DINGOS_QUERY_ALLOWED_KEYS, DINGOS_QUERY_ALLOWED_COLUMNS
+import re
 
 
 class QueryParserException(Exception):
@@ -47,7 +48,10 @@ class Comparator:
     ISTARTSWITH = "istartswith"
     ENDSWITH = "endswith"
     IENDSWITH = "iendswith"
+    LOWEREQUAL = "<="
     LOWERTHAN = "<"
+    GREATEREQUAL = ">="
+    GREATERTHAN = ">"
     RANGE = "range"
     YOUNGER = "younger"
 
@@ -133,6 +137,24 @@ class FilterCollection:
             result += str(cur)
         result += "}"
         return result
+
+
+class ReferencedByFilterCollection:
+    def __init__(self, formatted_filter_collection, refby_filter_collection = None, refby_filter_args = []):
+        self.formatted_filter_collection = formatted_filter_collection
+        self.refby_filter_collection = refby_filter_collection
+
+        self.refby_filter_args = {}
+        for arg in refby_filter_args:
+            arg_value = arg['value'][1:-1]
+            if re.match('true', arg_value, flags=re.IGNORECASE):
+                self.refby_filter_args[arg['key']] = True
+            elif re.match('false', arg_value, flags=re.IGNORECASE):
+                self.refby_filter_args[arg['key']] = False
+            elif re.match('\d+', arg_value):
+                self.refby_filter_args[arg['key']] = int(arg_value)
+            else:
+                self.refby_filter_args[arg['key']] = arg_value
 
 
 class FormattedFilterCollection:
@@ -236,11 +258,26 @@ class Condition:
             q_operator = "__endswith"
         elif self.comparator == Comparator.IENDSWITH:
             q_operator = "__iendswith"
+        elif self.comparator == Comparator.LOWEREQUAL:
+            q_operator = "__lte"
+            # Value format:
+            # YYYY-mm-dd
+            value = generate_date_value(value + " 23:59:59")
         elif self.comparator == Comparator.LOWERTHAN:
             q_operator = "__lt"
             # Value format:
-            # YYYY:mm:dd
+            # YYYY-mm-dd
             value = generate_date_value(value + " 00:00:00")
+        elif self.comparator == Comparator.GREATEREQUAL:
+            q_operator = "__gte"
+            # Value format:
+            # YYYY-mm-dd
+            value = generate_date_value(value + " 00:00:00")
+        elif self.comparator == Comparator.GREATERTHAN:
+            q_operator = "__gt"
+            # Value format:
+            # YYYY-mm-dd
+            value = generate_date_value(value + " 23:59:59")
         elif self.comparator == Comparator.RANGE:
             q_operator = "__range"
             # Value format:

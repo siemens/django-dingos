@@ -183,7 +183,7 @@ def follow_references(iobject_pks,
 
         node_count = len(graph.nodes())
 
-        if direction in ['down','both']:
+        if direction in ['down','full']:
             # When going down, we need to query for IO2F instances which have one of the
             # specified list of primary keys as primary key of the InfoObject
             # to which the IO2F instance is attached
@@ -194,7 +194,7 @@ def follow_references(iobject_pks,
             # to model references to specific revisions of an InfoObject
             fact_query_down = Q(iobject_id__in=iobject_pks) & ( ~Q(fact__value_iobject_id=None) )# | ~Q(fact__value_iobject_ts=None))
 
-        if direction in ['up','both']:
+        if direction in ['up','full']:
             # When going up, it is the pk of the InfoObject referenced in the IO2F instance that must be contained in the
             # specified list of primary keys
 
@@ -203,7 +203,7 @@ def follow_references(iobject_pks,
 
             fact_query_up = Q(iobject__latest_of__isnull=False) & Q(fact__value_iobject_id__latest__id__in=iobject_pks) #| Q(fact__value_iobject_ts__id__in=iobject_pks)
 
-        if direction == 'both':
+        if direction == 'full':
             turns = ['down','up']
         else:
             turns = [direction]
@@ -288,7 +288,7 @@ def follow_references(iobject_pks,
 
                     graph.add_node(rnode,**rnode_dict)
 
-                    if turn == 'down' or reverse_direction or direction=='both':
+                    if turn == 'down' or reverse_direction or direction=='full':
                         edge_dict['direction'] = 'refers_to'
                         if not (node,rnode,edge_dict['fact_node_id']) in edge_set:
                             graph.add_edge(node,rnode,**edge_dict)
@@ -329,7 +329,14 @@ def follow_references(iobject_pks,
 
     edge_set = set()
 
-    follow_references_rec(iobject_pks,reachable_iobject_pks,edge_set,direction,depth,graph)
+
+    if direction == 'both':
+        reverse_direction = not reverse_direction
+        follow_references_rec(iobject_pks,reachable_iobject_pks,edge_set,"up",depth,graph)
+        reverse_direction = not reverse_direction
+        follow_references_rec(iobject_pks,reachable_iobject_pks,edge_set,"down",depth,graph)
+    else:
+        follow_references_rec(iobject_pks,reachable_iobject_pks,edge_set,direction,depth,graph)
 
     nodes_without_edges = []
     for obj_pk in iobject_pks:

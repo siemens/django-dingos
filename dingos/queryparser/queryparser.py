@@ -16,7 +16,7 @@
 #
 import ply.yacc as Yacc
 from querylexer import QueryLexer
-from querytree import FilterCollection, Expression, Condition, QueryParserException, FormattedFilterCollection
+from querytree import FilterCollection, Expression, Condition, QueryParserException, FormattedFilterCollection, ReferencedByFilterCollection
 
 import logging
 
@@ -43,25 +43,27 @@ class QueryParser:
     '''
         QUERY LANGUAGE GRAMMAR
         ======================
+        refbyrequest: request
+        refbyrequest: REFERENCED_BY refbyargs COLON OPEN request CLOSE REFBYSIGN request
+        refbyargs:
+        refbyargs:  OPEN formatargs CLOSE
         request:    query
         request:    query FORMATSIGN ID OPEN formatargs CLOSE
         formatargs: formatarg COMMA formatargs
         formatargs: formatarg
         formatarg:  VALUE
-        formatarg:  ID EQUALS BOOL
+        formatarg:  ID EQUALS TRUE
+                    | ID EQUALS FALSE
+                    | ID EQUALS VALUE
         query:
         query:      expr
         query:      expr PIPE query
         query:      FILTER COLON expr
-                    | EXCLUDE COLON expr
                     | FACTFILTER COLON expr
-                    | FACTEXCLUDE COLON expr
-        query:      MARKED_BY COLON OPEN query CLOSE
-        #query:      NOT MARKED_BY COLON OPEN query CLOSE
-        query:      FILTER COLON expr PIPE query
-                    | EXCLUDE COLON expr PIPE query
-        query:      MARKED_BY COLON OPEN query CLOSE PIPE query
-        #query:      NOT MARKED_BY COLON OPEN query CLOSE PIPE query
+                    | MARKED_BY COLON OPEN query CLOSE
+        query:      query PIPE FILTER COLON expr
+                    | query PIPE FACTFILTER COLON expr
+                    | query PIPE MARKED_BY COLON OPEN query CLOSE
         expr:       OPEN expr CLOSE
         expr:       expr AND expr
                     |expr OR expr
@@ -76,13 +78,32 @@ class QueryParser:
                     | ISTARTSWITH
                     | ENDSWITH
                     | IENDSWITH
+                    | LOWEREQUAL
                     | LOWERTHAN
+                    | GREATEREQUAL
+                    | GREATERTHAN
                     | RANGE
                     | YOUNGER
         value:      VALUE
         key:        ID
                     | FACTTERM
     '''
+
+    def p_simple_refby_request(self, p):
+        """refbyrequest : request"""
+        p[0] = ReferencedByFilterCollection(p[1])
+
+    def p_refby_request(self, p):
+        """refbyrequest : REFERENCED_BY refbyargs COLON OPEN request CLOSE REFBYSIGN request"""
+        p[0] = ReferencedByFilterCollection(p[8], p[5], p[2])
+
+    def p_refbyargs_empty(self, p):
+        """refbyargs :"""
+        p[0] = []
+
+    def p_refbyargs(self, p):
+        """refbyargs : OPEN formatargs CLOSE"""
+        p[0] = p[2]
 
     def p_simple_request(self, p):
         """request : query"""
@@ -182,7 +203,10 @@ class QueryParser:
                 | ISTARTSWITH
                 | ENDSWITH
                 | IENDSWITH
+                | LOWEREQUAL
                 | LOWERTHAN
+                | GREATEREQUAL
+                | GREATERTHAN
                 | RANGE
                 | YOUNGER"""
         p[0] = p[1]

@@ -205,10 +205,10 @@ DINGOS_QUERY_ALLOWED_COLUMNS = {}
 
 DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject'] = {
     "import_timestamp": ("create_timestamp",[]),
-    "timestamp": (None,[]),
-    "name": (None,[]),
-    "identifier": (None,['identifier','identifier__namespace']),
-    "identifier.uid": (None,['identifier']),
+    "timestamp": ("timestamp",[]),
+    "name": ("name",[]),
+    "identifier": ("identifier",['identifier','identifier__namespace']),
+    "identifier.uid": ("identifier.uid",['identifier']),
     "identifier.namespace": ("identifier.namespace.uri",['identifier__namespace']),
     "object_type": ("iobject_type",['iobject_type','iobject_type__namespace']),
     "object_type.name": ("iobject_type.name",['iobject_type']),

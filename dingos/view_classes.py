@@ -17,6 +17,10 @@
 
 import csv, collections, copy, json, StringIO, importlib
 from queryparser.queryparser import QueryParser
+from queryparser.placeholder_parser import PlaceholderParser
+
+import re
+from datetime import date, timedelta
 
 from django import forms, http
 from django.contrib import messages
@@ -44,7 +48,8 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
 from dingos import graph_traversal
 from dingos.core.template_helpers import ConfigDictWrapper
 from dingos.core.utilities import get_dict, replace_by_list
-from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm
+from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm, PlaceholderForm
+from dingos.queryparser.placeholder_parser import PlaceholderParser
 from dingos.models import InfoObject, UserData, Marking2X
 from dingos.queryparser.result_formatting import to_csv
 
@@ -450,6 +455,7 @@ class BasicCustomQueryView(BasicListView):
     title = 'Custom Info Object Search'
 
     form = None
+    placeholder_form = None
     format = None
     distinct = True
 
@@ -478,6 +484,7 @@ class BasicCustomQueryView(BasicListView):
         """
         context = super(BasicCustomQueryView, self).get_context_data(**kwargs)
         context['form'] = self.form
+        context['placeholder_form'] = self.placeholder_form
         context['col_headers'] = self.col_headers
         context['selected_cols'] = self.selected_cols
         context['query']= self.request.GET.get('query','')
@@ -517,19 +524,61 @@ class BasicCustomQueryView(BasicListView):
                 messages.error(self.request, "Please enter a query.")
             else:
                 try:
-                    # Parse query
-                    parser = QueryParser()
                     query = self.form.cleaned_data['query']
+
+                    if "{{" in query and "}}" in query:
+                        placeholders = []
+                        parser = PlaceholderParser()
+                        for raw in re.findall("\{\{[^\}]+\}\}", query):
+                            # Cut {{ and }}
+                            placeholder = parser.parse(raw[2:-2])
+                            placeholders.append({"raw": raw, "parsed": placeholder})
+                        self.placeholder_form = PlaceholderForm(request.GET, placeholders=placeholders)
+
+                        for one in placeholders:
+                            placeholder = one["parsed"]
+
+                            if placeholder["field_name"] in request.GET:
+                                field_value = request.GET[placeholder["field_name"]]
+                                if "interpret_as" in placeholder.keys() and placeholder["interpret_as"] == "date":
+                                    field_value = field_value.strip()
+                                    if field_value.startswith("today"):
+                                        the_date = date.today()
+                                        if re.match("today( )*(\-|\+)( )*\d+", field_value):
+                                            delta_days = field_value.split("today")[1].strip()
+                                            the_date = the_date - timedelta(days=int(delta_days)*(-1))
+                                        field_value = the_date.strftime("%Y-%m-%d")
+                                query = query.replace(one["raw"], "\"%s\"" % field_value)
+
+
+                    parser = QueryParser()
                     self.paginate_by_value = int(self.form.cleaned_data['paginate_by'])
                     if self.form.cleaned_data['page']:
                         self.page_to_show = int(self.form.cleaned_data['page'])
 
-                    # Generate and execute query
-                    formatted_filter_collection = parser.parse(str(query))
+                    # Generate and execute queries
 
-                    filter_collection = formatted_filter_collection.filter_collection
+                    filter_collections = parser.parse(str(query))
 
                     objects = self.query_base.all()
+
+                    # If the user defined a referenced_by-preprocessing
+                    if filter_collections.refby_filter_collection:
+                        # Preprocessing for referenced-by query
+                        refby_filter_collection = filter_collections.refby_filter_collection.filter_collection
+                        objects = refby_filter_collection.build_query(base=objects)
+                        objects = objects.distinct()
+                        # Retrieve pk list out of the object list
+                        pks = [one.pk for one in objects]
+                        pks = graph_traversal.follow_references(pks, **filter_collections.refby_filter_args)
+
+                        # Filter objects
+                        objects = self.query_base.all().filter(pk__in=pks)
+
+                    # Processing for main query
+                    formatted_filter_collection = filter_collections.formatted_filter_collection
+                    filter_collection = formatted_filter_collection.filter_collection
+
                     objects = filter_collection.build_query(base=objects)
 
                     if distinct:
@@ -547,18 +596,18 @@ class BasicCustomQueryView(BasicListView):
                     # Filter selected columns for export
                     formatting_arguments = formatted_filter_collection.build_format_arguments(query_mode=self.query_base.model.__name__)
 
-
                     col_specs = formatting_arguments['columns']
-
                     misc_args = formatting_arguments['kwargs']
+                    prefetch = formatting_arguments['prefetch_related']
+
+
 
                     if col_specs['headers']:
                         self.col_headers = col_specs['headers']
                         self.selected_cols = col_specs['selected_fields']
-                    prefetch = formatting_arguments['prefetch_related']
 
-                    if prefetch:
-                        objects = objects.prefetch_related(*prefetch)
+                        if prefetch:
+                            objects = objects.prefetch_related(*prefetch)
                     else:
                         if isinstance(self.prefetch_related, tuple):
                             objects = objects.prefetch_related(*list(self.prefetch_related))
@@ -566,7 +615,6 @@ class BasicCustomQueryView(BasicListView):
                             raise TypeError("'prefetch_related' must either be True or a tuple of field names.")
 
                     self.queryset = objects
-
 
                     if result_format in POSTPROCESSOR_REGISTRY:
                         p = self.paginator_class(self.queryset, self.paginate_by_value)
@@ -580,11 +628,12 @@ class BasicCustomQueryView(BasicListView):
                                                                     **misc_args)
 
 
+
                         if kwargs.get('api_call'):
                             self.api_result = result
                             self.api_result_content_type = content_type
                             self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
-                            return super(BasicListView, self).get(request, *args, **kwargs)
+                            return super(BasicCustomQueryView, self).get(request, *args, **kwargs)
                         else:
                             response = HttpResponse(content_type=content_type) # '/csv')
                             response.write(result)
@@ -623,6 +672,7 @@ class BasicCustomQueryView(BasicListView):
                     elif result_format == 'table':
                         self.col_headers = col_specs['headers']
                         self.selected_cols = col_specs['selected_fields']
+                        print self.selected_cols
                         return super(BasicListView, self).get(request, *args, **kwargs)
                     else:
                         raise ValueError('Unsupported output format')

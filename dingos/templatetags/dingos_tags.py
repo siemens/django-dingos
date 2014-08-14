@@ -487,6 +487,8 @@ def show_InfoObjectField(oneObject, field):
     """
     Outputs one field of an InfoObject.
     """
+    if field == None:
+        return "ERROR"
     result = oneObject
     fields = field.split('.')
     result = get_from_django_obj(result,fields)
