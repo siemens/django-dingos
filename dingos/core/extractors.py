@@ -26,7 +26,7 @@ import csv
 from dingos.models import InfoObject2Fact
 from dingos.core.utilities import set_dict, get_dict
 from django.core.urlresolvers import reverse
-
+from dingos.core.utilities import get_from_django_obj
 
 
 def extract_fqdn(uri):
@@ -48,16 +48,54 @@ class InfoObjectDetails(object):
 
     """
 
+    DINGOS_QUERY_ALLOWED_COLUMNS = {}
+
+    DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject'] = {
+        "import_timestamp": ("Import Timestamp", "create_timestamp",[]),
+        "timestamp": ("Timestamp", "timestamp",[]),
+        "name": ("Object Name","name",[]),
+        "identifier": ("Identifier", "identifier",['identifier','identifier__namespace']),
+        "identifier.uid": ("Identifier UID", "identifier.uid",['identifier']),
+        "identifier.namespace": ("Identifier Namespace", "identifier.namespace.uri",['identifier__namespace']),
+        "object_type": ("Object Type", "iobject_type",['iobject_type','iobject_type__namespace']),
+        "object_type.name": ("Object Type (name)", "iobject_type.name",['iobject_type']),
+        "object_type.namespace": ("Object Type (namespace)", "iobject_type.namespace.uri",['iobject_type__namespace']),
+        "object_family": ("Object Family", "iobject_family.name",['iobject_family']),
+    }
+
+    DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject2Fact'] = {
+        "fact_term": ("","fact.fact_term.term",['fact__fact_term']),
+        "fact_term_with_attribute": ("","fact.fact_term",['fact__fact_term']),
+        "value": ("","fact.fact_values.value",["fact__fact_values"]),
+        "attribute": ("","fact.fact_term.attribute",['fact__fact_term']),
+        "object.import_timestamp": ("","iobject.create_timestamp",['iobject']),
+        "object.timestamp": ("","iobject.timestamp",['iobject']),
+        "object.identifier.namespace": ("","iobject.identifier.namspace.uri",['iobject__identifier__namespace']),
+        "object.name": ("","iobject.name",['iobject']),
+        "object.object_type.name": ("","iobject.iobject_type.name",['iobject__iobject_type']),
+        "object.object_type.namespace": ("","iobject.iobject_type.namespace.uri",['iobject__iobject_type.namespace']),
+        "object.identifier.uid": ("","iobject.identifier.uid",['iobject__identifier']),
+        "object.object_family": ("","iobject.iobject_family",['iobject__iobject_family']),
+        "object.identifier": ("","iobject.identifier",['iobject__identifier','iobject__identifier__namespace']),
+        "object.object_type": ("","iobject.iobject_type",['iobject__iobject_type','iobject__iobject_type__namespace']),
+    }
+
+
     def __init__(self,*args,**kwargs):
         self.object_list = kwargs.pop('object_list',[])
         self.graph = kwargs.pop('graph',None)
+        self.query_mode = kwargs.pop('query_mode','InfoObject')
+
 
         self.iobject_map = None
         self.io2fs = []
         self.results = []
 
         self.node_map = None
+        self.initialize_object_details()
+        self.initialize_allowed_columns()
 
+    def initialize_object_details(self):
         if self.object_list:
             self.io2fs = self._get_io2fs(map(lambda o:o.pk,list(self.object_list)))
             self.set_iobject_map()
@@ -66,7 +104,61 @@ class InfoObjectDetails(object):
             self.io2fs = self._get_io2fs(self.graph.nodes())
             self._annotate_graph(self.graph)
 
+
+    def initialize_allowed_columns(self):
+        self.allowed_columns = self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode].copy()
+        for (col,col_name) in self.default_columns:
+            self.allowed_columns[col] = (col_name,col,[])
+
+        self.allowed_columns['object_url'] = ('Object URL','_object_url',[])
+
+
+    def init_result_dict(self,obj_or_io2f):
+        if isinstance(obj_or_io2f,InfoObject2Fact):
+            iobject = obj_or_io2f.iobject
+            io2f = obj_or_io2f
+        else:
+            iobject = obj_or_io2f.iobject
+            io2f = None
+
+        return {'_object':iobject,
+                '_object_url': reverse('url.dingos.view.infoobject', args=[iobject.pk])}
+
+
     def export(self,*args,**kwargs):
+
+        def recursive_join(xxs, join_string):
+            if isinstance(xxs, list):
+                return join_string.join(map(lambda yys: recursive_join(yys, join_string), xxs))
+            else:
+                return str(xxs)
+
+
+        def fill_row(result,columns,mode='json'):
+            if mode == 'json':
+                row = {}
+            else:
+                row = []
+            for column in columns:
+                column_key = self.allowed_columns[column][1]
+                if column_key in result:
+                    column_content = result.get(column_key)
+                else:
+                    field_components = column_key.split('.')
+                    value = get_from_django_obj(result['_object'], field_components)
+                    if isinstance(value, list):
+                        if len(result) > 1:
+                            column_content = recursive_join(value, kwargs.get(','))
+                        else:
+                            column_content = value[0]
+                    else:
+                        column_content = value
+                if mode == 'json':
+                    row[column] = column_content
+                else:
+                    row.append(column_content)
+
+            return row
 
         for key in kwargs:
             # This is a hack: the query parser does not remove enclosing quotes
@@ -93,9 +185,7 @@ class InfoObjectDetails(object):
 
             for result in self.results:
 
-                row = {}
-                for column in columns:
-                    row[column] = result.get(column,None)
+                row = fill_row(result,columns,mode='json')
                 output.append(row)
 
             return ('application/json',json.dumps(output,indent=2))
@@ -116,11 +206,9 @@ class InfoObjectDetails(object):
                 writer.writerow(headline)
 
             for result in self.results:
-                row = []
-
-                for column in columns:
-                    row.append(result.get(column,None))
+                row = fill_row(result,columns,mode='csv')
                 writer.writerow(row)
+
             return('txt',output.getvalue())
 
 

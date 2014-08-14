@@ -525,7 +525,7 @@ class BasicCustomQueryView(BasicListView):
             if request.GET.get('query','') == "":
                 messages.error(self.request, "Please enter a query.")
             else:
-                try:
+                if True: #try:
                     query = self.form.cleaned_data['query']
 
                     if "{{" in query and "}}" in query:
@@ -622,9 +622,13 @@ class BasicCustomQueryView(BasicListView):
                         p = self.paginator_class(self.queryset, self.paginate_by_value)
                         response = HttpResponse(content_type='text') # '/csv')
 
-                        postprocessor_class = POSTPROCESSOR_REGISTRY[result_format]
-                        postprocessor = postprocessor_class(object_list=p.page(self.page_to_show).object_list)
+                        #postprocessor_class = POSTPROCESSOR_REGISTRY[result_format]
+                        #postprocessor = postprocessor_class(object_list=p.page(self.page_to_show).object_list)
 
+
+                        postprocessor = formatting_arguments['postprocessor']
+                        postprocessor.object_list = p.page(self.page_to_show).object_list
+                        postprocessor.initialize_object_details()
 
                         (content_type,result) = postprocessor.export(*col_specs['selected_fields'],
                                                                     **misc_args)
@@ -678,8 +682,8 @@ class BasicCustomQueryView(BasicListView):
                     else:
                         raise ValueError('Unsupported output format')
 
-                except Exception as ex:
-                    messages.error(self.request, str(ex))
+                #except Exception as ex:
+                #    messages.error(self.request, str(ex))
         return super(BasicListView, self).get(request, *args, **kwargs)
 
 class BasicJSONView(CommonContextMixin,
