@@ -15,6 +15,8 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from django.utils.encoding import smart_text
+
 import re
 
 def listify(x):
@@ -161,7 +163,7 @@ def get_from_django_obj(obj, fields):
     it is likely to mess up in more general cases...
     """
     if not fields:
-        return str(obj)
+        return smart_text(obj)
     if 'Manager' in "%s" % obj.__class__:
         return (map(lambda o: get_from_django_obj(o, fields[1:]), obj.all()))
     else:

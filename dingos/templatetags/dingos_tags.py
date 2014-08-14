@@ -28,6 +28,8 @@ from dingos.core.utilities import get_from_django_obj
 from dingos.models import BlobStorage
 
 
+
+
 register = template.Library()
 
 
