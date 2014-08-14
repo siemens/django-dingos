@@ -58,9 +58,9 @@ from core.http_helpers import get_query_string
 POSTPROCESSOR_REGISTRY = {}
 
 
-for (processor_name,(module,class_name)) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
-    my_module = importlib.import_module(module)
-    POSTPROCESSOR_REGISTRY[processor_name] = getattr(my_module,class_name)
+for (postprocessor_key,postprocessor_data) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
+    my_module = importlib.import_module(postprocessor_data['module'])
+    POSTPROCESSOR_REGISTRY[postprocessor_key] = getattr(my_module,postprocessor_data['class'])
 
 
 class UncountingPaginator(Paginator):
@@ -628,7 +628,6 @@ class BasicCustomQueryView(BasicListView):
 
                         (content_type,result) = postprocessor.export(*col_specs['selected_fields'],
                                                                     **misc_args)
-
 
 
                         if kwargs.get('api_call'):

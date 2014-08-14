@@ -629,6 +629,8 @@ class InfoObjectExportsView(BasicTemplateView):
             else:
                 columns = []
             (content_type,result) = postprocessor.export(*columns,**self.request.GET)
+            print result
+
         else:
             content_type = None
             result = 'NO EXPORTER %s DEFINED' % exporter
