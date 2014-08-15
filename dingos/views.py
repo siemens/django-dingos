@@ -616,17 +616,17 @@ class InfoObjectExportsView(BasicTemplateView):
                                  )
 
 
-        print "Graph %s" % graph.node
         exporter = self.kwargs.get('exporter', None)
 
         if exporter in POSTPROCESSOR_REGISTRY:
+            print exporter
+
             postprocessor_class = POSTPROCESSOR_REGISTRY[exporter]
+            print postprocessor_class
             postprocessor = postprocessor_class(graph=graph,
                                                 query_mode='InfoObject',
                                                 enrich_details=True)
 
-            print "P graph %s" % postprocessor.graph
-            print "P object list %s" % postprocessor.object_list
 
             if 'columns' in self.request.GET:
                 columns = self.request.GET.get('columns')
@@ -635,7 +635,7 @@ class InfoObjectExportsView(BasicTemplateView):
             else:
                 columns = []
             (content_type,result) = postprocessor.export(*columns,**self.request.GET)
-            print result
+
 
         else:
             content_type = None

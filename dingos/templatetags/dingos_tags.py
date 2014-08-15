@@ -513,6 +513,15 @@ def show_InfoObjectField(oneObject, field):
         return result
 
 
+
+@register.simple_tag
+def dict_lookup(dict, key):
+    print dict
+    print key
+    return dict.get(key,'ERROR')
+
+
+
 @register.assignment_tag(takes_context=True)
 def obj_by_pk(context, *args,**kwargs):
     return getattr(context['view'],'obj_by_pk')(*args,**kwargs)

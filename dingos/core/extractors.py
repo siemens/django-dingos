@@ -27,6 +27,8 @@ from dingos.models import InfoObject2Fact
 from dingos.core.utilities import set_dict, get_dict
 from django.core.urlresolvers import reverse
 from dingos.core.utilities import get_from_django_obj
+from dingos.graph_traversal import follow_references
+from dingos.graph_utils import dfs_preorder_nodes
 
 
 def extract_fqdn(uri):
@@ -92,6 +94,7 @@ class InfoObjectDetails(object):
         self.object_list = kwargs.pop('object_list',[])
         self.io2fs = kwargs.pop('io2f_list',[])
         self.graph = kwargs.pop('graph',None)
+        self.package_graph = None
         self.enrich_details = kwargs.pop('enrich_details',self.enrich_details)
         self.query_mode = kwargs.pop('query_mode','InfoObject')
 
@@ -116,13 +119,17 @@ class InfoObjectDetails(object):
 
 
     def initialize_allowed_columns(self):
-        if not self.allowed_columns:
-            for (col,col_name) in self.default_columns:
-                self.allowed_columns[col] = (col_name,col,[])
+        for (col,col_name) in self.default_columns:
+            self.allowed_columns[col] = (col_name,col,[])
 
         self.allowed_columns.update(self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode])
 
         self.allowed_columns['object_url'] = ('Object URL','_object_url',[])
+
+        self.allowed_columns['package_names'] = ('Package Names','_package_names',[])
+        self.allowed_columns['package_urls'] = ('Package URLs','_package_urls',[])
+
+
 
 
     def init_result_dict(self,obj_or_io2f):
@@ -133,12 +140,46 @@ class InfoObjectDetails(object):
             iobject = obj_or_io2f
             io2f = None
 
-        return {'_object':iobject,
-                '_io2f' : io2f,
-                '_object_url': reverse('url.dingos.view.infoobject', args=[iobject.pk])}
+
+        result =  {'_object':iobject,
+                   '_io2f' : io2f,
+                   '_object_url': reverse('url.dingos.view.infoobject', args=[iobject.pk])}
+
+
+        if self.package_graph:
+            # The user also wants info about the packages that contain the object in question
+            node_ids = list(dfs_preorder_nodes(self.package_graph, source=iobject.pk))
+
+            package_names = []
+            package_urls = []
+            for id in node_ids:
+                node = self.package_graph.node[id]
+                # TODO: Below is STIX-specific and should be factored out
+                # by making the iobject type configurable
+                if "STIX_Package" in node['iobject_type']:
+                    package_names.append(node['name'])
+                    package_urls.append(node['url'])
+            result['_package_names'] = "; ".join(package_names)
+            result['_package_urls'] = "; ".join(package_urls)
+
+
+        return result
+
+
+
+    def additional_calculations(self,columns):
+        if 'package_names' in columns or 'package_urls' in columns:
+            if not self.package_graph:
+                if self.object_list:
+                    pks = [one.pk for one in self.object_list]
+                else:
+                    pks = [one.iobject.pk for one in self.io2fs]
+                self.package_graph = follow_references(pks, direction= 'up')
 
 
     def export(self,*args,**kwargs):
+
+        self.additional_calculations(columns=args)
 
         def recursive_join(xxs, join_string=','):
             if isinstance(xxs, list):
@@ -159,6 +200,7 @@ class InfoObjectDetails(object):
                 row = []
             for column in columns:
                 print self.allowed_columns
+                print self.default_columns
                 column_key = self.allowed_columns[column][1]
                 if column_key in result:
                     column_content = result.get(column_key)
@@ -196,7 +238,7 @@ class InfoObjectDetails(object):
             format = kwargs.pop('format','json')
         output = []
 
-        if 'json' in format:
+        if format in ['json','dict']:
 
 
             if not args:
@@ -211,7 +253,10 @@ class InfoObjectDetails(object):
                 row = fill_row(result,columns,mode='json')
                 output.append(row)
 
-            return ('application/json',json.dumps(output,indent=2))
+            if format == 'json':
+                return ('application/json',json.dumps(output,indent=2))
+            else:
+                return ('',output)
         else: # default csv
             output = StringIO.StringIO()
             writer = csv.writer(output)
@@ -376,6 +421,26 @@ class json_export(InfoObjectDetails):
     def extractor(self,**kwargs):
         print self.object_list
         self.results = []
+        if self.object_list:
+            for obj in self.object_list:
+                self.results.append(self.init_result_dict(obj))
+        else:
+            for io2f in self.io2fs:
+                self.results.append(self.init_result_dict(io2f))
+
+
+class table_view(InfoObjectDetails):
+    @property
+    def  default_columns(self):
+        return map(lambda x: (x[0],x[1][0]), self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode].items())
+
+
+    query_mode_restriction = []
+    enrich_details = False
+    format = 'dict'
+
+    def extractor(self,**kwargs):
+        print self.object_list
         if self.object_list:
             for obj in self.object_list:
                 self.results.append(self.init_result_dict(obj))

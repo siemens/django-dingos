@@ -179,6 +179,11 @@ class FormattedFilterCollection:
 
     def build_format_arguments(self,query_mode=FilterCollection.INFO_OBJECT):
 
+        if self.format == 'default':
+            return {'columns': {'headers':[],'selected_fields':[]},
+                    'kwargs': [],
+                    'prefetch_related':[],
+                    'postprocessor' : None}
 
         if self.format in POSTPROCESSOR_REGISTRY:
             postprocessor_class = POSTPROCESSOR_REGISTRY[self.format]
