@@ -66,20 +66,20 @@ class InfoObjectDetails(object):
     }
 
     DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject2Fact'] = {
-        "fact_term": ("","fact.fact_term.term",['fact__fact_term']),
-        "fact_term_with_attribute": ("","fact.fact_term",['fact__fact_term']),
-        "value": ("","fact.fact_values.value",["fact__fact_values"]),
-        "attribute": ("","fact.fact_term.attribute",['fact__fact_term']),
-        "object.import_timestamp": ("","iobject.create_timestamp",['iobject']),
-        "object.timestamp": ("","iobject.timestamp",['iobject']),
-        "object.identifier.namespace": ("","iobject.identifier.namespace.uri",['iobject__identifier__namespace']),
-        "object.name": ("","iobject.name",['iobject']),
-        "object.object_type.name": ("","iobject.iobject_type.name",['iobject__iobject_type']),
-        "object.object_type.namespace": ("","iobject.iobject_type.namespace.uri",['iobject__iobject_type__namespace']),
-        "object.identifier.uid": ("","iobject.identifier.uid",['iobject__identifier']),
-        "object.object_family": ("","iobject.iobject_family",['iobject__iobject_family']),
-        "object.identifier": ("","iobject.identifier",['iobject__identifier','iobject__identifier__namespace']),
-        "object.object_type": ("","iobject.iobject_type",['iobject__iobject_type','iobject__iobject_type__namespace']),
+        "fact_term": ("Fact Term (w/o attribute)","fact.fact_term.term",['fact__fact_term']),
+        "fact_term_with_attribute": ("Fact term","fact.fact_term",['fact__fact_term']),
+        "value": ("Value","fact.fact_values.value",["fact__fact_values"]),
+        "attribute": ("Fact term attribute","fact.fact_term.attribute",['fact__fact_term']),
+        "object.import_timestamp": ("Import Timestamp","iobject.create_timestamp",['iobject']),
+        "object.timestamp": ("Creation Timestamp","iobject.timestamp",['iobject']),
+        "object.identifier.namespace": ("Identifier Namespace","iobject.identifier.namespace.uri",['iobject__identifier__namespace']),
+        "object.name": ("Object name","iobject.name",['iobject']),
+        "object.object_type.name": ("Object type name","iobject.iobject_type.name",['iobject__iobject_type']),
+        "object.object_type.namespace": ("Object type namespace","iobject.iobject_type.namespace.uri",['iobject__iobject_type__namespace']),
+        "object.identifier.uid": ("Identifier UID","iobject.identifier.uid",['iobject__identifier']),
+        "object.object_family": ("Object Family","iobject.iobject_family",['iobject__iobject_family']),
+        "object.identifier": ("Identifier","iobject.identifier",['iobject__identifier','iobject__identifier__namespace']),
+        "object.object_type": ("Object Type","iobject.iobject_type",['iobject__iobject_type','iobject__iobject_type__namespace']),
     }
 
 
