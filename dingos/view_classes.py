@@ -353,7 +353,7 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
 
     breadcrumbs = ()
 
-    counting_paginator = False
+    counting_paginator = True
 
     @property
     def paginator_class(self):
@@ -382,7 +382,7 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
 
     breadcrumbs = ()
 
-    counting_paginator = False
+    counting_paginator = True
 
     graph = None
 
@@ -450,7 +450,7 @@ class BasicTemplateView(CommonContextMixin,
 class BasicCustomQueryView(BasicListView):
     page_to_show = 1
 
-    counting_paginator = False
+    counting_paginator = True
 
     template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
 
