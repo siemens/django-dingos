@@ -59,7 +59,6 @@ from dingos.graph_traversal import follow_references
 
 class InfoObjectList(BasicFilterView):
 
-    counting_paginator = False
 
     exclude_internal_objects = True
 
@@ -563,7 +562,7 @@ class CustomInfoObjectSearchView(BasicCustomQueryView):
 
 
 class CustomFactSearchView(BasicCustomQueryView):
-    counting_paginator = False
+
 
     template_name = 'dingos/%s/searches/CustomFactSearch.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Custom Fact Search'
