@@ -525,7 +525,7 @@ class BasicCustomQueryView(BasicListView):
             if request.GET.get('query','') == "":
                 messages.error(self.request, "Please enter a query.")
             else:
-                if True: #try:
+                try:
                     query = self.form.cleaned_data['query']
 
                     if "{{" in query and "}}" in query:
@@ -658,8 +658,8 @@ class BasicCustomQueryView(BasicListView):
                     else:
                         raise ValueError('Unsupported output format')
 
-                #except Exception as ex:
-                #    messages.error(self.request, str(ex))
+                except Exception as ex:
+                    messages.error(self.request, str(ex))
         return super(BasicListView, self).get(request, *args, **kwargs)
 
 class BasicJSONView(CommonContextMixin,

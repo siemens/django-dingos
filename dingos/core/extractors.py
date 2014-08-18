@@ -189,7 +189,7 @@ class InfoObjectDetails(object):
 
 
         def fill_row(result,columns,mode='json'):
-            print result
+
             if self.query_mode == 'InfoObject':
                 model_key = '_object'
             else:
@@ -199,8 +199,7 @@ class InfoObjectDetails(object):
             else:
                 row = []
             for column in columns:
-                print self.allowed_columns
-                print self.default_columns
+
                 column_key = self.allowed_columns[column][1]
                 if column_key in result:
                     column_content = result.get(column_key)
@@ -419,7 +418,7 @@ class json_export(InfoObjectDetails):
     enrich_details = False
     format = 'json'
     def extractor(self,**kwargs):
-        print self.object_list
+
         self.results = []
         if self.object_list:
             for obj in self.object_list:
@@ -440,7 +439,7 @@ class table_view(InfoObjectDetails):
     format = 'dict'
 
     def extractor(self,**kwargs):
-        print self.object_list
+
         if self.object_list:
             for obj in self.object_list:
                 self.results.append(self.init_result_dict(obj))
