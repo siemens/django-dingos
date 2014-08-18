@@ -159,8 +159,8 @@ class InfoObjectDetails(object):
                 if "STIX_Package" in node['iobject_type']:
                     package_names.append(node['name'])
                     package_urls.append(node['url'])
-            result['_package_names'] = "; ".join(package_names)
-            result['_package_urls'] = "; ".join(package_urls)
+            result['_package_names'] = "| ".join(package_names)
+            result['_package_urls'] = "| ".join(package_urls)
 
 
         return result
