@@ -39,7 +39,9 @@ class EditSavedSearchesForm(forms.Form):
 
 class CustomQueryForm(forms.Form):
     query = forms.CharField(required=False,widget=widgets.Textarea(attrs={'cols':100,'rows':10,'style': 'height:auto; width:auto;'}))
-    paginate_by = forms.ChoiceField(choices=[(str(x), str(x)) for x in [50,100,200,300,400,500,1000,2]],required=False,initial='100')
+    _choices = [(str(x), str(x)) for x in [50,100,200,300,400,500,1000,2]]
+    _choices.append(('0','ALL (DANGER!)'))
+    paginate_by = forms.ChoiceField(choices=_choices,required=False,initial='100')
     page = forms.IntegerField(required=False,initial=1,widget=forms.HiddenInput)
 
 
