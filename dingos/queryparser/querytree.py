@@ -182,6 +182,8 @@ class FormattedFilterCollection:
                 if ':' in spec:
                     # Use user-defined header
                     (header, selected_field) = spec.split(':')
+                    header = header.strip()
+                    selected_field = selected_field.strip()
                 else:
                     # Use selected_field as header
                     header = selected_field = spec
