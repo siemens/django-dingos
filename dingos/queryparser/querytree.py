@@ -167,11 +167,12 @@ class FormattedFilterCollection:
         # Split format_args into col_specs and misc_args (contains additional output configuration)
         col_specs = []
         misc_args = {}
-        for format_arg in self.format_args:
-            if type(format_arg) is dict:
-                misc_args[format_arg['key']] = format_arg['value']
-            else:
-                col_specs.append(format_arg)
+        if self.format_args:
+            for format_arg in self.format_args:
+                if type(format_arg) is dict:
+                    misc_args[format_arg['key']] = format_arg['value']
+                else:
+                    col_specs.append(format_arg)
 
         # Reformat structure of column specifications
         prefetch_related_fields = set()
