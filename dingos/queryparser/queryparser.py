@@ -48,7 +48,8 @@ class QueryParser:
         refbyargs:
         refbyargs:  OPEN formatargs CLOSE
         request:    query
-        request:    query FORMATSIGN ID OPEN formatargs CLOSE
+        request:    query formatext
+        formatext:  FORMATSIGN ID OPEN formatargs CLOSE
         formatargs:
         formatargs: formatarg COMMA formatargs
         formatargs: formatarg
@@ -111,8 +112,12 @@ class QueryParser:
         p[0] = FormattedFilterCollection(p[1])
 
     def p_request(self, p):
-        """request : query FORMATSIGN ID OPEN formatargs CLOSE"""
-        p[0] = FormattedFilterCollection(p[1], p[5], p[3])
+        """request : query formatext"""
+        p[0] = FormattedFilterCollection(p[1], p[2]['formatargs'], p[2]['id'])
+
+    def p_formatext(self, p):
+        """formatext : FORMATSIGN ID OPEN formatargs CLOSE"""
+        p[0] = {'id': p[2], 'formatargs': p[4]}
 
     def p_formatargs_empty(self, p):
         """formatargs :"""

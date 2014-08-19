@@ -581,7 +581,8 @@ class BasicCustomQueryView(BasicListView):
                         formatted_filter_collection = filter_collections.formatted_filter_collection
                         filter_collection = formatted_filter_collection.filter_collection
 
-                        objects = filter_collection.build_query(base=objects)
+                        if filter_collection:
+                            objects = filter_collection.build_query(base=objects)
 
                         if distinct:
                             if isinstance(distinct, tuple):
