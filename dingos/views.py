@@ -45,7 +45,8 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_USER_PREFS_TYPE_NAME, \
     DINGOS_SAVED_SEARCHES_TYPE_NAME, \
     DINGOS_DEFAULT_SAVED_SEARCHES, \
-    DINGOS_OBJECTTYPE_VIEW_MAPPING
+    DINGOS_OBJECTTYPE_VIEW_MAPPING, \
+    DINGOS_INFOOBJECT_GRAPH_TYPES
 
 from braces.views import LoginRequiredMixin
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView, BasicCustomQueryView
@@ -55,6 +56,8 @@ from queryparser.querytree import FilterCollection, QueryParserException
 
 
 from dingos.graph_traversal import follow_references
+
+from dingos.core.utilities import match_regex_list
 
 
 class InfoObjectList(BasicFilterView):
@@ -678,29 +681,44 @@ class InfoObjectJSONGraph(BasicJSONView):
             POST = self.request.POST
             iobject_id = POST.get('iobject_id', None)
 
+        iobject = InfoObject.objects.all().filter(pk=iobject_id)[0]
+        graph_mode = None
+        for graph_type in DINGOS_INFOOBJECT_GRAPH_TYPES:
+            family_patterns = graph_type['info_object_families']
+            type_patterns = graph_type['info_object_types']
+            family = str(iobject.iobject_family)
+            type = str(iobject.iobject_type)
+            if match_regex_list(family_patterns, family) and match_regex_list(type_patterns, type):
+                available_modes = graph_type['available_modes']
+                res['available_modes'] = available_modes
+
+                chosen_mode = graph_type['default_mode']
+                if self.request.GET.get('mode') and self.request.GET.get('mode') in available_modes:
+                    chosen_mode = self.request.GET.get('mode')
+
+                graph_mode = available_modes[chosen_mode]
+                break
+
+
         #graph = follow_references([iobject_id],
         #                          skip_terms = self.skip_terms,
         #                          direction='up',
         #                          reverse_direction=True,
         #                          max_nodes=self.max_objects)
 
-
         graph= follow_references([iobject_id],
                                  skip_terms = self.skip_terms,
-                                 direction='full',
                                  max_nodes=self.max_objects,
+                                 **graph_mode['traversal_args']
                                  )
-
-
-
 
         if iobject_id:
             res['status'] = True
+
             if graph.graph['max_nodes_reached']:
                 res['msg'] = "Partial reference graph (%s InfoObjects)" % self.max_objects
             else:
                 res['msg'] = "Reference graph"
-
 
             # test-code for showing only objects and their relations
             #nodes_to_remove = []

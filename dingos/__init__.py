@@ -304,3 +304,16 @@ DINGOS_OBJECTTYPE_ICON_RELIST_MAPPING = {}
 
 DINGOS_SEARCH_POSTPROCESSOR_REGISTRY = {}
 
+
+DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_families':   ['.*'],
+                                  'info_object_types':      ['.*'],
+                                  'default_mode':           'upgraph',
+                                  'available_modes':        {'fullgraph': {'menu_name':         'Full Graph',
+                                                                           'description':       'Searches higher and lower nodes.',
+                                                                           'traversal_args':    {'direction': 'full'}},
+                                                             'upgraph':   {'menu_name':         'Up-Graph',
+                                                                           'description':       'Searches higher nodes.',
+                                                                           'traversal_args':    {'direction': 'up'}},
+                                                             'downgraph': {'menu_name':         'Down-Graph',
+                                                                           'description':       'Searches lower nodes.',
+                                                                           'traversal_args':    {'direction': 'down'}}}}]
