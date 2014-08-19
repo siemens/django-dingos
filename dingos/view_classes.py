@@ -579,10 +579,9 @@ class BasicCustomQueryView(BasicListView):
 
                         # Processing for main query
                         formatted_filter_collection = filter_collections.formatted_filter_collection
-                        filter_collection = formatted_filter_collection.filter_collection
 
-                        if filter_collection:
-                            objects = filter_collection.build_query(base=objects)
+                        if hasattr(formatted_filter_collection, 'filter_collection'):
+                            objects = formatted_filter_collection.filter_collection.build_query(base=objects)
 
                         if distinct:
                             if isinstance(distinct, tuple):
@@ -679,7 +678,7 @@ class BasicCustomQueryView(BasicListView):
                         else:
                             raise ValueError('Unsupported output format')
 
-                except Exception as ex:
+                except DataError as ex:
                     messages.error(self.request, str(ex))
         return super(BasicListView, self).get(request, *args, **kwargs)
 
