@@ -46,6 +46,7 @@ class QueryParser:
         refbyrequest: request
         refbyrequest: refby REFBYSIGN request
         refbyrequest: refby
+        refbyrequest: refby formatext
         refby:      REFERENCED_BY refbyargs COLON OPEN request CLOSE
         refbyargs:
         refbyargs:  OPEN formatargs CLOSE
@@ -103,7 +104,14 @@ class QueryParser:
 
     def p_refby_only(self, p):
         """refbyrequest : refby"""
-        formatted_filter_collection = FormattedFilterCollection(FilterCollection()) # Dummy collections
+        # Collection without query
+        formatted_filter_collection = FormattedFilterCollection(FilterCollection())
+        p[0] = ReferencedByFilterCollection(formatted_filter_collection, p[1]['refbyrequest'], p[1]['refbyargs'])
+
+    def p_refby_formatted(self, p):
+        """refbyrequest : refby formatext"""
+        # Collection without query but with format information
+        formatted_filter_collection = FormattedFilterCollection(FilterCollection(), p[2]['formatargs'], p[2]['id'])
         p[0] = ReferencedByFilterCollection(formatted_filter_collection, p[1]['refbyrequest'], p[1]['refbyargs'])
 
     def p_refby(self, p):
