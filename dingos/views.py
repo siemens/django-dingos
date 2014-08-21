@@ -40,7 +40,7 @@ from dingos.view_classes import BasicJSONView, POSTPROCESSOR_REGISTRY
 import csv
 
 from dingos.filter import InfoObjectFilter, CompleteInfoObjectFilter,FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
-from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm
+from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm, OAuthInfoForm, OAuthNewClientForm
 
 from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, \

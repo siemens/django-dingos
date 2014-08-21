@@ -14,13 +14,13 @@ def get_saved_searches_submenu(request):
     ssd = ssDummy()
     ssd.request = request
     saved_searches = ssd.get_user_data().get('saved_searches', {})
-    
+
     for source_name, source_saved_search in saved_searches.iteritems():
-        for ss in source_saved_search:            
-            submenu += (MenuItem(ss.get('title', '<NONE>'), 
+        for ss in source_saved_search:
+            submenu += (MenuItem(ss.get('title', '<NONE>'),
                                  http_helpers.saved_search_url(ss),
                                  weight = ss.get('weight', 10) ),)
-    return submenu        
+    return submenu
 
 
 
@@ -32,9 +32,9 @@ Menu.add_item( "mantis_main",
                             MenuItem("Info Object List (filter by ID)", "%s?&o=-create_timestamp" % reverse("url.dingos.list.infoobject.by_id"), ),
                             MenuItem("Fact Search (simple)", reverse("url.dingos.search.fact.simple"),  ),
                             MenuItem("Fact Search (unique)", reverse("url.dingos.search.fact.simple.unique"),  ),
-                            MenuItem("Info Object Query", reverse("url.dingos.admin.custominfoobjectsearch"), 
+                            MenuItem("Info Object Query", reverse("url.dingos.admin.custominfoobjectsearch"),
                                      ),
-                            MenuItem("Fact Query", reverse("url.dingos.admin.customfactsearch"), 
+                            MenuItem("Fact Query", reverse("url.dingos.admin.customfactsearch"),
                                      ),
                         ),
                         check = lambda request: request.user.is_authenticated()
