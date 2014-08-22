@@ -28,7 +28,7 @@
 {% block content %}
     <form id="saved-search-edit" action="" method="post">{% csrf_token %}
         <div class="grp-row">
-            {{ newclientform.as_table }}<br/>
+            {{ newclientform.as_table }}
             <input type="submit" name="generate_new_client" value="Generate key pair" />
         </div>
         <br/>
