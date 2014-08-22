@@ -320,8 +320,15 @@
 		// Load graph data from backend
 		$.getJSON('graph', function(data){
 		    if(data.status){
+
+			// Don't render the graph if we have more than 150 nodes
+			if(data.data.nodes.length > 150)
+			    return;
+
 			// Set title of graph box
 			$('h2', graph_box).text(data.msg);
+
+			// Do the rendering
 			render_graph(data.data);
 		    }else{
 			//Error fetching graph data
