@@ -402,9 +402,9 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
             return super(BasicFilterView,self).get(request, *args, **kwargs)
         else:
             match = urlresolvers.resolve(request.path_info)
-            
+
             # write data into session
-            request.session['new_search'] = { 
+            request.session['new_search'] = {
                 # do the whole magic within a single line (strip empty elements + action, urlencode, creating GET string
                 "parameter" : "&".join(list( "%s=%s" % (k,v) for k, v in request.GET.iteritems() if v and k != "action")),
                 "view" : match.url_name,
@@ -553,6 +553,7 @@ class BasicCustomQueryView(BasicListView):
                                 query = query.replace(one["raw"], "\"%s\"" % field_value)
 
 
+
                     parser = QueryParser()
                     self.paginate_by_value = int(self.form.cleaned_data['paginate_by'])
                     if self.form.cleaned_data['page']:
@@ -561,6 +562,7 @@ class BasicCustomQueryView(BasicListView):
                     # Generate and execute queries
 
                     filter_collections = parser.parse(str(query))
+
 
                     objects = self.query_base.all()
 
@@ -576,6 +578,7 @@ class BasicCustomQueryView(BasicListView):
 
                         # Filter objects
                         objects = self.query_base.all().filter(pk__in=pks)
+
 
                     # Processing for main query
                     formatted_filter_collection = filter_collections.formatted_filter_collection
@@ -601,7 +604,6 @@ class BasicCustomQueryView(BasicListView):
                     col_specs = formatting_arguments['columns']
                     misc_args = formatting_arguments['kwargs']
                     prefetch = formatting_arguments['prefetch_related']
-
 
 
                     if col_specs['headers']:
@@ -646,7 +648,7 @@ class BasicCustomQueryView(BasicListView):
                             self.selected_cols = col_specs['selected_fields']
                             self.template_name = 'dingos/%s/searches/CustomSearch.html' % DINGOS_TEMPLATE_FAMILY
                             return super(BasicListView, self).get(request, *args, **kwargs)
-                        if kwargs.get('api_call'):
+                        if request.GET.get('api_call'):
                             self.api_result = result
                             self.api_result_content_type = content_type
                             self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
