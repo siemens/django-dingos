@@ -22,25 +22,24 @@
 {% load dingos_tags %}
 
 {% block content_title %}
-    <h1>Edit OAuth Keys for user {{ user.username }}</h1>
+    <h1>Edit API Keys for user "{{ user.username }}"</h1>
 {% endblock %}
 
 {% block content %}
     <form id="saved-search-edit" action="" method="post">{% csrf_token %}
         <div class="grp-row">
             {{ newclientform.as_table }}
-            <input type="submit" name="generate_new_client" value="Generate key pair" />
+            <input type="submit" name="generate_new_client" value="Generate Key" />
         </div>
         <br/>
 
         <div class="grp-group grp-tabular" id="iobject_type_set-group">
-            <h2>Available searches</h2>
+            <h2>Your API keys</h2>
             <div class="grp-module grp-table">
                 <div class="grp-module grp-thead">
                     <div class="grp-tr">
-                        <div class="grp-th">OAuth Client</div>
-                        <div class="grp-th">Client ID</div>
-                        <div class="grp-th">Client Secret</div>
+                        <div class="grp-th">Title</div>
+                        <div class="grp-th">API key</div>
                         <div class="grp-th" style="text-align:right;">Actions</div>
                     </div>
                 </div>
@@ -50,9 +49,6 @@
                         <div class="grp-tr">
                             <div class="grp-td">
                                 {{form.client_name}}
-                            </div>
-                            <div class="grp-td">
-                                {{form.client_id}}
                             </div>
                             <div class="grp-td">
                                 {{form.client_secret}}
