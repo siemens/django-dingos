@@ -580,8 +580,9 @@ class BasicCustomQueryView(BasicListView):
                     # Processing for main query
                     formatted_filter_collection = filter_collections.formatted_filter_collection
                     filter_collection = formatted_filter_collection.filter_collection
+                    if hasattr(formatted_filter_collection, 'filter_collection'):
+                        objects = formatted_filter_collection.filter_collection.build_query(base=objects)
 
-                    objects = filter_collection.build_query(base=objects)
 
                     if distinct:
                         if isinstance(distinct, tuple):
