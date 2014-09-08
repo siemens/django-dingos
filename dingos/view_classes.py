@@ -637,8 +637,8 @@ class BasicCustomQueryView(BasicListView):
                             postprocessor.io2fs = p.page(self.page_to_show).object_list
 
 
-                            (content_type,result) = postprocessor.export(*col_specs['selected_fields'],
-                                                                        **misc_args)
+                        (content_type,result) = postprocessor.export(*col_specs['selected_fields'],
+                                                                     **misc_args)
 
 
                         if result_format == 'table':
