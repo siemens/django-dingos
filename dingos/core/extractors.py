@@ -26,7 +26,9 @@ import csv
 from dingos.models import InfoObject2Fact
 from dingos.core.utilities import set_dict, get_dict
 from django.core.urlresolvers import reverse
-
+from dingos.core.utilities import get_from_django_obj
+from dingos.graph_traversal import follow_references
+from dingos.graph_utils import dfs_preorder_nodes
 
 
 def extract_fqdn(uri):
@@ -48,25 +50,175 @@ class InfoObjectDetails(object):
 
     """
 
+    DINGOS_QUERY_ALLOWED_COLUMNS = {}
+
+    DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject'] = {
+        "import_timestamp": ("Import Timestamp", "create_timestamp",[]),
+        "timestamp": ("Timestamp", "timestamp",[]),
+        "name": ("Object Name","name",[]),
+        "identifier": ("Identifier", "identifier",['identifier','identifier__namespace']),
+        "identifier.uid": ("Identifier UID", "identifier.uid",['identifier']),
+        "identifier.namespace": ("Identifier Namespace", "identifier.namespace.uri",['identifier__namespace']),
+        "object_type": ("Object Type", "iobject_type",['iobject_type','iobject_type__namespace']),
+        "object_type.name": ("Object Type (name)", "iobject_type.name",['iobject_type']),
+        "object_type.namespace": ("Object Type (namespace)", "iobject_type.namespace.uri",['iobject_type__namespace']),
+        "object_family": ("Object Family", "iobject_family.name",['iobject_family']),
+    }
+
+    DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject2Fact'] = {
+        "fact_term": ("Fact Term (w/o attribute)","fact.fact_term.term",['fact__fact_term']),
+        "fact_term_with_attribute": ("Fact term","fact.fact_term",['fact__fact_term']),
+        "value": ("Value","fact.fact_values.value",["fact__fact_values"]),
+        "attribute": ("Fact term attribute","fact.fact_term.attribute",['fact__fact_term']),
+        "object.import_timestamp": ("Import Timestamp","iobject.create_timestamp",['iobject']),
+        "object.timestamp": ("Creation Timestamp","iobject.timestamp",['iobject']),
+        "object.identifier.namespace": ("Identifier Namespace","iobject.identifier.namespace.uri",['iobject__identifier__namespace']),
+        "object.name": ("Object name","iobject.name",['iobject']),
+        "object.object_type.name": ("Object type name","iobject.iobject_type.name",['iobject__iobject_type']),
+        "object.object_type.namespace": ("Object type namespace","iobject.iobject_type.namespace.uri",['iobject__iobject_type__namespace']),
+        "object.identifier.uid": ("Identifier UID","iobject.identifier.uid",['iobject__identifier']),
+        "object.object_family": ("Object Family","iobject.iobject_family",['iobject__iobject_family']),
+        "object.identifier": ("Identifier","iobject.identifier",['iobject__identifier','iobject__identifier__namespace']),
+        "object.object_type": ("Object Type","iobject.iobject_type",['iobject__iobject_type','iobject__iobject_type__namespace']),
+    }
+
+
+    allowed_columns = {}
+    enrich_details = True
+    format = None
+    query_mode = None
+    query_mode_restriction = ['InfoObject']
+
+
     def __init__(self,*args,**kwargs):
         self.object_list = kwargs.pop('object_list',[])
+        self.io2fs = kwargs.pop('io2f_list',[])
         self.graph = kwargs.pop('graph',None)
+        self.package_graph = None
+        self.enrich_details = kwargs.pop('enrich_details',self.enrich_details)
+        self.query_mode = kwargs.pop('query_mode','InfoObject')
+
 
         self.iobject_map = None
-        self.io2fs = []
+
         self.results = []
 
         self.node_map = None
+        self.initialize_object_details()
+        self.initialize_allowed_columns()
 
-        if self.object_list:
-            self.io2fs = self._get_io2fs(map(lambda o:o.pk,list(self.object_list)))
-            self.set_iobject_map()
+    def initialize_object_details(self):
+        if self.enrich_details:
+            if self.object_list:
+                self.io2fs = self._get_io2fs(map(lambda o:o.pk,list(self.object_list)))
+                self.set_iobject_map()
 
-        elif self.graph:
-            self.io2fs = self._get_io2fs(self.graph.nodes())
-            self._annotate_graph(self.graph)
+            elif self.graph:
+                self.io2fs = self._get_io2fs(self.graph.nodes())
+                self._annotate_graph(self.graph)
+
+
+    def initialize_allowed_columns(self):
+        for (col,col_name) in self.default_columns:
+            self.allowed_columns[col] = (col_name,col,[])
+
+        self.allowed_columns.update(self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode])
+
+        self.allowed_columns['object_url'] = ('Object URL','_object_url',[])
+
+        self.allowed_columns['package_names'] = ('Package Names','_package_names',[])
+        self.allowed_columns['package_urls'] = ('Package URLs','_package_urls',[])
+
+
+
+
+    def init_result_dict(self,obj_or_io2f):
+        if isinstance(obj_or_io2f,InfoObject2Fact):
+            iobject = obj_or_io2f.iobject
+            io2f = obj_or_io2f
+        else:
+            iobject = obj_or_io2f
+            io2f = None
+
+
+        result =  {'_object':iobject,
+                   '_io2f' : io2f,
+                   '_object_url': reverse('url.dingos.view.infoobject', args=[iobject.pk])}
+
+
+        if self.package_graph:
+            # The user also wants info about the packages that contain the object in question
+            node_ids = list(dfs_preorder_nodes(self.package_graph, source=iobject.pk))
+
+            package_names = []
+            package_urls = []
+            for id in node_ids:
+                node = self.package_graph.node[id]
+                # TODO: Below is STIX-specific and should be factored out
+                # by making the iobject type configurable
+                if "STIX_Package" in node['iobject_type']:
+                    package_names.append(node['name'])
+                    package_urls.append(node['url'])
+            result['_package_names'] = "| ".join(package_names)
+            result['_package_urls'] = "| ".join(package_urls)
+
+
+        return result
+
+
+
+    def additional_calculations(self,columns):
+        if 'package_names' in columns or 'package_urls' in columns:
+            if not self.package_graph:
+                if self.object_list:
+                    pks = [one.pk for one in self.object_list]
+                else:
+                    pks = [one.iobject.pk for one in self.io2fs]
+                self.package_graph = follow_references(pks, direction= 'up')
+
 
     def export(self,*args,**kwargs):
+
+        self.additional_calculations(columns=args)
+
+        def recursive_join(xxs, join_string=','):
+            if isinstance(xxs, list):
+                return join_string.join(map(lambda yys: recursive_join(yys, join_string), xxs))
+            else:
+                return str(xxs)
+
+
+        def fill_row(result,columns,mode='json'):
+
+            if self.query_mode == 'InfoObject':
+                model_key = '_object'
+            else:
+                model_key = '_io2f'
+            if mode == 'json':
+                row = {}
+            else:
+                row = []
+            for column in columns:
+
+                column_key = self.allowed_columns[column][1]
+                if column_key in result:
+                    column_content = result.get(column_key)
+                else:
+                    field_components = column_key.split('.')
+                    value = get_from_django_obj(result[model_key], field_components)
+                    if isinstance(value, list):
+                        if len(result) > 1:
+                            column_content = recursive_join(value)
+                        else:
+                            column_content = value[0]
+                    else:
+                        column_content = value
+                if mode == 'json':
+                    row[column] = column_content
+                else:
+                    row.append(column_content)
+
+            return row
 
         for key in kwargs:
             # This is a hack: the query parser does not remove enclosing quotes
@@ -79,10 +231,14 @@ class InfoObjectDetails(object):
 
         self.extractor(**kwargs)
 
-        format = kwargs.pop('format','json')
+        if self.format:
+            format = self.format
+        else:
+            format = kwargs.pop('format','json')
         output = []
 
-        if 'json' in format:
+        if format in ['json','dict']:
+
 
             if not args:
                 columns = map(lambda x: x[0], self.default_columns)
@@ -93,12 +249,13 @@ class InfoObjectDetails(object):
 
             for result in self.results:
 
-                row = {}
-                for column in columns:
-                    row[column] = result.get(column,None)
+                row = fill_row(result,columns,mode='json')
                 output.append(row)
 
-            return ('application/json',json.dumps(output,indent=2))
+            if format == 'json':
+                return ('application/json',json.dumps(output,indent=2))
+            else:
+                return ('',output)
         else: # default csv
             output = StringIO.StringIO()
             writer = csv.writer(output)
@@ -116,11 +273,9 @@ class InfoObjectDetails(object):
                 writer.writerow(headline)
 
             for result in self.results:
-                row = []
-
-                for column in columns:
-                    row.append(result.get(column,None))
+                row = fill_row(result,columns,mode='csv')
                 writer.writerow(row)
+
             return('txt',output.getvalue())
 
 
@@ -156,6 +311,7 @@ class InfoObjectDetails(object):
             G.node[fact.iobject.id]['facts'].append(fact)
 
         self.iobject_map = G.node
+        self.object_list = map (lambda x : G.node[x]['iobject'], G.node.keys())
 
 
     def set_iobject_map(self):
@@ -231,5 +387,66 @@ class InfoObjectDetails(object):
                         if sibling:
                             results.append(sibling)
         return results
+
+
+class csv_export(InfoObjectDetails):
+
+    query_mode_restriction = []
+    @property
+    def  default_columns(self):
+        return map(lambda x: (x[0],x[1][0]), self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode].items())
+
+    enrich_details = False
+    format = 'csv'
+    def extractor(self,**kwargs):
+        self.results = []
+        if self.object_list:
+            for obj in self.object_list:
+                self.results.append(self.init_result_dict(obj))
+        else:
+            for io2f in self.io2fs:
+                self.results.append(self.init_result_dict(io2f))
+
+
+class json_export(InfoObjectDetails):
+    @property
+    def  default_columns(self):
+        return map(lambda x: (x[0],x[1][0]), self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode].items())
+
+
+    query_mode_restriction = []
+    enrich_details = False
+    format = 'json'
+    def extractor(self,**kwargs):
+
+        self.results = []
+        if self.object_list:
+            for obj in self.object_list:
+                self.results.append(self.init_result_dict(obj))
+        else:
+            for io2f in self.io2fs:
+                self.results.append(self.init_result_dict(io2f))
+
+
+class table_view(InfoObjectDetails):
+    @property
+    def  default_columns(self):
+        return map(lambda x: (x[0],x[1][0]), self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode].items())
+
+
+    query_mode_restriction = []
+    enrich_details = False
+    format = 'dict'
+
+    def extractor(self,**kwargs):
+
+        if self.object_list:
+            for obj in self.object_list:
+                self.results.append(self.init_result_dict(obj))
+        else:
+            for io2f in self.io2fs:
+                self.results.append(self.init_result_dict(io2f))
+
+
 
 

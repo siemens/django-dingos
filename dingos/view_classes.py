@@ -353,7 +353,7 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
 
     breadcrumbs = ()
 
-    counting_paginator = False
+    counting_paginator = True
 
     @property
     def paginator_class(self):
@@ -382,7 +382,7 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
 
     breadcrumbs = ()
 
-    counting_paginator = False
+    counting_paginator = True
 
     graph = None
 
@@ -450,7 +450,7 @@ class BasicTemplateView(CommonContextMixin,
 class BasicCustomQueryView(BasicListView):
     page_to_show = 1
 
-    counting_paginator = False
+    counting_paginator = True
 
     template_name = 'dingos/%s/searches/CustomInfoObjectSearch.html' % DINGOS_TEMPLATE_FAMILY
 
@@ -618,65 +618,46 @@ class BasicCustomQueryView(BasicListView):
 
                         self.queryset = objects
 
-                        if result_format in POSTPROCESSOR_REGISTRY:
-                            p = self.paginator_class(self.queryset, self.paginate_by_value)
-                            response = HttpResponse(content_type='text') # '/csv')
+                    if result_format == 'default':
+                        return super(BasicListView, self).get(request, *args, **kwargs)
 
-                            postprocessor_class = POSTPROCESSOR_REGISTRY[result_format]
-                            postprocessor = postprocessor_class(object_list=p.page(self.page_to_show).object_list)
+                    if result_format in POSTPROCESSOR_REGISTRY:
+                        p = self.paginator_class(self.queryset, self.paginate_by_value)
+                        response = HttpResponse(content_type='text') # '/csv')
+
+                        #postprocessor_class = POSTPROCESSOR_REGISTRY[result_format]
+                        #postprocessor = postprocessor_class(object_list=p.page(self.page_to_show).object_list)
+
+
+                        postprocessor = formatting_arguments['postprocessor']
+                        if postprocessor.query_mode == 'InfoObject':
+                            postprocessor.object_list = p.page(self.page_to_show).object_list
+                            postprocessor.initialize_object_details()
+                        else:
+                            postprocessor.io2fs = p.page(self.page_to_show).object_list
 
 
                             (content_type,result) = postprocessor.export(*col_specs['selected_fields'],
                                                                         **misc_args)
 
 
-                            if kwargs.get('api_call'):
-                                self.api_result = result
-                                self.api_result_content_type = content_type
-                                self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
-                                return super(BasicCustomQueryView, self).get(request, *args, **kwargs)
-                            else:
-                                response = HttpResponse(content_type=content_type) # '/csv')
-                                response.write(result)
-                                return response
-
-
-                        elif result_format == 'csv' or kwargs.get('api_call'):
-                            p = self.paginator_class(self.queryset, self.paginate_by_value)
-                            response = HttpResponse(content_type='text') # '/csv')
-                            #response['Content-Disposition'] = 'attachment; filename="result.csv"'
-
-                            if kwargs.get('api_call'):
-                                output = StringIO.StringIO()
-                                writer = csv.writer(output)
-                            else:
-                                writer = csv.writer(response)
-
-
-                            to_csv(p.page(self.page_to_show).object_list,
-                                   writer,
-                                   self.col_headers,
-                                   self.selected_cols,
-                                   **misc_args)
-
-                            if kwargs.get('api_call'):
-                                self.api_result = output.getvalue()
-                                self.api_result_content_type = 'text/csv'
-                                self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
-                                return super(BasicListView, self).get(request, *args, **kwargs)
-                            else:
-
-                                return response
-                        elif result_format == 'default':
-                            # Pretty useless case for live system but useful for tests
-                            return super(BasicListView, self).get(request, *args, **kwargs)
-                        elif result_format == 'table':
+                        if result_format == 'table':
+                            self.results = result
                             self.col_headers = col_specs['headers']
                             self.selected_cols = col_specs['selected_fields']
-                            print self.selected_cols
+                            self.template_name = 'dingos/%s/searches/CustomSearch.html' % DINGOS_TEMPLATE_FAMILY
                             return super(BasicListView, self).get(request, *args, **kwargs)
+                        if kwargs.get('api_call'):
+                            self.api_result = result
+                            self.api_result_content_type = content_type
+                            self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
+                            return super(BasicCustomQueryView, self).get(request, *args, **kwargs)
                         else:
-                            raise ValueError('Unsupported output format')
+                            response = HttpResponse(content_type=content_type) # '/csv')
+                            response.write(result)
+                            return response
+                    else:
+                        raise ValueError('Unsupported output format')
 
                 except Exception as ex:
                     messages.error(self.request, str(ex))

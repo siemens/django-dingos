@@ -480,7 +480,9 @@ def show_AuthoringSource(iobject):
         authored_data_info = None
     return {'authored_data_info': authored_data_info}
 
-postprocessor_list = sorted(DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items(),key = lambda (x,y) : y['name'])
+postprocessor_list = [x for x in sorted(DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items(),
+                                        key = lambda (x,y) : y['name'])
+                      if not x[1].get('search_only',False)]
 
 @register.inclusion_tag('dingos/%s/includes/_ExporterListDisplayBox.html'% DINGOS_TEMPLATE_FAMILY)
 def show_ExporterList(iobject):
@@ -509,6 +511,15 @@ def show_InfoObjectField(oneObject, field):
         return ', '.join(result)
     else:
         return result
+
+
+
+@register.simple_tag
+def dict_lookup(dict, key):
+    print dict
+    print key
+    return dict.get(key,'ERROR')
+
 
 
 @register.assignment_tag(takes_context=True)

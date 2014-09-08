@@ -2,7 +2,6 @@
     'use strict';
 
     $(function() {
-
 	window.getCookie = function(name){
 	    var cookieValue = null;
 	    if (document.cookie && document.cookie != '') {
@@ -320,8 +319,15 @@
 		// Load graph data from backend
 		$.getJSON('graph', function(data){
 		    if(data.status){
+
+			// Don't render the graph if we have more than 150 nodes
+			if(data.data.nodes.length > 150)
+			    return;
+
 			// Set title of graph box
 			$('h2', graph_box).text(data.msg);
+
+			// Do the rendering
 			render_graph(data.data);
 		    }else{
 			//Error fetching graph data
@@ -330,6 +336,19 @@
 
 	    });
 	}
+
+
+
+	// Fix the menu behaviour in the menubar
+	$(document).on('click', function(e){
+	    if($(e.target).is($('#grp-navigation > #grp-user-tools > li.grp-user-options-container > a'))){
+		var pl = $(e.target).parent();
+		pl.siblings().removeClass('grp-open').addClass('grp-closed');
+	    }else{
+		$('#grp-navigation > #grp-user-tools > li.grp-user-options-container').removeClass('grp-open').addClass('grp-closed');
+	    }
+	});
+
 
     });
 }(django.jQuery)); // Reuse django injected jQuery library
