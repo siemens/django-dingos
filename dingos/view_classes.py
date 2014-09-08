@@ -497,6 +497,7 @@ class BasicCustomQueryView(BasicListView):
         return context
 
     def get(self, request, *args, **kwargs):
+        result_format = 'default'
         self.form = CustomQueryForm(request.GET)
         self.queryset = []
         if self.request.GET.get('nondistinct',False):
@@ -522,7 +523,7 @@ class BasicCustomQueryView(BasicListView):
             return HttpResponseRedirect(urlresolvers.reverse('url.dingos.admin.edit.savedsearches'))
 
         if self.form.is_valid(): # 'execute_query' in request.GET and self.form.is_valid():
-            if request.GET.get('query','') == "":
+            if request.GET.get('query', '') == "":
                 messages.error(self.request, "Please enter a query.")
             else:
                 try:
@@ -551,6 +552,8 @@ class BasicCustomQueryView(BasicListView):
                                             the_date = the_date - timedelta(days=int(delta_days)*(-1))
                                         field_value = the_date.strftime("%Y-%m-%d")
                                 query = query.replace(one["raw"], "\"%s\"" % field_value)
+                            else:
+                                query = query.replace(one["raw"], "\"%s\"" % placeholder["default"])
 
 
                     parser = QueryParser()
@@ -579,10 +582,9 @@ class BasicCustomQueryView(BasicListView):
 
                     # Processing for main query
                     formatted_filter_collection = filter_collections.formatted_filter_collection
-                    filter_collection = formatted_filter_collection.filter_collection
+
                     if hasattr(formatted_filter_collection, 'filter_collection'):
                         objects = formatted_filter_collection.filter_collection.build_query(base=objects)
-
 
                     if distinct:
                         if isinstance(distinct, tuple):
@@ -639,7 +641,8 @@ class BasicCustomQueryView(BasicListView):
 
 
                         (content_type,result) = postprocessor.export(*col_specs['selected_fields'],
-                                                                    **misc_args)
+                                                                     **misc_args)
+
 
                         if result_format == 'table':
                             self.results = result
