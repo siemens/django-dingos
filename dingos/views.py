@@ -465,9 +465,26 @@ class CustomSearchesEditView(BasicTemplateView):
         counter = 0
 
         for saved_search in saved_searches:
+            # TODO: there is an error either in core.datatypes.from_flat_repr or
+            # (more likely) in the Mixin that retrieves the user data, which turns
+            # empty values into {}. The statements below remove this
+            # spurious '{}'.
+
+            if saved_search['title'] == {}:
+                saved_search['title']= ''
+
+            if saved_search['identifier'] == {}:
+                saved_search['identifier']= ''
+
+            if saved_search['custom_query'] == {}:
+                saved_search['custom_query']= ''
+
+
+
             initial.append({'new_entry': False,
                             'position' : counter,
                             'title': saved_search['title'],
+                            'identifier': saved_search.get('identifier'),
                             'view' : saved_search['view'],
                             'parameter' : saved_search['parameter'],
                             'custom_query': saved_search.get('custom_query','')})
@@ -476,6 +493,7 @@ class CustomSearchesEditView(BasicTemplateView):
             initial.append({'position' : counter,
                             'new_entry' : True,
                             'title': "",
+                            'identifier':"",
                             'view' : self.request.session['new_search']['view'],
                             'parameter' : self.request.session['new_search']['parameter'],
                             'custom_query' : self.request.session['new_search'].get('custom_query','')
@@ -492,6 +510,7 @@ class CustomSearchesEditView(BasicTemplateView):
         self.formset = self.form_class(request.POST.dict())
         saved_searches = user_data['saved_searches']
 
+
         if self.formset.is_valid() and request.user.is_authenticated():
             dingos_saved_searches = []
 
@@ -504,6 +523,7 @@ class CustomSearchesEditView(BasicTemplateView):
                 #      u'ORDER': None,
                 #      u'DELETE': False,
                 #     'title': u'Filter for STIX Packages'
+                #     'identifier': u'all_stix_packages'
                 #     }
                 #
 
@@ -512,6 +532,7 @@ class CustomSearchesEditView(BasicTemplateView):
                                                     'parameter' : search['parameter'],
                                                     'custom_query' : search.get('custom_query',''),
                                                     'title' : search['title'],
+                                                    'identifier' : search['identifier'],
                                                     }
                     )
 
@@ -529,6 +550,7 @@ class CustomSearchesEditView(BasicTemplateView):
             # Form was not valid, we return the form as is
 
             return super(BasicTemplateView,self).get(request, *args, **kwargs)
+
         return self.get(request, *args, **kwargs)
 
 class InfoObjectJSONView(BasicDetailView):
@@ -620,10 +642,9 @@ class InfoObjectExportsView(BasicTemplateView):
         exporter = self.kwargs.get('exporter', None)
 
         if exporter in POSTPROCESSOR_REGISTRY:
-            print exporter
 
             postprocessor_class = POSTPROCESSOR_REGISTRY[exporter]
-            print postprocessor_class
+
             postprocessor = postprocessor_class(graph=graph,
                                                 query_mode='InfoObject',
                                                 enrich_details=True)
