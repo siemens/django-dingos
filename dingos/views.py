@@ -71,6 +71,8 @@ class InfoObjectList(BasicFilterView):
                    ('InfoObject',None))
 
 
+    fields_for_api_call = ['identifier','timestamp','import_timestamp','name','object_type','package_names','package_urls']
+
     filterset_class= InfoObjectFilter
 
     title = 'List of Info Objects (generic filter)'
@@ -160,8 +162,10 @@ class SimpleFactSearch(BasicFilterView):
 
     title = 'Fact-based filtering'
 
-
     filterset_class = OrderedFactTermValueFilter
+
+    fields_for_api_call = ['object.name','object.object_type','fact_term_with_attribute','value','package_names','package_urls']
+
     @property
     def queryset(self):
         if self.get_query_string() == '?':
@@ -186,6 +190,7 @@ class UniqueSimpleFactSearch(BasicFilterView):
 
     title = 'Fact-based filtering (unique)'
 
+    fields_for_api_call = ['object.object_type','fact_term_with_attribute','value']
 
     filterset_class = FactTermValueFilter
 

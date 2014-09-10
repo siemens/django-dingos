@@ -28,9 +28,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import urlresolvers
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.core.paginator import PageNotAnInteger, Paginator, EmptyPage
-from django.db import DataError
 from django.http import HttpResponseRedirect, HttpResponse
-from django.shortcuts import render_to_response
 from django.utils.http import urlquote_plus
 from django.views.generic import DetailView, ListView, TemplateView, View
 from django.views.generic.base import ContextMixin
@@ -51,7 +49,6 @@ from dingos.core.utilities import get_dict, replace_by_list
 from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm, PlaceholderForm
 from dingos.queryparser.placeholder_parser import PlaceholderParser
 from dingos.models import InfoObject, UserData, Marking2X
-from dingos.queryparser.result_formatting import to_csv
 
 from core.http_helpers import get_query_string
 
@@ -338,14 +335,11 @@ class ViewMethodMixin(object):
                 return o
         return None
 
-
 class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
     """
     Basic class for defining list views: includes the necessary mixins
     and code to read pagination information from user customization.
     """
-
-
 
     login_url = "/admin"
 
@@ -367,16 +361,20 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
         item_count = self.lookup_customization('dingos','view','pagination','lines',default=20)
         return item_count
 
+
 class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,FilterView):
     """
     Basic class for defining filter views: includes the necessary mixins
     and code to
 
+    - return results in JSON format for api calls to the search
     - read pagination information from user customization.
     - save filter settings as saved search
-    """
 
-    login_url = "/admin"
+    Have a look at the views derived from this view class in views.py to
+    get a feeling for how the class is to be used.
+
+    """
 
     template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
 
@@ -385,6 +383,8 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
     counting_paginator = True
 
     graph = None
+
+    fields_for_api_call = ['name']
 
     @property
     def paginator_class(self):
@@ -398,9 +398,69 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
         return self.lookup_customization('dingos','view','pagination','lines',default=20)
 
     def get(self, request, *args, **kwargs):
-        if request.GET.get('action','Submit Query') == 'Submit Query':
+        if request.GET.get('api_call'):
+            # The filter view is called via the API. Therefore, we
+            # - carry out the query by populating the context
+            # - write the result into the view such that it can be
+            #   extracted by the mantis_api module (the module
+            #   instantiates the view and then accesses it to
+            #   retrieve the results)
+
+            filterset_class = self.get_filterset_class()
+            self.filterset = self.get_filterset(filterset_class)
+            self.object_list = self.filterset.qs
+            context = self.get_context_data(filter=self.filterset,
+                                        object_list=self.object_list)
+
+            # Default postprocessor is JSON
+            postprocessor_class = POSTPROCESSOR_REGISTRY['json']
+
+            # We need to find out the query mode; a filter view has
+            # either the 'model' or the 'filterset_class' set; we
+            # extract the query mode from whatever attribute is present.
+
+            try:
+                query_mode = self.model.__name__
+            except:
+                query_mode = self.filterset_class.Meta.model.__name__
+
+
+            postprocessor = postprocessor_class(query_mode=self.filterset_class.Meta.model.__name__,
+                                                format='dict')
+
+            if postprocessor.query_mode == 'InfoObject':
+                # TODO: this looks fishy... make sure that all __init__ stuff is carried out
+                # in some other way.
+                postprocessor.object_list = context['object_list']
+                postprocessor.initialize_object_details()
+            else:
+                postprocessor.io2fs = context['object_list']
+
+
+            (content_type,result) = postprocessor.export(*self.fields_for_api_call)
+
+            # Write the results into the view
+            self.api_result = result
+            self.api_result_content_type = content_type
+
+            # This view can be called in 'api_call'-mode by putting an 'api_call' parameter
+            # into the URL. If that is the case, we return a page that shows the result
+            # in JSON format.
+            #
+            # What we do here is really irrelevant for the call via the API: the API
+            # instantiates the view but does not care about what the view returns!
+            #
+            self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
+            return super(BasicFilterView, self).get(request, *args, **kwargs)
+
+        # If this was not an API call, we see whether the filter form was submitted
+        elif request.GET.get('action','Submit Query') == 'Submit Query':
             return super(BasicFilterView,self).get(request, *args, **kwargs)
         else:
+            # Otherwise, the form was submitted with pressing the 'save search' button. In this case,
+            # we write the parameters into the session such that they can be retrieved by the
+            # save-search-view and then redirect to that view.
+
             match = urlresolvers.resolve(request.path_info)
 
             # write data into session
@@ -484,7 +544,7 @@ class BasicCustomQueryView(BasicListView):
         Call 'get_context_data' from super and include the query form in the context
         for the template to read and display.
         """
-        result_format = 'default'
+
         context = super(BasicCustomQueryView, self).get_context_data(**kwargs)
         context['form'] = self.form
         context['placeholder_form'] = self.placeholder_form
@@ -506,8 +566,6 @@ class BasicCustomQueryView(BasicListView):
         else:
             distinct = self.distinct
 
-        print "Get called"
-
         if request.GET.get('action','Submit Query') == 'Save Search':
             match = urlresolvers.resolve(request.path_info)
 
@@ -525,16 +583,15 @@ class BasicCustomQueryView(BasicListView):
             # Redirect to edit view as this takes care of the rest
             return HttpResponseRedirect(urlresolvers.reverse('url.dingos.admin.edit.savedsearches'))
 
-        print "Before valid"
         if self.form.is_valid(): # 'execute_query' in request.GET and self.form.is_valid():
 
-            print "Is valid"
+
             if request.GET.get('query', '') == "":
                 messages.error(self.request, "Please enter a query.")
             else:
-                if True: #try:
+                try:
                     query = self.form.cleaned_data['query']
-                    print "Query %s" % query
+
                     if "{{" in query and "}}" in query:
                         placeholders = []
                         parser = PlaceholderParser()
@@ -562,7 +619,7 @@ class BasicCustomQueryView(BasicListView):
                                 query = query.replace(one["raw"], "\"%s\"" % placeholder["default"])
 
 
-                    print "Query %s" % query
+
 
                     parser = QueryParser()
                     self.paginate_by_value = int(self.form.cleaned_data['paginate_by'])
@@ -608,8 +665,6 @@ class BasicCustomQueryView(BasicListView):
                     # Output format
                     result_format = formatted_filter_collection.format
 
-                    print "Result format %s" % result_format
-
                     # Filter selected columns for export
                     formatting_arguments = formatted_filter_collection.build_format_arguments(query_mode=self.query_base.model.__name__)
 
@@ -640,8 +695,6 @@ class BasicCustomQueryView(BasicListView):
                     if result_format == 'default':
                         return super(BasicListView, self).get(request, *args, **kwargs)
 
-                    print POSTPROCESSOR_REGISTRY
-
                     request.GET.get('api_call')
 
                     postprocessor = formatting_arguments['postprocessor']
@@ -649,16 +702,11 @@ class BasicCustomQueryView(BasicListView):
                     if request.GET.get('api_call') and not postprocessor:
                         postprocessor_class = POSTPROCESSOR_REGISTRY['json']
                         postprocessor = postprocessor_class(query_mode=self.query_base.model.__name__)
-                        print "Postprocessor %s" % postprocessor
+
                     if postprocessor:
 
                         p = self.paginator_class(self.queryset, self.paginate_by_value)
                         response = HttpResponse(content_type='text') # '/csv')
-
-                        print "p defined"
-
-
-
 
                         if postprocessor.query_mode == 'InfoObject':
                             # TODO: this looks fishy... make sure that all __init__ stuff is carried out
@@ -668,21 +716,20 @@ class BasicCustomQueryView(BasicListView):
                         else:
                             postprocessor.io2fs = p.page(self.page_to_show).object_list
 
-                        print "Before export"
-                        print misc_args
+                        if request.GET.get('api_call') or result_format=='table':
+                            postprocessor.format = 'dict'
                         (content_type,result) = postprocessor.export(*col_specs['selected_fields'],
                                                                      **misc_args)
 
 
-
                         if result_format == 'table':
                             self.results = result
+                            print result
                             self.col_headers = col_specs['headers']
                             self.selected_cols = col_specs['selected_fields']
                             self.template_name = 'dingos/%s/searches/CustomSearch.html' % DINGOS_TEMPLATE_FAMILY
                             return super(BasicListView, self).get(request, *args, **kwargs)
 
-                        print "In processing: %s" % request.GET.get('api_call')
                         if request.GET.get('api_call'):
                             self.api_result = result
                             self.api_result_content_type = content_type
@@ -694,9 +741,9 @@ class BasicCustomQueryView(BasicListView):
                             return response
                     else:
                         raise ValueError('Unsupported output format')
+                except Exception as ex:
+                    messages.error(self.request, str(ex))
 
-                #except Exception as ex:
-                #    messages.error(self.request, str(ex))
         return super(BasicListView, self).get(request, *args, **kwargs)
 
 class BasicJSONView(CommonContextMixin,
@@ -729,8 +776,6 @@ class BasicJSONView(CommonContextMixin,
             json_string = json.dumps(returned_obj,indent=self.indent)
 
         return self._get_json_response(json_string)
-
-
 
     def _get_json_response(self, content, **httpresponse_kwargs):
          return http.HttpResponse(content,
@@ -817,7 +862,6 @@ class BasicListActionView(BasicListView):
 
 
     action_list = []
-
 
 
     # If no action could be found (and 'apply_marking_wo_action' is set to False)
@@ -1018,7 +1062,6 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
     no_action_error_message = "No valid action could be found for the object."
 
-
     @property
     def m_queryset(self):
         """
@@ -1056,7 +1099,6 @@ class SimpleMarkingAdditionView(BasicListActionView):
         else:
             # So the view has been called a second time by submitting the form in the view
             # rather than from a different view. So we need to process the data in the form
-
 
             self._set_post_form(request.POST,
                                 markings = self.m_queryset,
@@ -1126,7 +1168,6 @@ class SimpleMarkingAdditionView(BasicListActionView):
                                                                              )
                                     messages.error(self.request,message)
                                     break
-
 
                                 if self.debug_action:
                                     (success,action_msg) = (True,"DEBUG: Action has not been carried out")

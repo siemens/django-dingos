@@ -90,13 +90,17 @@ class InfoObjectDetails(object):
     query_mode_restriction = ['InfoObject']
 
 
+
     def __init__(self,*args,**kwargs):
         self.object_list = kwargs.pop('object_list',[])
         self.io2fs = kwargs.pop('io2f_list',[])
+        self.format = kwargs.pop('format',None)
         self.graph = kwargs.pop('graph',None)
         self.package_graph = None
         self.enrich_details = kwargs.pop('enrich_details',self.enrich_details)
         self.query_mode = kwargs.pop('query_mode','InfoObject')
+
+
 
 
         self.iobject_map = None
