@@ -30,33 +30,55 @@ from dingos.models import InfoObject
 from django_filters.views import FilterView
 
 urlpatterns = patterns('',
+    # Displaying InfoObjects
+
     url(r'^View/InfoObject/?$',
         views.InfoObjectList.as_view(),
         name="url.dingos.list.infoobject.generic"),
+
     url(r'^View/InfoObject/All/?$',
         views.InfoObjectListIncludingInternals.as_view(),
         name="url.dingos.list.infoobject.all.generic"),
-    url(r'^View/InfoObject/(?P<pk>\d*)/standard$',
-        views.InfoObjectView.as_view(),
-        name= "url.dingos.view.infoobject.standard"),
-    url(r'^View/InfoObject/(?P<pk>\d*)/export/(?P<exporter>[a-zA-Z0-9_-]+)/?(?P<api_call>api_test)?$',
-        views.InfoObjectExportsView.as_view(),
-        name= "url.dingos.view.infoobject.exports"),
+
     url(r'^View/InfoObject/(?P<pk>\d*)/$',
         views.InfoObjectRedirect.as_view(),
         name= "url.dingos.view.infoobject"),
+
+    url(r'^View/InfoObject/(?P<pk>\d*)/standard$',
+        views.InfoObjectView.as_view(),
+        name= "url.dingos.view.infoobject.standard"),
+
+    url(r'^View/InfoObject/(?P<pk>\d*)/export/(?P<exporter>[a-zA-Z0-9_-]+)/?(?P<api_call>api_test)?$',
+        views.InfoObjectExportsView.as_view(),
+        name= "url.dingos.view.infoobject.exports"),
+
+    url(r'^View/InfoObject/(?P<pk>\d*)/json$',
+        views.InfoObjectJSONView.as_view(),
+        name= "url.dingos.view.infoobject.json"),    
+
+    url(r'^View/InfoOject/Embedded/(?P<pk>\d*)/$', views.InfoObjectsEmbedded.as_view(), name="url.dingos.view.infoobject.embedded"),
+
+    url(r'^View/InfoObject/(?P<pk>\d*)(/specific)?/graph$', views.InfoObjectJSONGraph.as_view(), name= "url.dingos.view.infoobject.json_graph"),
+
+
+
+    # Administration
+
     url(r'^Admin/ViewUserPrefs/?$',
         views.UserPrefsView.as_view(),
         name= "url.dingos.admin.view.userprefs"),
     url(r'^Admin/OAuthEdit/?$',
         views.OAuthInfo.as_view(),
         name= "url.dingos.admin.view.oauthedit"),
-    url(r'^View/InfoObject/(?P<pk>\d*)/json$',
-        views.InfoObjectJSONView.as_view(),
-        name= "url.dingos.view.infoobject.json"),
+
+    # Actions
+
     url(r'^Action/AddMarking$',
         SimpleMarkingAdditionView.as_view(),
         name= "url.dingos.action.add_marking"),
+
+    # Searches
+
     url(r'^Search/SimpleFactSearch$',
         views.SimpleFactSearch.as_view(),
         name="url.dingos.search.fact.simple"),
@@ -97,9 +119,6 @@ urlpatterns = patterns('',
         name = 'url.dingos.view.infoobject.redirect2highlight'
     ),
 
-    url(r'^View/InfoOject/Embedded/(?P<pk>\d*)/$', views.InfoObjectsEmbedded.as_view(), name="url.dingos.view.infoobject.embedded"),
-
-    url(r'^View/InfoObject/(?P<pk>\d*)(/specific)?/graph$', views.InfoObjectJSONGraph.as_view(), name= "url.dingos.view.infoobject.json_graph"),
 
     )
 
