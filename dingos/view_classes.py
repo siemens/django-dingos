@@ -484,6 +484,7 @@ class BasicCustomQueryView(BasicListView):
         Call 'get_context_data' from super and include the query form in the context
         for the template to read and display.
         """
+        result_format = 'default'
         context = super(BasicCustomQueryView, self).get_context_data(**kwargs)
         context['form'] = self.form
         context['placeholder_form'] = self.placeholder_form
@@ -497,13 +498,15 @@ class BasicCustomQueryView(BasicListView):
         return context
 
     def get(self, request, *args, **kwargs):
-        result_format = 'default'
+
         self.form = CustomQueryForm(request.GET)
         self.queryset = []
         if self.request.GET.get('nondistinct',False):
             distinct = False
         else:
             distinct = self.distinct
+
+        print "Get called"
 
         if request.GET.get('action','Submit Query') == 'Save Search':
             match = urlresolvers.resolve(request.path_info)
@@ -522,13 +525,16 @@ class BasicCustomQueryView(BasicListView):
             # Redirect to edit view as this takes care of the rest
             return HttpResponseRedirect(urlresolvers.reverse('url.dingos.admin.edit.savedsearches'))
 
+        print "Before valid"
         if self.form.is_valid(): # 'execute_query' in request.GET and self.form.is_valid():
+
+            print "Is valid"
             if request.GET.get('query', '') == "":
                 messages.error(self.request, "Please enter a query.")
             else:
-                try:
+                if True: #try:
                     query = self.form.cleaned_data['query']
-
+                    print "Query %s" % query
                     if "{{" in query and "}}" in query:
                         placeholders = []
                         parser = PlaceholderParser()
@@ -556,6 +562,7 @@ class BasicCustomQueryView(BasicListView):
                                 query = query.replace(one["raw"], "\"%s\"" % placeholder["default"])
 
 
+                    print "Query %s" % query
 
                     parser = QueryParser()
                     self.paginate_by_value = int(self.form.cleaned_data['paginate_by'])
@@ -601,6 +608,8 @@ class BasicCustomQueryView(BasicListView):
                     # Output format
                     result_format = formatted_filter_collection.format
 
+                    print "Result format %s" % result_format
+
                     # Filter selected columns for export
                     formatting_arguments = formatted_filter_collection.build_format_arguments(query_mode=self.query_base.model.__name__)
 
@@ -623,27 +632,47 @@ class BasicCustomQueryView(BasicListView):
 
                     self.queryset = objects
 
+
+                    if request.GET.get('api_call') and result_format == 'default':
+                        result_format = 'csv'
+
+
                     if result_format == 'default':
                         return super(BasicListView, self).get(request, *args, **kwargs)
 
-                    if result_format in POSTPROCESSOR_REGISTRY:
+                    print POSTPROCESSOR_REGISTRY
+
+                    request.GET.get('api_call')
+
+                    postprocessor = formatting_arguments['postprocessor']
+
+                    if request.GET.get('api_call') and not postprocessor:
+                        postprocessor_class = POSTPROCESSOR_REGISTRY['json']
+                        postprocessor = postprocessor_class(query_mode=self.query_base.model.__name__)
+                        print "Postprocessor %s" % postprocessor
+                    if postprocessor:
+
                         p = self.paginator_class(self.queryset, self.paginate_by_value)
                         response = HttpResponse(content_type='text') # '/csv')
 
-                        #postprocessor_class = POSTPROCESSOR_REGISTRY[result_format]
-                        #postprocessor = postprocessor_class(object_list=p.page(self.page_to_show).object_list)
+                        print "p defined"
 
 
-                        postprocessor = formatting_arguments['postprocessor']
+
+
                         if postprocessor.query_mode == 'InfoObject':
+                            # TODO: this looks fishy... make sure that all __init__ stuff is carried out
+                            # in some other way.
                             postprocessor.object_list = p.page(self.page_to_show).object_list
                             postprocessor.initialize_object_details()
                         else:
                             postprocessor.io2fs = p.page(self.page_to_show).object_list
 
-
+                        print "Before export"
+                        print misc_args
                         (content_type,result) = postprocessor.export(*col_specs['selected_fields'],
                                                                      **misc_args)
+
 
 
                         if result_format == 'table':
@@ -652,6 +681,8 @@ class BasicCustomQueryView(BasicListView):
                             self.selected_cols = col_specs['selected_fields']
                             self.template_name = 'dingos/%s/searches/CustomSearch.html' % DINGOS_TEMPLATE_FAMILY
                             return super(BasicListView, self).get(request, *args, **kwargs)
+
+                        print "In processing: %s" % request.GET.get('api_call')
                         if request.GET.get('api_call'):
                             self.api_result = result
                             self.api_result_content_type = content_type
@@ -664,8 +695,8 @@ class BasicCustomQueryView(BasicListView):
                     else:
                         raise ValueError('Unsupported output format')
 
-                except Exception as ex:
-                    messages.error(self.request, str(ex))
+                #except Exception as ex:
+                #    messages.error(self.request, str(ex))
         return super(BasicListView, self).get(request, *args, **kwargs)
 
 class BasicJSONView(CommonContextMixin,

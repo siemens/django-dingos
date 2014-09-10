@@ -181,7 +181,7 @@ class FormattedFilterCollection:
 
         if self.format == 'default':
             return {'columns': {'headers':[],'selected_fields':[]},
-                    'kwargs': [],
+                    'kwargs': {},
                     'prefetch_related':[],
                     'postprocessor' : None}
 
