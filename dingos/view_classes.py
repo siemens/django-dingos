@@ -565,9 +565,15 @@ class BasicCustomQueryView(BasicListView):
 
                     filter_collections = parser.parse(str(query))
 
+
+                    
+                    # TODO: the code that does the processing of the query should not be here
+                    # but part of the filter_collections object. This is because the query may
+                    # also be used at other places (e.g. below in the MarkingsAction view
+                    # If the user defined a referenced_by-preprocessing
+
                     objects = self.query_base.all()
 
-                    # If the user defined a referenced_by-preprocessing
                     if filter_collections.refby_filter_collection:
                         # Preprocessing for referenced-by query
                         refby_filter_collection = filter_collections.refby_filter_collection.filter_collection
@@ -996,11 +1002,40 @@ class SimpleMarkingAdditionView(BasicListActionView):
             return self.marking_queryset.values_list('pk','name')[0:self.max_marking_choices]
         elif self.marking_query:
             parser = QueryParser()
-            formatted_filter_collection = parser.parse(self.marking_query)
-            filter_collection = formatted_filter_collection.filter_collection
 
-            base_query = InfoObject.objects.all()
-            self.marking_queryset = filter_collection.build_query(base=base_query)
+            filter_collections = parser.parse(self.marking_query)
+
+
+
+            # TODO: the code that does the processing of the query should not be here
+            # but part of the filter_collections object. This is because the query may
+            # also be used at other places (e.g. below in the MarkingsAction view
+            # If the user defined a referenced_by-preprocessing
+
+            # If the user defined a referenced_by-preprocessing
+
+            objects = InfoObject.objects.all()
+
+            if filter_collections.refby_filter_collection:
+                # Preprocessing for referenced-by query
+                refby_filter_collection = filter_collections.refby_filter_collection.filter_collection
+                objects = refby_filter_collection.build_query(base=objects)
+                objects = objects.distinct()
+                # Retrieve pk list out of the object list
+                pks = [one.pk for one in objects]
+                pks = graph_traversal.follow_references(pks, **filter_collections.refby_filter_args)
+
+                # Filter objects
+                objects = self.query_base.all().filter(pk__in=pks)
+
+            # Processing for main query
+            formatted_filter_collection = filter_collections.formatted_filter_collection
+
+            if hasattr(formatted_filter_collection, 'filter_collection'):
+                objects = formatted_filter_collection.filter_collection.build_query(base=objects)
+
+
+            self.marking_queryset = objects
 
             return self.marking_queryset.values_list('pk','name')[0:self.max_marking_choices]
         else:
