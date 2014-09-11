@@ -186,3 +186,9 @@ form#query-executor #id_query {
     resize: vertical;
     min-height: 100px;
 }
+
+
+/* Fix the result list's overflow, because overlapping leads to an unusable sidebar  */
+.grp-module.grp-changelist-results {
+    overflow: auto;
+}
