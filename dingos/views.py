@@ -16,7 +16,7 @@
 #
 
 import json
-
+import re
 from django import http
 from django.http import HttpResponse
 from django.db.models import F
@@ -719,11 +719,11 @@ class InfoObjectJSONGraph(BasicJSONView):
         iobject = InfoObject.objects.all().filter(pk=iobject_id)[0]
         graph_mode = None
         for graph_type in DINGOS_INFOOBJECT_GRAPH_TYPES:
-            family_patterns = graph_type['info_object_families']
-            type_patterns = graph_type['info_object_types']
+            family_pattern = graph_type['info_object_family_re']
+            type_pattern = graph_type['info_object_type_re']
             family = str(iobject.iobject_family)
             type = str(iobject.iobject_type)
-            if match_regex_list(family_patterns, family) and match_regex_list(type_patterns, type):
+            if re.match(family_pattern, family) and re.match(type_pattern, type):
                 available_modes = graph_type['available_modes']
                 res['available_modes'] = available_modes
 

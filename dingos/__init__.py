@@ -305,8 +305,8 @@ DINGOS_OBJECTTYPE_ICON_RELIST_MAPPING = {}
 DINGOS_SEARCH_POSTPROCESSOR_REGISTRY = {}
 
 
-DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_families':   ['.*'],
-                                  'info_object_types':      ['.*'],
+DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
+                                  'info_object_type_re':      r'.*',
                                   'default_mode':           'up_and_down',
                                   'available_modes':        [{'mode_key': 'up_and_down',
                                                               'menu_name':         'Up+Down',
