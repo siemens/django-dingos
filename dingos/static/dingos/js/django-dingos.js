@@ -65,18 +65,14 @@
 	    $.each($('.iobject-graph'), function(){
 		var graph_box = $(this),
 		    graph_canvas = graph_box.find('.iobject-graph-canvas').first();
-		
-		
-
 
 		// Callback function for rendering graph/graph
 		var render_graph = function(gdata){
-
 		    // If we do not have any nodes, don't draw.
 		    if(gdata.nodes.length == 0)
 			return;
 
-		    graph_box.toggle(); // Show the box. Needed to get the canvas dimensions
+		    graph_box.show(); // Show the box. Needed to get the canvas dimensions
 
 		    var nodes = {},
 		        links = [],
@@ -108,7 +104,7 @@
 			return linkedByIndex[a.id + "," + b.id] || linkedByIndex[b.id + "," + a.id] || a.id == b.id;
 		    }
 
-
+            $('svg', graph_canvas).remove();
 		    var svg = d3.select(graph_canvas.get(0))
 			.append("svg:svg")
 		    	  .attr("width", width)
@@ -190,7 +186,7 @@
 			    	.attr('fill', '#ddd')
 		    	    	.attr("x", 10)
 			    	.attr("opacity", "0");
-			    
+
 			    t.append("text")
 			    	.attr("class", "toggle-hover")
 		    	    	.attr("x", 12)
@@ -212,7 +208,7 @@
 			var el = $('.iobject-graph .details-box').first(),
 			    img = $(this).attr('href');
 
-			
+
 			el.find('.title').text(e.iobject_type + ': ' + e.name);
 			el.find('img').attr('src', img);
 			var itmpl = '<table><tbody> \
@@ -257,7 +253,7 @@
 						return lbl.getBBox().width + 5
 					    return 0;
 					});
-				    
+
 
 				}
 
@@ -282,8 +278,8 @@
 			//       d.target.y += (d.source.y + 80 - d.target.y) * ky;
 			//     });
 
-			node.attr("transform", function(d) { 
-			    
+			node.attr("transform", function(d) {
+
 			    if(d.index==self_index){
 				d.x = width/2;
 				d.y = height/2;
@@ -294,7 +290,7 @@
 			    d.x = Math.max(r, Math.min(width - r, d.x));
 			    d.y = Math.max(r, Math.min(height - r, d.y));
 
-			    return "translate("+d.x+","+d.y+")";            
+			    return "translate("+d.x+","+d.y+")";
 
 			});
 
@@ -311,28 +307,11 @@
 		    	force.tick();
 		    }
 		    force.stop();
-		    
+
 		}; // End render_graph()
 
 
-
-		// Load graph data from backend
-		$.getJSON('graph', function(data){
-		    if(data.status){
-
-			// Don't render the graph if we have more than 150 nodes
-			if(data.data.nodes.length > 150)
-			    return;
-
-			// Set title of graph box
-			$('h2', graph_box).text(data.msg);
-
-			// Do the rendering
-			render_graph(data.data);
-		    }else{
-			//Error fetching graph data
-		    }
-		});
+        refresh_graph(graph_box, render_graph);
 
 	    });
 	}
@@ -351,4 +330,47 @@
 
 
     });
+
+
+
+function refresh_graph(graph_box, render_graph, graph_mode) {
+    var graph_url = 'graph';
+    if (typeof graph_mode !== 'undefined') {
+        graph_url += '?mode=' + graph_mode;
+    }
+
+    // Load graph data from backend
+    $.getJSON(graph_url, function(data) {
+        if(data.status) {
+            // Set title of graph box
+            $('h2', graph_box).text(data.msg);
+
+            // Remove old graph box
+            $('.graph-mode-button').remove();
+
+            // Collect mode keys
+            for (var mode_nr in data.available_modes) {
+
+                //if (data.available_modes.hasOwnProperty(mode_key)) {
+	        var mode = data.available_modes[mode_nr];
+		    var mode_key = mode["mode_key"];
+                    // Create button to switch graph mode
+                    var button = document.createElement("a");
+                    button.className = "grp-button graph-mode-button";
+                    button.id = mode_key; // element id
+                    button.title = mode["description"]; // tooltip
+                    button.appendChild(document.createTextNode(mode["menu_name"])); // button label
+                    button.onclick = function() { refresh_graph($('.iobject-graph').first(), render_graph, this.id); };
+
+                    $('.graph-mode-selector', graph_box).append(button);
+               // }
+            }
+
+            // Render graph
+            render_graph(data.data);
+        } else {
+            //Error fetching graph data
+        }
+    });
+}
 }(django.jQuery)); // Reuse django injected jQuery library

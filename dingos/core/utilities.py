@@ -206,3 +206,12 @@ def lookup_in_re_list(re_list, text):
             return elt
     return None
 
+
+def match_regex_list(pattern_list, string):
+    """
+    Checks if a string matches a whole list of regex patterns.
+    """
+    for pattern in pattern_list:
+        if not re.match(pattern, string):
+            return False
+    return True

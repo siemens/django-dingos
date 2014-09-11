@@ -304,3 +304,32 @@ DINGOS_OBJECTTYPE_ICON_RELIST_MAPPING = {}
 
 DINGOS_SEARCH_POSTPROCESSOR_REGISTRY = {}
 
+
+DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
+                                  'info_object_type_re':      r'.*',
+                                  'default_mode':           'up_and_down',
+                                  'available_modes':        [{'mode_key': 'up_and_down',
+                                                              'menu_name':         'Up+Down',
+                                                              'title' : 'Up&Down Graph',
+                                                              'description':       'Follow references up and down',
+                                                              'traversal_args':    {'direction': 'both',
+                                                                                    'max_nodes': 150}},
+                                                             {'mode_key' : 'full',
+                                                              'menu_name':         'Full',
+                                                              'title' : 'Full graph',
+                                                              'description':       'Full graph traversal.',
+                                                              'traversal_args':    {'direction': 'full',
+                                                                                                 'max_nodes': 150}},
+                                                             {'mode_key': 'up',
+                                                              'menu_name':         'Up',
+                                                              'title' : 'Up Graph',
+                                                              'description':       'Follow references up.',
+                                                              'traversal_args':    {'direction': 'up',
+                                                                                    'max_nodes': 150}},
+
+                                                             {'mode_key': 'down',
+                                                              'menu_name':         'Down',
+                                                              'title' : 'Down Graph',
+                                                              'description':       'Follow references down.',
+                                                              'traversal_args':    {'direction': 'down',
+                                                                'max_nodes': 150}}]}]
