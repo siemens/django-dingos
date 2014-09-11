@@ -100,6 +100,21 @@ header#grp-header #grp-navigation ul#grp-user-tools:last-child > li.grp-user-opt
 
 
 /* Package Graph */
+
+.iobject-graph .graph_label {
+    font-weight: bold;
+    margin-left: 0px;
+}
+
+.iobject-graph .graph-mode-selector .graph-mode-button {
+    text-shadow: none;
+    font-size: 11px !important;
+    font-weight:400 !important;
+    height: 18px !important;
+    margin: 0 2px !important;
+    padding: 0 5px !important;
+}
+
 .iobject-graph-canvas {
     min-height: 400px;
     overflow: hidden;

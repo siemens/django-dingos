@@ -333,26 +333,26 @@
 
 
 
-function refresh_graph(graph_box, render_graph, graph_mode) {
-    var graph_url = 'graph';
-    if (typeof graph_mode !== 'undefined') {
-        graph_url += '?mode=' + graph_mode;
-    }
+    function refresh_graph(graph_box, render_graph, graph_mode) {
+	var graph_url = 'graph';
+	if (typeof graph_mode !== 'undefined') {
+            graph_url += '?mode=' + graph_mode;
+	}
 
-    // Load graph data from backend
-    $.getJSON(graph_url, function(data) {
-        if(data.status) {
-            // Set title of graph box
-            $('h2', graph_box).text(data.msg);
+	// Load graph data from backend
+	$.getJSON(graph_url, function(data) {
+            if(data.status) {
+		// Set title of graph box
+		$('.graph_label', graph_box).text(data.msg);
 
-            // Remove old graph box
-            $('.graph-mode-button').remove();
+		// Remove old graph box
+		$('.graph-mode-button').remove();
 
-            // Collect mode keys
-            for (var mode_nr in data.available_modes) {
+		// Collect mode keys
+		for (var mode_nr in data.available_modes) {
 
-                //if (data.available_modes.hasOwnProperty(mode_key)) {
-	        var mode = data.available_modes[mode_nr];
+                    //if (data.available_modes.hasOwnProperty(mode_key)) {
+	            var mode = data.available_modes[mode_nr];
 		    var mode_key = mode["mode_key"];
                     // Create button to switch graph mode
                     var button = document.createElement("a");
@@ -363,14 +363,15 @@ function refresh_graph(graph_box, render_graph, graph_mode) {
                     button.onclick = function() { refresh_graph($('.iobject-graph').first(), render_graph, this.id); };
 
                     $('.graph-mode-selector', graph_box).append(button);
-               // }
-            }
+		    // }
+		}
 
-            // Render graph
-            render_graph(data.data);
-        } else {
-            //Error fetching graph data
-        }
-    });
-}
+		// Render graph
+		render_graph(data.data);
+            } else {
+		//Error fetching graph data
+            }
+	});
+    }
+
 }(django.jQuery)); // Reuse django injected jQuery library
