@@ -1863,7 +1863,6 @@ class UserData(DingoModel):
 
         settings_dod = dict2DingoObjDict(settings)
 
-
         settings_iobject = None
         if self.identifier:
             settings_iobject = self.identifier.latest

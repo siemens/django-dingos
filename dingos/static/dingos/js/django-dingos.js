@@ -2,7 +2,6 @@
     'use strict';
 
     $(function() {
-
 	window.getCookie = function(name){
 	    var cookieValue = null;
 	    if (document.cookie && document.cookie != '') {
@@ -311,13 +310,27 @@
 
 		}; // End render_graph()
 
+
         refresh_graph(graph_box, render_graph);
 
 	    });
 	}
 
+
+
+	// Fix the menu behaviour in the menubar
+	$(document).on('click', function(e){
+	    if($(e.target).is($('#grp-navigation > #grp-user-tools > li.grp-user-options-container > a'))){
+		var pl = $(e.target).parent();
+		pl.siblings().removeClass('grp-open').addClass('grp-closed');
+	    }else{
+		$('#grp-navigation > #grp-user-tools > li.grp-user-options-container').removeClass('grp-open').addClass('grp-closed');
+	    }
+	});
+
+
     });
-}(django.jQuery)); // Reuse django injected jQuery library
+
 
 
 function refresh_graph(graph_box, render_graph, graph_mode) {
@@ -358,3 +371,4 @@ function refresh_graph(graph_box, render_graph, graph_mode) {
         }
     });
 }
+}(django.jQuery)); // Reuse django injected jQuery library

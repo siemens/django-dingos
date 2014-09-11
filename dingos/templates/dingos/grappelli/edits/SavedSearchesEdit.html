@@ -36,6 +36,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
       <div class="grp-module grp-thead">
         <div class="grp-tr">
           <div class="grp-th">Name</div>
+            <div class="grp-th">Identifier</div>
           <div class="grp-th">Link</div>
             <div class="grp-th">Custom Query</div>
             <div class="grp-th">Parameters</div>
@@ -66,6 +67,13 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
              <p class="grp-help">This is a temporary entry and won't be persisted unless you give it a name and press save.</p>
              {% endif %}
            </div>
+           <div class="grp-td">
+	        {{form.identifier}}
+	        {{form.identifier.errors}}
+           </div>
+
+
+
            <div class="grp-td">
              {% comment %}
              The view field is hidden, because we want to display its value using the url tag. Still,
