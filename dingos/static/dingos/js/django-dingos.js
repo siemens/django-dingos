@@ -2,7 +2,6 @@
     'use strict';
 
     $(function() {
-
 	window.getCookie = function(name){
 	    var cookieValue = null;
 	    if (document.cookie && document.cookie != '') {
@@ -311,13 +310,27 @@
 
 		}; // End render_graph()
 
+
         refresh_graph(graph_box, render_graph);
 
 	    });
 	}
 
+
+
+	// Fix the menu behaviour in the menubar
+	$(document).on('click', function(e){
+	    if($(e.target).is($('#grp-navigation > #grp-user-tools > li.grp-user-options-container > a'))){
+		var pl = $(e.target).parent();
+		pl.siblings().removeClass('grp-open').addClass('grp-closed');
+	    }else{
+		$('#grp-navigation > #grp-user-tools > li.grp-user-options-container').removeClass('grp-open').addClass('grp-closed');
+	    }
+	});
+
+
     });
-}(django.jQuery)); // Reuse django injected jQuery library
+
 
 
 function refresh_graph(graph_box, render_graph, graph_mode) {
@@ -336,9 +349,11 @@ function refresh_graph(graph_box, render_graph, graph_mode) {
             $('.graph-mode-button').remove();
 
             // Collect mode keys
-            for (var mode_key in data.available_modes) {
-                if (data.available_modes.hasOwnProperty(mode_key)) {
-                    var mode = data.available_modes[mode_key];
+            for (var mode_nr in data.available_modes) {
+
+                //if (data.available_modes.hasOwnProperty(mode_key)) {
+	        var mode = data.available_modes[mode_nr];
+		    var mode_key = mode["mode_key"];
                     // Create button to switch graph mode
                     var button = document.createElement("a");
                     button.className = "grp-button graph-mode-button";
@@ -348,7 +363,7 @@ function refresh_graph(graph_box, render_graph, graph_mode) {
                     button.onclick = function() { refresh_graph($('.iobject-graph').first(), render_graph, this.id); };
 
                     $('.graph-mode-selector', graph_box).append(button);
-                }
+               // }
             }
 
             // Render graph
@@ -358,3 +373,4 @@ function refresh_graph(graph_box, render_graph, graph_mode) {
         }
     });
 }
+}(django.jQuery)); // Reuse django injected jQuery library

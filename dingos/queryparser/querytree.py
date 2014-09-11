@@ -14,15 +14,29 @@
 # this program; if not, write to the Free Software Foundation, Inc., 51
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+import re, importlib
 from django.db.models import Q
 from dingos.models import InfoObject, InfoObject2Fact, Fact
 from django.utils import timezone
 from django.utils.timezone import now
 from django.utils.dateparse import parse_datetime
 from datetime import timedelta
+
+from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
+
 from dingos.core.utilities import replace_by_list, is_in_list
 from dingos import DINGOS_QUERY_ALLOWED_KEYS, DINGOS_QUERY_ALLOWED_COLUMNS
-import re
+
+
+
+POSTPROCESSOR_REGISTRY = {}
+
+
+for (postprocessor_key,postprocessor_data) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
+    my_module = importlib.import_module(postprocessor_data['module'])
+    POSTPROCESSOR_REGISTRY[postprocessor_key] = getattr(my_module,postprocessor_data['class'])
+
 
 
 class QueryParserException(Exception):
@@ -164,43 +178,84 @@ class FormattedFilterCollection:
         self.format_args = format_args
 
     def build_format_arguments(self,query_mode=FilterCollection.INFO_OBJECT):
+
+        if self.format == 'default':
+            return {'columns': {'headers':[],'selected_fields':[]},
+                    'kwargs': {},
+                    'prefetch_related':[],
+                    'postprocessor' : None}
+
+        if self.format in POSTPROCESSOR_REGISTRY:
+            postprocessor_class = POSTPROCESSOR_REGISTRY[self.format]
+            postprocessor = postprocessor_class(query_mode=query_mode)
+            allowed_columns = postprocessor.allowed_columns
+            if postprocessor.query_mode_restriction and not query_mode in postprocessor.query_mode_restriction:
+                raise QueryParserException("Postprocessor %s cannot be used for %s queries" % (self.format,query_mode))
+        else:
+            raise QueryParserException("Unknown postprocessor %s" % (self.format))
+
+
+
         # Split format_args into col_specs and misc_args (contains additional output configuration)
         col_specs = []
         misc_args = {}
-        for format_arg in self.format_args:
-            if type(format_arg) is dict:
-                misc_args[format_arg['key']] = format_arg['value']
-            else:
-                col_specs.append(format_arg)
+        if self.format_args:
+            for format_arg in self.format_args:
+                if type(format_arg) is dict:
+                    misc_args[format_arg['key']] = format_arg['value']
+                else:
+                    col_specs.append(format_arg)
 
         # Reformat structure of column specifications
         prefetch_related_fields = set()
+
         split = {'headers': [], 'selected_fields': []}
         if len(col_specs) is not 0:
+
+            header = None
             for spec in col_specs:
                 if ':' in spec:
                     # Use user-defined header
                     (header, selected_field) = spec.split(':')
+                    header = header.strip()
+                    selected_field = selected_field.strip()
                 else:
-                    # Use selected_field as header
-                    header = selected_field = spec
+
+                    selected_field = spec
+
+
+
+
+                if not selected_field in postprocessor.allowed_columns.keys():
+                    raise QueryParserException("Column \"" + selected_field + "\" is not allowed; "
+                                                                              "please restrict yourself to the "
+                                                                              "following columns: %s" %
+                                               ", ".join(sorted(postprocessor.allowed_columns.keys())))
+                for prefetch in postprocessor.allowed_columns[selected_field][2]:
+                    prefetch_related_fields.add(prefetch)
+                if not header:
+                    header = postprocessor.allowed_columns[selected_field][0]
+
                 split['headers'].append(header)
-                if self.format in ['csv','json','table'] and not selected_field in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode].keys():
-                    raise QueryParserException("Column \"" + selected_field + "\" is not allowed; please restrict yourself to the following columns: %s" % ", ".join(DINGOS_QUERY_ALLOWED_COLUMNS[query_mode].keys()))
-
-                if self.format in ['csv','json','table']:
-                    for prefetch in DINGOS_QUERY_ALLOWED_COLUMNS[query_mode][selected_field][1]:
-                        prefetch_related_fields.add(prefetch)
-                if self.format in ['csv','json','table']:
-                    selected_field = DINGOS_QUERY_ALLOWED_COLUMNS[query_mode][selected_field][0]
-
 
                 split['selected_fields'].append(selected_field)
-        col_specs = split
-        return {'columns':col_specs,
-                'kwargs':misc_args,
-                'prefetch_related':list(prefetch_related_fields)}
 
+        else:
+            for i in postprocessor.default_columns:
+                split['headers'].append(i[1])
+                split['selected_fields'].append(i[0])
+                for prefetch in postprocessor.allowed_columns[i[0]][2]:
+                    prefetch_related_fields.add(prefetch)
+
+
+        col_specs = split
+        result = {'columns':col_specs,
+                'kwargs':misc_args,
+                'prefetch_related':list(prefetch_related_fields),
+                'postprocessor' : postprocessor}
+
+        print result
+        return result
 
 class Expression:
     def __init__(self, left, operator, right):

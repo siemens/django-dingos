@@ -44,11 +44,16 @@ class QueryParser:
         QUERY LANGUAGE GRAMMAR
         ======================
         refbyrequest: request
-        refbyrequest: REFERENCED_BY refbyargs COLON OPEN request CLOSE REFBYSIGN request
+        refbyrequest: refby REFBYSIGN request
+        refbyrequest: refby
+        refbyrequest: refby formatext
+        refby:      REFERENCED_BY refbyargs COLON OPEN request CLOSE
         refbyargs:
         refbyargs:  OPEN formatargs CLOSE
         request:    query
-        request:    query FORMATSIGN ID OPEN formatargs CLOSE
+        request:    query formatext
+        formatext:  FORMATSIGN ID OPEN formatargs CLOSE
+        formatargs:
         formatargs: formatarg COMMA formatargs
         formatargs: formatarg
         formatarg:  VALUE
@@ -94,8 +99,24 @@ class QueryParser:
         p[0] = ReferencedByFilterCollection(p[1])
 
     def p_refby_request(self, p):
-        """refbyrequest : REFERENCED_BY refbyargs COLON OPEN request CLOSE REFBYSIGN request"""
-        p[0] = ReferencedByFilterCollection(p[8], p[5], p[2])
+        """refbyrequest : refby REFBYSIGN request"""
+        p[0] = ReferencedByFilterCollection(p[3], p[1]['refbyrequest'], p[1]['refbyargs'])
+
+    def p_refby_only(self, p):
+        """refbyrequest : refby"""
+        # Collection without query
+        formatted_filter_collection = FormattedFilterCollection(FilterCollection())
+        p[0] = ReferencedByFilterCollection(formatted_filter_collection, p[1]['refbyrequest'], p[1]['refbyargs'])
+
+    def p_refby_formatted(self, p):
+        """refbyrequest : refby formatext"""
+        # Collection without query but with format information
+        formatted_filter_collection = FormattedFilterCollection(FilterCollection(), p[2]['formatargs'], p[2]['id'])
+        p[0] = ReferencedByFilterCollection(formatted_filter_collection, p[1]['refbyrequest'], p[1]['refbyargs'])
+
+    def p_refby(self, p):
+        """refby : REFERENCED_BY refbyargs COLON OPEN request CLOSE"""
+        p[0] = {'refbyargs': p[2], 'refbyrequest': p[5]}
 
     def p_refbyargs_empty(self, p):
         """refbyargs :"""
@@ -110,8 +131,16 @@ class QueryParser:
         p[0] = FormattedFilterCollection(p[1])
 
     def p_request(self, p):
-        """request : query FORMATSIGN ID OPEN formatargs CLOSE"""
-        p[0] = FormattedFilterCollection(p[1], p[5], p[3])
+        """request : query formatext"""
+        p[0] = FormattedFilterCollection(p[1], p[2]['formatargs'], p[2]['id'])
+
+    def p_formatext(self, p):
+        """formatext : FORMATSIGN ID OPEN formatargs CLOSE"""
+        p[0] = {'id': p[2], 'formatargs': p[4]}
+
+    def p_formatargs_empty(self, p):
+        """formatargs :"""
+        p[0] = None
 
     def p_formatargs(self, p):
         """formatargs : formatarg COMMA formatargs"""

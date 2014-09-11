@@ -16,7 +16,7 @@
 #
 
 import json
-
+import re
 from django import http
 from django.http import HttpResponse
 from django.db.models import F
@@ -30,6 +30,8 @@ from django.db import DataError
 from django.core.exceptions import FieldError
 from django.contrib.auth.models import User
 
+from provider.oauth2.models import Client
+
 from braces.views import SuperuserRequiredMixin
 
 from dingos.models import InfoObject2Fact, InfoObject, UserData, get_or_create_fact
@@ -38,7 +40,7 @@ from dingos.view_classes import BasicJSONView, POSTPROCESSOR_REGISTRY
 import csv
 
 from dingos.filter import InfoObjectFilter, CompleteInfoObjectFilter,FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
-from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm
+from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm, OAuthInfoForm, OAuthNewClientForm
 
 from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, \
@@ -62,7 +64,6 @@ from dingos.core.utilities import match_regex_list
 
 class InfoObjectList(BasicFilterView):
 
-    counting_paginator = False
 
     exclude_internal_objects = True
 
@@ -72,6 +73,8 @@ class InfoObjectList(BasicFilterView):
                    ('List',None),
                    ('InfoObject',None))
 
+
+    fields_for_api_call = ['identifier','timestamp','import_timestamp','name','object_type','package_names','package_urls']
 
     filterset_class= InfoObjectFilter
 
@@ -162,8 +165,10 @@ class SimpleFactSearch(BasicFilterView):
 
     title = 'Fact-based filtering'
 
-
     filterset_class = OrderedFactTermValueFilter
+
+    fields_for_api_call = ['object.name','object.object_type','fact_term_with_attribute','value','package_names','package_urls']
+
     @property
     def queryset(self):
         if self.get_query_string() == '?':
@@ -188,10 +193,11 @@ class UniqueSimpleFactSearch(BasicFilterView):
 
     title = 'Fact-based filtering (unique)'
 
+    fields_for_api_call = ['object.object_type','fact_term_with_attribute','value']
 
     filterset_class = FactTermValueFilter
 
-    
+
     @property
     def queryset(self):
         if self.get_query_string() == '?':
@@ -467,9 +473,26 @@ class CustomSearchesEditView(BasicTemplateView):
         counter = 0
 
         for saved_search in saved_searches:
+            # TODO: there is an error either in core.datatypes.from_flat_repr or
+            # (more likely) in the Mixin that retrieves the user data, which turns
+            # empty values into {}. The statements below remove this
+            # spurious '{}'.
+
+            if saved_search['title'] == {}:
+                saved_search['title']= ''
+
+            if saved_search['identifier'] == {}:
+                saved_search['identifier']= ''
+
+            if saved_search['custom_query'] == {}:
+                saved_search['custom_query']= ''
+
+
+
             initial.append({'new_entry': False,
                             'position' : counter,
                             'title': saved_search['title'],
+                            'identifier': saved_search.get('identifier'),
                             'view' : saved_search['view'],
                             'parameter' : saved_search['parameter'],
                             'custom_query': saved_search.get('custom_query','')})
@@ -478,6 +501,7 @@ class CustomSearchesEditView(BasicTemplateView):
             initial.append({'position' : counter,
                             'new_entry' : True,
                             'title': "",
+                            'identifier':"",
                             'view' : self.request.session['new_search']['view'],
                             'parameter' : self.request.session['new_search']['parameter'],
                             'custom_query' : self.request.session['new_search'].get('custom_query','')
@@ -494,6 +518,7 @@ class CustomSearchesEditView(BasicTemplateView):
         self.formset = self.form_class(request.POST.dict())
         saved_searches = user_data['saved_searches']
 
+
         if self.formset.is_valid() and request.user.is_authenticated():
             dingos_saved_searches = []
 
@@ -506,6 +531,7 @@ class CustomSearchesEditView(BasicTemplateView):
                 #      u'ORDER': None,
                 #      u'DELETE': False,
                 #     'title': u'Filter for STIX Packages'
+                #     'identifier': u'all_stix_packages'
                 #     }
                 #
 
@@ -514,6 +540,7 @@ class CustomSearchesEditView(BasicTemplateView):
                                                     'parameter' : search['parameter'],
                                                     'custom_query' : search.get('custom_query',''),
                                                     'title' : search['title'],
+                                                    'identifier' : search['identifier'],
                                                     }
                     )
 
@@ -531,6 +558,7 @@ class CustomSearchesEditView(BasicTemplateView):
             # Form was not valid, we return the form as is
 
             return super(BasicTemplateView,self).get(request, *args, **kwargs)
+
         return self.get(request, *args, **kwargs)
 
 class InfoObjectJSONView(BasicDetailView):
@@ -566,7 +594,7 @@ class CustomInfoObjectSearchView(BasicCustomQueryView):
 
 
 class CustomFactSearchView(BasicCustomQueryView):
-    counting_paginator = False
+
 
     template_name = 'dingos/%s/searches/CustomFactSearch.html' % DINGOS_TEMPLATE_FAMILY
     title = 'Custom Fact Search'
@@ -622,8 +650,13 @@ class InfoObjectExportsView(BasicTemplateView):
         exporter = self.kwargs.get('exporter', None)
 
         if exporter in POSTPROCESSOR_REGISTRY:
+
             postprocessor_class = POSTPROCESSOR_REGISTRY[exporter]
-            postprocessor = postprocessor_class(graph=graph)
+
+            postprocessor = postprocessor_class(graph=graph,
+                                                query_mode='InfoObject',
+                                                enrich_details=True)
+
 
             if 'columns' in self.request.GET:
                 columns = self.request.GET.get('columns')
@@ -632,6 +665,8 @@ class InfoObjectExportsView(BasicTemplateView):
             else:
                 columns = []
             (content_type,result) = postprocessor.export(*columns,**self.request.GET)
+
+
         else:
             content_type = None
             result = 'NO EXPORTER %s DEFINED' % exporter
@@ -666,7 +701,7 @@ class InfoObjectJSONGraph(BasicJSONView):
         {'term':'KillChain','operator':'icontains'},
         ]
 
-    max_objects = 400
+
     @property
     def returned_obj(self):
         res = {
@@ -684,19 +719,30 @@ class InfoObjectJSONGraph(BasicJSONView):
         iobject = InfoObject.objects.all().filter(pk=iobject_id)[0]
         graph_mode = None
         for graph_type in DINGOS_INFOOBJECT_GRAPH_TYPES:
-            family_patterns = graph_type['info_object_families']
-            type_patterns = graph_type['info_object_types']
+            family_pattern = graph_type['info_object_family_re']
+            type_pattern = graph_type['info_object_type_re']
             family = str(iobject.iobject_family)
             type = str(iobject.iobject_type)
-            if match_regex_list(family_patterns, family) and match_regex_list(type_patterns, type):
+            if re.match(family_pattern, family) and re.match(type_pattern, type):
                 available_modes = graph_type['available_modes']
                 res['available_modes'] = available_modes
 
-                chosen_mode = graph_type['default_mode']
-                if self.request.GET.get('mode') and self.request.GET.get('mode') in available_modes:
-                    chosen_mode = self.request.GET.get('mode')
+                graph_mode=None
+                default_mode=None
 
-                graph_mode = available_modes[chosen_mode]
+                mode_key = self.request.GET.get('mode',graph_type['default_mode'])
+
+                for mode in available_modes:
+                    if mode.get('mode_key')==mode_key:
+                        graph_mode = mode
+                        break
+                    elif mode.get('mode_key')== graph_type['default_mode']:
+                        default_mode = mode
+
+                if not graph_mode:
+                    graph_mode = default_mode
+
+                res['msg'] = graph_mode['title']
                 break
 
 
@@ -708,7 +754,6 @@ class InfoObjectJSONGraph(BasicJSONView):
 
         graph= follow_references([iobject_id],
                                  skip_terms = self.skip_terms,
-                                 max_nodes=self.max_objects,
                                  **graph_mode['traversal_args']
                                  )
 
@@ -716,9 +761,7 @@ class InfoObjectJSONGraph(BasicJSONView):
             res['status'] = True
 
             if graph.graph['max_nodes_reached']:
-                res['msg'] = "Partial reference graph (%s InfoObjects)" % self.max_objects
-            else:
-                res['msg'] = "Reference graph"
+                res['msg'] = res['msg'] + " (partial, %s InfoObjects)" % graph_mode['traversal_args'].get('max_nodes','??')
 
             # test-code for showing only objects and their relations
             #nodes_to_remove = []
@@ -734,3 +777,75 @@ class InfoObjectJSONGraph(BasicJSONView):
             }
 
         return res
+
+class OAuthInfo(BasicTemplateView):
+    """
+    View for editing the OAuth information.
+    """
+
+    template_name = 'dingos/%s/edits/OAuthInfoEdit.html' % DINGOS_TEMPLATE_FAMILY
+    title = 'Edit OAuth Keys'
+
+    form_class = formset_factory(OAuthInfoForm, can_order=True, can_delete=True, extra=0)
+    formset = None
+
+    def get_context_data(self, **kwargs):
+        context = super(OAuthInfo, self).get_context_data(**kwargs)
+        context['formset'] = self.formset
+        context['newclientform'] = OAuthNewClientForm
+        return context
+
+    def get(self, request, *args, **kwargs):
+        initial = []
+
+        # Show all client key pairs for the current user
+        user = User.objects.get(username=request.user.username)
+
+        # Insert test clients
+        #for counter in range(10):
+        #    Client(user=user, name="Testclient" + str(counter), client_type=1).save()
+
+        clients = Client.objects.all().filter(user=user)
+        for client in clients:
+            initial.append({"client_name": client.name,
+                            "client_id": client.client_id,
+                            "client_secret": client.client_secret})
+
+        self.formset = self.form_class(initial=initial)
+        return super(BasicTemplateView, self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        initial = []
+        self.formset = self.form_class(request.POST.dict())
+        if self.formset.is_valid() and request.user.is_authenticated():
+            user = User.objects.get(username=request.user.username)
+
+            if "generate_new_client" in request.POST:
+                client_name = request.POST.dict()["new_client"]
+                client = Client(user=user, name=client_name, client_type=1)
+                client.save()
+            elif 'update_clients' in request.POST:
+                # TODO It would be better to update the existing clients instead of delete&insert
+                # Delete all clients
+                clients = Client.objects.all().filter(user=user)
+                for client in clients:
+                    client.delete()
+
+                # Insert all clients again
+                for form in self.formset.ordered_forms:
+                    client = Client(user=user,
+                                    name=form.cleaned_data["client_name"],
+                                    client_id=form.cleaned_data["client_id"],
+                                    client_secret=form.cleaned_data["client_secret"],
+                                    client_type=1)
+                    client.save()
+
+            # Initialize client page
+            clients = Client.objects.all().filter(user=user)
+            for client in clients:
+                initial.append({"client_name": client.name,
+                                "client_id": client.client_id,
+                                "client_secret": client.client_secret})
+
+            self.formset = self.form_class(initial=initial)
+        return super(BasicTemplateView, self).get(request, *args, **kwargs)

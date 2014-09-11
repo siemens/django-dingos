@@ -1,5 +1,3 @@
-{% extends "mantis/grappelli/base.html" %}
-
 {% comment %}
 Copyright (c) Siemens AG, 2013
 
@@ -18,25 +16,29 @@ this program; if not, write to the Free Software Foundation, Inc., 51
 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
+{% block revisions %}
 
-{% load static %}
-{% load dingos_tags %}
 
-{% block title %}
-  {% create_title title %}
+<div class ="grp-module grp-collapse">
+<h2 class="grp-collapse-handler">Information Exporters</h2>
+
+                {% for exporter in exporters %}
+
+
+                    <div class="grp-row">
+
+                        <a href={% url 'url.dingos.view.infoobject.exports' object.pk exporter.0 %}>{{ exporter.1.name }}</a>
+
+                    </div>
+
+                {% endfor %}
+
+
+    </div>
+
+
+
 {% endblock %}
 
-{% block stylesheets %}
-  {{ block.super }}
-  <link href="{% static 'dingos/css/django-dingos.css' %}" rel="stylesheet" type="text/css" media="screen" />
-{% endblock %}
 
-{% block javascripts %}
-  {{ block.super }}
-  <script src="{% static 'dingos/js/django-dingos.js' %}"></script>
-{% endblock javascripts %}
-
-{% block content_title %}
-  <h1>{{ title }}</h1>
-{% endblock %}
 
