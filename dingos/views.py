@@ -727,11 +727,21 @@ class InfoObjectJSONGraph(BasicJSONView):
                 available_modes = graph_type['available_modes']
                 res['available_modes'] = available_modes
 
-                chosen_mode = graph_type['default_mode']
-                if self.request.GET.get('mode') and self.request.GET.get('mode') in available_modes:
-                    chosen_mode = self.request.GET.get('mode')
+                graph_mode=None
+                default_mode=None
 
-                graph_mode = available_modes[chosen_mode]
+                mode_key = self.request.GET.get('mode',graph_type['default_mode'])
+
+                for mode in available_modes:
+                    if mode.get('mode_key')==mode_key:
+                        graph_mode = mode
+                        break
+                    elif mode.get('mode_key')== graph_type['default_mode']:
+                        default_mode = mode
+
+                if not graph_mode:
+                    graph_mode = default_mode
+
                 res['msg'] = graph_mode['title']
                 break
 
