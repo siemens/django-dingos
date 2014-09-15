@@ -188,7 +188,7 @@ form#query-executor #id_query {
 }
 
 
-/* Fix the result list's overflow, because overlapping leads to an unusable sidebar  */
-.grp-module.grp-changelist-results {
+/* Fix the left column overflow, because overlapping leads to an unusable sidebar  */
+div.c-2 > .grp-module, div.c-2 .grp-module.grp-changelist-results {
     overflow: auto;
 }
