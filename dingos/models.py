@@ -269,6 +269,14 @@ class IdentifierNameSpace(DingoModel):
                                          the defining characteristic of a namespace is the URI, not the
                                          name: the name is completely exchangeable.""")
 
+    def content_file_name(instance, filename):
+        return '/'.join(['content', filename])
+
+    image = models.ImageField(upload_to=content_file_name,
+                              blank=True,
+                              null=True,
+                              help_text="Image to display for this namespace.",)
+
     description = models.TextField(blank=True)
 
     is_substitution = models.BooleanField(default=False)
