@@ -577,3 +577,10 @@ def reachable_packages(context, current_node):
         return ",<br/> ".join(result)
     else:
         return ''
+
+@register.simple_tag
+def show_namespace_image(namespace):
+    if namespace.image:
+        image_url = "/media/" + str(namespace.image);
+        return "<img src='" + image_url + "'/>"
+    return namespace.uri
