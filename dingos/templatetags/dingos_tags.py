@@ -585,6 +585,6 @@ def show_namespace_image(namespace):
     Returns the the namespace image or the namespace uri if the image does not exist
     """
     if namespace.image:
-        image_url = settings.MEDIA_URL + str(namespace.image);
+        image_url = settings.MEDIA_URL + str(namespace.image)
         return "<img src='" + image_url + "'/>"
     return namespace.uri
