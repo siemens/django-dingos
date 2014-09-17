@@ -55,6 +55,7 @@ from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, Ba
 from queryparser.queryparser import QueryParser
 from queryparser.querylexer import QueryLexerException
 from queryparser.querytree import FilterCollection, QueryParserException
+import importlib
 
 
 from dingos.graph_traversal import follow_references
@@ -752,10 +753,17 @@ class InfoObjectJSONGraph(BasicJSONView):
         #                          reverse_direction=True,
         #                          max_nodes=self.max_objects)
 
-        graph= follow_references([iobject_id],
-                                 skip_terms = self.skip_terms,
-                                 **graph_mode['traversal_args']
-                                 )
+        graph=follow_references([iobject_id],
+                                skip_terms = self.skip_terms,
+                                **graph_mode['traversal_args'])
+
+        # Graph postprocessing
+        postprocessor_path = 'mantis_stix_importer.graph_postprocessors.standard_postprocessor' # default processor
+        if 'postprocessor' in graph_mode:
+            postprocessor_path = graph_mode['postprocessor']
+        postprocessor_module = importlib.import_module(postprocessor_path)
+        postprocessor = getattr(postprocessor_module, "process")
+        graph = postprocessor(graph)
 
         if iobject_id:
             res['status'] = True
