@@ -832,6 +832,7 @@ class OAuthInfo(BasicTemplateView):
                     client.delete()
 
                 # Insert all clients again
+                self.formset.ordered_forms.reverse()
                 for form in self.formset.ordered_forms:
                     client = Client(user=user,
                                     name=form.cleaned_data["client_name"],
