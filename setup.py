@@ -44,6 +44,7 @@ setup(
                       'python-dateutil>=2.2',
                       'ply>=3.4',
                       'networkx>=1.9',
+                      'django-oauth2-provider>=0.2.6.1'
     ],
     license="GPLv2+",
     zip_safe=False,
