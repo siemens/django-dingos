@@ -270,7 +270,7 @@ class IdentifierNameSpace(DingoModel):
                                          name: the name is completely exchangeable.""")
 
     def content_file_name(instance, filename):
-        return '/'.join(['content', filename])
+        return '/'.join(['content', 'namespace_images',filename])
 
     image = models.ImageField(upload_to=content_file_name,
                               blank=True,

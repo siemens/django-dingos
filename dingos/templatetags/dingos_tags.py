@@ -580,11 +580,18 @@ def reachable_packages(context, current_node):
         return ''
 
 @register.simple_tag
-def show_namespace_image(namespace):
+def show_namespace_image(namespace, height=None, width=None):
     """
     Returns the the namespace image or the namespace uri if the image does not exist
     """
+
+    attributes = []
+
+    if height:
+        attributes.append("height='%s'" % height)
+    if width:
+        attributes.append("width='%s'" % width)
     if namespace.image:
         image_url = settings.MEDIA_URL + str(namespace.image)
-        return "<img src='" + image_url + "'/>"
+        return "<img src='" + image_url + "'" + " ".join(attributes) + "/>"
     return namespace.uri
