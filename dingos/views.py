@@ -758,12 +758,15 @@ class InfoObjectJSONGraph(BasicJSONView):
                                 **graph_mode['traversal_args'])
 
         # Graph postprocessing
-        postprocessor_path = 'mantis_stix_importer.graph_postprocessors.standard_postprocessor' # default processor
+
         if 'postprocessor' in graph_mode:
             postprocessor_path = graph_mode['postprocessor']
-        postprocessor_module = importlib.import_module(postprocessor_path)
-        postprocessor = getattr(postprocessor_module, "process")
-        graph = postprocessor(graph)
+            try:
+                postprocessor_module = importlib.import_module(postprocessor_path)
+                postprocessor = getattr(postprocessor_module, "process")
+                graph = postprocessor(graph)
+            except:
+                pass
 
         if iobject_id:
             res['status'] = True
