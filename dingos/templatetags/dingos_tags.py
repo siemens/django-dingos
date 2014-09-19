@@ -593,5 +593,5 @@ def show_namespace_image(namespace, height=None, width=None):
         attributes.append("width='%s'" % width)
     if namespace.image:
         image_url = settings.MEDIA_URL + str(namespace.image)
-        return "<img src='" + image_url + "'" + " ".join(attributes) + "/>"
+        return "<img alt='" + namespace.uri + "' src='" + image_url + "'" + " ".join(attributes) + "/>"
     return namespace.uri
