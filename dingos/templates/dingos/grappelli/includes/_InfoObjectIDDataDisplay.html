@@ -16,7 +16,7 @@ this program; if not, write to the Free Software Foundation, Inc., 51
 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
-
+{% load dingos_tags %}
 
 <div class="grp-module">
     <h2 class="grp-collapse-handler">
@@ -33,10 +33,10 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             <td >
                 {% if show_hyperlink %}
                 <a href="{%url 'url.dingos.view.infoobject' pk=object.pk %}">
-                    {{object.identifier.namespace.uri}}<b>:</b>{{ object.identifier.uid }}
+                    {% show_namespace_image object.identifier.namespace %}<b>:</b>{{ object.identifier.uid }}
                 </a>
                 {% else %}
-                    {{object.identifier.namespace.uri}}<b>:</b>{{ object.identifier.uid }}
+                    {% show_namespace_image object.identifier.namespace %}<b>:</b>{{ object.identifier.uid }}
                 {% endif %}
             </td>
             <th >

@@ -21,6 +21,7 @@ from django.core.urlresolvers import reverse
 from django.utils import html
 from django.utils.html import conditional_escape, strip_tags
 from django.utils.safestring import mark_safe
+from django.conf import settings
 
 from dingos import DINGOS_TEMPLATE_FAMILY
 from dingos.core import http_helpers
@@ -577,3 +578,20 @@ def reachable_packages(context, current_node):
         return ",<br/> ".join(result)
     else:
         return ''
+
+@register.simple_tag
+def show_namespace_image(namespace, height=None, width=None):
+    """
+    Returns the the namespace image or the namespace uri if the image does not exist
+    """
+
+    attributes = []
+
+    if height:
+        attributes.append("height='%s'" % height)
+    if width:
+        attributes.append("width='%s'" % width)
+    if namespace.image:
+        image_url = settings.MEDIA_URL + str(namespace.image)
+        return "<img src='" + image_url + "'" + " ".join(attributes) + "/>"
+    return namespace.uri
