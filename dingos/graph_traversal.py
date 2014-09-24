@@ -69,6 +69,7 @@ def follow_references(iobject_pks,
                       keep_graph_info=True,
                       reverse_direction=False,
                       graph = None):
+
     """
     Given a list of primary keys of InfoObject instances, the function calculates a reachability graph based
     on referencing of InfoObjects within a fact. The function has the following parameters:
