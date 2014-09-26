@@ -249,6 +249,8 @@ class DataTypeNameSpace(DingoModel):
 
 dingos_class_map["DataTypeNameSpace"] = DataTypeNameSpace
 
+def content_file_name(filename):
+    return '/'.join(['content', 'namespace_images',filename])
 
 class IdentifierNameSpace(DingoModel):
     """
@@ -269,8 +271,7 @@ class IdentifierNameSpace(DingoModel):
                                          the defining characteristic of a namespace is the URI, not the
                                          name: the name is completely exchangeable.""")
 
-    def content_file_name(instance, filename):
-        return '/'.join(['content', 'namespace_images',filename])
+
 
     image = models.ImageField(upload_to=content_file_name,
                               blank=True,
