@@ -752,7 +752,7 @@ class BasicCustomQueryView(BasicListView):
 class BasicJSONView(CommonContextMixin,
                     ViewMethodMixin,
                     LoginRequiredMixin,
-                    View):
+                    TemplateView):
 
     login_url = "/admin"
 
@@ -762,9 +762,18 @@ class BasicJSONView(CommonContextMixin,
     def returned_obj(self):
         return {"This":"That"}
 
+    request = None
+
     def get(self, request, *args, **kwargs):
+        self.request= request
         context = self.get_context_data(**kwargs)
-        return self.render_to_response(context)
+        if request.GET.get('test_call'):
+            self.api_result = self.returned_obj
+            self.api_result_content_type = "json"
+            self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
+            return super(BasicJSONView, self).get(request, *args, **kwargs)
+        else:
+            return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
@@ -772,6 +781,8 @@ class BasicJSONView(CommonContextMixin,
 
 
     def render_to_response(self, context):
+        if self.request.GET.get('test_call'):
+            return super(BasicJSONView, self).render_to_response(context)
         returned_obj = self.returned_obj
         if isinstance(returned_obj,basestring):
             json_string = returned_obj

@@ -1,436 +1,420 @@
 # -*- coding: utf-8 -*-
-import datetime
-from south.db import db
-from south.v2 import SchemaMigration
-from django.db import models
+from __future__ import unicode_literals
+
+from django.db import models, migrations
+from django.conf import settings
+import dingos.models
 
 
-class Migration(SchemaMigration):
+class Migration(migrations.Migration):
 
-    def forwards(self, orm):
-        # Adding model 'FactValue'
-        db.create_table(u'dingos_factvalue', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('value', self.gf('django.db.models.fields.TextField')()),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=256, blank=True)),
-            ('description', self.gf('django.db.models.fields.TextField')(blank=True)),
-            ('fact_data_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.FactDataType'])),
-        ))
-        db.send_create_signal(u'dingos', ['FactValue'])
+    dependencies = [
+        ('auth', '0001_initial'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('contenttypes', '0001_initial'),
+    ]
 
-        # Adding unique constraint on 'FactValue', fields ['value', 'fact_data_type']
-        db.create_unique(u'dingos_factvalue', ['value', 'fact_data_type_id'])
-
-        # Adding model 'FactDataType'
-        db.create_table(u'dingos_factdatatype', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=128)),
-            ('description', self.gf('django.db.models.fields.TextField')(blank=True)),
-            ('name_space', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.DataTypeNameSpace'])),
-            ('kind', self.gf('django.db.models.fields.SmallIntegerField')(default=0)),
-        ))
-        db.send_create_signal(u'dingos', ['FactDataType'])
-
-        # Adding unique constraint on 'FactDataType', fields ['name', 'name_space']
-        db.create_unique(u'dingos_factdatatype', ['name', 'name_space_id'])
-
-        # Adding model 'DataTypeNameSpace'
-        db.create_table(u'dingos_datatypenamespace', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('uri', self.gf('django.db.models.fields.URLField')(unique=True, max_length=255)),
-            ('name', self.gf('django.db.models.fields.SlugField')(max_length=50, blank=True)),
-            ('description', self.gf('django.db.models.fields.TextField')(blank=True)),
-        ))
-        db.send_create_signal(u'dingos', ['DataTypeNameSpace'])
-
-        # Adding model 'IdentifierNameSpace'
-        db.create_table(u'dingos_identifiernamespace', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('uri', self.gf('django.db.models.fields.URLField')(unique=True, max_length=255)),
-            ('name', self.gf('django.db.models.fields.SlugField')(max_length=50, blank=True)),
-            ('description', self.gf('django.db.models.fields.TextField')(blank=True)),
-        ))
-        db.send_create_signal(u'dingos', ['IdentifierNameSpace'])
-
-        # Adding model 'FactTerm'
-        db.create_table(u'dingos_factterm', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('term', self.gf('django.db.models.fields.CharField')(max_length=512)),
-            ('attribute', self.gf('django.db.models.fields.CharField')(max_length=128)),
-        ))
-        db.send_create_signal(u'dingos', ['FactTerm'])
-
-        # Adding unique constraint on 'FactTerm', fields ['term', 'attribute']
-        db.create_unique(u'dingos_factterm', ['term', 'attribute'])
-
-        # Adding model 'InfoObjectNaming'
-        db.create_table(u'dingos_infoobjectnaming', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('iobject_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.InfoObjectType'])),
-            ('format_string', self.gf('django.db.models.fields.TextField')()),
-            ('position', self.gf('django.db.models.fields.PositiveSmallIntegerField')()),
-        ))
-        db.send_create_signal(u'dingos', ['InfoObjectNaming'])
-
-        # Adding model 'InfoObjectType'
-        db.create_table(u'dingos_infoobjecttype', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.SlugField')(max_length=30)),
-            ('description', self.gf('django.db.models.fields.TextField')(blank=True)),
-            ('iobject_family', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.InfoObjectFamily'])),
-            ('namespace', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.DataTypeNameSpace'], blank=True)),
-        ))
-        db.send_create_signal(u'dingos', ['InfoObjectType'])
-
-        # Adding unique constraint on 'InfoObjectType', fields ['name', 'iobject_family', 'namespace']
-        db.create_unique(u'dingos_infoobjecttype', ['name', 'iobject_family_id', 'namespace_id'])
-
-        # Adding model 'InfoObjectFamily'
-        db.create_table(u'dingos_infoobjectfamily', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.SlugField')(unique=True, max_length=256)),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=1024, blank=True)),
-            ('description', self.gf('django.db.models.fields.TextField')(blank=True)),
-        ))
-        db.send_create_signal(u'dingos', ['InfoObjectFamily'])
-
-        # Adding model 'Revision'
-        db.create_table(u'dingos_revision', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=32, blank=True)),
-        ))
-        db.send_create_signal(u'dingos', ['Revision'])
-
-        # Adding model 'FactTerm2Type'
-        db.create_table(u'dingos_factterm2type', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('fact_term', self.gf('django.db.models.fields.related.ForeignKey')(related_name='iobject_type_thru', to=orm['dingos.FactTerm'])),
-            ('iobject_type', self.gf('django.db.models.fields.related.ForeignKey')(related_name='fact_term_thru', to=orm['dingos.InfoObjectType'])),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=1024, blank=True)),
-            ('description', self.gf('django.db.models.fields.TextField')(blank=True)),
-        ))
-        db.send_create_signal(u'dingos', ['FactTerm2Type'])
-
-        # Adding unique constraint on 'FactTerm2Type', fields ['iobject_type', 'fact_term']
-        db.create_unique(u'dingos_factterm2type', ['iobject_type_id', 'fact_term_id'])
-
-        # Adding M2M table for field fact_data_types on 'FactTerm2Type'
-        db.create_table(u'dingos_factterm2type_fact_data_types', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('factterm2type', models.ForeignKey(orm[u'dingos.factterm2type'], null=False)),
-            ('factdatatype', models.ForeignKey(orm[u'dingos.factdatatype'], null=False))
-        ))
-        db.create_unique(u'dingos_factterm2type_fact_data_types', ['factterm2type_id', 'factdatatype_id'])
-
-        # Adding model 'NodeID'
-        db.create_table(u'dingos_nodeid', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=255)),
-        ))
-        db.send_create_signal(u'dingos', ['NodeID'])
-
-        # Adding model 'InfoObject2Fact'
-        db.create_table(u'dingos_infoobject2fact', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('iobject', self.gf('django.db.models.fields.related.ForeignKey')(related_name='fact_thru', to=orm['dingos.InfoObject'])),
-            ('fact', self.gf('django.db.models.fields.related.ForeignKey')(related_name='iobject_thru', to=orm['dingos.Fact'])),
-            ('attributed_fact', self.gf('django.db.models.fields.related.ForeignKey')(related_name='attributes', null=True, to=orm['dingos.InfoObject2Fact'])),
-            ('node_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.NodeID'])),
-        ))
-        db.send_create_signal(u'dingos', ['InfoObject2Fact'])
-
-        # Adding model 'Fact'
-        db.create_table(u'dingos_fact', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('fact_term', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.FactTerm'])),
-            ('value_iobject_id', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='value_of_set', null=True, to=orm['dingos.Identifier'])),
-            ('value_iobject_ts', self.gf('django.db.models.fields.DateTimeField')(null=True)),
-            ('value_on_disk', self.gf('django.db.models.fields.BooleanField')(default=False)),
-        ))
-        db.send_create_signal(u'dingos', ['Fact'])
-
-        # Adding M2M table for field fact_values on 'Fact'
-        db.create_table(u'dingos_fact_fact_values', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('fact', models.ForeignKey(orm[u'dingos.fact'], null=False)),
-            ('factvalue', models.ForeignKey(orm[u'dingos.factvalue'], null=False))
-        ))
-        db.create_unique(u'dingos_fact_fact_values', ['fact_id', 'factvalue_id'])
-
-        # Adding model 'InfoObject'
-        db.create_table(u'dingos_infoobject', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('identifier', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.Identifier'])),
-            ('timestamp', self.gf('django.db.models.fields.DateTimeField')()),
-            ('create_timestamp', self.gf('django.db.models.fields.DateTimeField')()),
-            ('iobject_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.InfoObjectType'])),
-            ('iobject_type_revision', self.gf('django.db.models.fields.related.ForeignKey')(related_name='+', to=orm['dingos.Revision'])),
-            ('iobject_family', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.InfoObjectFamily'])),
-            ('iobject_family_revision', self.gf('django.db.models.fields.related.ForeignKey')(related_name='+', to=orm['dingos.Revision'])),
-            ('uri', self.gf('django.db.models.fields.URLField')(max_length=200, blank=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(default='Unnamed', max_length=255, blank=True)),
-        ))
-        db.send_create_signal(u'dingos', ['InfoObject'])
-
-        # Adding unique constraint on 'InfoObject', fields ['identifier', 'timestamp']
-        db.create_unique(u'dingos_infoobject', ['identifier_id', 'timestamp'])
-
-        # Adding model 'Identifier'
-        db.create_table(u'dingos_identifier', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('uid', self.gf('django.db.models.fields.SlugField')(max_length=255)),
-            ('namespace', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.IdentifierNameSpace'])),
-            ('latest', self.gf('django.db.models.fields.related.OneToOneField')(related_name='latest_of', unique=True, null=True, to=orm['dingos.InfoObject'])),
-        ))
-        db.send_create_signal(u'dingos', ['Identifier'])
-
-        # Adding unique constraint on 'Identifier', fields ['uid', 'namespace']
-        db.create_unique(u'dingos_identifier', ['uid', 'namespace_id'])
-
-        # Adding model 'Relation'
-        db.create_table(u'dingos_relation', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('source_id', self.gf('django.db.models.fields.related.ForeignKey')(related_name='yields_via', null=True, to=orm['dingos.Identifier'])),
-            ('target_id', self.gf('django.db.models.fields.related.ForeignKey')(related_name='yielded_by_via', null=True, to=orm['dingos.Identifier'])),
-            ('relation_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dingos.Fact'])),
-            ('metadata_id', self.gf('django.db.models.fields.related.ForeignKey')(related_name='+', null=True, to=orm['dingos.Identifier'])),
-        ))
-        db.send_create_signal(u'dingos', ['Relation'])
-
-        # Adding unique constraint on 'Relation', fields ['source_id', 'target_id', 'relation_type']
-        db.create_unique(u'dingos_relation', ['source_id_id', 'target_id_id', 'relation_type_id'])
-
-        # Adding model 'Marking2X'
-        db.create_table(u'dingos_marking2x', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('marking', self.gf('django.db.models.fields.related.ForeignKey')(related_name='marked_item_thru', to=orm['dingos.InfoObject'])),
-            ('content_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['contenttypes.ContentType'])),
-            ('object_id', self.gf('django.db.models.fields.PositiveIntegerField')()),
-        ))
-        db.send_create_signal(u'dingos', ['Marking2X'])
-
-
-    def backwards(self, orm):
-        # Removing unique constraint on 'Relation', fields ['source_id', 'target_id', 'relation_type']
-        db.delete_unique(u'dingos_relation', ['source_id_id', 'target_id_id', 'relation_type_id'])
-
-        # Removing unique constraint on 'Identifier', fields ['uid', 'namespace']
-        db.delete_unique(u'dingos_identifier', ['uid', 'namespace_id'])
-
-        # Removing unique constraint on 'InfoObject', fields ['identifier', 'timestamp']
-        db.delete_unique(u'dingos_infoobject', ['identifier_id', 'timestamp'])
-
-        # Removing unique constraint on 'FactTerm2Type', fields ['iobject_type', 'fact_term']
-        db.delete_unique(u'dingos_factterm2type', ['iobject_type_id', 'fact_term_id'])
-
-        # Removing unique constraint on 'InfoObjectType', fields ['name', 'iobject_family', 'namespace']
-        db.delete_unique(u'dingos_infoobjecttype', ['name', 'iobject_family_id', 'namespace_id'])
-
-        # Removing unique constraint on 'FactTerm', fields ['term', 'attribute']
-        db.delete_unique(u'dingos_factterm', ['term', 'attribute'])
-
-        # Removing unique constraint on 'FactDataType', fields ['name', 'name_space']
-        db.delete_unique(u'dingos_factdatatype', ['name', 'name_space_id'])
-
-        # Removing unique constraint on 'FactValue', fields ['value', 'fact_data_type']
-        db.delete_unique(u'dingos_factvalue', ['value', 'fact_data_type_id'])
-
-        # Deleting model 'FactValue'
-        db.delete_table(u'dingos_factvalue')
-
-        # Deleting model 'FactDataType'
-        db.delete_table(u'dingos_factdatatype')
-
-        # Deleting model 'DataTypeNameSpace'
-        db.delete_table(u'dingos_datatypenamespace')
-
-        # Deleting model 'IdentifierNameSpace'
-        db.delete_table(u'dingos_identifiernamespace')
-
-        # Deleting model 'FactTerm'
-        db.delete_table(u'dingos_factterm')
-
-        # Deleting model 'InfoObjectNaming'
-        db.delete_table(u'dingos_infoobjectnaming')
-
-        # Deleting model 'InfoObjectType'
-        db.delete_table(u'dingos_infoobjecttype')
-
-        # Deleting model 'InfoObjectFamily'
-        db.delete_table(u'dingos_infoobjectfamily')
-
-        # Deleting model 'Revision'
-        db.delete_table(u'dingos_revision')
-
-        # Deleting model 'FactTerm2Type'
-        db.delete_table(u'dingos_factterm2type')
-
-        # Removing M2M table for field fact_data_types on 'FactTerm2Type'
-        db.delete_table('dingos_factterm2type_fact_data_types')
-
-        # Deleting model 'NodeID'
-        db.delete_table(u'dingos_nodeid')
-
-        # Deleting model 'InfoObject2Fact'
-        db.delete_table(u'dingos_infoobject2fact')
-
-        # Deleting model 'Fact'
-        db.delete_table(u'dingos_fact')
-
-        # Removing M2M table for field fact_values on 'Fact'
-        db.delete_table('dingos_fact_fact_values')
-
-        # Deleting model 'InfoObject'
-        db.delete_table(u'dingos_infoobject')
-
-        # Deleting model 'Identifier'
-        db.delete_table(u'dingos_identifier')
-
-        # Deleting model 'Relation'
-        db.delete_table(u'dingos_relation')
-
-        # Deleting model 'Marking2X'
-        db.delete_table(u'dingos_marking2x')
-
-
-    models = {
-        u'contenttypes.contenttype': {
-            'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
-            'app_label': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
-        },
-        u'dingos.datatypenamespace': {
-            'Meta': {'object_name': 'DataTypeNameSpace'},
-            'description': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.SlugField', [], {'max_length': '50', 'blank': 'True'}),
-            'uri': ('django.db.models.fields.URLField', [], {'unique': 'True', 'max_length': '255'})
-        },
-        u'dingos.fact': {
-            'Meta': {'object_name': 'Fact'},
-            'fact_term': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.FactTerm']"}),
-            'fact_values': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['dingos.FactValue']", 'null': 'True', 'symmetrical': 'False'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'value_iobject_id': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'value_of_set'", 'null': 'True', 'to': u"orm['dingos.Identifier']"}),
-            'value_iobject_ts': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
-            'value_on_disk': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
-        },
-        u'dingos.factdatatype': {
-            'Meta': {'unique_together': "(('name', 'name_space'),)", 'object_name': 'FactDataType'},
-            'description': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'kind': ('django.db.models.fields.SmallIntegerField', [], {'default': '0'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
-            'name_space': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.DataTypeNameSpace']"})
-        },
-        u'dingos.factterm': {
-            'Meta': {'unique_together': "(('term', 'attribute'),)", 'object_name': 'FactTerm'},
-            'attribute': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'term': ('django.db.models.fields.CharField', [], {'max_length': '512'})
-        },
-        u'dingos.factterm2type': {
-            'Meta': {'unique_together': "(('iobject_type', 'fact_term'),)", 'object_name': 'FactTerm2Type'},
-            'description': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            'fact_data_types': ('django.db.models.fields.related.ManyToManyField', [], {'related_name': "'fact_term_thru'", 'symmetrical': 'False', 'to': u"orm['dingos.FactDataType']"}),
-            'fact_term': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'iobject_type_thru'", 'to': u"orm['dingos.FactTerm']"}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'iobject_type': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'fact_term_thru'", 'to': u"orm['dingos.InfoObjectType']"}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '1024', 'blank': 'True'})
-        },
-        u'dingos.factvalue': {
-            'Meta': {'unique_together': "(('value', 'fact_data_type'),)", 'object_name': 'FactValue'},
-            'description': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            'fact_data_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.FactDataType']"}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '256', 'blank': 'True'}),
-            'value': ('django.db.models.fields.TextField', [], {})
-        },
-        u'dingos.identifier': {
-            'Meta': {'unique_together': "(('uid', 'namespace'),)", 'object_name': 'Identifier'},
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'latest': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'latest_of'", 'unique': 'True', 'null': 'True', 'to': u"orm['dingos.InfoObject']"}),
-            'namespace': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.IdentifierNameSpace']"}),
-            'uid': ('django.db.models.fields.SlugField', [], {'max_length': '255'})
-        },
-        u'dingos.identifiernamespace': {
-            'Meta': {'object_name': 'IdentifierNameSpace'},
-            'description': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.SlugField', [], {'max_length': '50', 'blank': 'True'}),
-            'uri': ('django.db.models.fields.URLField', [], {'unique': 'True', 'max_length': '255'})
-        },
-        u'dingos.infoobject': {
-            'Meta': {'ordering': "['-timestamp']", 'unique_together': "(('identifier', 'timestamp'),)", 'object_name': 'InfoObject'},
-            'create_timestamp': ('django.db.models.fields.DateTimeField', [], {}),
-            'facts': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['dingos.Fact']", 'through': u"orm['dingos.InfoObject2Fact']", 'symmetrical': 'False'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'identifier': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.Identifier']"}),
-            'iobject_family': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.InfoObjectFamily']"}),
-            'iobject_family_revision': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'to': u"orm['dingos.Revision']"}),
-            'iobject_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.InfoObjectType']"}),
-            'iobject_type_revision': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'to': u"orm['dingos.Revision']"}),
-            'name': ('django.db.models.fields.CharField', [], {'default': "'Unnamed'", 'max_length': '255', 'blank': 'True'}),
-            'timestamp': ('django.db.models.fields.DateTimeField', [], {}),
-            'uri': ('django.db.models.fields.URLField', [], {'max_length': '200', 'blank': 'True'})
-        },
-        u'dingos.infoobject2fact': {
-            'Meta': {'ordering': "['node_id__name']", 'object_name': 'InfoObject2Fact'},
-            'attributed_fact': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'attributes'", 'null': 'True', 'to': u"orm['dingos.InfoObject2Fact']"}),
-            'fact': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'iobject_thru'", 'to': u"orm['dingos.Fact']"}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'iobject': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'fact_thru'", 'to': u"orm['dingos.InfoObject']"}),
-            'node_id': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.NodeID']"})
-        },
-        u'dingos.infoobjectfamily': {
-            'Meta': {'object_name': 'InfoObjectFamily'},
-            'description': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.SlugField', [], {'unique': 'True', 'max_length': '256'}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '1024', 'blank': 'True'})
-        },
-        u'dingos.infoobjectnaming': {
-            'Meta': {'ordering': "['position']", 'object_name': 'InfoObjectNaming'},
-            'format_string': ('django.db.models.fields.TextField', [], {}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'iobject_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.InfoObjectType']"}),
-            'position': ('django.db.models.fields.PositiveSmallIntegerField', [], {})
-        },
-        u'dingos.infoobjecttype': {
-            'Meta': {'unique_together': "(('name', 'iobject_family', 'namespace'),)", 'object_name': 'InfoObjectType'},
-            'description': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'iobject_family': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.InfoObjectFamily']"}),
-            'name': ('django.db.models.fields.SlugField', [], {'max_length': '30'}),
-            'namespace': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.DataTypeNameSpace']", 'blank': 'True'})
-        },
-        u'dingos.marking2x': {
-            'Meta': {'object_name': 'Marking2X'},
-            'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['contenttypes.ContentType']"}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'marking': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'marked_item_thru'", 'to': u"orm['dingos.InfoObject']"}),
-            'object_id': ('django.db.models.fields.PositiveIntegerField', [], {})
-        },
-        u'dingos.nodeid': {
-            'Meta': {'object_name': 'NodeID'},
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'})
-        },
-        u'dingos.relation': {
-            'Meta': {'unique_together': "(('source_id', 'target_id', 'relation_type'),)", 'object_name': 'Relation'},
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'metadata_id': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'null': 'True', 'to': u"orm['dingos.Identifier']"}),
-            'relation_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['dingos.Fact']"}),
-            'source_id': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'yields_via'", 'null': 'True', 'to': u"orm['dingos.Identifier']"}),
-            'target_id': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'yielded_by_via'", 'null': 'True', 'to': u"orm['dingos.Identifier']"})
-        },
-        u'dingos.revision': {
-            'Meta': {'object_name': 'Revision'},
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '32', 'blank': 'True'})
-        }
-    }
-
-    complete_apps = ['dingos']
+    operations = [
+        migrations.CreateModel(
+            name='BlobStorage',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('sha256', models.CharField(unique=True, max_length=64)),
+                ('content', models.TextField(blank=True)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='DataTypeNameSpace',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('uri', models.CharField(help_text=b"URI of namespace. Example: 'http://stix.mitre.org/default_vocabularies-1'", unique=True, max_length=255)),
+                ('name', models.SlugField(help_text=b"Name of namespace. Example: 'cyboxVocabs'. This name may be used\n                                         in XML output to denote the namespace. Note, however, that\n                                         the defining characteristic of a namespace is the URI, not the\n                                         name: the name is completely exchangeable.", blank=True)),
+                ('description', models.TextField(blank=True)),
+            ],
+            options={
+                'abstract': False,
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Fact',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('value_iobject_ts', models.DateTimeField(help_text=b'Used to reference a specific revision of an information\n                                                         object rather than the latest revision.', null=True)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='FactDataType',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(help_text=b'Identifier for data type', max_length=128)),
+                ('description', models.TextField(blank=True)),
+                ('kind', models.SmallIntegerField(default=0, help_text=b'Governs, kind of data type.', choices=[(0, b'Unknown'), (1, b'Not vocabulary!!'), (2, b'Vocabulary value (single choice)'), (3, b'Vocabulary value (multiple choice)'), (4, b'Reference to InfoObject')])),
+                ('namespace', models.ForeignKey(related_name=b'fact_data_type_set', to='dingos.DataTypeNameSpace')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='FactTerm',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('term', models.CharField(help_text=b'A path-like string such as "Header/Subject"\n                                           or "Hashes/Hash/Simple_Hash_Value" ', max_length=512)),
+                ('attribute', models.CharField(help_text=b'The key of an (XML) attribute that is part of the fact term (may be empty)', max_length=128)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='FactTerm2Type',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('title', models.CharField(help_text=b'A human-readable title/summary of what the fact term describes for\n                                          this InfoObjectType', max_length=1024, blank=True)),
+                ('description', models.TextField(help_text=b'A comprehensive description of what the fact-term is used for\n                                          in this InfoObjectType.', blank=True)),
+                ('fact_data_types', models.ManyToManyField(related_name=b'fact_term_thru', to='dingos.FactDataType')),
+                ('fact_term', models.ForeignKey(related_name=b'iobject_type_thru', to='dingos.FactTerm')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='FactTermNamespaceMap',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('fact_term', models.ForeignKey(to='dingos.FactTerm')),
+            ],
+            options={
+                'abstract': False,
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='FactValue',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('value', models.TextField()),
+                ('title', models.CharField(help_text=b'A human-readable version of the value; useful for values\n                                          that are part of standard vocabularies.', max_length=256, blank=True)),
+                ('description', models.TextField(help_text=b'A helptext/description of the value; useful for values that\n                                                are part of standard vocabularies', blank=True)),
+                ('storage_location', models.SmallIntegerField(default=0, help_text=b'Governs storage location of value', choices=[(0, b'in FactValues table'), (1, b'in Filesystem'), (2, b'in BLOB table')])),
+                ('fact_data_type', models.ForeignKey(related_name=b'fact_value_set', to='dingos.FactDataType')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Identifier',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('uid', models.SlugField(max_length=255)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='IdentifierNameSpace',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('uri', models.CharField(help_text=b"URI of namespace. Example: 'http://stix.mitre.org/default_vocabularies-1'", unique=True, max_length=255)),
+                ('name', models.SlugField(help_text=b"Name of namespace. Example: 'my_organization'. This name may be used\n                                         in XML output to denote the namespace. Note, however, that\n                                         the defining characteristic of a namespace is the URI, not the\n                                         name: the name is completely exchangeable.", blank=True)),
+                ('image', models.ImageField(help_text=b'Image to display for this namespace.', null=True, upload_to=dingos.models.content_file_name, blank=True)),
+                ('description', models.TextField(blank=True)),
+                ('is_substitution', models.BooleanField(default=False)),
+            ],
+            options={
+                'abstract': False,
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='IdentifierNameSpaceSubstitutionMap',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('desired_namespace', models.ForeignKey(related_name=b'importer_namespaces_thru', to='dingos.IdentifierNameSpace')),
+                ('importer_namespace', models.ForeignKey(related_name=b'substituted_namespaces_thru', to='dingos.IdentifierNameSpace')),
+                ('substitution_namespace', models.ForeignKey(related_name=b'substitution_map', to='dingos.IdentifierNameSpace')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='InfoObject',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('timestamp', models.DateTimeField()),
+                ('create_timestamp', models.DateTimeField()),
+                ('uri', models.URLField(help_text=b'URI pointing to further\n                                       information concerning this\n                                       enrichment, e.g., the HTML\n                                       report of a malware analysis\n                                       through Cuckoo or similar.', blank=True)),
+                ('name', models.CharField(default=b'Unnamed', help_text=b"Name of the information object, usually auto generated.\n                                         from type and facts flagged as 'naming'.", max_length=255, editable=False, blank=True)),
+            ],
+            options={
+                'ordering': ['-timestamp'],
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='InfoObject2Fact',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('attributed_fact', models.ForeignKey(related_name=b'attributes', to='dingos.InfoObject2Fact', null=True)),
+                ('fact', models.ForeignKey(related_name=b'iobject_thru', to='dingos.Fact')),
+                ('iobject', models.ForeignKey(related_name=b'fact_thru', to='dingos.InfoObject')),
+                ('namespace_map', models.ForeignKey(to='dingos.FactTermNamespaceMap', null=True)),
+            ],
+            options={
+                'ordering': ['node_id__name'],
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='InfoObjectFamily',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.SlugField(help_text=b'Identifier for InfoObject Family', unique=True, max_length=256)),
+                ('title', models.CharField(help_text=b'A human-readable title for the InfoObject Family', max_length=1024, blank=True)),
+                ('description', models.TextField(blank=True)),
+            ],
+            options={
+                'abstract': False,
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='InfoObjectNaming',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('format_string', models.TextField(help_text=b'Format string for naming the information object. The format\n                                                  string can refer to fact terms of facts that should be\n                                                  present in an Information Object of the given type.')),
+                ('position', models.PositiveSmallIntegerField(verbose_name=b'Position')),
+            ],
+            options={
+                'ordering': ['position'],
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='InfoObjectType',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.SlugField(help_text=b"Name for a type of information object, e.g., 'Email',\n                                         'File', 'Relationship', 'InvestigationStep' etc.", max_length=30)),
+                ('description', models.TextField(blank=True)),
+                ('iobject_family', models.ForeignKey(related_name=b'iobject_type_set', to='dingos.InfoObjectFamily', help_text=b'Associated info-object family.')),
+                ('namespace', models.ForeignKey(related_name=b'iobject_type_set', blank=True, to='dingos.DataTypeNameSpace', help_text=b'Namespace of information object type.')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Marking2X',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('object_id', models.PositiveIntegerField()),
+                ('content_type', models.ForeignKey(to='contenttypes.ContentType')),
+                ('marking', models.ForeignKey(related_name=b'marked_item_thru', to='dingos.InfoObject')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='NodeID',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(unique=True, max_length=255)),
+            ],
+            options={
+                'abstract': False,
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='PositionalNamespace',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('position', models.SmallIntegerField()),
+                ('fact_term_namespace_map', models.ForeignKey(related_name=b'namespaces_thru', to='dingos.FactTermNamespaceMap')),
+                ('namespace', models.ForeignKey(related_name=b'fact_term_namespace_map_thru', to='dingos.DataTypeNameSpace')),
+            ],
+            options={
+                'abstract': False,
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Relation',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('metadata_id', models.ForeignKey(related_name=b'+', to='dingos.Identifier', help_text=b'InfoObject containing metadata about relation.', null=True)),
+                ('relation_type', models.ForeignKey(help_text=b'Description of nature of relation in direction source to target.', to='dingos.Fact')),
+                ('source_id', models.ForeignKey(related_name=b'yields_via', to='dingos.Identifier', help_text=b'Pointer to source iobject, i.e., the iobject from\n                                               which something was derived', null=True)),
+                ('target_id', models.ForeignKey(related_name=b'yielded_by_via', to='dingos.Identifier', help_text=b'Pointer to derived iobject', null=True)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Revision',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(unique=True, max_length=32, blank=True)),
+            ],
+            options={
+                'abstract': False,
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='UserData',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('data_kind', models.SlugField(max_length=32)),
+                ('group', models.ForeignKey(to='auth.Group', null=True)),
+                ('identifier', models.ForeignKey(to='dingos.Identifier', null=True)),
+                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, null=True)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.AlterUniqueTogether(
+            name='userdata',
+            unique_together=set([('user', 'group', 'data_kind')]),
+        ),
+        migrations.AlterUniqueTogether(
+            name='relation',
+            unique_together=set([('source_id', 'target_id', 'relation_type')]),
+        ),
+        migrations.AlterUniqueTogether(
+            name='infoobjecttype',
+            unique_together=set([('name', 'iobject_family', 'namespace')]),
+        ),
+        migrations.AddField(
+            model_name='infoobjectnaming',
+            name='iobject_type',
+            field=models.ForeignKey(related_name=b'iobject_type_set', to='dingos.InfoObjectType'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='infoobject2fact',
+            name='node_id',
+            field=models.ForeignKey(to='dingos.NodeID'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='infoobject',
+            name='facts',
+            field=models.ManyToManyField(help_text=b'Facts that are content of this enrichment', to='dingos.Fact', through='dingos.InfoObject2Fact'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='infoobject',
+            name='identifier',
+            field=models.ForeignKey(related_name=b'iobject_set', to='dingos.Identifier'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='infoobject',
+            name='iobject_family',
+            field=models.ForeignKey(related_name=b'iobject_set', to='dingos.InfoObjectFamily', help_text=b"Type of enrichment, e.g. 'CYBOX'"),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='infoobject',
+            name='iobject_family_revision',
+            field=models.ForeignKey(related_name=b'+', to='dingos.Revision', help_text=b"Revision of enrichment type , e.g. '1.0'"),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='infoobject',
+            name='iobject_type',
+            field=models.ForeignKey(related_name=b'iobject_set', to='dingos.InfoObjectType', help_text=b'Each enrichment has an information object type.'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='infoobject',
+            name='iobject_type_revision',
+            field=models.ForeignKey(related_name=b'+', to='dingos.Revision', help_text=b'Each enrichment has an information object type.'),
+            preserve_default=True,
+        ),
+        migrations.AlterUniqueTogether(
+            name='infoobject',
+            unique_together=set([('identifier', 'timestamp')]),
+        ),
+        migrations.AlterUniqueTogether(
+            name='identifiernamespacesubstitutionmap',
+            unique_together=set([('importer_namespace', 'desired_namespace', 'substitution_namespace')]),
+        ),
+        migrations.AddField(
+            model_name='identifier',
+            name='latest',
+            field=models.OneToOneField(related_name=b'latest_of', null=True, to='dingos.InfoObject'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='identifier',
+            name='namespace',
+            field=models.ForeignKey(to='dingos.IdentifierNameSpace'),
+            preserve_default=True,
+        ),
+        migrations.AlterUniqueTogether(
+            name='identifier',
+            unique_together=set([('uid', 'namespace')]),
+        ),
+        migrations.AlterUniqueTogether(
+            name='factvalue',
+            unique_together=set([('value', 'fact_data_type', 'storage_location')]),
+        ),
+        migrations.AddField(
+            model_name='facttermnamespacemap',
+            name='namespaces',
+            field=models.ManyToManyField(to='dingos.DataTypeNameSpace', through='dingos.PositionalNamespace'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='factterm2type',
+            name='iobject_type',
+            field=models.ForeignKey(related_name=b'fact_term_thru', to='dingos.InfoObjectType'),
+            preserve_default=True,
+        ),
+        migrations.AlterUniqueTogether(
+            name='factterm2type',
+            unique_together=set([('iobject_type', 'fact_term')]),
+        ),
+        migrations.AlterUniqueTogether(
+            name='factterm',
+            unique_together=set([('term', 'attribute')]),
+        ),
+        migrations.AlterUniqueTogether(
+            name='factdatatype',
+            unique_together=set([('name', 'namespace')]),
+        ),
+        migrations.AddField(
+            model_name='fact',
+            name='fact_term',
+            field=models.ForeignKey(help_text=b'Pointer to fact term described by this fact.', to='dingos.FactTerm'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='fact',
+            name='fact_values',
+            field=models.ManyToManyField(help_text=b'Value(s) of that fact', to='dingos.FactValue', null=True),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='fact',
+            name='value_iobject_id',
+            field=models.ForeignKey(related_name=b'value_of_set', blank=True, to='dingos.Identifier', help_text=b'As alternative to a text-based value stored in a fact,\n                                                       an iobject can be linked. In this case, there should\n                                                       be no fact values associated with the fact.', null=True),
+            preserve_default=True,
+        ),
+    ]
