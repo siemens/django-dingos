@@ -215,3 +215,18 @@ def match_regex_list(pattern_list, string):
         if not re.match(pattern, string):
             return False
     return True
+
+def dict_map(f,dictionary):
+
+    def dict_map_rec(f,path,value):
+
+        if isinstance(value,list):
+            print "list"
+            map(lambda v: dict_map_rec(f,path,v),value)
+        elif isinstance(value,dict):
+            for key in value.keys():
+                dict_map_rec(f,path+[key],value[key])
+        elif isinstance(value,basestring):
+            print "string"
+            dictionary[path[-1]] = f(path,value)
+    return dict_map_rec(f,[],dictionary)
