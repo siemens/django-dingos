@@ -547,6 +547,7 @@ def highlight_if_equal(v1,v2):
 @register.simple_tag(takes_context=True)
 def reachable_packages(context, current_node):
     view = context["view"]
+
     # The graph is generated just once per search request
     if not view.graph:
 
@@ -562,23 +563,8 @@ def reachable_packages(context, current_node):
             else:
                 pks = []
         view.graph = follow_references(pks, direction= 'up')
-        print(view.graph.node)
 
     node_ids = list(dfs_preorder_nodes(view.graph, source=current_node))
-
-    print "Node Ids %s" % node_ids
-    # if view.graph.node:
-    #     result = []
-    #     for id in view.graph.nodes():
-    #         node = view.graph.node[id]
-    #         # TODO: Below is STIX-specific and should be factored out
-    #         # by making the iobject type configurable
-    #         if "STIX_Package" in node['iobject_type']:
-    #             result.append("<a href='%s'>%s</a>" % (node['url'], node['name']))
-    #
-    #     return ",<br/> ".join(result)
-    # else:
-    #     return ''
 
     if view.graph.node:
         result = []

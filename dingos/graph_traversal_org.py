@@ -15,17 +15,11 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
 import networkx
-
-import networkx as nx
-import pickle
 
 from django.db.models import Count, F, Q
 from django.core.urlresolvers import reverse
 from dingos.models import InfoObject2Fact, InfoObject
-from django.db import connection
-
 
 from dingos import DINGOS_OBJECTTYPE_ICON_MAPPING
 
@@ -75,45 +69,6 @@ def follow_references(iobject_pks,
                       keep_graph_info=True,
                       reverse_direction=False,
                       graph = None):
-    #not implemented: skip_terms, max_nodes, keep_graph_info
-    #reverse_direction no longer needed
-
-    cursor = connection.cursor()
-    try:
-        cursor.callproc("build_graph", (iobject_pks,direction, depth))
-        graph_serial = cursor.fetchone()
-    finally:
-        cursor.close()
-
-    graph_db = pickle.loads(graph_serial[0])
-    if not graph:
-        graph = nx.DiGraph()
-    for id in graph_db.nodes:
-        graph.add_node(id, graph_db.nodes[id].attr_dic)
-        graph.add_node(id, url = reverse('url.dingos.view.infoobject', args=[id]))
-        graph.add_node(id, image = derive_image_info(graph_db.nodes[id].attr_dic))
-    for id in graph_db.edges:
-        graph.add_edge(graph_db.edges[id].start, graph_db.edges[id].end, graph_db.edges[id].attr_dic)
-    #TODO max_nodes_reached
-    graph.graph['max_nodes_reached'] = False
-
-    #keep_graph_info
-    if keep_graph_info:
-        return graph
-        #return graph.node.keys()
-    else:
-        return graph
-
-
-
-def follow_references_old(iobject_pks,
-                      direction = 'down',
-                      skip_terms=None,
-                      depth=100000,
-                      max_nodes=0,
-                      keep_graph_info=True,
-                      reverse_direction=False,
-                      graph = None):
 
     """
     Given a list of primary keys of InfoObject instances, the function calculates a reachability graph based
@@ -121,12 +76,12 @@ def follow_references_old(iobject_pks,
 
     - direction
 
-      Either 'down' or 'up'.
+      Either 'down' or 'up'. 
 
       'down' means that the graph is built by finding all InfoObjects referenced within
-      a fact of one of the InfoObjects within the given list of InfoObject instances,
+      a fact of one of the InfoObjects within the given list of InfoObject instances, 
       and then recursing on these newly found InfoObjects.
-
+           
       'up' means that the graph is built by finding all InfoObjects (only in their latest revision) that
       contain a reference to one of the InfoObjects contained in the given list of InfoObjects.
 
@@ -143,7 +98,7 @@ def follow_references_old(iobject_pks,
 
           {'term': 'term_to_be_skipped', 'attribute': 'attribute_to_be_skippe', 'operator': 'comparison_operator'}
 
-      Each such dictionary specifies a query on term and/or attribute of a fact term. Facts with fact_terms/attributes
+      Each such dictionary specifies a query on term and/or attribute of a fact term. Facts with fact_terms/attributes 
       that match at least one of the specified ``skip_terms`` are ignored when building the graph.
 
     - depth:
@@ -409,7 +364,6 @@ def follow_references_old(iobject_pks,
                 graph.add_node(node_info.pk,node_dict)
 
     return graph
-
 
 
 

@@ -716,7 +716,8 @@ class InfoObjectJSONGraph(BasicJSONView):
         if not iobject_id:
             POST = self.request.POST
             iobject_id = POST.get('iobject_id', None)
-
+        if iobject_id:
+            iobject_id = int(iobject_id)
         iobject = InfoObject.objects.all().filter(pk=iobject_id)[0]
         graph_mode = None
         for graph_type in DINGOS_INFOOBJECT_GRAPH_TYPES:
