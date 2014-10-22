@@ -79,7 +79,7 @@ def follow_references(iobject_pks,
 
     cursor = connection.cursor()
     try:
-        cursor.callproc("build_graph", (iobject_pks,direction, depth))
+        cursor.callproc("build_graph", ([int(pk) for pk in iobject_pks],direction, depth))
         graph_serial = cursor.fetchone()
     finally:
         cursor.close()
