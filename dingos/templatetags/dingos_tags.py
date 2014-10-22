@@ -17,14 +17,12 @@
 
 from django import template
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.core.urlresolvers import reverse
 from django.utils import html
 from django.utils.html import conditional_escape, strip_tags
 from django.utils.safestring import mark_safe
 from django.conf import settings
 
 from dingos import DINGOS_TEMPLATE_FAMILY
-from dingos.core import http_helpers
 from dingos.core.utilities import get_from_django_obj
 from dingos.models import BlobStorage
 
@@ -561,12 +559,11 @@ def reachable_packages(context, current_node):
                 pks = [one.iobject.pk for one in object_list]
             else:
                 pks = []
-        view.graph = follow_references(pks, direction= 'up')
-        print(view.graph.node)
+        view.graph = follow_references(pks, direction= 'up', reverse_direction=True)
+
 
     node_ids = list(dfs_preorder_nodes(view.graph, source=current_node))
 
-    print "Node Ids %s" % node_ids
     # if view.graph.node:
     #     result = []
     #     for id in view.graph.nodes():

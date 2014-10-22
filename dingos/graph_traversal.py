@@ -76,7 +76,6 @@ def follow_references(iobject_pks,
                       reverse_direction=False,
                       graph = None):
     #not implemented: skip_terms, max_nodes, keep_graph_info
-    #reverse_direction no longer needed
 
     cursor = connection.cursor()
     try:
@@ -97,7 +96,9 @@ def follow_references(iobject_pks,
     #TODO max_nodes_reached
     graph.graph['max_nodes_reached'] = False
 
-    #keep_graph_info
+    if reverse_direction:
+        return graph.reverse()
+
     if keep_graph_info:
         return graph
         #return graph.node.keys()
