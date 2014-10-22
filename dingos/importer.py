@@ -345,6 +345,7 @@ class DingoImportCommand(BaseCommand):
 
 
 
+
     def __init__(self, *args, **kwargs):
         self.logger = logger
 
@@ -417,6 +418,10 @@ class DingoImportCommand(BaseCommand):
 
         return None
 
+
+    def import_postprocessor_handle(self,import_result):
+        pass
+
     def handle(self, *args, **options):
         # The function create_import_marking inherited from
         # DingoImport command is able to create a dictionary
@@ -463,9 +468,11 @@ class DingoImportCommand(BaseCommand):
 
                     logger.info("Starting import of %s" % filename)
                     try:
-                        self.Importer.xml_import(filepath = filename,
+                        import_result = self.Importer.xml_import(filepath = filename,
                            markings = markings,
                            **options)
+                        self.import_postprocessor_handle(import_result)
+
                     except:
                         logger.error("Something went wrong when importing %s. Traceback: %s" % (filename,traceback.format_exc()))
 
