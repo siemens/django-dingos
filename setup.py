@@ -36,7 +36,7 @@ setup(
     ],
     include_package_data=True,
     install_requires=['libxml2-python>=2.6.9',
-                      'django>=1.6',
+                      'django>=1.7',
                       'django-grappelli>=2.4.7',
                       'django-braces>=1.0.0',
                       'lxml>=3.2.1',
@@ -44,7 +44,8 @@ setup(
                       'python-dateutil>=2.2',
                       'ply>=3.4',
                       'networkx>=1.9',
-                      'django-oauth2-provider>=0.2.6.1'
+                      'django-oauth2-provider>=0.2.6.1',
+                      'Pillow>=2.5.3'
     ],
     license="GPLv2+",
     zip_safe=False,
