@@ -249,8 +249,22 @@ class DataTypeNameSpace(DingoModel):
 
 dingos_class_map["DataTypeNameSpace"] = DataTypeNameSpace
 
-def content_file_name(filename):
-    return '/'.join(['content', 'namespace_images',filename])
+
+
+def md5_for_file(chunks):
+    md5 = hashlib.md5()
+    for data in chunks:
+        md5.update(data)
+    return md5.hexdigest()
+
+
+def content_file_name(instance, filename):
+    name = md5_for_file(getattr(instance, 'image').chunks())
+    dot_pos = filename.rfind('.')
+    ext = filename[dot_pos:][:10].lower() if dot_pos > -1 else '.unknown'
+    name += ext
+    return '/'.join(['content', 'namespace_images', name])
+
 
 class IdentifierNameSpace(DingoModel):
     """
@@ -1037,7 +1051,7 @@ class InfoObject(DingoModel):
             'iobject__timestamp',
             'iobject__name',
             'fact__value_iobject_ts',
-            'fact__fact_term__term', 
+            'fact__fact_term__term',
             'node_id__name').distinct()
 
 
@@ -1683,7 +1697,7 @@ class InfoObject(DingoModel):
 
         from .graph_traversal import follow_references
         if not graph_traversal_kargs:
-            graph_traversal_kargs = {'max_nodes':400,
+            graph_traversal_kargs = {'max_nodes':1000,
                                      'direction':'down'}
 
         graph_traversal_kargs['iobject_pks'] = iobject_pks
@@ -2253,5 +2267,3 @@ def write_large_value(value,storage_location=dingos.DINGOS_LARGE_VALUE_DESTINATI
         dingos_class_map['BlobStorage'].objects.get_or_create(sha256=value_hash,
                                                               content=value)
     return (value_hash,storage_location)
-
-
