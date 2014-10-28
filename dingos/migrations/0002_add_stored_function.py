@@ -7,14 +7,14 @@ from django.db import models, migrations
 create_build_graph = """-- Function build_graph(int[], string)
 -- returns a serialized graph object
 
-CREATE FUNCTION build_graph(pkslist int[], direction text, depth int)
+CREATE FUNCTION build_graph(pkslist int[], direction text, depth int, max_nodes int)
 RETURNS text
 AS $$
 from dingos.core.db_graphtools import build_graph
-return build_graph(pkslist, direction, depth, plpy)
+return build_graph(pkslist, direction, depth, max_nodes, plpy)
 $$ LANGUAGE plpythonu"""
 
-remove_build_graph = """DROP FUNCTION build_graph(int[], text, int)"""
+remove_build_graph = """DROP FUNCTION build_graph(int[], text, int, int)"""
 
 class Migration(migrations.Migration):
 

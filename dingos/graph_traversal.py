@@ -75,11 +75,11 @@ def follow_references(iobject_pks,
                       keep_graph_info=True,
                       reverse_direction=False,
                       graph = None):
-    #not implemented: skip_terms, max_nodes, keep_graph_info
+    #not implemented: skip_terms, keep_graph_info
 
     cursor = connection.cursor()
     try:
-        cursor.callproc("build_graph", ([int(pk) for pk in iobject_pks],direction, depth))
+        cursor.callproc("build_graph", ([int(pk) for pk in iobject_pks],direction, depth, max_nodes))
         graph_serial = cursor.fetchone()
     finally:
         cursor.close()
@@ -87,14 +87,15 @@ def follow_references(iobject_pks,
     graph_db = pickle.loads(graph_serial[0])
     if not graph:
         graph = nx.DiGraph()
+        graph.graph.update(graph_db.graph)
     for id in graph_db.nodes:
         graph.add_node(id, graph_db.nodes[id].attr_dic)
         graph.add_node(id, url = reverse('url.dingos.view.infoobject', args=[id]))
         graph.add_node(id, image = derive_image_info(graph_db.nodes[id].attr_dic))
     for id in graph_db.edges:
         graph.add_edge(graph_db.edges[id].start, graph_db.edges[id].end, graph_db.edges[id].attr_dic)
-    #TODO max_nodes_reached
-    graph.graph['max_nodes_reached'] = False
+    print(graph.graph['max_nodes_reached'])
+    print(len(graph))
 
     if reverse_direction:
         return graph.reverse()

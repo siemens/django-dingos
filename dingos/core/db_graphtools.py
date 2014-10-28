@@ -31,6 +31,7 @@ class Graph_DB():
   def __init__(self):
     self.nodes = {}
     self.edges = {}
+    self.graph = {}
 
   def add_node(self,id, node_attr_dic=None):
     if id in self.nodes:
@@ -46,7 +47,7 @@ class Graph_DB():
       self.edges[(start,end)] = Edge(start, end, edge_attr_dic)
 
 
-def build_graph(pkslist, direction, depth, plpy):
+def build_graph(pkslist, direction, depth, max_nodes, plpy):
     import pickle
     UP_STATEMENT = "SELECT dingos_infoobject2fact.iobject_id, T5.latest_id, dingos_fact.value_iobject_ts, dingos_factterm.term, dingos_factterm.attribute, dingos_nodeid.name as node_id__name, dingos_identifiernamespace.uri as iobject__identifier__namespace__uri, T9.uid as iobject__identifier__uid, dingos_infoobject.name as iobject__name, dingos_infoobjecttype.name as iobject__iobject_type__name, dingos_infoobjectfamily.name as iobject__iobject_type__iobject_family__name, T14.uri as fact__value_iobject_id__latest__identifier__namespace__uri, T13.uid as fact__value_iobject_id__latest__identifier__uid, T6.name as fact__value_iobject_id__latest__name, T15.name as latest__iobject_type__name, T16.name as latest__iobject_type__iobject_family__name FROM dingos_infoobject2fact INNER JOIN dingos_infoobject ON ( dingos_infoobject2fact.iobject_id = dingos_infoobject.id ) INNER JOIN dingos_identifier ON ( dingos_infoobject.id = dingos_identifier.latest_id ) INNER JOIN dingos_fact ON ( dingos_infoobject2fact.fact_id = dingos_fact.id ) INNER JOIN dingos_identifier T5 ON ( dingos_fact.value_iobject_id_id = T5.id ) INNER JOIN dingos_infoobject T6 ON ( T5.latest_id = T6.id ) INNER JOIN dingos_factterm ON ( dingos_fact.fact_term_id = dingos_factterm.id ) INNER JOIN dingos_nodeid ON ( dingos_infoobject2fact.node_id_id = dingos_nodeid.id ) INNER JOIN dingos_identifier T9 ON ( dingos_infoobject.identifier_id = T9.id ) INNER JOIN dingos_identifiernamespace ON ( T9.namespace_id = dingos_identifiernamespace.id ) INNER JOIN dingos_infoobjecttype ON ( dingos_infoobject.iobject_type_id = dingos_infoobjecttype.id ) INNER JOIN dingos_infoobjectfamily ON ( dingos_infoobjecttype.iobject_family_id = dingos_infoobjectfamily.id ) INNER JOIN dingos_identifier T13 ON ( T6.identifier_id = T13.id ) INNER JOIN dingos_identifiernamespace T14 ON ( T13.namespace_id = T14.id ) INNER JOIN dingos_infoobjecttype T15 ON ( T6.iobject_type_id = T15.id ) INNER JOIN dingos_infoobjectfamily T16 ON ( T15.iobject_family_id = T16.id ) WHERE (dingos_identifier.id IS NOT NULL AND T5.latest_id = ANY($1)) ORDER BY dingos_nodeid.name ASC"
     DOWN_STATEMENT = "SELECT dingos_infoobject2fact.iobject_id, dingos_identifier.latest_id, dingos_fact.value_iobject_ts, dingos_factterm.term, dingos_factterm.attribute, dingos_nodeid.name as node_id__name, dingos_identifiernamespace.uri as iobject__identifier__namespace__uri, T8.uid as iobject__identifier__uid, dingos_infoobject.name as iobject__name, dingos_infoobjecttype.name as iobject__iobject_type__name, dingos_infoobjectfamily.name as iobject__iobject_type__iobject_family__name, T13.uri as fact__value_iobject_id__latest__identifier__namespace__uri, T12.uid as fact__value_iobject_id__latest__identifier__uid, T5.name as fact__value_iobject_id__latest__name, T14.name as latest__iobject_type__name, T15.name as latest__iobject_type__iobject_family__name FROM dingos_infoobject2fact INNER JOIN dingos_infoobject ON ( dingos_infoobject2fact.iobject_id = dingos_infoobject.id ) INNER JOIN dingos_fact ON ( dingos_infoobject2fact.fact_id = dingos_fact.id ) INNER JOIN dingos_identifier ON ( dingos_fact.value_iobject_id_id = dingos_identifier.id ) LEFT OUTER JOIN dingos_infoobject T5 ON ( dingos_identifier.latest_id = T5.id ) INNER JOIN dingos_factterm ON ( dingos_fact.fact_term_id = dingos_factterm.id ) INNER JOIN dingos_nodeid ON ( dingos_infoobject2fact.node_id_id = dingos_nodeid.id ) INNER JOIN dingos_identifier T8 ON ( dingos_infoobject.identifier_id = T8.id ) INNER JOIN dingos_identifiernamespace ON ( T8.namespace_id = dingos_identifiernamespace.id ) INNER JOIN dingos_infoobjecttype ON ( dingos_infoobject.iobject_type_id = dingos_infoobjecttype.id ) INNER JOIN dingos_infoobjectfamily ON ( dingos_infoobjecttype.iobject_family_id = dingos_infoobjectfamily.id ) LEFT OUTER JOIN dingos_identifier T12 ON ( T5.identifier_id = T12.id ) LEFT OUTER JOIN dingos_identifiernamespace T13 ON ( T12.namespace_id = T13.id ) LEFT OUTER JOIN dingos_infoobjecttype T14 ON ( T5.iobject_type_id = T14.id ) LEFT OUTER JOIN dingos_infoobjectfamily T15 ON ( T14.iobject_family_id = T15.id ) WHERE (dingos_infoobject2fact.iobject_id = ANY($1) AND NOT (dingos_fact.value_iobject_id_id IS NULL)) ORDER BY dingos_nodeid.name ASC"
@@ -127,13 +128,18 @@ def build_graph(pkslist, direction, depth, plpy):
 
             reachable_pks.add(id for id in pkslist)
 
-        if pkToVisit.issubset(reachable_pks) or depth == 0:
+        if pkToVisit.issubset(reachable_pks) or depth == 0 or (max_nodes and len(graph.nodes) + len(pkToVisit - reachable_pks) >= max_nodes):
+            graph.graph['max_nodes_reached'] = False
+            if (max_nodes and len(graph.nodes) + len(pkToVisit - reachable_pks) >= max_nodes):
+                graph.graph['max_nodes_reached'] = True
             return graph
+
         else:
             return build_graph_rec(pkToVisit - reachable_pks,
                                    reachable_pks | pkToVisit,
                                    direction,
-                                   depth-1)
+                                   depth-1
+                                   )
 
     if direction == 'both':
         build_graph_rec(pkslist, reachable_pks, 'up', depth)
