@@ -476,7 +476,7 @@ def show_InfoObjectMarkings(iobject):
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectAuthoredDataDisplay_vertical.html'% DINGOS_TEMPLATE_FAMILY)
 def show_AuthoringSource(iobject):
     if 'yielded_by' in dir(iobject):
-        authored_data_info = iobject.yielded_by.all().order_by('-timestamp')
+        authored_data_info = iobject.yielded_by.all().filter(user__isnull=False,group__isnull=False).order_by('-timestamp')
     else:
         authored_data_info = None
     return {'authored_data_info': authored_data_info}

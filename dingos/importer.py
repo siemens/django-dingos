@@ -344,6 +344,7 @@ class DingoImportCommand(BaseCommand):
 
 
 
+    custom_options = {}
 
 
     def __init__(self, *args, **kwargs):
@@ -455,6 +456,8 @@ class DingoImportCommand(BaseCommand):
         #if len(args) > 1 and options['identifier']:
         #    raise CommandError('Option --identifier not supported for more than one file per import.')
 
+        self.custom_options.update(options)
+
         if len(args) == 0:
             logger.warning("No files for import specified!")
         else:
@@ -470,7 +473,7 @@ class DingoImportCommand(BaseCommand):
                     try:
                         import_result = self.Importer.xml_import(filepath = filename,
                            markings = markings,
-                           **options)
+                           **self.custom_options)
                         self.import_postprocessor_handle(import_result)
 
                     except:

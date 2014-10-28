@@ -797,6 +797,28 @@ class BasicJSONView(CommonContextMixin,
                                   **httpresponse_kwargs)
 
 
+from django.http import Http404
+
+class BasicXMLView(CommonContextMixin,
+                    ViewMethodMixin,
+                    LoginRequiredMixin,
+                    TemplateView):
+
+    @property
+    def returned_xml(self):
+        return ""
+
+
+    def render_to_response(self, context):
+        xml = self.returned_xml
+        if not xml:
+            raise Http404
+        else:
+            return http.HttpResponse(xml,
+                                     content_type='application/xml')
+
+
+
 class BasicView(CommonContextMixin,
                 ViewMethodMixin,
                 LoginRequiredMixin,
