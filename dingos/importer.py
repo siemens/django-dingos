@@ -344,6 +344,8 @@ class DingoImportCommand(BaseCommand):
 
 
 
+    custom_options = {}
+
 
     def __init__(self, *args, **kwargs):
         self.logger = logger
@@ -417,6 +419,10 @@ class DingoImportCommand(BaseCommand):
 
         return None
 
+
+    def import_postprocessor_handle(self,import_result):
+        pass
+
     def handle(self, *args, **options):
         # The function create_import_marking inherited from
         # DingoImport command is able to create a dictionary
@@ -450,6 +456,8 @@ class DingoImportCommand(BaseCommand):
         #if len(args) > 1 and options['identifier']:
         #    raise CommandError('Option --identifier not supported for more than one file per import.')
 
+        self.custom_options.update(options)
+
         if len(args) == 0:
             logger.warning("No files for import specified!")
         else:
@@ -463,9 +471,11 @@ class DingoImportCommand(BaseCommand):
 
                     logger.info("Starting import of %s" % filename)
                     try:
-                        self.Importer.xml_import(filepath = filename,
+                        import_result = self.Importer.xml_import(filepath = filename,
                            markings = markings,
-                           **options)
+                           **self.custom_options)
+                        self.import_postprocessor_handle(import_result)
+
                     except:
                         logger.error("Something went wrong when importing %s. Traceback: %s" % (filename,traceback.format_exc()))
 
