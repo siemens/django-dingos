@@ -341,8 +341,6 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
     and code to read pagination information from user customization.
     """
 
-    login_url = "/admin"
-
     template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
 
     breadcrumbs = ()
@@ -479,8 +477,6 @@ class BasicDetailView(CommonContextMixin,
                       PrefetchRelatedMixin,
                       DetailView):
 
-    login_url = "/admin"
-
     select_related = ()
     prefetch_related = ()
 
@@ -497,9 +493,6 @@ class BasicTemplateView(CommonContextMixin,
                        ViewMethodMixin,
                        LoginRequiredMixin,
                        TemplateView):
-
-    login_url = "/admin"
-
 
     breadcrumbs = (('Dingo',None),
                    ('View',None),
@@ -754,8 +747,6 @@ class BasicJSONView(CommonContextMixin,
                     LoginRequiredMixin,
                     TemplateView):
 
-    login_url = "/admin"
-
     indent = 2
 
     @property
@@ -823,10 +814,6 @@ class BasicView(CommonContextMixin,
                 ViewMethodMixin,
                 LoginRequiredMixin,
                 View):
-
-    login_url = "/admin"
-
-
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
