@@ -1,0 +1,44 @@
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+<div class="grp-module">
+    <h2 class="grp-collapse-handler">Tagging Data</h2>
+    <table class="grp-full-width">
+        <tbody>
+        {% for list in cat_list_by_parents %}
+        {% with list.get_categories as sub_cats %}
+            {% if sub_cats or list.editor %}
+                <tr>
+                    <th style="white-space: nowrap; width: 1px;">
+                        <label>{{ list }}</label>
+                    </th>
+                    <td>
+                    {% for cat in sub_cats %}
+                        <span class="tag">{{ cat.alias }}</span>
+                    {% endfor %}
+                    </td>
+                </tr>
+            {% endif %}
+        {% endwith %}
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+
