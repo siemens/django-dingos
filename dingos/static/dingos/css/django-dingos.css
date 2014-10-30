@@ -192,3 +192,12 @@ form#query-executor #id_query {
 div.c-2 > .grp-module, div.c-2 .grp-module.grp-changelist-results {
     overflow: auto;
 }
+
+/* tagging */
+.tag {
+    display: block;
+    border: #000 2px solid;
+    border-radius: 5px;
+    background-color: #CCEBFF;
+}
+
