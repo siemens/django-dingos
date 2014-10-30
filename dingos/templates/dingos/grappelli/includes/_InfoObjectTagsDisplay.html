@@ -15,12 +15,13 @@ You should have received a copy of the GNU General Public License along with
 this program; if not, write to the Free Software Foundation, Inc., 51
 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
+{% load i18n %}
 
 <div class="grp-module">
     <h2 class="grp-collapse-handler">Tagging Data</h2>
     <table class="grp-full-width">
         <tbody>
-        {% for list in cat_list_by_parents %}
+        {% for list in sitecats_categories %}
         {% with list.get_categories as sub_cats %}
             {% if sub_cats or list.editor %}
                 <tr>
@@ -32,6 +33,22 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                         <span class="tag">{{ cat.alias }}</span>
                     {% endfor %}
                     </td>
+                    {% if list.editor and list.editor.allow_add %}
+                        <td>
+                            <div class="editor">
+                                <form id="catform_add_{{ list.get_id }}" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="category_action" value="add">
+                                    <input type="hidden" name="category_base_id" value="{{ list.get_id }}">
+                                    <input type="text" name="category_title" required value="" placeholder="{% trans "Category name" %}">
+
+                                    {% if list.editor.render_button %}<input type="submit" value="{% trans "Add" %}">{% endif %}
+                                </form>
+
+                            </div>
+                        </td>
+                    {% endif %}
+
                 </tr>
             {% endif %}
         {% endwith %}
@@ -39,6 +56,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
         </tbody>
     </table>
 </div>
+
+
 
 
 

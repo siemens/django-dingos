@@ -595,8 +595,3 @@ def show_namespace_image(namespace, height=None, width=None):
         image_url = settings.MEDIA_URL + str(namespace.image)
         return "<img alt='" + namespace.uri + "' src='" + image_url + "'" + " ".join(attributes) + "/>"
     return namespace.uri
-
-#TODO ADDED TEMPLATETAG - pla
-@register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsDisplay.html' % DINGOS_TEMPLATE_FAMILY)
-def show_InfoObjectTags(iobject):
-    return {'cat_list_by_parents' : iobject.get_category_lists()}
