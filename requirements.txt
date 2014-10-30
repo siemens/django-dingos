@@ -1,4 +1,4 @@
-django>=1.5.5
+django>=1.7
 
 ## For testing
 # Uncomment below for tox tests to run through successfully.

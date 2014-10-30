@@ -147,7 +147,8 @@ class InfoObjectDetails(object):
 
         result =  {'_object':iobject,
                    '_io2f' : io2f,
-                   '_object_url': reverse('url.dingos.view.infoobject', args=[iobject.pk])}
+                   'iobject_url': reverse('url.dingos.view.infoobject', args=[iobject.pk]),
+                   'iobject_pk': iobject.pk}
 
 
         if self.package_graph:

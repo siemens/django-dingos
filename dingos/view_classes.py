@@ -341,8 +341,6 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
     and code to read pagination information from user customization.
     """
 
-    login_url = "/admin"
-
     template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
 
     breadcrumbs = ()
@@ -479,8 +477,6 @@ class BasicDetailView(CommonContextMixin,
                       PrefetchRelatedMixin,
                       DetailView):
 
-    login_url = "/admin"
-
     select_related = ()
     prefetch_related = ()
 
@@ -497,9 +493,6 @@ class BasicTemplateView(CommonContextMixin,
                        ViewMethodMixin,
                        LoginRequiredMixin,
                        TemplateView):
-
-    login_url = "/admin"
-
 
     breadcrumbs = (('Dingo',None),
                    ('View',None),
@@ -754,8 +747,6 @@ class BasicJSONView(CommonContextMixin,
                     LoginRequiredMixin,
                     TemplateView):
 
-    login_url = "/admin"
-
     indent = 2
 
     @property
@@ -797,14 +788,32 @@ class BasicJSONView(CommonContextMixin,
                                   **httpresponse_kwargs)
 
 
+from django.http import Http404
+
+class BasicXMLView(CommonContextMixin,
+                    ViewMethodMixin,
+                    LoginRequiredMixin,
+                    TemplateView):
+
+    @property
+    def returned_xml(self):
+        return ""
+
+
+    def render_to_response(self, context):
+        xml = self.returned_xml
+        if not xml:
+            raise Http404
+        else:
+            return http.HttpResponse(xml,
+                                     content_type='application/xml')
+
+
+
 class BasicView(CommonContextMixin,
                 ViewMethodMixin,
                 LoginRequiredMixin,
                 View):
-
-    login_url = "/admin"
-
-
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)

@@ -476,7 +476,7 @@ def show_InfoObjectMarkings(iobject):
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectAuthoredDataDisplay_vertical.html'% DINGOS_TEMPLATE_FAMILY)
 def show_AuthoringSource(iobject):
     if 'yielded_by' in dir(iobject):
-        authored_data_info = iobject.yielded_by.all().order_by('-timestamp')
+        authored_data_info = iobject.yielded_by.all().filter(user__isnull=False,group__isnull=False).order_by('-timestamp')
     else:
         authored_data_info = None
     return {'authored_data_info': authored_data_info}
@@ -575,7 +575,7 @@ def reachable_packages(context, current_node):
             if "STIX_Package" in node['iobject_type']:
                 result.append("<a href='%s'>%s</a>" % (node['url'], node['name']))
 
-        return ",<br/> ".join(result)
+        return ",<br> ".join(result)
     else:
         return ''
 
@@ -588,10 +588,10 @@ def show_namespace_image(namespace, height=None, width=None):
     attributes = []
 
     if height:
-        attributes.append("height='%s'" % height)
+        attributes.append("max-height:%spx;" % height)
     if width:
-        attributes.append("width='%s'" % width)
+        attributes.append("max-width:%spx;" % width)
     if namespace.image:
         image_url = settings.MEDIA_URL + str(namespace.image)
-        return "<img alt='" + namespace.uri + "' src='" + image_url + "'" + " ".join(attributes) + "/>"
+        return '<img title="%s" alt="%s" src="%s" style="%s">' % (namespace.uri, namespace.uri, image_url, "".join(attributes))
     return namespace.uri

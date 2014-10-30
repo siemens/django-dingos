@@ -485,7 +485,7 @@ class CustomSearchesEditView(BasicTemplateView):
             if saved_search.get('identifier') == {}:
                 saved_search['identifier']= ''
 
-            if saved_search['custom_query'] == {}:
+            if saved_search.get('custom_query',{}) == {}:
                 saved_search['custom_query']= ''
 
 
