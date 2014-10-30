@@ -36,6 +36,8 @@ from django.core.files.base import ContentFile
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.http import urlquote
 
+from sitecats.models import ModelWithCategory
+
 
 
 import dingos.read_settings
@@ -81,6 +83,24 @@ class DingoModel(models.Model):
     Django 1.5, there seems no way to force the usage of a user-defined
     model manager in all cases.
 
+    """
+
+    def __init__(self, *args, **kwargs):
+        self._DCM = kwargs.get('dingos_class_map', dingos_class_map)
+        try:
+            del (kwargs['dingos_class_map'])
+        except:
+            pass
+        models.Model.__init__(self, *args, **kwargs)
+
+
+    class Meta:
+        abstract = True
+
+
+class DingoModelWithCategory(ModelWithCategory):
+    """
+    This special base class is used to make dingo models tagable
     """
 
     def __init__(self, *args, **kwargs):
@@ -835,7 +855,7 @@ class PositionalNamespace(DingoModel):
 
 dingos_class_map["PositionalNamespace"] = PositionalNamespace
 
-class Fact(DingoModel):
+class Fact(DingoModelWithCategory):
     """
     In facts, we associate fact terms with one or more fact values.
 
@@ -901,7 +921,7 @@ class Fact(DingoModel):
 dingos_class_map["Fact"] = Fact
 
 
-class InfoObject(DingoModel):
+class InfoObject(DingoModelWithCategory):
     """
     So this is the heart of Dingo, the information object class:
 
@@ -992,7 +1012,6 @@ class InfoObject(DingoModel):
 
 
     marking_thru = generic.GenericRelation("Marking2X")
-
 
     class Meta:
         unique_together = (('identifier', 'timestamp'),)
