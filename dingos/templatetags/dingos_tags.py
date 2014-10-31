@@ -478,10 +478,12 @@ def show_InfoObjectMarkings(iobject):
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectAuthoredDataDisplay_vertical.html'% DINGOS_TEMPLATE_FAMILY)
 def show_AuthoringSource(iobject):
     if 'yielded_by' in dir(iobject):
-        authored_data_info = iobject.yielded_by.all().filter(user__isnull=False,group__isnull=False).order_by('-timestamp')
+        authored_data_info = iobject.yielded_by.all()[0]
     else:
         authored_data_info = None
-    return {'authored_data_info': authored_data_info}
+
+    return {'authored_data_info': authored_data_info,
+            'iobject_pk': iobject.pk}
 
 postprocessor_list = [x for x in sorted(DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items(),
                                         key = lambda (x,y) : y['name'])
