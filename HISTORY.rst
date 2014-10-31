@@ -8,6 +8,10 @@ History
 
 * Added custom queries
 
+* Added framework for writing exporter function; these
+  functions can be made available via the GUI as well
+  as tied into the custom query as postprocessor.
+
 * Add framework for extracting graph-information from
   database
 
