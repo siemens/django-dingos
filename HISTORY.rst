@@ -19,6 +19,10 @@ History
 
 * Add framework for defining object-type-specific views
 
+* Added capability to associate identifier namespaces
+  with images and display images instead of textual
+  namespace representation.
+
 * Added basic view class for writing views that carry
   out bulk operations on InfoObjects with "attaching
   markings to selected objects" as special case.
