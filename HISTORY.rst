@@ -3,6 +3,32 @@
 History
 -------
 
+0.3.0
++++++
+
+* Added custom queries
+
+* Add framework for extracting graph-information from
+  database
+
+* Add graph-display for InfoObjects and their relations
+
+* Add framework for defining object-type-specific views
+
+* Added basic view class for writing views that carry
+  out bulk operations on InfoObjects with "attaching
+  markings to selected objects" as special case.
+
+* Add interface for managing OAuth keys
+
+* Add hook to base import command
+
+* Add dingos-specific definition of menu items
+
+* Add Django 1.7 migrations
+
+
+
 0.2.1 (2014-03-06)
 ++++++++++++++++++
 
