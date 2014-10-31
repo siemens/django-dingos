@@ -331,7 +331,8 @@ def show_InfoObject(context,
                     io2f_pred = None,
                     close_div=True,
                     inner_collapsible = False,
-                    inner_fold_status = 'open'):
+                    inner_fold_status = 'open',
+                    link_pk = None):
 
     page = context['view'].request.GET.get('page')
 
@@ -436,7 +437,8 @@ def show_InfoObject(context,
             'header_level' : map(str, range(header_level,10)),
             'close_div' : close_div,
             'inner_collapsible': inner_collapsible,
-            'inner_fold_status': inner_fold_status}
+            'inner_fold_status': inner_fold_status,
+            'link_pk':link_pk}
 
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectRevisionListDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
