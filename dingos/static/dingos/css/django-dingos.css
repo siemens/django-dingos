@@ -195,9 +195,23 @@ div.c-2 > .grp-module, div.c-2 .grp-module.grp-changelist-results {
 
 /* tagging */
 .tag {
-    display: block;
-    border: #000 2px solid;
-    border-radius: 5px;
+    display: inline-block;
+    border: #AAA 1px solid;
+    border-radius: 3px;
+    padding: 5px;
     background-color: #CCEBFF;
+    margin-right: 10px;
+}
+
+.tag:last-of-type {
+    margin-left: 0;
+}
+
+.w-1 {
+    width: 1px;
+}
+
+.middle {
+    vertical-align: middle;
 }
 

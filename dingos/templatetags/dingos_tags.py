@@ -34,6 +34,9 @@ from dingos.graph_utils import dfs_preorder_nodes
 from dingos.models import InfoObject, InfoObject2Fact
 from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
 
+from dingos.forms import TagForm
+
+
 
 
 register = template.Library()
@@ -595,3 +598,15 @@ def show_namespace_image(namespace, height=None, width=None):
         image_url = settings.MEDIA_URL + str(namespace.image)
         return "<img alt='" + namespace.uri + "' src='" + image_url + "'" + " ".join(attributes) + "/>"
     return namespace.uri
+
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_InfoObjectTagsDisplay(context, iobject):
+    context['form'] = TagForm()
+    context['tags'] = iobject.tags.names()
+    return context
+
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsListDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_InfoObjectTagsListDisplay(context, iobject):
+    context['form'] = TagForm()
+    context['tags'] = iobject.tags.names()
+    return context
