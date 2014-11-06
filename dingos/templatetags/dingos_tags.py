@@ -34,6 +34,9 @@ from dingos.graph_utils import dfs_preorder_nodes
 from dingos.models import InfoObject, InfoObject2Fact
 from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
 
+from dingos.forms import TagForm
+
+
 
 
 register = template.Library()
@@ -596,7 +599,21 @@ def show_namespace_image(namespace, height=None, width=None):
         return '<img title="%s" alt="%s" src="%s" style="%s">' % (namespace.uri, namespace.uri, image_url, "".join(attributes))
     return namespace.uri
 
+#<<<<<<< HEAD
 #TODO ADDED TEMPLATETAG - pla
-@register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsDisplay.html' % DINGOS_TEMPLATE_FAMILY)
-def show_InfoObjectTags(iobject):
-    return {'cat_list_by_parents' : iobject.get_category_lists()}
+#@register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsDisplay.html' % DINGOS_TEMPLATE_FAMILY)
+#def show_InfoObjectTags(iobject):
+#    return {'cat_list_by_parents' : iobject.get_category_lists()}
+#=======
+#@register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_InfoObjectTagsDisplay(context, iobject):
+    context['form'] = TagForm()
+    context['tags'] = iobject.tags.names()
+    return context
+
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsListDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_InfoObjectTagsListDisplay(context, iobject):
+    context['form'] = TagForm()
+    context['tags'] = iobject.tags.names()
+    return context
+#>>>>>>> e2fdec054d2f798f0fb4be2bac529aead64a2d18

@@ -21,6 +21,9 @@ from django.forms import widgets
 
 from dingos.queryparser.placeholder_parser import PlaceholderException
 
+from taggit.models import Tag
+import autocomplete_light
+
 class EditSavedSearchesForm(forms.Form):
     """
     Form for editing a saved search. Used by the respective view.
@@ -127,3 +130,7 @@ class OAuthNewClientForm(forms.Form):
     Form to generate a new OAuth client. Used by the respective view.
     """
     new_client = forms.CharField(required=True, max_length=100, widget=widgets.TextInput(attrs={'size': '100', 'class': 'vTextField'}))
+
+class TagForm(forms.Form):
+    tag = forms.ChoiceField(Tag.objects.all(),
+        widget=autocomplete_light.ChoiceWidget('TagAutocomplete'))

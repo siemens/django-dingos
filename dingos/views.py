@@ -18,7 +18,7 @@
 import json
 import re
 from django import http
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import F
 from django.forms.formsets import formset_factory
 from django.shortcuts import get_object_or_404
@@ -61,6 +61,9 @@ import importlib
 from dingos.graph_traversal import follow_references
 
 from dingos.core.utilities import match_regex_list
+
+from taggit.models import Tag
+
 
 
 class InfoObjectList(BasicFilterView):
@@ -325,8 +328,29 @@ class InfoObjectView_wo_login(BasicDetailView):
 
         return context
 
+    def post(self, request, *args, **kwargs):
+        object = self.get_object()
+        ACTIONS = ['add', 'remove']
+        print(request)
+        action = request.POST.get('action')
+        if action not in ACTIONS:
+            #TODO Exception
+            return HttpResponseRedirect(request.path)
 
+        tag = request.POST.get('tag-autocomplete')
 
+        if action == 'add':
+            if not tag:
+                tag_id = request.POST.get('tag')
+                tag_ob = Tag.objects.all().get(id=tag_id)
+                tag = tag_ob.name
+            object.tags.add(tag)
+        elif action == 'remove':
+            if not tag:
+                tag = request.POST.get('tag')
+            object.tags.remove(tag)
+
+        return HttpResponseRedirect(request.path)
 
 
 class InfoObjectView(LoginRequiredMixin,InfoObjectView_wo_login):
