@@ -478,7 +478,11 @@ def show_InfoObjectMarkings(iobject):
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectAuthoredDataDisplay_vertical.html'% DINGOS_TEMPLATE_FAMILY)
 def show_AuthoringSource(iobject):
     if 'yielded_by' in dir(iobject):
-        authored_data_info = iobject.yielded_by.all()[0]
+        authored_data_info = list(iobject.yielded_by.all())
+        if authored_data_info:
+            authored_data_info = authored_data_info[0]
+        else:
+            authored_data_info = None
     else:
         authored_data_info = None
 
