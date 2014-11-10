@@ -102,6 +102,24 @@ class InfoObjectList(BasicFilterView):
             'identifier').order_by('-latest_of__pk')
         return queryset
 
+    def post(self, request, *args, **kwargs):
+        ACTIONS = ['remove']
+        action = request.POST.get('action')
+        if action not in ACTIONS:
+            #TODO Exception
+            return HttpResponseRedirect(request.path)
+
+        obj_id = request.POST.get('object')
+        object = InfoObject.objects.get(pk=obj_id)
+
+        if action == 'remove':
+            tag_id = request.POST.get('tag')
+            tag = Tag.objects.all().get(id=tag_id)
+            object.tags.remove(tag)
+            return HttpResponse()
+
+
+
 class InfoObjectListIncludingInternals(SuperuserRequiredMixin,InfoObjectList):
 
     counting_paginator = False
@@ -331,26 +349,28 @@ class InfoObjectView_wo_login(BasicDetailView):
     def post(self, request, *args, **kwargs):
         object = self.get_object()
         ACTIONS = ['add', 'remove']
-        print(request)
         action = request.POST.get('action')
         if action not in ACTIONS:
             #TODO Exception
             return HttpResponseRedirect(request.path)
 
-        tag = request.POST.get('tag-autocomplete')
 
         if action == 'add':
+            tag = request.POST.get('tag-autocomplete')
             if not tag:
                 tag_id = request.POST.get('tag')
-                tag_ob = Tag.objects.all().get(id=tag_id)
-                tag = tag_ob.name
+                tag_obj = Tag.objects.all().get(id=tag_id)
+                tag = tag_obj.name
             object.tags.add(tag)
-        elif action == 'remove':
-            if not tag:
-                tag = request.POST.get('tag')
-            object.tags.remove(tag)
+            return HttpResponse(json.dumps({'name': tag, 'id' : Tag.objects.all().get(name=tag).id}), content_type="application/json")
 
-        return HttpResponseRedirect(request.path)
+        elif action == 'remove':
+            tag_id = request.POST.get('tag')
+            tag = Tag.objects.all().get(id=tag_id)
+            object.tags.remove(tag)
+            return HttpResponse()
+
+
 
 
 class InfoObjectView(LoginRequiredMixin,InfoObjectView_wo_login):

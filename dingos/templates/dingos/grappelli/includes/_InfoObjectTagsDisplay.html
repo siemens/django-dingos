@@ -21,27 +21,23 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     <table class="grp-full-width">
         <tbody>
             <th class="nowrap w-1 middle">Tags</th>
-            <td>
+            <td id="tags">
                 {% for tag in tags %}
-                <span class="tag">{{ tag }}
-                <form method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="tag"value="{{ tag }}" />
-                    <input type="hidden" name="action" value="remove" />
-                    <input type="submit" value="x" />
-                </form>
+                <span id="{{ tag.id }}" class="tag">{{ tag.name }}
+                    <a href="#" class="remove_tag_button" data-tag-id="{{ tag.id }}">X</a>
                 </span>
                 {% endfor %}
             </td>
         </tbody>
     </table>
-    <form id="catform_add" method="post">
+    <form id="tagform_add" method="post">
         {% csrf_token %}
         {{ form }}
         <input type="hidden" name="action" value="add" />
-        <input type="submit" value="Submit" />
+        <a href="#" class="add_tag_button">Add</a>
     </form>
 </div>
+
 
 
 

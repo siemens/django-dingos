@@ -16,38 +16,15 @@ this program; if not, write to the Free Software Foundation, Inc., 51
 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
-
-
-        <td>
-
-                {% for tag in tags %}
-                <span class="tag">{{ tag }}
-                <form id="{{ tag }}" class="remove_tag_form" method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="tag" value="{{ tag }}" />
-                    <input type="hidden" name="action" value="remove" />
-                    <a href="#" class="remove_tag_button">X</a>
-                </form>
-                </span>
-                {% endfor %}
-
-    <form id="add_tag_form" method="post">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="add" />
-        <input type="submit" value="Submit" />
-        {{ form }}
-
-    </form>
-     <script>$('.remove_tag_button').click(function(event) {
-         var form = '.' + event.target.id;
-         $(form).submit();
-});
-</script>
-
-
-
-
-        </td>
+{% if tags|length > 0 %}
+<td id="tags" colspan="6">
+    {% for tag in tags %}
+    <span id="{{ tag.id }}" class="tag">{{ tag.name }}
+        <a href="#" class="remove_tag_button" data-tag-id="{{ tag.id }}" data-iobject-id="{{ obj.pk }}">X</a>
+    </span>
+    {% endfor %}
+</td>
+{% endif %}
 
 
 

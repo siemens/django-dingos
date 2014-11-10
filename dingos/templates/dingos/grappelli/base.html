@@ -36,6 +36,43 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js" type="text/javascript"></script>
   {% include 'autocomplete_light/static.html' %}
   <script src="{% static 'dingos/js/django-dingos.js' %}"></script>
+  <script type="text/javascript" charset="utf-8">
+(function($) {
+    $(document).ready(function () {
+        // Tagging Ajax
+        $('.remove_tag_button').click(function (event) {
+            var tagid = $(event.target).data('tag-id');
+            var objid = $(event.target).data('iobject-id');
+            $.post("", { action: "remove", tag: tagid, object : objid});
+            $('span#' + tagid).remove();
+            if($('#tags').children().length == 0)
+            {
+                $('#tags').remove();
+            }
+        });
+
+        $('.add_tag_button').click(function () {
+            var tagid = $("#id_tag").val();
+            if (tagid == null || $("span#" + tagid).length == 0) {
+                $.ajax({
+                    url: "",
+                    type: "POST",
+                    data: $('#tagform_add').serialize(),
+                    dataType: "json",
+                    success: function (resp) {
+                        var tag = '<span id="' + resp.id + '" class="tag">' + resp.name + '<a href="#" class="remove_tag_button" id="' + resp.id + '"> X</a></span>';
+                        $('#tags').append(tag);
+                    }
+                });
+                if (tagid != null) {
+                    $('span#id_tag-deck .remove').click();
+                }
+
+            }
+        });
+    });
+})(django.jQuery);
+  </script>
 {% endblock javascripts %}
 
 {% block content_title %}

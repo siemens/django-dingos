@@ -86,7 +86,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                                 {%reachable_packages obj.pk %}
                             </td>
                         </tr>
-                        <tr>
+                        <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
                             {% show_InfoObjectTagsListDisplay obj %}
                         </tr>
                     {% endfor %}
