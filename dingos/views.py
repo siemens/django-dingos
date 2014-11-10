@@ -635,7 +635,7 @@ class InfoObjectExportsView(BasicTemplateView):
 
     def get(self,request,*args,**kwargs):
 
-        api_test = self.kwargs.get('api_call', None)
+        api_test = 'api_call' in request.GET
 
 
 
@@ -656,7 +656,7 @@ class InfoObjectExportsView(BasicTemplateView):
 
             postprocessor = postprocessor_class(graph=graph,
                                                 query_mode='InfoObject',
-                                                enrich_details=True)
+                                                )
 
 
             if 'columns' in self.request.GET:

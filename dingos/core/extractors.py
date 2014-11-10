@@ -89,7 +89,10 @@ class InfoObjectDetails(object):
     query_mode = None
     query_mode_restriction = ['InfoObject']
 
+    _default_columns =  [('iobject_url', 'InfoObject URL'),
+        ('exporter','Exporter')]
 
+    exporter_name = None
 
     def __init__(self,*args,**kwargs):
         self.object_list = kwargs.pop('object_list',[])
@@ -99,9 +102,10 @@ class InfoObjectDetails(object):
         self.package_graph = None
         self.enrich_details = kwargs.pop('enrich_details',self.enrich_details)
         self.query_mode = kwargs.pop('query_mode','InfoObject')
-
-
-
+        if self.object_list:
+            self.io2fs = self._get_io2fs(map(lambda o:o.pk,list(self.object_list)))
+        if self.graph:
+            self.io2fs = self._get_io2fs(self.graph.nodes())
 
         self.iobject_map = None
 
@@ -114,11 +118,11 @@ class InfoObjectDetails(object):
     def initialize_object_details(self):
         if self.enrich_details:
             if self.object_list:
-                self.io2fs = self._get_io2fs(map(lambda o:o.pk,list(self.object_list)))
+
                 self.set_iobject_map()
 
             elif self.graph:
-                self.io2fs = self._get_io2fs(self.graph.nodes())
+
                 self._annotate_graph(self.graph)
 
 
@@ -149,6 +153,9 @@ class InfoObjectDetails(object):
                    '_io2f' : io2f,
                    'iobject_url': reverse('url.dingos.view.infoobject', args=[iobject.pk]),
                    'iobject_pk': iobject.pk}
+
+        if self.exporter_name:
+            result['exporter'] = self.exporter_name
 
 
         if self.package_graph:
@@ -305,6 +312,8 @@ class InfoObjectDetails(object):
                                                                                                 'fact__value_iobject_id__latest__iobject_type',
                                                                                                 'node_id').order_by('iobject__id','node_id__name')
 
+
+        io2fs= InfoObject2Fact.objects.filter(iobject__id__in=object_pks)
         return io2fs
 
     def _annotate_graph(self,G):
@@ -374,6 +383,8 @@ class InfoObjectDetails(object):
             attribute_dict[key].reverse()
         return results
 
+
+
     def get_siblings(self,io2f):
         self.set_node_map()
         node_id = io2f.node_id.name.split(':')
@@ -391,7 +402,20 @@ class InfoObjectDetails(object):
                         sibling = sibling_dict[key].get('_value',None)
                         if sibling:
                             results.append(sibling)
+
         return results
+
+    def get_siblings(self,io2f):
+        node_id = io2f.node_id.name.split(':')
+        if node_id:
+            parent_id = ":".join(node_id[0:-1])
+            self_id = node_id[-1]
+            siblings = map(lambda x: x.fact,InfoObject2Fact.objects.filter(iobject=io2f.iobject,
+                                                                           node_id__name__regex="^%s:[^:]+$" % parent_id).prefetch_related('fact__fact_term',
+                                                                                                'fact__fact_values'))
+            print siblings
+            return siblings
+
 
 
 class csv_export(InfoObjectDetails):
