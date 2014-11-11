@@ -34,7 +34,7 @@ from provider.oauth2.models import Client
 
 from braces.views import SuperuserRequiredMixin
 
-from dingos.models import InfoObject2Fact, InfoObject, UserData, get_or_create_fact
+from dingos.models import InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact
 from dingos.view_classes import BasicJSONView, POSTPROCESSOR_REGISTRY
 
 import csv
@@ -283,6 +283,25 @@ class InfoObjectView_wo_login(BasicDetailView):
 
     @property
     def iobject2facts(self):
+        facts_in_obj =  vIO2FValue.objects.filter(iobject=self.object.id).order_by('node_id')
+
+        value_list = []
+        last_obj = None
+        for fact in facts_in_obj:
+            if last_obj:
+                if last_obj.node_id == fact.node_id:
+                    value_list.append(fact.value)
+                else:
+                    last_obj.value_list = value_list
+                    value_list = []
+            last_obj = fact
+            value_list.append(fact.value)
+        last_obj.value_list = value_list
+
+        facts_in_obj = [x for x in facts_in_obj if 'value_list' in dir(x)]
+
+        return facts_in_obj
+
         return self.object.fact_thru.all().prefetch_related(
             'fact__fact_term',
             'fact__fact_values',

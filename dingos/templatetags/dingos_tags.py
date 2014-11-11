@@ -380,7 +380,7 @@ def show_InfoObject(context,
         row_span_start = {}
         previous_node = []
         for io2f in iobject2facts:
-            node_id = io2f.node_id.name.split(':')
+            node_id = io2f.node_id.split(':')
             node_id_tuple = tuple(node_id)
             row_map[node_id_tuple] = {}
             comparison = zip(previous_node,node_id)

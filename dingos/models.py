@@ -1997,6 +1997,87 @@ class UserData(DingoModel):
 dingos_class_map["UserData"] = UserData
 
 
+class vIO2FValue(DingoModel):
+
+    term = models.CharField(max_length=512)
+    attribute=  models.CharField(max_length=128)
+
+
+    iobject_identifier_uri = models.CharField(max_length=256)
+    iobject_identifier_uid = models.SlugField(max_length=255)
+    iobject = models.ForeignKey(InfoObject,related_name=None)
+    latest_iobject = models.ForeignKey(InfoObject,related_name='+')
+    iobject_name = models.CharField(max_length=255)
+    timestamp = models.DateTimeField()
+    create_timestamp = models.DateTimeField()
+    iobject_type_name = models.SlugField(max_length=30)
+    iobject_family_name = models.SlugField(max_length=256)
+    node_id = models.CharField(max_length=256)
+    value = models.TextField()
+    referenced_iobject_ts = models.DateTimeField()
+    value_storage_location =  models.SmallIntegerField()
+    referenced_iobject_identifier = models.ForeignKey(Identifier,related_name='+')
+
+    identifier = models.ForeignKey(Identifier,related_name='+')
+    io2f = models.ForeignKey(InfoObject2Fact,related_name='+')
+    factterm =  models.ForeignKey(FactTerm,related_name='+')
+    fact = models.ForeignKey(Fact,related_name='+')
+
+    class Meta:
+        managed = False
+        db_table = 'vio2fvalue'
+
+
+"""
+DROP VIEW vio2fvalue;
+
+CREATE VIEW vio2fvalue AS
+SELECT
+ CONCAT(dingos_infoobject.id,dingos_nodeid.name,dingos_factvalue.id) AS id,
+ dingos_identifiernamespace.uri as iobject_identifier_uri,
+ dingos_identifier.uid as iobject_identifier_uid,
+ dingos_infoobject.id AS iobject_id,
+ dingos_identifier.latest_id AS latest_iobject_id,
+ dingos_infoobject.name AS iobject_name,
+ dingos_infoobject.timestamp AS "timestamp",
+ dingos_infoobject.create_timestamp AS create_timestamp,
+ dingos_infoobjecttype.name AS iobject_type_name,
+ dingos_infoobjectfamily.name AS iobject_family_name,
+ dingos_nodeid.name as node_id,
+ dingos_factterm.term AS term,
+ dingos_factterm.attribute AS attribute,
+ dingos_factvalue.value AS value,
+
+ dingos_fact.value_iobject_ts as referenced_iobject_ts,
+ dingos_factvalue.storage_location as value_storage_location,
+
+ dingos_fact.value_iobject_id_id as referenced_iobject_identifier_id,
+ dingos_identifier.id AS identifier_id,
+ dingos_infoobject2fact.id AS io2f_id,
+ dingos_factterm.id AS factterm_id,
+ dingos_fact.id AS fact_id,
+ dingos_factvalue.id AS value_id
+FROM
+ dingos_infoobject
+ LEFT JOIN dingos_identifier ON
+ (dingos_identifier.id = dingos_infoobject.identifier_id)
+ LEFT JOIN dingos_infoobject2fact ON
+ (dingos_infoobject2fact.iobject_id = dingos_infoobject.id)
+ LEFT JOIN dingos_fact ON
+ (dingos_infoobject2fact.fact_id = dingos_fact.id)
+ LEFT JOIN dingos_factterm ON
+ (dingos_factterm.id = dingos_fact.fact_term_id)
+ LEFT JOIN dingos_fact_fact_values ON (dingos_fact.id = dingos_fact_fact_values.fact_id)
+ LEFT JOIN dingos_factvalue ON (dingos_fact_fact_values.factvalue_id = dingos_factvalue.id)
+ LEFT JOIN dingos_identifiernamespace ON
+ (dingos_identifier.namespace_id = dingos_identifiernamespace.id)
+ LEFT JOIN dingos_infoobjectfamily ON
+ (dingos_infoobject.iobject_family_id = dingos_infoobjectfamily.id)
+ LEFT JOIN dingos_infoobjecttype ON
+ (dingos_infoobject.iobject_type_id = dingos_infoobjecttype.id)
+ LEFT JOIN dingos_nodeid ON
+ (dingos_nodeid.id = dingos_infoobject2fact.node_id_id)
+"""
 
 def get_or_create_iobject(identifier_uid,
                           identifier_namespace_uri,
