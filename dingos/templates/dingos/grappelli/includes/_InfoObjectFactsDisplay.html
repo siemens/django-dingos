@@ -69,32 +69,32 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     {% if show_NodeID%}
                     <td>{{k.node_id}}</td>
                     {% endif %}
-                    {%     node_indent "td"  k.node_id.name k.fact.fact_term.term k.fact.fact_term.attribute highlight %}
+                    {%     node_indent "td"  k.node_id k.term k.attribute highlight %}
 
                             <a name="{{ k.node_id }}"> </a>
-                        {% if k.fact.value_iobject_id %}
-                            {%  if k.fact.value_iobject_id.latest %}
-                            <a href={% url 'url.dingos.view.infoobject' k.fact.value_iobject_id.latest.pk %}>
+                        {% if k.referenced_iobject_identifier %}
+                            {%  if k.referenced_iobject_identifier.latest %}
+                            <a href={% url 'url.dingos.view.infoobject' k.referenced_iobject_identifier.latest.pk %}>
                                 <img src="/static/admin/img/selector-search.gif" alt="Lookup" height="16" width="16">
                             </a>
-                                {% if k.fact.value_iobject_id.latest.name == '' or k.fact.value_iobject_id.latest.name == 'PLACEHOLDER' %}
-                                    {{k.fact.value_iobject_id.latest.iobject_type.name}}
+                                {% if k.referenced_iobject_identifier.latest.name == '' or k.referenced_iobject_identifier.latest.name == 'PLACEHOLDER' %}
+                                    {{k.referenced_iobject_id.latest.iobject_type.name}}
                                 {% else %}
-                                    {{k.fact.value_iobject_id.latest.name}}
+                                    {{k.referenced_iobject_identifier.latest.name}}
                                 {% endif %}
                             {%  else %}
-                                {{ k.fact.value_iobject_id.namespace.uri }}:{{ k.fact.value_iobject_id.uid }}
+                                {{ k.referenced_iobject_identifier.namespace.uri }}:{{ k.referenced_iobject_identifier.uid }}
                             {% endif %}
                         {% else %}
-                            {%  for value in k.fact.fact_values.all %}
-                                {% if value.storage_location == 1 %}
-                                    On Disk: {{ value.value }}
-                                {% elif value.storage_location == 2 %}
-                                    {%  lookup_blob value.value %}
-                                {% elif k.node_id.name in formindex %}
-                                    {% render_formset_form formset formindex k.node_id.name 'value' %}
+                            {%for value in k.value_list %}
+                                {% if k.value_storage_location == 1 %}
+                                    On Disk: {{ k.value }}
+                                {% elif k.value_storage_location == 2 %}
+                                    {%  lookup_blob value %}
+                                {% elif k.node_id in formindex %}
+                                    {% render_formset_form formset formindex k.node_id 'value' %}
                                 {% else %}
- 			                        {{ value.value }}
+ 			                        {{ value }}
                                 {% endif %}
 
                                 {%  if not forloop.last %}
@@ -106,7 +106,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                         {% endif %}
 
-                    {%     node_indent_end "td"  k.node_id.name k.fact.fact_term.term k.fact.fact_term.attribute %}
+                    {%     node_indent_end "td"  k.node_id k.term k.attribute %}
                     {% if show_datatype %}
                     <td >
                          {{k.fact.fact_values.all.0.fact_data_type.name}}
