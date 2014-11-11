@@ -18,12 +18,12 @@
 
 
 
-
+from datetime import datetime
 from urlparse import urlparse
 import StringIO
 import json
 import csv
-from dingos.models import InfoObject2Fact
+from dingos.models import InfoObject2Fact, vIO2FValue
 from dingos.core.utilities import set_dict, get_dict
 from django.core.urlresolvers import reverse
 from dingos.core.utilities import get_from_django_obj
@@ -107,6 +107,8 @@ class InfoObjectDetails(object):
         if self.graph:
             self.io2fs = self._get_io2fs(self.graph.nodes())
 
+        self._sibling_map = {}
+
         self.iobject_map = None
 
         self.results = []
@@ -141,18 +143,20 @@ class InfoObjectDetails(object):
 
 
     def init_result_dict(self,obj_or_io2f):
-        if isinstance(obj_or_io2f,InfoObject2Fact):
-            iobject = obj_or_io2f.iobject
+        if isinstance(obj_or_io2f,InfoObject2Fact) or isinstance(obj_or_io2f,vIO2FValue):
+            iobject = None#obj_or_io2f.iobject
             io2f = obj_or_io2f
+            iobject_pk = io2f.iobject_id
         else:
             iobject = obj_or_io2f
+            iobject_pk = iobject.pk
             io2f = None
 
 
         result =  {'_object':iobject,
                    '_io2f' : io2f,
-                   'iobject_url': reverse('url.dingos.view.infoobject', args=[iobject.pk]),
-                   'iobject_pk': iobject.pk}
+                   'iobject_url': reverse('url.dingos.view.infoobject', args=[iobject_pk]),
+                   'iobject_pk': iobject_pk}
 
         if self.exporter_name:
             result['exporter'] = self.exporter_name
@@ -299,34 +303,53 @@ class InfoObjectDetails(object):
 
     def _get_io2fs(self,object_pks):
 
-        io2fs= InfoObject2Fact.objects.filter(iobject__id__in=object_pks).prefetch_related( 'iobject',
-                                                                                                'iobject__identifier',
-                                                                                                'iobject__identifier__namespace',
-                                                                                                'iobject__iobject_family',
-                                                                                                'iobject__iobject_type',
-                                                                                                'fact__fact_term',
-                                                                                                'fact__fact_values',
-                                                                                                'fact__fact_values__fact_data_type',
-                                                                                                'fact__value_iobject_id',
-                                                                                                'fact__value_iobject_id__latest',
-                                                                                                'fact__value_iobject_id__latest__iobject_type',
-                                                                                                'node_id').order_by('iobject__id','node_id__name')
+        io2fs = vIO2FValue.objects.filter(iobject__id__in=object_pks).order_by('iobject__id','node_id')
 
+        if self.enrich_details:
+            io2fs = io2fs.prefetch_related("iobject")
 
-        io2fs= InfoObject2Fact.objects.filter(iobject__id__in=object_pks)
         return io2fs
 
     def _annotate_graph(self,G):
+        print datetime.now()
 
-        for fact in self.io2fs:
-            G.node[fact.iobject.id]['iobject'] = fact.iobject
-            if not 'facts' in G.node[fact.iobject.id]:
-                G.node[fact.iobject.id]['facts'] = []
-            G.node[fact.iobject.id]['facts'].append(fact)
+        last_obj_id = None
+
+        last_io2fv= None
+
+        value_list = []
+
+
+
+        current_node = None
+        walker = None
+
+        for io2fv in self.io2fs:
+            if not current_node or current_node != io2fv.iobject_id:
+                current_node = io2fv.iobject_id
+                walker = [io2fv]
+                G.node[current_node]['facts']=walker
+                G.node[current_node]['iobject']=io2fv.iobject
+            elif current_node == io2fv.iobject_id:
+                walker.append(io2fv)
+
+            if last_io2fv:
+                if last_io2fv.node_id == io2fv.node_id and last_obj_id == io2fv.iobject_id:
+                    value_list.append(io2fv.value)
+                else:
+                    last_io2fv.value_list = value_list
+                    value_list = []
+            last_io2fv = io2fv
+            last_obj_id = last_io2fv.iobject_id
+
+            value_list.append(io2fv.value)
+
+        last_io2fv.value_list = value_list
+
 
         self.iobject_map = G.node
         self.object_list = map (lambda x : G.node[x]['iobject'], G.node.keys())
-
+        print datetime.now()
 
     def set_iobject_map(self):
 
@@ -358,11 +381,30 @@ class InfoObjectDetails(object):
 
             for io2f in self.io2fs:
 
-                set_dict(self.node_map,io2f.fact,'set_value', io2f.iobject.id, *io2f.node_id.name.split(':'))
+                set_dict(self.node_map,io2f,'set_value', io2f.iobject_id, *io2f.node_id.split(':'))
+
+    def get_attributed(self,io2f):
+        self.set_node_map()
+        node_id = io2f.node_id.split(':')
+        results = []
+        walker = get_dict(self.node_map,io2f.iobject_id,*node_id[0:-1])
+
+        def get_attributed_rec(walker,results):
+            for key in walker:
+                if key == '_value':
+                    results.append(walker[key])
+                else:
+                    get_attributed_rec(walker[key],results)
+
+        get_attributed_rec(walker,results)
+
+        return results
+
+    test = 0
 
     def get_attributes(self,io2f):
         self.set_node_map()
-        node_id = io2f.node_id.name.split(':')
+        node_id = io2f.node_id.split(':')
         results = {}
 
         def get_attributes_rec(node_id,walker,results):
@@ -371,13 +413,17 @@ class InfoObjectDetails(object):
                     if node_id and child_key == node_id[0]:
                         continue
                     else:
-                        attribute_fact = walker[child_key]['_value']
-                        set_dict(results, (attribute_fact.fact_values.all()[0].value,attribute_fact.fact_term.term), 'append', attribute_fact.fact_term.attribute)
+                        attribute_io2fv = walker[child_key]['_value']
+                        if self.test < 10:
+                            self.test += 1
+                            print attribute_io2fv.node_id
+                            print map(lambda x: x.node_id, self.get_attributed(attribute_io2fv))
+                        set_dict(results, (attribute_io2fv.value,attribute_io2fv.term), 'append', attribute_io2fv.attribute)
             if node_id != []:
                 return get_attributes_rec(node_id[1:],walker[node_id[0]],results)
             else:
                 return results
-        attribute_dict =  get_attributes_rec(node_id,self.node_map[io2f.iobject.id],results)
+        attribute_dict =  get_attributes_rec(node_id,self.node_map[io2f.iobject_id],results)
 
         for key in attribute_dict:
             attribute_dict[key].reverse()
@@ -385,36 +431,28 @@ class InfoObjectDetails(object):
 
 
 
-    def get_siblings(self,io2f):
-        self.set_node_map()
-        node_id = io2f.node_id.name.split(':')
-        results = []
-        if node_id:
-            parent_id = node_id[0:-1]
-            self_id = node_id[-1]
 
-
-            sibling_dict = get_dict(self.node_map[io2f.iobject.pk],*parent_id)
-
-            if sibling_dict:
-                for key in sibling_dict:
-                    if key[0] == self_id[0] and key != self_id:
-                        sibling = sibling_dict[key].get('_value',None)
-                        if sibling:
-                            results.append(sibling)
-
-        return results
 
     def get_siblings(self,io2f):
-        node_id = io2f.node_id.name.split(':')
+        if not self._sibling_map:
+            for vio2f in self.io2fs:
+                node_id = io2f.node_id.split(':')
+                if node_id:
+                    parent_id = ":".join(node_id[0:-1])
+                    set_dict(self._sibling_map,vio2f,"append",vio2f.iobject_id,parent_id)
+            print self._sibling_map
+        return self._sibling_map[io2f.iobject_id][":".join(io2f.node_id.split(':')[0:-1])]
+
+
+        node_id = io2f.node_id.split(':')
         if node_id:
             parent_id = ":".join(node_id[0:-1])
-            self_id = node_id[-1]
-            siblings = map(lambda x: x.fact,InfoObject2Fact.objects.filter(iobject=io2f.iobject,
-                                                                           node_id__name__regex="^%s:[^:]+$" % parent_id).prefetch_related('fact__fact_term',
-                                                                                                'fact__fact_values'))
-            print siblings
-            return siblings
+            query_dict.update({'iobject_id':io2f.iobject_id,
+                               'node_id__regex':"^%s:[^:]+$" % parent_id})
+            siblings = vIO2FValue.objects.filter(**query_dict)
+
+        return siblings
+
 
 
 
@@ -439,7 +477,7 @@ class csv_export(InfoObjectDetails):
 
 class json_export(InfoObjectDetails):
     @property
-    def  default_columns(self):
+    def default_columns(self):
         return map(lambda x: (x[0],x[1][0]), self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode].items())
 
 
