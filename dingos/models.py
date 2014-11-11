@@ -1708,22 +1708,47 @@ class InfoObject(DingoModel):
 
 
 
-        facts= InfoObject2Fact.objects.filter(iobject__id__in=G.nodes()).prefetch_related( 'iobject',
-                                                                                            'iobject__identifier',
-                                                                                            'iobject__identifier__namespace',
-                                                                                            'iobject__iobject_family',
-                                                                                            'iobject__iobject_type',
-                                                                                            'fact__fact_term',
-                                                                                            'fact__fact_values',
-                                                                                            'fact__fact_values__fact_data_type',
-                                                                                            'fact__value_iobject_id',
-                                                                                            'fact__value_iobject_id__latest',
-                                                                                            'fact__value_iobject_id__latest__iobject_type',
-                                                                                            'node_id').order_by('iobject__id','node_id__name')
+        io2fvs= vIO2FValue.objects.filter(iobject__id__in=G.nodes()).order_by('iobject__id','node_id').prefetch_related( 'iobject',
+                                                                                                                        'referenced_iobject_identifier__latest',)
+                                                                   #                         'iobject__identifier',
+                                                                   #                         'iobject__identifier__namespace',
+                                                                   #                         'iobject__iobject_family',
+                                                                   #                         'iobject__iobject_type',
+                                                                   #                         'fact__fact_term',
+                                                                   #                         'fact__fact_values',
+                                                                   #                         'fact__fact_values__fact_data_type',
+                                                                   #                         'fact__value_iobject_id',
+                                                                   #                         'fact__value_iobject_id__latest',
+                                                                   #                         'fact__value_iobject_id__latest__iobject_type',
+                                                                   #                         'node_id').order_by('iobject__id','node_id__name')
 
-        for fact in facts:
-            G.node[fact.iobject.id]['iobject'] = fact.iobject
-            G.node[fact.iobject.id]['facts'].append(fact)
+
+
+        last_obj_id = None
+
+        last_io2fv= None
+
+        value_list = []
+
+        for io2fv in io2fvs:
+            if last_io2fv:
+                if last_io2fv.node_id == io2fv.node_id and last_obj_id == io2fv.iobject_id:
+                    value_list.append(io2fv.value)
+                else:
+                    last_io2fv.value_list = value_list
+                    value_list = []
+            last_io2fv = io2fv
+            last_obj_id = last_io2fv.iobject_id
+
+            value_list.append(io2fv.value)
+
+        last_io2fv.value_list = value_list
+
+        for node in G.nodes_iter():
+            G.node[node]['facts'] = [x for x in io2fvs if x.iobject_id == node and 'value_list' in dir(x)]
+            G.node[node]['iobject'] = G.node[node]['facts'][0].iobject
+
+
 
         return G
 
@@ -2018,6 +2043,7 @@ class vIO2FValue(DingoModel):
     value_storage_location =  models.SmallIntegerField()
     referenced_iobject_identifier = models.ForeignKey(Identifier,related_name='+')
 
+    fact_data_type = models.ForeignKey(FactDataType,related_name='+')
     identifier = models.ForeignKey(Identifier,related_name='+')
     io2f = models.ForeignKey(InfoObject2Fact,related_name='+')
     factterm =  models.ForeignKey(FactTerm,related_name='+')

@@ -360,6 +360,7 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
         return item_count
 
 
+
 class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,FilterView):
     """
     Basic class for defining filter views: includes the necessary mixins
@@ -470,6 +471,7 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
 
             # Redirect to edit view as this takes care of the rest
             return HttpResponseRedirect(urlresolvers.reverse('url.dingos.admin.edit.savedsearches'))
+
 
 class BasicDetailView(CommonContextMixin,
                       ViewMethodMixin,
@@ -1026,9 +1028,9 @@ class SimpleMarkingAdditionView(BasicListActionView):
     # Specify either a Django queryset or a DINGOS custom query that selects the marking objects
     # that will be offered in the view
 
-    marking_queryset = None
+    marking_queryset = None # InfoObject.objects.filter(iobject_type__name='Marking')
 
-    marking_query = None # """object: object_type.name = 'Marking' && identifier.namespace contains 'cert.siemens.com'"""
+    marking_query = None# """object: object_type.name = 'Marking' && identifier.namespace contains 'cert.siemens.com'"""
 
     # The query with which possible marking objects are selected may potentially return many objects;
     # specify below, how many should be displayed.
