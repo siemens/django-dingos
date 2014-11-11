@@ -41,13 +41,16 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     $(document).ready(function () {
         // Tagging Ajax
         $('.remove_tag_button').click(function (event) {
-            var tagid = $(event.target).data('tag-id');
-            var objid = $(event.target).data('iobject-id');
-            $.post("", { action: "remove", tag: tagid, object : objid});
-            $('span#' + tagid).remove();
-            if($('#tags').children().length == 0)
+            var tag_name = $(event.target).data('tag-name');
+            var obj_id = $(event.target).data('iobject-id');
+            $.post("", { action: "remove", tag: tag_name, object : obj_id});
+            if($(event.target).parent().siblings().length == 0)
             {
-                $('#tags').remove();
+                $(event.target).parent().parent().remove();
+            }
+            else
+            {
+                $(event.target).parent().remove();
             }
         });
 
@@ -60,7 +63,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     data: $('#tagform_add').serialize(),
                     dataType: "json",
                     success: function (resp) {
-                        var tag = '<span id="' + resp.id + '" class="tag">' + resp.name + '<a href="#" class="remove_tag_button" id="' + resp.id + '"> X</a></span>';
+                        var tag = '<span id="' + resp.name + '" class="tag">' + resp.name + '<a href="#" class="remove_tag_button" id="' + resp.name + '"> X</a></span>';
                         $('#tags').append(tag);
                     }
                 });

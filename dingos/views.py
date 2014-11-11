@@ -103,6 +103,7 @@ class InfoObjectList(BasicFilterView):
         return queryset
 
     def post(self, request, *args, **kwargs):
+        print(request)
         ACTIONS = ['remove']
         action = request.POST.get('action')
         if action not in ACTIONS:
@@ -113,9 +114,8 @@ class InfoObjectList(BasicFilterView):
         object = InfoObject.objects.get(pk=obj_id)
 
         if action == 'remove':
-            tag_id = request.POST.get('tag')
-            tag = Tag.objects.all().get(id=tag_id)
-            object.tags.remove(tag)
+            tag_name = request.POST.get('tag')
+            object.tags.remove(tag_name)
             return HttpResponse()
 
 
@@ -356,18 +356,14 @@ class InfoObjectView_wo_login(BasicDetailView):
 
 
         if action == 'add':
-            tag = request.POST.get('tag-autocomplete')
-            if not tag:
-                tag_id = request.POST.get('tag')
-                tag_obj = Tag.objects.all().get(id=tag_id)
-                tag = tag_obj.name
+            tag = request.POST.get('tag')
+            tag_obj, created = Tag.objects.get_or_create(name=tag)
             object.tags.add(tag)
-            return HttpResponse(json.dumps({'name': tag, 'id' : Tag.objects.all().get(name=tag).id}), content_type="application/json")
+            return HttpResponse(json.dumps({'name': tag_obj.name, 'id' : tag_obj.id}), content_type="application/json")
 
         elif action == 'remove':
-            tag_id = request.POST.get('tag')
-            tag = Tag.objects.all().get(id=tag_id)
-            object.tags.remove(tag)
+            tag_name = request.POST.get('tag')
+            object.tags.remove(tag_name)
             return HttpResponse()
 
 

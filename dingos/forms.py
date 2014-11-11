@@ -22,6 +22,7 @@ from django.forms import widgets
 from dingos.queryparser.placeholder_parser import PlaceholderException
 
 from taggit.models import Tag
+from autocomplete_light.contrib.taggit_tagfield import TagField, TagWidget
 import autocomplete_light
 
 class EditSavedSearchesForm(forms.Form):
@@ -116,6 +117,19 @@ class SimpleMarkingAdditionForm(BasicListActionForm):
         else:
             self.fields['marking_to_add'] = forms.ChoiceField(choices=marking_choices)
 
+class TaggingAdditionForm(BasicListActionForm):
+    def __init__(self, request, *args, **kwargs):
+
+        tagging_choices = kwargs.pop('tags')
+        allow_multiple_tags = kwargs.pop('allow_multiple_tags',None)
+
+        super(TaggingAdditionForm, self).__init__(request,*args, **kwargs)
+        if allow_multiple_tags:
+            self.fields['tag_to_add'] = forms.MultipleChoiceField(choices=tagging_choices)
+        else:
+            self.fields['tag_to_add'] = forms.ChoiceField(choices=tagging_choices)
+
+
 class OAuthInfoForm(forms.Form):
     """
     Form for editing the OAuth information. Used by the respective view.
@@ -132,5 +146,13 @@ class OAuthNewClientForm(forms.Form):
     new_client = forms.CharField(required=True, max_length=100, widget=widgets.TextInput(attrs={'size': '100', 'class': 'vTextField'}))
 
 class TagForm(forms.Form):
-    tag = forms.ChoiceField(Tag.objects.all(),
-        widget=autocomplete_light.ChoiceWidget('TagAutocomplete'))
+    #tag = forms.ModelChoiceField(
+    #       queryset = Tag.objects.all(),
+    #        widget=autocomplete_light.ChoiceWidget('TagAutocomplete', extra_context = {'choices' : 'test'})
+    #    )
+    tag = TagField(widget=TagWidget('TagAutocomplete',
+        attrs = {
+            'placeholder' : 'test',
+            'data-autocomplete-minimum-characters': 2,
+        })
+    )

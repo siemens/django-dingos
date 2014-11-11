@@ -46,11 +46,12 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
 from dingos import graph_traversal
 from dingos.core.template_helpers import ConfigDictWrapper
 from dingos.core.utilities import get_dict, replace_by_list
-from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm, PlaceholderForm
+from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm, PlaceholderForm, TaggingAdditionForm
 from dingos.queryparser.placeholder_parser import PlaceholderParser
 from dingos.models import InfoObject, UserData, Marking2X
 
 from core.http_helpers import get_query_string
+from taggit.models import Tag
 
 POSTPROCESSOR_REGISTRY = {}
 
@@ -383,6 +384,13 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
     graph = None
 
     fields_for_api_call = ['name']
+
+    list_actions = [
+
+                ('Mark', 'url.dingos.action.add_marking', 0),
+                ('Tag', 'url.dingos.action.add_tagging', 0)
+
+            ]
 
     @property
     def paginator_class(self):
@@ -1026,7 +1034,10 @@ class SimpleMarkingAdditionView(BasicListActionView):
     # Specify either a Django queryset or a DINGOS custom query that selects the marking objects
     # that will be offered in the view
 
-    marking_queryset = None
+    #marking_queryset = None
+    marking_queryset = InfoObject.objects.filter(iobject_type__name='Marking')
+
+
 
     marking_query = None # """object: object_type.name = 'Marking' && identifier.namespace contains 'cert.siemens.com'"""
 
@@ -1269,5 +1280,132 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
                 return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
+
+class TaggingAdditionView(BasicListActionView):
+
+    # Override the following parameters in views inheriting from this view.
+
+    title = 'Tag objects'
+
+    description = """Allows the user to add tags to multiple infoobjects at once."""
+
+    template_name = 'dingos/%s/actions/TagingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
+
+    #select tag objects
+    tagging_queryset = Tag.objects.all()
+    tagging_query = None
+
+    max_tag_choices=20
+    allow_multiple_tags=True
+    form_class = TaggingAdditionForm
+
+    #action to perform
+    #{'action_predicate': <function taking form_data and object to be acted upon,
+    #                       returning True or False
+    #                       whether action is to be carried out on the given object>,
+    #  'action_function': <function taking cleaned form data and object to be acted upon
+    #                      Should return
+    #                         (True, 'Success message')
+    #                      for successful execution or
+    #                         (False, 'Error message')
+    #                      for problem in executing action
+
+    action_list = []
+
+    @staticmethod
+    def action_add_tag(tag, iobject):
+        iobject.tags.add(tag)
+        return (True, 'Success message')
+
+    action_list.append({'action_predicate': lambda x,y: True,
+                        'action_function': action_add_tag.__func__,
+                        })
+
+    def tagged_obj_name_function(self,x):
+        return x.name
+
+    @property
+    def m_queryset(self):
+        """
+        Queryset for selecting possible tags, either taken directly from self.tagging_queryset
+        or created from self.tagging_query
+        """
+        if self.tagging_queryset:
+            return self.tagging_queryset.values_list('pk','name')[0:self.max_tag_choices]
+        #TODO else branch
+
+    def post(self, request, *args, **kwargs):
+        print(request)
+        if 'action_objects' in self.request.POST:
+
+            self._set_initial_form(tags= self.m_queryset,
+                                   allow_multiple_tags=self.allow_multiple_tags)
+            return super(TaggingAdditionView,self).get(request, *args, **kwargs)
+
+        else:
+            # So the view has been called a second time by submitting the form in the view
+            # rather than from a different view. So we need to process the data in the form
+
+            self._set_post_form(request.POST,
+                                tags = self.m_queryset,
+                                allow_multiple_tags = self.allow_multiple_tags)
+
+            # React on a valid form
+            if self.form.is_valid():
+                form_data = self.form.cleaned_data
+
+                content_type = ContentType.objects.get_for_model(self.action_model_query.model)
+
+                if isinstance(form_data['tag_to_add'],list):
+                    tag_to_add = form_data['tag_to_add']
+                else:
+                    tag_to_add = [form_data['tag_to_add']]
+
+                for tag_pk in tag_to_add:
+
+                    # Read out object with which tag is to be carried out
+                    tag_obj = Tag.objects.get(pk=tag_pk)
+
+                    # Create the tags
+
+                    for obj_pk in form_data['checked_objects']:
+
+                        obj_to_be_tagged = InfoObject.objects.get(pk=obj_pk)
+
+                        found_action = False
+                        for action in self.action_list:
+                            if found_action:
+                                break
+                            action_predicate = action['action_predicate']
+                            action_function = action['action_function']
+                            mark_after_failure = action.get('tag_after_failure',False)
+                            action_for_existing_marking = action.get('action_for_existing_tagging',False)
+
+                            if action_predicate(tag_obj,obj_to_be_tagged):
+                                found_action = True
+                                #TODO skipping ignored
+
+                                if self.debug_action:
+                                    (success,action_msg) = (True,"DEBUG: Action has not been carried out")
+                                else:
+                                    (success,action_msg) = action_function(tag_obj,obj_to_be_tagged)
+
+                        if not found_action:
+                            message = """%s could not be tagged: %s.""" % (self.tagged_obj_name_function(obj_to_be_tagged),
+                                                                           self.no_action_error_message)
+                            messages.error(self.request,message)
+
+
+                #Clear checkboxes by emptying the corresponding parameter in the form data and
+                #recreating the form object from this data
+
+                form_data['checked_objects'] = []
+                self._set_post_form(form_data,
+                                    tags = self.m_queryset,
+                                    allow_multiple_tags= self.allow_multiple_tags)
+
+
+                return super(TaggingAdditionView,self).get(request, *args, **kwargs)
+            return super(TaggingAdditionView,self).get(request, *args, **kwargs)
 
 

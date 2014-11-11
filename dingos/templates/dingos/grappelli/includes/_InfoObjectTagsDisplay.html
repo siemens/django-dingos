@@ -23,8 +23,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             <th class="nowrap w-1 middle">Tags</th>
             <td id="tags">
                 {% for tag in tags %}
-                <span id="{{ tag.id }}" class="tag">{{ tag.name }}
-                    <a href="#" class="remove_tag_button" data-tag-id="{{ tag.id }}">X</a>
+                <span id="{{ tag.name }}" class="tag">{{ tag.name }}
+                    <a href="#" class="remove_tag_button" data-tag-name="{{ tag.name }}">X</a>
                 </span>
                 {% endfor %}
             </td>

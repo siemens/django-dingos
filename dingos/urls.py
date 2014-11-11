@@ -22,7 +22,7 @@ from django.shortcuts import redirect
 
 from dingos import views
 
-from dingos.view_classes import SimpleMarkingAdditionView
+from dingos.view_classes import SimpleMarkingAdditionView, TaggingAdditionView
 
 from dingos import filter
 from dingos.models import InfoObject
@@ -76,6 +76,11 @@ urlpatterns = patterns('',
     url(r'^Action/AddMarking$',
         SimpleMarkingAdditionView.as_view(),
         name= "url.dingos.action.add_marking"),
+
+    url(r'^Action/AddTagging$',
+        TaggingAdditionView.as_view(),
+        name = "url.dingos.action.add_tagging"),
+
 
     # Searches
 
