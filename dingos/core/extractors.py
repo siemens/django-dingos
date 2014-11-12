@@ -50,7 +50,44 @@ class InfoObjectDetails(object):
 
     """
 
+    # iobject_identifier_uri = models.CharField(max_length=256)
+    # iobject_identifier_uid = models.SlugField(max_length=255)
+    # iobject = models.ForeignKey(InfoObject,related_name=None)
+    # latest_iobject = models.ForeignKey(InfoObject,related_name='+')
+    # iobject_name = models.CharField(max_length=255)
+    # timestamp = models.DateTimeField()
+    # create_timestamp = models.DateTimeField()
+    # iobject_type_name = models.SlugField(max_length=30)
+    # iobject_family_name = models.SlugField(max_length=256)
+    # node_id = models.CharField(max_length=256)
+    # value = models.TextField()
+    # referenced_iobject_ts = models.DateTimeField()
+    # value_storage_location =  models.SmallIntegerField()
+    # referenced_iobject_identifier = models.ForeignKey(Identifier,related_name='+')
+    #
+    # fact_data_type = models.ForeignKey(FactDataType,related_name='+')
+    # identifier = models.ForeignKey(Identifier,related_name='+')
+    # io2f = models.ForeignKey(InfoObject2Fact,related_name='+')
+    # factterm =  models.ForeignKey(FactTerm,related_name='+')
+    # fact = models.ForeignKey(Fact,related_name='+')
+
     DINGOS_QUERY_ALLOWED_COLUMNS = {}
+
+    DINGOS_QUERY_ALLOWED_COLUMNS['vIO2FValue'] = {
+        "object.import_timestamp": ("Import Timestamp", "create_timestamp",[]),
+        "object.timestamp": ("Timestamp", "timestamp",[]),
+        "object.name": ("Object Name","iobject_name",[]),
+        #"identifier": ("Identifier", "identifier",['identifier','identifier__namespace']),
+        "object.identifier.uid": ("Identifier UID", "iobject_identifier_uid",[]),
+        "object.identifier.namespace": ("Identifier Namespace", "iobject_identifier_uri",[]),
+        #"object_type": ("Object Type", "iobject_type",['iobject_type','iobject_type__namespace']),
+        "object.object_type.name": ("Object Type (name)", "iobject_type_name",[]),
+        #"object_type.namespace": ("Object Type (namespace)", "iobject_type.namespace.uri",['iobject_type__namespace']),
+        "object.object_family": ("Object Family", "iobject_family_name",[]),
+        "fact.pk": ("Fact PK", "fact_id",[]),
+        "object.pk": ("Object PK", "iobject_id",[]),
+    }
+
 
     DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject'] = {
         "import_timestamp": ("Import Timestamp", "create_timestamp",[]),
@@ -63,6 +100,7 @@ class InfoObjectDetails(object):
         "object_type.name": ("Object Type (name)", "iobject_type.name",['iobject_type']),
         "object_type.namespace": ("Object Type (namespace)", "iobject_type.namespace.uri",['iobject_type__namespace']),
         "object_family": ("Object Family", "iobject_family.name",['iobject_family']),
+        "object.pk": ("Object PK", "iobject_id",[]),
     }
 
     DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject2Fact'] = {
@@ -80,6 +118,8 @@ class InfoObjectDetails(object):
         "object.object_family": ("Object Family","iobject.iobject_family",['iobject__iobject_family']),
         "object.identifier": ("Identifier","iobject.identifier",['iobject__identifier','iobject__identifier__namespace']),
         "object.object_type": ("Object Type","iobject.iobject_type",['iobject__iobject_type','iobject__iobject_type__namespace']),
+        "fact.pk": ("Fact PK", "fact_id",[]),
+        "object.pk": ("Object PK", "id",[]),
     }
 
 
@@ -89,12 +129,13 @@ class InfoObjectDetails(object):
     query_mode = None
     query_mode_restriction = ['InfoObject']
 
-    _default_columns =  [('iobject_url', 'InfoObject URL'),
+    _default_columns =  [('object.url', 'InfoObject URL'),
         ('exporter','Exporter')]
 
     exporter_name = None
 
     def __init__(self,*args,**kwargs):
+
         self.object_list = kwargs.pop('object_list',[])
         self.io2fs = kwargs.pop('io2f_list',[])
         self.format = kwargs.pop('format',None)
@@ -117,6 +158,10 @@ class InfoObjectDetails(object):
         self.initialize_object_details()
         self.initialize_allowed_columns()
 
+
+
+
+
     def initialize_object_details(self):
         if self.enrich_details:
             if self.object_list:
@@ -134,7 +179,7 @@ class InfoObjectDetails(object):
 
         self.allowed_columns.update(self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode])
 
-        self.allowed_columns['object_url'] = ('Object URL','_object_url',[])
+        self.allowed_columns['object.url'] = ('Object URL','_object_url',[])
 
         self.allowed_columns['package_names'] = ('Package Names','_package_names',[])
         self.allowed_columns['package_urls'] = ('Package URLs','_package_urls',[])
@@ -143,28 +188,41 @@ class InfoObjectDetails(object):
 
 
     def init_result_dict(self,obj_or_io2f):
-        if isinstance(obj_or_io2f,InfoObject2Fact) or isinstance(obj_or_io2f,vIO2FValue):
+        if isinstance(obj_or_io2f,InfoObject2Fact):
             iobject = None#obj_or_io2f.iobject
             io2f = obj_or_io2f
+            io2fv = None
             iobject_pk = io2f.iobject_id
+            fact_pk = io2f.fact_id
+        elif  isinstance(obj_or_io2f,vIO2FValue):
+            iobject = None#obj_or_io2f.iobject
+            io2fv = obj_or_io2f
+            io2f = None
+            iobject_pk = io2fv.iobject_id
+            fact_pk = io2fv.fact_id
         else:
             iobject = obj_or_io2f
             iobject_pk = iobject.pk
             io2f = None
-
+            io2fv = None
+            fact_pk = None
 
         result =  {'_object':iobject,
                    '_io2f' : io2f,
-                   'iobject_url': reverse('url.dingos.view.infoobject', args=[iobject_pk]),
-                   'iobject_pk': iobject_pk}
+                   '_io2fv' : io2fv,
+                   '_object_url': reverse('url.dingos.view.infoobject', args=[iobject_pk]),
+                   }
+
+        if io2f:
+            result['_fact_id'] = io2f.fact_id
 
         if self.exporter_name:
             result['exporter'] = self.exporter_name
 
 
-        if self.package_graph:
+        if self.package_graph and iobject_pk:
             # The user also wants info about the packages that contain the object in question
-            node_ids = list(dfs_preorder_nodes(self.package_graph, source=iobject.pk))
+            node_ids = list(dfs_preorder_nodes(self.package_graph, source=iobject_pk))
 
             package_names = []
             package_urls = []
@@ -195,6 +253,15 @@ class InfoObjectDetails(object):
 
     def export(self,*args,**kwargs):
 
+        self.override_columns=kwargs.pop('override_columns',[None])[0]
+
+        if self.override_columns == 'ALL':
+            args = self.allowed_columns.keys()
+        elif self.override_columns == 'ALMOST_ALL':
+            # exclude expensive columns:
+            args = set(self.allowed_columns.keys()) - set(['package_urls','package_names'])
+
+
         self.additional_calculations(columns=args)
 
         def recursive_join(xxs, join_string=','):
@@ -208,8 +275,11 @@ class InfoObjectDetails(object):
 
             if self.query_mode == 'InfoObject':
                 model_key = '_object'
-            else:
+            elif self.query_mode == 'InfoObject2Fact':
                 model_key = '_io2f'
+            else:
+                model_key = '_io2fv'
+
             if mode == 'json':
                 row = {}
             else:

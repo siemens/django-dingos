@@ -672,12 +672,13 @@ class InfoObjectExportsView(BasicTemplateView):
 
         exporter = self.kwargs.get('exporter', None)
 
+
         if exporter in POSTPROCESSOR_REGISTRY:
 
             postprocessor_class = POSTPROCESSOR_REGISTRY[exporter]
 
             postprocessor = postprocessor_class(graph=graph,
-                                                query_mode='InfoObject',
+                                                query_mode='vIO2FValue',
                                                 )
 
 
@@ -687,7 +688,10 @@ class InfoObjectExportsView(BasicTemplateView):
 
             else:
                 columns = []
+
             (content_type,result) = postprocessor.export(*columns,**self.request.GET)
+
+
 
 
         else:
