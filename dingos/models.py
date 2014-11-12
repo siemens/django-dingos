@@ -2024,7 +2024,7 @@ dingos_class_map["UserData"] = UserData
 
 class vIO2FValue(DingoModel):
 
-    id = models.CharField(max_length=128,primary_key=True)
+    id = models.PositiveIntegerField(primary_key=True)
     term = models.CharField(max_length=512)
     attribute=  models.CharField(max_length=128)
     iobject_identifier_uri = models.CharField(max_length=256)

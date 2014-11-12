@@ -6,7 +6,7 @@ from django.db import models
 
 sql_statement = """CREATE VIEW vio2fvalue AS
 SELECT 
- (dingos_infoobject2fact.id::text || '-' ||dingos_factvalue.id::text) AS id,
+ dingos_infoobject2fact.id AS id,
  dingos_identifiernamespace.uri as iobject_identifier_uri,
  dingos_identifier.uid as iobject_identifier_uid,
  dingos_infoobject.id AS iobject_id,
