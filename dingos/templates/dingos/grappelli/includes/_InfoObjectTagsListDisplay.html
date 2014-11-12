@@ -25,6 +25,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                 <form id="{{ tag }}" class="remove_tag_form" method="post">
                     {% csrf_token %}
                     <input type="hidden" name="tag" value="{{ tag }}" />
+                    <input type="hidden" name="tag" value="{{ tag }}" />
+                    <input type="hidden" name="tag" value="{{ tag }}" />
                     <input type="hidden" name="action" value="remove" />
                     <a href="#" class="remove_tag_button">X</a>
                 </form>

@@ -65,7 +65,6 @@ from dingos.core.utilities import match_regex_list
 from taggit.models import Tag
 
 
-
 class InfoObjectList(BasicFilterView):
 
 

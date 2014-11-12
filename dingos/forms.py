@@ -24,6 +24,7 @@ from dingos.queryparser.placeholder_parser import PlaceholderException
 from taggit.models import Tag
 import autocomplete_light
 
+
 class EditSavedSearchesForm(forms.Form):
     """
     Form for editing a saved search. Used by the respective view.
@@ -131,6 +132,8 @@ class OAuthNewClientForm(forms.Form):
     """
     new_client = forms.CharField(required=True, max_length=100, widget=widgets.TextInput(attrs={'size': '100', 'class': 'vTextField'}))
 
-class TagForm(forms.Form):
-    tag = forms.ChoiceField(Tag.objects.all(),
-        widget=autocomplete_light.ChoiceWidget('TagAutocomplete'))
+class TagForm(autocomplete_light.ModelForm):
+    tag = autocomplete_light.ChoiceField('TagAutocomplete')
+    class Meta:
+        model = Tag
+        #autocomplete_names = {'tag': 'TagAutocomplete'}
