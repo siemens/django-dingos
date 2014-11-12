@@ -29,7 +29,7 @@ from django.core.urlresolvers import reverse
 from dingos.core.utilities import get_from_django_obj
 from dingos.graph_traversal import follow_references
 from dingos.graph_utils import dfs_preorder_nodes
-
+from dingos import DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING
 
 def extract_fqdn(uri):
     """ Extract the FQDN from an URI."""
@@ -100,7 +100,7 @@ class InfoObjectDetails(object):
         "object_type.name": ("Object Type (name)", "iobject_type.name",['iobject_type']),
         "object_type.namespace": ("Object Type (namespace)", "iobject_type.namespace.uri",['iobject_type__namespace']),
         "object_family": ("Object Family", "iobject_family.name",['iobject_family']),
-        "object.pk": ("Object PK", "iobject_id",[]),
+        "pk": ("Object PK", "id",[]),
     }
 
     DINGOS_QUERY_ALLOWED_COLUMNS['InfoObject2Fact'] = {
@@ -137,20 +137,16 @@ class InfoObjectDetails(object):
     def __init__(self,*args,**kwargs):
 
         self.object_list = kwargs.pop('object_list',[])
-        self.io2fs = kwargs.pop('io2f_list',[])
+        self.io2fs = kwargs.pop('io2f_query',None)
         self.format = kwargs.pop('format',None)
         self.graph = kwargs.pop('graph',None)
         self.package_graph = None
         self.enrich_details = kwargs.pop('enrich_details',self.enrich_details)
         self.query_mode = kwargs.pop('query_mode','InfoObject')
-        if self.object_list:
-            self.io2fs = self._get_io2fs(map(lambda o:o.pk,list(self.object_list)))
-        if self.graph:
-            self.io2fs = self._get_io2fs(self.graph.nodes())
 
         self._sibling_map = {}
 
-        self.iobject_map = None
+        #self.iobject_map = None
 
         self.results = []
 
@@ -160,15 +156,21 @@ class InfoObjectDetails(object):
 
 
 
-
-
     def initialize_object_details(self):
+        if self.object_list:
+            object_count = len(self.object_list)
+            if object_count >= DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING:
+                raise ValueError("Number of objects passed to exporter has reached or surpassed the configured threshold of %s objects" % (DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING))
+            self.io2fs = self._get_io2fs(map(lambda o:o.pk,list(self.object_list)))
+        if self.graph:
+            self.io2fs = self._get_io2fs(self.graph.nodes())
+
         if self.enrich_details:
-            if self.object_list:
+            #if self.object_list:
+            #
+            #    self.set_iobject_map()
 
-                self.set_iobject_map()
-
-            elif self.graph:
+            if self.graph:
 
                 self._annotate_graph(self.graph)
 
@@ -417,7 +419,7 @@ class InfoObjectDetails(object):
         last_io2fv.value_list = value_list
 
 
-        self.iobject_map = G.node
+        #self.iobject_map = G.node
         self.object_list = map (lambda x : G.node[x]['iobject'], G.node.keys())
         print datetime.now()
 
@@ -528,6 +530,7 @@ class InfoObjectDetails(object):
 
 class csv_export(InfoObjectDetails):
 
+    exporter_name = 'csv'
     query_mode_restriction = []
     @property
     def  default_columns(self):
@@ -546,6 +549,7 @@ class csv_export(InfoObjectDetails):
 
 
 class json_export(InfoObjectDetails):
+    exporter_name = 'json'
     @property
     def default_columns(self):
         return map(lambda x: (x[0],x[1][0]), self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode].items())
@@ -570,6 +574,7 @@ class table_view(InfoObjectDetails):
     def  default_columns(self):
         return map(lambda x: (x[0],x[1][0]), self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode].items())
 
+    exporter_name = 'table'
 
     query_mode_restriction = []
     enrich_details = False

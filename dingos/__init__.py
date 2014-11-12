@@ -304,6 +304,8 @@ DINGOS_OBJECTTYPE_ICON_RELIST_MAPPING = {}
 
 DINGOS_SEARCH_POSTPROCESSOR_REGISTRY = {}
 
+DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING = 2
+
 
 DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
                                   'info_object_type_re':      r'.*',

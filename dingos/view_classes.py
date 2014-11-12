@@ -41,7 +41,8 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
                    DINGOS_DEFAULT_USER_PREFS, \
                    DINGOS_SAVED_SEARCHES_TYPE_NAME, \
                    DINGOS_DEFAULT_SAVED_SEARCHES,\
-                   DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
+                   DINGOS_SEARCH_POSTPROCESSOR_REGISTRY,\
+                   DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING
 
 from dingos import graph_traversal
 from dingos.core.template_helpers import ConfigDictWrapper
@@ -706,7 +707,12 @@ class BasicCustomQueryView(BasicListView):
 
                     if postprocessor:
 
-                        p = self.paginator_class(self.queryset, self.paginate_by_value)
+                        if postprocessor.exporter_name in ['csv','json','table']:
+                            pagination = self.paginate_by_value
+                        else:
+                            pagination = DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING
+
+                        p = self.paginator_class(self.queryset, pagination)
                         response = HttpResponse(content_type='text') # '/csv')
 
                         if postprocessor.query_mode == 'InfoObject':
@@ -743,6 +749,7 @@ class BasicCustomQueryView(BasicListView):
                     else:
                         raise ValueError('Unsupported output format')
                 except Exception as ex:
+                    self.queryset = InfoObject.objects.filter(pk=-1)
                     messages.error(self.request, str(ex))
 
         return super(BasicListView, self).get(request, *args, **kwargs)
