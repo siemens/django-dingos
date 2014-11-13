@@ -50,27 +50,6 @@ class InfoObjectDetails(object):
 
     """
 
-    # iobject_identifier_uri = models.CharField(max_length=256)
-    # iobject_identifier_uid = models.SlugField(max_length=255)
-    # iobject = models.ForeignKey(InfoObject,related_name=None)
-    # latest_iobject = models.ForeignKey(InfoObject,related_name='+')
-    # iobject_name = models.CharField(max_length=255)
-    # timestamp = models.DateTimeField()
-    # create_timestamp = models.DateTimeField()
-    # iobject_type_name = models.SlugField(max_length=30)
-    # iobject_family_name = models.SlugField(max_length=256)
-    # node_id = models.CharField(max_length=256)
-    # value = models.TextField()
-    # referenced_iobject_ts = models.DateTimeField()
-    # value_storage_location =  models.SmallIntegerField()
-    # referenced_iobject_identifier = models.ForeignKey(Identifier,related_name='+')
-    #
-    # fact_data_type = models.ForeignKey(FactDataType,related_name='+')
-    # identifier = models.ForeignKey(Identifier,related_name='+')
-    # io2f = models.ForeignKey(InfoObject2Fact,related_name='+')
-    # factterm =  models.ForeignKey(FactTerm,related_name='+')
-    # fact = models.ForeignKey(Fact,related_name='+')
-
     DINGOS_QUERY_ALLOWED_COLUMNS = {}
 
     DINGOS_QUERY_ALLOWED_COLUMNS['vIO2FValue'] = {
