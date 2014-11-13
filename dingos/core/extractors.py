@@ -489,20 +489,8 @@ class InfoObjectDetails(object):
                     parent_id = ":".join(node_id[0:-1])
                     set_dict(self._sibling_map,vio2f,"append",vio2f.iobject_id,parent_id)
 
-        return self._sibling_map[io2f.iobject_id][":".join(io2f.node_id.split(':')[0:-1])]
 
-
-        node_id = io2f.node_id.split(':')
-        if node_id:
-            parent_id = ":".join(node_id[0:-1])
-            query_dict.update({'iobject_id':io2f.iobject_id,
-                               'node_id__regex':"^%s:[^:]+$" % parent_id})
-            siblings = vIO2FValue.objects.filter(**query_dict)
-
-        return siblings
-
-
-
+        return return self._sibling_map.get(io2f.iobject_id,{}).get(":".join(io2f.node_id.split(':')[0:-1]),[])
 
 class csv_export(InfoObjectDetails):
 
