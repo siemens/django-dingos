@@ -164,6 +164,8 @@ class CommonContextMixin(ContextMixin):
         context['customization'] = wrapped_settings
         context['saved_searches'] = wrapped_saved_searches
 
+        context['tags_queryset'] = None
+
 
         return context
 
@@ -1329,8 +1331,17 @@ class TaggingAdditionView(BasicListActionView):
         iobject.tags.add(tag)
         return (True, 'Success message')
 
-    action_list.append({'action_predicate': lambda x,y: True,
+    @staticmethod
+    def action_remove_tag(tag, iobject):
+        iobject.tags.remove(tag)
+        return (True, 'Success message')
+
+    action_list.append({'action_predicate': lambda x,y,action: action == 'Add tag(s)',
                         'action_function': action_add_tag.__func__,
+                        })
+
+    action_list.append({'action_predicate': lambda x,y,action: action == 'Remove tag(s)',
+                        'action_function': action_remove_tag.__func__,
                         })
 
     def tagged_obj_name_function(self,x):
@@ -1393,7 +1404,7 @@ class TaggingAdditionView(BasicListActionView):
                             mark_after_failure = action.get('tag_after_failure',False)
                             action_for_existing_marking = action.get('action_for_existing_tagging',False)
 
-                            if action_predicate(tag_obj,obj_to_be_tagged):
+                            if action_predicate(tag_obj, obj_to_be_tagged, request.POST['action']):
                                 found_action = True
                                 #TODO skipping ignored
 

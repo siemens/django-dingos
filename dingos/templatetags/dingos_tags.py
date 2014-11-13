@@ -611,7 +611,6 @@ def show_namespace_image(namespace, height=None, width=None):
     return namespace.uri
 
 
-#TODO ADDED TEMPLATETAG - pla
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
 def show_InfoObjectTagsDisplay(context, iobject):
     context['form'] = TagForm()
@@ -619,28 +618,25 @@ def show_InfoObjectTagsDisplay(context, iobject):
     return context
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsListDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
-def show_InfoObjectTagsListDisplay(context, iobject):
-    items = context['tags_queryset']
+def show_InfoObjectTagsListDisplay(context, iobject, showRemove = False):
     tags = []
 
-
-    if not items:
+    if not context['tags_queryset']:
         object_list = context['object_list']
         if object_list:
             if isinstance(object_list[0],InfoObject):
                 pks = [one.pk for one in object_list]
             else:
                 pks = []
-        content = ContentType.objects.get_for_model(InfoObject)
-        test = TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag')
-        #list(test)
-        context['tags_queryset'] = list(test)
-        items = context['tags_queryset']
 
-    #current_items = items.filter(object_id = iobject.pk)
-    for item in [x for x in context['tags_queryset'] if x.object_id == iobject.pk]:# current_items:
+        content = ContentType.objects.get_for_model(InfoObject)
+        query = TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag')
+        context['tags_queryset'] = list(query)
+
+    for item in [x for x in context['tags_queryset'] if x.object_id == iobject.pk]:
         tags.append(item.tag)
 
     context['tags'] = tags
+    context['showRemove'] = showRemove
     return context
 

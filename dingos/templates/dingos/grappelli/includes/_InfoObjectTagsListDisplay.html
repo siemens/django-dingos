@@ -17,10 +17,12 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
 {% if tags|length > 0 %}
-<td id="tags" colspan="6">
+<td id="tags" colspan="7">
     {% for tag in tags %}
     <span id="{{ tag.name }}" class="tag">{{ tag.name }}
-        <a href="#" class="remove_tag_button" data-tag-name="{{ tag.name }}" data-iobject-id="{{ obj.pk }}">X</a>
+        {% if showRemove %}
+            <a href="#" class="remove_tag_button" data-tag-name="{{ tag.name }}" data-iobject-id="{{ obj.pk }}">X</a>
+        {% endif %}
     </span>
     {% endfor %}
 </td>

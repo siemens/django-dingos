@@ -116,13 +116,6 @@ class InfoObjectList(BasicFilterView):
             object.tags.remove(tag_name)
             return HttpResponse()
 
-    def get_context_data(self, **kwargs):
-        context = super(InfoObjectList, self).get_context_data(**kwargs)
-        context['tags_queryset'] = None
-        return context
-
-
-
 
 class InfoObjectListIncludingInternals(SuperuserRequiredMixin,InfoObjectList):
 
@@ -381,6 +374,7 @@ class InfoObjectView_wo_login(BasicDetailView):
 
         if action == 'add':
             tag = request.POST.get('tag')
+            assert tag != '', "tag is not allowed to be a empty string"
             tag_obj, created = Tag.objects.get_or_create(name=tag)
             object.tags.add(tag)
             return HttpResponse(json.dumps({'name': tag_obj.name, 'id' : tag_obj.id}), content_type="application/json")

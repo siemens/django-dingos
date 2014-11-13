@@ -38,7 +38,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% block right_column %}
 
-<div class="grp-module">
+{# TODO remove margin-top here, should be solved globally #}
+<div class="grp-module" style="margin-top: 32px;">
     <h2>{% block tool_title %} Action {% endblock %}</h2>
 
 <div class="grp_row">
@@ -65,7 +66,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     </table>
       {% endblock %}
   </div>
-    <input type="submit" value="{% block action_form_button_label %}Do it!{% endblock %}" />
+    {% block submit_button %}<input type="submit" value="{% block action_form_button_label %}Do it!{% endblock %}" />{% endblock %}
 </div>
 
 
@@ -115,6 +116,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                </td>
                {% endblock %}
 
+           </tr>
+           <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+                {% show_InfoObjectTagsListDisplay obj%}
            </tr>
          {% endwith %}
        {% endfor %}

@@ -215,3 +215,7 @@ div.c-2 > .grp-module, div.c-2 .grp-module.grp-changelist-results {
     vertical-align: middle;
 }
 
+table {
+    width: 100%;
+}
+

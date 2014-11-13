@@ -40,3 +40,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     </tbody>
                 </table>
             {% endblock %}
+
+{% block submit_button %}
+    <input type="submit" name="action" value="Add tag(s)" />
+    <input type="submit" name="action" value="Remove tag(s)" />
+{% endblock %}
