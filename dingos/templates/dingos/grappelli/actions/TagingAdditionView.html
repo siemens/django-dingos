@@ -1,5 +1,7 @@
+{% extends "dingos/grappelli/actions/base_action_on_selected_list.html" %}
+
 {% comment %}
-Copyright (c) Siemens AG, 2013
+Copyright (c) Siemens AG, 2014
 
 This file is part of MANTIS.  MANTIS is free software: you can
 redistribute it and/or modify it under the terms of the GNU General Public
@@ -16,17 +18,25 @@ this program; if not, write to the Free Software Foundation, Inc., 51
 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
-{% if tags|length > 0 %}
-<td id="tags" colspan="6">
-    {% for tag in tags %}
-    <span id="{{ tag.name }}" class="tag">{{ tag.name }}
-        <a href="#" class="remove_tag_button" data-tag-name="{{ tag.name }}" data-iobject-id="{{ obj.pk }}">X</a>
-    </span>
-    {% endfor %}
-</td>
-{% endif %}
 
 
 
 
+{% block list_title %} Selected Objects {% endblock %}
 
+
+
+            {% block action_form_fields %}
+                <table class="grp-full-width">
+
+                    <tbody>
+
+                    <tr>
+                        <th>{{view.form.tag_to_add.label_tag}}</th>
+                        <td>{{view.form.tag_to_add.errors}} {{view.form.tag_to_add}}</td>
+                    </tr>
+
+
+                    </tbody>
+                </table>
+            {% endblock %}

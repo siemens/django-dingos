@@ -16,13 +16,13 @@
 #
 
 
-from django.conf.urls import patterns, url
+from django.conf.urls import patterns, url, include
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 
 from dingos import views
 
-from dingos.view_classes import SimpleMarkingAdditionView
+from dingos.view_classes import SimpleMarkingAdditionView, TaggingAdditionView
 
 from dingos import filter
 from dingos.models import InfoObject
@@ -77,6 +77,11 @@ urlpatterns = patterns('',
         SimpleMarkingAdditionView.as_view(),
         name= "url.dingos.action.add_marking"),
 
+    url(r'^Action/AddTagging$',
+        TaggingAdditionView.as_view(),
+        name = "url.dingos.action.add_tagging"),
+
+
     # Searches
 
     url(r'^Search/SimpleFactSearch$',
@@ -97,6 +102,9 @@ urlpatterns = patterns('',
     url(r'^Search/CustomFactSearch/?(?P<api_call>api_test)?$',
         views.CustomFactSearchView.as_view(),
         name="url.dingos.admin.customfactsearch"),
+
+    # Autocomplete
+    url(r'^autocomplete/', include('autocomplete_light.urls')),
 
     # Uncommenting below enables an edit view for InfoObjects
     # that will overwrite an InfoObject without creating an

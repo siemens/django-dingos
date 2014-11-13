@@ -117,6 +117,19 @@ class SimpleMarkingAdditionForm(BasicListActionForm):
         else:
             self.fields['marking_to_add'] = forms.ChoiceField(choices=marking_choices)
 
+class TaggingAdditionForm(BasicListActionForm):
+    def __init__(self, request, *args, **kwargs):
+
+        tagging_choices = kwargs.pop('tags')
+        allow_multiple_tags = kwargs.pop('allow_multiple_tags',None)
+
+        super(TaggingAdditionForm, self).__init__(request,*args, **kwargs)
+        if allow_multiple_tags:
+            self.fields['tag_to_add'] = forms.MultipleChoiceField(choices=tagging_choices)
+        else:
+            self.fields['tag_to_add'] = forms.ChoiceField(choices=tagging_choices)
+
+
 class OAuthInfoForm(forms.Form):
     """
     Form for editing the OAuth information. Used by the respective view.
@@ -133,7 +146,7 @@ class OAuthNewClientForm(forms.Form):
     new_client = forms.CharField(required=True, max_length=100, widget=widgets.TextInput(attrs={'size': '100', 'class': 'vTextField'}))
 
 class TagForm(autocomplete_light.ModelForm):
-    tag = autocomplete_light.ChoiceField('TagAutocomplete')
+    tag = autocomplete_light.ChoiceField(widget = autocomplete_light.TextWidget('TagAutocomplete'))
     class Meta:
         model = Tag
-        #autocomplete_names = {'tag': 'TagAutocomplete'}
+        exclude = ['slug', 'name']

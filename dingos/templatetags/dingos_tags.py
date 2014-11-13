@@ -36,6 +36,9 @@ from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
 
 from dingos.forms import TagForm
 
+from taggit.models import TaggedItem, Tag
+from django.contrib.contenttypes.models import ContentType
+
 
 
 
@@ -479,7 +482,7 @@ def show_InfoObjectMarkings(iobject):
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectAuthoredDataDisplay_vertical.html'% DINGOS_TEMPLATE_FAMILY)
 def show_AuthoringSource(iobject):
     if 'yielded_by' in dir(iobject):
-        authored_data_info = iobject.yielded_by.all().order_by('-timestamp')
+        authored_data_info = iobject.yielded_by.all().filter(user__isnull=False,group__isnull=False).order_by('-timestamp')
     else:
         authored_data_info = None
     return {'authored_data_info': authored_data_info}
@@ -578,7 +581,7 @@ def reachable_packages(context, current_node):
             if "STIX_Package" in node['iobject_type']:
                 result.append("<a href='%s'>%s</a>" % (node['url'], node['name']))
 
-        return ",<br/> ".join(result)
+        return ",<br> ".join(result)
     else:
         return ''
 
@@ -591,22 +594,45 @@ def show_namespace_image(namespace, height=None, width=None):
     attributes = []
 
     if height:
-        attributes.append("height='%s'" % height)
+        attributes.append("max-height:%spx;" % height)
     if width:
-        attributes.append("width='%s'" % width)
+        attributes.append("max-width:%spx;" % width)
     if namespace.image:
         image_url = settings.MEDIA_URL + str(namespace.image)
-        return "<img alt='" + namespace.uri + "' src='" + image_url + "'" + " ".join(attributes) + "/>"
+        return '<img title="%s" alt="%s" src="%s" style="%s">' % (namespace.uri, namespace.uri, image_url, "".join(attributes))
     return namespace.uri
 
+
+#TODO ADDED TEMPLATETAG - pla
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
 def show_InfoObjectTagsDisplay(context, iobject):
     context['form'] = TagForm()
-    context['tags'] = iobject.tags.names()
+    context['tags'] = iobject.tags.get_queryset()
     return context
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsListDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
 def show_InfoObjectTagsListDisplay(context, iobject):
-    context['form'] = TagForm()
-    context['tags'] = iobject.tags.names()
+    items = context['tags_queryset']
+    tags = []
+
+
+    if not items:
+        object_list = context['object_list']
+        if object_list:
+            if isinstance(object_list[0],InfoObject):
+                pks = [one.pk for one in object_list]
+            else:
+                pks = []
+        content = ContentType.objects.get_for_model(InfoObject)
+        test = TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag')
+        #list(test)
+        context['tags_queryset'] = list(test)
+        items = context['tags_queryset']
+
+    #current_items = items.filter(object_id = iobject.pk)
+    for item in [x for x in context['tags_queryset'] if x.object_id == iobject.pk]:# current_items:
+        tags.append(item.tag)
+
+    context['tags'] = tags
     return context
+

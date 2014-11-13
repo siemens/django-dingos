@@ -3,11 +3,12 @@ from taggit.models import Tag
 
 class TagAutocomplete(autocomplete_light.AutocompleteModelBase):
     model = Tag
-    search_fields = ['name', 'slug']
-    attrs={
-        'placeholder': 'Type Tag here',
-        'data-autcomplete-minimum-characters' : 2,
-        }
-    widget_attrs = {'data-widget-maximum-values': 3}
+    search_fields = ['name']
+    choices = Tag.objects.all()
 
-autocomplete_light.register(Tag, TagAutocomplete)
+    attrs={
+        'placeholder': 'Type in tag here..',
+        'data-autocomplete-minimum-characters' : 2,
+        }
+
+autocomplete_light.register(TagAutocomplete)

@@ -101,6 +101,29 @@ class InfoObjectList(BasicFilterView):
             'identifier').order_by('-latest_of__pk')
         return queryset
 
+    def post(self, request, *args, **kwargs):
+        ACTIONS = ['remove']
+        action = request.POST.get('action')
+        if action not in ACTIONS:
+            #TODO Exception
+            return HttpResponseRedirect(request.path)
+
+        obj_id = request.POST.get('object')
+        object = InfoObject.objects.get(pk=obj_id)
+
+        if action == 'remove':
+            tag_name = request.POST.get('tag')
+            object.tags.remove(tag_name)
+            return HttpResponse()
+
+    def get_context_data(self, **kwargs):
+        context = super(InfoObjectList, self).get_context_data(**kwargs)
+        context['tags_queryset'] = None
+        return context
+
+
+
+
 class InfoObjectListIncludingInternals(SuperuserRequiredMixin,InfoObjectList):
 
     counting_paginator = False
@@ -328,28 +351,27 @@ class InfoObjectView_wo_login(BasicDetailView):
         return context
 
     def post(self, request, *args, **kwargs):
+        print(request)
         object = self.get_object()
         ACTIONS = ['add', 'remove']
-        print(request)
         action = request.POST.get('action')
         if action not in ACTIONS:
             #TODO Exception
             return HttpResponseRedirect(request.path)
 
-        tag = request.POST.get('tag-autocomplete')
 
         if action == 'add':
-            if not tag:
-                tag_id = request.POST.get('tag')
-                tag_ob = Tag.objects.all().get(id=tag_id)
-                tag = tag_ob.name
+            tag = request.POST.get('tag')
+            tag_obj, created = Tag.objects.get_or_create(name=tag)
             object.tags.add(tag)
-        elif action == 'remove':
-            if not tag:
-                tag = request.POST.get('tag')
-            object.tags.remove(tag)
+            return HttpResponse(json.dumps({'name': tag_obj.name, 'id' : tag_obj.id}), content_type="application/json")
 
-        return HttpResponseRedirect(request.path)
+        elif action == 'remove':
+            tag_name = request.POST.get('tag')
+            object.tags.remove(tag_name)
+            return HttpResponse()
+
+
 
 
 class InfoObjectView(LoginRequiredMixin,InfoObjectView_wo_login):
@@ -508,7 +530,7 @@ class CustomSearchesEditView(BasicTemplateView):
             if saved_search.get('identifier') == {}:
                 saved_search['identifier']= ''
 
-            if saved_search['custom_query'] == {}:
+            if saved_search.get('custom_query',{}) == {}:
                 saved_search['custom_query']= ''
 
 
