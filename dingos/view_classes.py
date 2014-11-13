@@ -49,7 +49,7 @@ from dingos.core.template_helpers import ConfigDictWrapper
 from dingos.core.utilities import get_dict, replace_by_list
 from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm, PlaceholderForm, TaggingAdditionForm
 from dingos.queryparser.placeholder_parser import PlaceholderParser
-from dingos.models import InfoObject, UserData, Marking2X
+from dingos.models import InfoObject, UserData, Marking2X, Fact
 
 from core.http_helpers import get_query_string
 from taggit.models import Tag
@@ -378,9 +378,6 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
     get a feeling for how the class is to be used.
 
     """
-
-    list_actions = [('Mark', 'url.dingos.action.add_marking', 0)]
-
 
     template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
 
@@ -1305,6 +1302,8 @@ class TaggingAdditionView(BasicListActionView):
 
     template_name = 'dingos/%s/actions/TagingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
 
+    action_model_query = None
+
     #select tag objects
     tagging_queryset = Tag.objects.all()
     tagging_query = None
@@ -1336,12 +1335,8 @@ class TaggingAdditionView(BasicListActionView):
         iobject.tags.remove(tag)
         return (True, 'Success message')
 
-    action_list.append({'action_predicate': lambda x,y,action: action == 'Add tag(s)',
+    action_list.append({'action_predicate': lambda x,y,action: True,
                         'action_function': action_add_tag.__func__,
-                        })
-
-    action_list.append({'action_predicate': lambda x,y,action: action == 'Remove tag(s)',
-                        'action_function': action_remove_tag.__func__,
                         })
 
     def tagged_obj_name_function(self,x):
@@ -1358,7 +1353,14 @@ class TaggingAdditionView(BasicListActionView):
         #TODO else branch
 
     def post(self, request, *args, **kwargs):
-        print(request)
+        type = request.POST.get('type', None)
+        if type == "InfoObject":
+            action_model_query = InfoObject.objects.all()
+        elif type == "Fact":
+            action_model_query = Fact.objects.all()
+        #TODO Exception
+
+
         if 'action_objects' in self.request.POST:
 
             self._set_initial_form(tags= self.m_queryset,

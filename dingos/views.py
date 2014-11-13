@@ -747,6 +747,84 @@ class InfoObjectExportsView(BasicTemplateView):
             response.write(result)
             return response
 
+class InfoObjectExportsViewWithTagging(BasicTemplateView):
+    skip_terms = [
+        # We do not want to follow 'Related Object' links and similar
+        {'term':'Related','operator':'icontains'},
+        ]
+
+    fact_list = []
+
+    max_objects = None
+
+    list_actions = [
+
+                ('Tag', 'url.dingos.action.add_tagging', 0),
+
+            ]
+
+    def get_context_data(self, **kwargs):
+        context = super(InfoObjectExportsViewWithTagging, self).get_context_data(**kwargs)
+        context['fact_list'] = self.fact_list
+        context['list_actions'] = self.list_actions if hasattr(self, 'list_actions') else []
+        return context
+
+    def get(self,request,*args,**kwargs):
+
+        api_test = 'api_call' in request.GET
+
+
+
+        iobject_id = self.kwargs.get('pk', None)
+
+        graph= follow_references([iobject_id],
+                                 skip_terms = self.skip_terms,
+                                 direction='down',
+                                 max_nodes=self.max_objects,
+                                 )
+
+
+        exporter = self.kwargs.get('exporter', None)
+
+
+        if exporter in POSTPROCESSOR_REGISTRY:
+
+            postprocessor_class = POSTPROCESSOR_REGISTRY[exporter]
+
+            postprocessor = postprocessor_class(graph=graph,
+                                                query_mode='vIO2FValue',
+                                                )
+
+
+            if 'columns' in self.request.GET:
+                columns = self.request.GET.get('columns')
+                columns = map(lambda x: x.strip(),columns.split(','))
+
+            else:
+                columns = []
+
+            kwargs = {
+                'format' : 'dict'
+            }
+            kwargs.update(self.request.GET)
+            (content_type,result) = postprocessor.export(*columns,**kwargs)
+            print(result)
+
+        else:
+            content_type = None
+            result = 'NO EXPORTER %s DEFINED' % exporter
+
+        if api_test:
+            self.api_result = result
+            self.api_result_content_type = content_type
+            self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
+            return super(InfoObjectExportsViewWithTagging, self).get(request, *args, **kwargs)
+        else:
+            self.facts = result
+            self.fact_list = [item['fact.pk'] for item in result]
+            self.template_name = 'dingos/%s/lists/ExportFactList.html' % DINGOS_TEMPLATE_FAMILY
+            return super(InfoObjectExportsViewWithTagging, self).get(request, *args, **kwargs)
+
 
 
 

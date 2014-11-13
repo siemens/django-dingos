@@ -60,6 +60,10 @@ urlpatterns = patterns('',
 
     url(r'^View/InfoObject/(?P<pk>\d*)(/specific)?/graph$', views.InfoObjectJSONGraph.as_view(), name= "url.dingos.view.infoobject.json_graph"),
 
+    url(r'^View/InfoObject/(?P<pk>\d*)/exportt/(?P<exporter>[a-zA-Z0-9_-]+)/?(?P<api_call>api_test)?$',
+        views.InfoObjectExportsViewWithTagging.as_view(),
+        name = "url.dingos.view.infoobject.exportswithtag"),
+
 
 
     # Administration

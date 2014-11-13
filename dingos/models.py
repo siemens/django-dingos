@@ -887,6 +887,8 @@ class Fact(DingoModel):
                                             help_text="""Used to reference a specific revision of an information
                                                          object rather than the latest revision.""")
 
+    tags = TaggableManager()
+
 
     class Meta:
         # Here, we cannot have database-enforced uniqueness, because we need

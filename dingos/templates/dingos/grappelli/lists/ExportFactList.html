@@ -25,7 +25,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
 
-    {% if object_list %}
+    {% if view.facts %}
 
       <div class="grp-module grp-changelist-results">
 
@@ -37,23 +37,20 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                         {% include "dingos/grappelli/includes/CheckboxActionHeaderColumn.html" %}
 
-                        <th scope="col"  class="sortable column-identifier">
-			    {% render_table_ordering "identifier__uid" "Identifier" %}
+                        <th scope="col"  class="sortable column-fact-pk">
+			                {% render_table_ordering "fact__id" "Fact PK" %}
                         </th>
                         <th scope="col"  class="sortable column-timestamp">
-			    {% render_table_ordering "timestamp" "Object Timestamp" %}
+			                {% render_table_ordering "" "" %}
                         </th>
                         <th scope="col"  class="sortable column-created">
-                            {% render_table_ordering "create_timestamp" "Import Timestamp" %}
+                            {% render_table_ordering "" "" %}
                         </th>
                         <th scope="col"  class="sortable column-name">
-			   {% render_table_ordering "name" "Name" %}
+			                {% render_table_ordering "" "" %}
                         </th>
                         <th scope="col"  class="sortable column-objecttype">
-                            {% render_table_ordering "iobject_type" "Object Type" %}
-                        </th>
-                        <th scope="col"  class="column-objecttype">
-                            Packages
+                            {% render_table_ordering "" "" %}
                         </th>
                     </tr>
 		  </thead>
@@ -63,38 +60,35 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                 {% block rows %}
                     <tbody>
 
-                    {% for obj in object_list %}
+                    {% for fact in view.facts %}
                         <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
                             {% include "dingos/grappelli/includes/CheckboxActionColumn.html" %}
 
                             <td>
-                                <a href="{%url 'url.dingos.view.infoobject' pk=obj.pk %}">{% show_namespace_image obj.identifier.namespace height='25' %}:{{ obj.identifier.uid }}</a>
+                                {{ fact | get_key:"fact.pk"}}
                             </td>
                             <td>
-                                {{obj.timestamp | date:"Y-m-d H:i:s O"}}
+                                {{ fact.exporter }}
                             </td>
                             <td>
-                                {{obj.create_timestamp | date:"Y-m-d H:i:s O"}}
+                                {{ fact.hash_value }}
                             </td>
                             <td>
-                                {{obj.name | insert_wbr }}
+                                {{ fact.hash_type }}
                             </td>
                             <td>
-                                {{obj.iobject_type.name}}
-                            </td>
-                            <td>
-                                {%reachable_packages obj.pk %}
+                                {{ fact | get_key:"object.url" }}
                             </td>
                         </tr>
                         <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
-                            {% show_InfoObjectTagsListDisplay obj True %}
+                            {% show_InfoObjectTagsListDisplay fact True %}
                         </tr>
                     {% endfor %}
                     </tbody>
                 {% endblock %}
             </table>
             {% if list_actions %}
-                <input type="hidden" name="type" value="InfoObject" />
+                <input type="hidden" name="type" value="Fact" />
                 </form>
             {% endif %}
         </div>

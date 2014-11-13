@@ -31,7 +31,7 @@ from dingos.models import BlobStorage
 from dingos.graph_traversal import follow_references
 from dingos.graph_utils import dfs_preorder_nodes
 
-from dingos.models import InfoObject, InfoObject2Fact
+from dingos.models import InfoObject, InfoObject2Fact, Fact
 from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
 
 from dingos.forms import TagForm
@@ -252,7 +252,9 @@ def sliceupto(value, upto):
     except (ValueError, TypeError):
         return value
 
-
+@register.filter
+def get_key(value, arg):
+    return value.get(arg, None)
 
 @register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_table_ordering(context, index, title):
@@ -618,22 +620,30 @@ def show_InfoObjectTagsDisplay(context, iobject):
     return context
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsListDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
-def show_InfoObjectTagsListDisplay(context, iobject, showRemove = False):
+def show_InfoObjectTagsListDisplay(context, object, showRemove = False):
     tags = []
+    print(object)
+    print(type(object))
 
     if not context['tags_queryset']:
-        object_list = context['object_list']
-        if object_list:
-            if isinstance(object_list[0],InfoObject):
+        if isinstance(object, InfoObject):
+            object_list = context['object_list']
+            object_pk = object.pk
+            if object_list:
                 pks = [one.pk for one in object_list]
             else:
                 pks = []
+            content = ContentType.objects.get_for_model(InfoObject)
 
-        content = ContentType.objects.get_for_model(InfoObject)
+        elif isinstance(object, dict):
+            pks = context['fact_list']
+            object_pk = object
+            content = ContentType.objects.get_for_model(Fact)
+
         query = TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag')
         context['tags_queryset'] = list(query)
 
-    for item in [x for x in context['tags_queryset'] if x.object_id == iobject.pk]:
+    for item in [x for x in context['tags_queryset'] if x.object_id == int(object['fact.pk'])]:
         tags.append(item.tag)
 
     context['tags'] = tags
