@@ -383,7 +383,6 @@ class InfoObjectDetails(object):
         return io2fs
 
     def _annotate_graph(self,G):
-        print datetime.now()
 
         last_obj_id = None
 
@@ -421,7 +420,7 @@ class InfoObjectDetails(object):
 
         #self.iobject_map = G.node
         self.object_list = map (lambda x : G.node[x]['iobject'], G.node.keys())
-        print datetime.now()
+
 
     def set_iobject_map(self):
 
@@ -488,8 +487,6 @@ class InfoObjectDetails(object):
                         attribute_io2fv = walker[child_key]['_value']
                         if self.test < 10:
                             self.test += 1
-                            print attribute_io2fv.node_id
-                            print map(lambda x: x.node_id, self.get_attributed(attribute_io2fv))
                         set_dict(results, (attribute_io2fv.value,attribute_io2fv.term), 'append', attribute_io2fv.attribute)
             if node_id != []:
                 return get_attributes_rec(node_id[1:],walker[node_id[0]],results)
@@ -512,7 +509,7 @@ class InfoObjectDetails(object):
                 if node_id:
                     parent_id = ":".join(node_id[0:-1])
                     set_dict(self._sibling_map,vio2f,"append",vio2f.iobject_id,parent_id)
-            print self._sibling_map
+
         return self._sibling_map[io2f.iobject_id][":".join(io2f.node_id.split(':')[0:-1])]
 
 
