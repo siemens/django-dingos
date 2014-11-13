@@ -490,7 +490,7 @@ class InfoObjectDetails(object):
                     set_dict(self._sibling_map,vio2f,"append",vio2f.iobject_id,parent_id)
 
 
-        return return self._sibling_map.get(io2f.iobject_id,{}).get(":".join(io2f.node_id.split(':')[0:-1]),[])
+        return self._sibling_map.get(io2f.iobject_id,{}).get(":".join(io2f.node_id.split(':')[0:-1]),[])
 
 class csv_export(InfoObjectDetails):
 
