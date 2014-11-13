@@ -34,7 +34,7 @@ from provider.oauth2.models import Client
 
 from braces.views import SuperuserRequiredMixin
 
-from dingos.models import InfoObject2Fact, InfoObject, UserData, get_or_create_fact
+from dingos.models import InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact
 from dingos.view_classes import BasicJSONView, POSTPROCESSOR_REGISTRY
 
 import csv
@@ -283,26 +283,45 @@ class InfoObjectView_wo_login(BasicDetailView):
 
     @property
     def iobject2facts(self):
-        return self.object.fact_thru.all().prefetch_related(
-            'fact__fact_term',
-            'fact__fact_values',
-            'fact__fact_values__fact_data_type',
-            'fact__value_iobject_id',
-            'fact__value_iobject_id__latest',
-            'fact__value_iobject_id__latest__iobject_type',
-            'node_id')
+        facts_in_obj =  vIO2FValue.objects.filter(iobject=self.object.id).order_by('node_id')
+
+        value_list = []
+        last_obj = None
+        for fact in facts_in_obj:
+            if last_obj:
+                if last_obj.node_id == fact.node_id:
+                    value_list.append(fact.value)
+                else:
+                    last_obj.value_list = value_list
+                    value_list = []
+            last_obj = fact
+            value_list.append(fact.value)
+        last_obj.value_list = value_list
+
+        facts_in_obj = [x for x in facts_in_obj if 'value_list' in dir(x)]
+
+        return facts_in_obj
+
+        #return self.object.fact_thru.all().prefetch_related(
+        #    'fact__fact_term',
+        #    'fact__fact_values',
+        #    'fact__fact_values__fact_data_type',
+        #    'fact__value_iobject_id',
+        #    'fact__value_iobject_id__latest',
+        #    'fact__value_iobject_id__latest__iobject_type',
+        #    'node_id')
 
 
 
-    def graph_iobject2facts(self):
-        obj_pk = self.object.id
-        graph = InfoObject.annotated_graph([obj_pk])
-        edges_from_top = graph.edges(nbunch=[obj_pk], data = True)
+    #def graph_iobject2facts(self):
+    #    obj_pk = self.object.id
+    #    graph = InfoObject.annotated_graph([obj_pk])
+    #    edges_from_top = graph.edges(nbunch=[obj_pk], data = True)
 
-        indicators =  [e[1] for e in edges_from_top if "Indicator" in e[2]['term'][0]]
+    #    indicators =  [e[1] for e in edges_from_top if "Indicator" in e[2]['term'][0]]
 
 
-        return graph.node[indicators[0]]['facts']
+    #    return graph.node[indicators[0]]['facts']
 
 
 
@@ -365,12 +384,12 @@ class BasicInfoObjectEditView(LoginRequiredMixin,InfoObjectView_wo_login):
 
         for io2f in self.iobject2facts:
 
-            if len(io2f.fact.fact_values.all()) == 1 and io2f.fact.value_iobject_id == None \
-                and ( (self.attr_editable and io2f.fact.fact_term.attribute != "") or \
-                          not io2f.fact.fact_term.attribute ):
-                value_obj = io2f.fact.fact_values.all()[0]
-                self.form_builder.append( { 'value' : value_obj.value } )
-                self.index.update( { io2f.node_id.name :  (cnt,value_obj) } )
+            if len(io2f.value_list) == 1 and not io2f.referenced_iobject_identifier_id  \
+                and ( (self.attr_editable and io2f.attribute != "") or \
+                          not io2f.attribute ):
+
+                self.form_builder.append( { 'value' : io2f.value_list[0] } )
+                self.index.update( { io2f.node_id :  (cnt,io2f) } )
                 cnt += 1
 
 
@@ -395,19 +414,22 @@ class BasicInfoObjectEditView(LoginRequiredMixin,InfoObjectView_wo_login):
         super(InfoObjectView_wo_login,self).get(request, *args, **kwargs)
         self.build_form()
 
+        print self.index
         user_data = self.get_user_data()
         self.formset = self.form_class(request.POST.dict())
 
         if self.formset.is_valid() and request.user.is_authenticated():
 
-            for io2f in self.iobject2facts:
-                if io2f.node_id.name in self.index:
-                    current_value = self.index[io2f.node_id.name][1]
-                    post_value = self.formset.forms[self.index[io2f.node_id.name][0]].cleaned_data['value']
+            for io2fv in self.iobject2facts:
+                if io2fv.node_id in self.index:
+                    io2f = io2fv.io2f
+                    current_value = self.index[io2fv.node_id][1]
+                    post_value = self.formset.forms[self.index[io2fv.node_id][0]].cleaned_data['value']
 
-                    if current_value.value != post_value:
 
-                        new_fact,created = get_or_create_fact(io2f.fact.fact_term,
+                    if current_value.value_list[0] != post_value:
+
+                        new_fact,created = get_or_create_fact(io2fv.fact.fact_term,
                                                       fact_dt_name=current_value.fact_data_type.name,
                                                       fact_dt_namespace_uri=current_value.fact_data_type.namespace.uri,
                                                       values=[post_value],
@@ -635,7 +657,7 @@ class InfoObjectExportsView(BasicTemplateView):
 
     def get(self,request,*args,**kwargs):
 
-        api_test = self.kwargs.get('api_call', None)
+        api_test = 'api_call' in request.GET
 
 
 
@@ -650,13 +672,14 @@ class InfoObjectExportsView(BasicTemplateView):
 
         exporter = self.kwargs.get('exporter', None)
 
+
         if exporter in POSTPROCESSOR_REGISTRY:
 
             postprocessor_class = POSTPROCESSOR_REGISTRY[exporter]
 
             postprocessor = postprocessor_class(graph=graph,
-                                                query_mode='InfoObject',
-                                                enrich_details=True)
+                                                query_mode='vIO2FValue',
+                                                )
 
 
             if 'columns' in self.request.GET:
@@ -665,7 +688,10 @@ class InfoObjectExportsView(BasicTemplateView):
 
             else:
                 columns = []
+
             (content_type,result) = postprocessor.export(*columns,**self.request.GET)
+
+
 
 
         else:

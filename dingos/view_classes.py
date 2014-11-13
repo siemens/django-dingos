@@ -41,7 +41,8 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
                    DINGOS_DEFAULT_USER_PREFS, \
                    DINGOS_SAVED_SEARCHES_TYPE_NAME, \
                    DINGOS_DEFAULT_SAVED_SEARCHES,\
-                   DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
+                   DINGOS_SEARCH_POSTPROCESSOR_REGISTRY,\
+                   DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING
 
 from dingos import graph_traversal
 from dingos.core.template_helpers import ConfigDictWrapper
@@ -360,6 +361,7 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
         return item_count
 
 
+
 class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,FilterView):
     """
     Basic class for defining filter views: includes the necessary mixins
@@ -373,6 +375,9 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
     get a feeling for how the class is to be used.
 
     """
+
+    list_actions = [('Mark', 'url.dingos.action.add_marking', 0)]
+
 
     template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
 
@@ -470,6 +475,7 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
 
             # Redirect to edit view as this takes care of the rest
             return HttpResponseRedirect(urlresolvers.reverse('url.dingos.admin.edit.savedsearches'))
+
 
 class BasicDetailView(CommonContextMixin,
                       ViewMethodMixin,
@@ -701,7 +707,12 @@ class BasicCustomQueryView(BasicListView):
 
                     if postprocessor:
 
-                        p = self.paginator_class(self.queryset, self.paginate_by_value)
+                        if postprocessor.exporter_name in ['csv','json','table']:
+                            pagination = self.paginate_by_value
+                        else:
+                            pagination = DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING
+
+                        p = self.paginator_class(self.queryset, pagination)
                         response = HttpResponse(content_type='text') # '/csv')
 
                         if postprocessor.query_mode == 'InfoObject':
@@ -738,6 +749,7 @@ class BasicCustomQueryView(BasicListView):
                     else:
                         raise ValueError('Unsupported output format')
                 except Exception as ex:
+                    self.queryset = InfoObject.objects.filter(pk=-1)
                     messages.error(self.request, str(ex))
 
         return super(BasicListView, self).get(request, *args, **kwargs)
@@ -1026,9 +1038,9 @@ class SimpleMarkingAdditionView(BasicListActionView):
     # Specify either a Django queryset or a DINGOS custom query that selects the marking objects
     # that will be offered in the view
 
-    marking_queryset = None
+    marking_queryset = None # InfoObject.objects.filter(iobject_type__name='Marking')
 
-    marking_query = None # """object: object_type.name = 'Marking' && identifier.namespace contains 'cert.siemens.com'"""
+    marking_query = None# """object: object_type.name = 'Marking' && identifier.namespace contains 'cert.siemens.com'"""
 
     # The query with which possible marking objects are selected may potentially return many objects;
     # specify below, how many should be displayed.
