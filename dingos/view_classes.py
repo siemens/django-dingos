@@ -376,8 +376,6 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
 
     """
 
-    list_actions = [('Mark', 'url.dingos.action.add_marking', 0)]
-
 
     template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
 
