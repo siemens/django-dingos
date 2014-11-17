@@ -59,9 +59,11 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     $(document).ready(function () {
         add_removeHandler();
-        $('.add_tag_button').click(function () {
-            var tag_name = $("input#id_tag").val();
-            if(tag_name != "" && $("span#" + tag_name).length == 0) {
+        $('.add_tag_button').click(function (event) {
+            var tag_name = $(event.target).parent().children("input#id_tag").val();
+            alert(tag_name);
+            if(tag_name != "" && $(event.target).parent().siblings("#tags").children("span#" + tag_name).length == 0) {
+                alert("ajax");
                 $.ajax({
                     url: "",
                     type: "POST",

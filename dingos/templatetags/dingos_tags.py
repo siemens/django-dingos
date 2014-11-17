@@ -643,6 +643,7 @@ def show_InfoObjectTagsListDisplay(context, object, showRemove = False):
     for item in [x for x in context['tags_queryset'] if x.object_id == object.pk ]:
         tags.append(item.tag)
 
+    context['form'] = TagForm()
     context['tags'] = tags
     context['showRemove'] = showRemove
     return context
@@ -670,6 +671,7 @@ def show_FactTagsListDisplay(context, fact, showRemove = False):
     for item in [x for x in context['tags_queryset'] if x.object_id == fact_pk]:
         tags.append(item.tag)
 
+    context['form'] = TagForm()
     context['tags'] = tags
     context['showRemove'] = showRemove
     return context

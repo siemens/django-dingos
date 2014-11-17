@@ -17,7 +17,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
 {% if tags|length > 0 %}
-<td id="tags" colspan="7">
+<td id="tags" colspan="5">
     {% for tag in tags %}
     <span id="{{ tag.name }}" class="tag">{{ tag.name }}
         {% if showRemove %}
@@ -25,6 +25,15 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
         {% endif %}
     </span>
     {% endfor %}
+</td>
+<td colspan="2">
+    <form id="tagform_add" method="post">
+    {% csrf_token %}
+    {{ form.tag }}
+    <input type="hidden" name="object" value="{{ obj.pk }}" />
+    <input type="hidden" name="action" value="add" />
+    <input type="button" class="add_tag_button" value="Add" />
+    </form>
 </td>
 {% endif %}
 

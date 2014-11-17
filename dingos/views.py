@@ -102,7 +102,8 @@ class InfoObjectList(BasicFilterView):
         return queryset
 
     def post(self, request, *args, **kwargs):
-        ACTIONS = ['remove']
+        print(request)
+        ACTIONS = ['remove', 'add']
         action = request.POST.get('action')
         if action not in ACTIONS:
             #TODO Exception
@@ -115,6 +116,13 @@ class InfoObjectList(BasicFilterView):
             tag_name = request.POST.get('tag')
             object.tags.remove(tag_name)
             return HttpResponse()
+
+        if action == 'add':
+            tag_name = request.POST.get('tag')
+            assert tag_name != '', "tag is not allowed to be a empty string"
+            tag_obj, created = Tag.objects.get_or_create(name=tag_name)
+            object.tags.add(tag_name)
+            return HttpResponse(json.dumps({'name': tag_obj.name, 'id' : tag_obj.id}), content_type="application/json")
 
 
 class InfoObjectListIncludingInternals(SuperuserRequiredMixin,InfoObjectList):
@@ -363,7 +371,6 @@ class InfoObjectView_wo_login(BasicDetailView):
         return context
 
     def post(self, request, *args, **kwargs):
-        print(request)
         object = self.get_object()
         ACTIONS = ['add', 'remove']
         action = request.POST.get('action')
@@ -373,10 +380,10 @@ class InfoObjectView_wo_login(BasicDetailView):
 
 
         if action == 'add':
-            tag = request.POST.get('tag')
-            assert tag != '', "tag is not allowed to be a empty string"
-            tag_obj, created = Tag.objects.get_or_create(name=tag)
-            object.tags.add(tag)
+            tag_name = request.POST.get('tag')
+            assert tag_name != '', "tag is not allowed to be a empty string"
+            tag_obj, created = Tag.objects.get_or_create(name=tag_name)
+            object.tags.add(tag_name)
             return HttpResponse(json.dumps({'name': tag_obj.name, 'id' : tag_obj.id}), content_type="application/json")
 
         elif action == 'remove':
