@@ -39,7 +39,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                <td> {{ checkbox.tag }}</td>
                {% block instance_columns %}
                     <td>
-                        {{ fact.pk }}
+                        {{ fact.fact_term }} = {% for value in fact.fact_values.all %} {{ value }} {% if not forloop.last %}, {% endif %} {% endfor %}
                     </td>
                {% endblock %}
            </tr>
