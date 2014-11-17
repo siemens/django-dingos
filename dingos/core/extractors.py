@@ -217,7 +217,6 @@ class InfoObjectDetails(object):
             result['_package_names'] = "| ".join(package_names)
             result['_package_urls'] = "| ".join(package_urls)
 
-
         return result
 
 

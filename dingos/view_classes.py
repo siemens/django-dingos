@@ -49,10 +49,11 @@ from dingos.core.template_helpers import ConfigDictWrapper
 from dingos.core.utilities import get_dict, replace_by_list
 from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm, PlaceholderForm, TaggingAdditionForm
 from dingos.queryparser.placeholder_parser import PlaceholderParser
-from dingos.models import InfoObject, UserData, Marking2X, Fact
+from dingos.models import InfoObject, UserData, Marking2X, Fact, dingos_class_map
 
 from core.http_helpers import get_query_string
 from taggit.models import Tag
+from django.apps import AppConfig
 
 POSTPROCESSOR_REGISTRY = {}
 
@@ -1335,8 +1336,12 @@ class TaggingAdditionView(BasicListActionView):
         iobject.tags.remove(tag)
         return (True, 'Success message')
 
-    action_list.append({'action_predicate': lambda x,y,action: True,
+    action_list.append({'action_predicate': lambda x,y,action: action == 'Add tag(s)',
                         'action_function': action_add_tag.__func__,
+                        })
+
+    action_list.append({'action_predicate': lambda x,y,action: action == 'Remove tag(s)',
+                        'action_function': action_remove_tag.__func__,
                         })
 
     def tagged_obj_name_function(self,x):
@@ -1354,15 +1359,12 @@ class TaggingAdditionView(BasicListActionView):
 
     def post(self, request, *args, **kwargs):
         type = request.POST.get('type', None)
-        if type == "InfoObject":
-            action_model_query = InfoObject.objects.all()
-        elif type == "Fact":
-            action_model_query = Fact.objects.all()
-        #TODO Exception
+        model_class = dingos_class_map[type]
+        self.action_model_query = model_class.objects.all()
+        self.type = type
 
 
         if 'action_objects' in self.request.POST:
-
             self._set_initial_form(tags= self.m_queryset,
                                    allow_multiple_tags=self.allow_multiple_tags)
             return super(TaggingAdditionView,self).get(request, *args, **kwargs)
@@ -1395,7 +1397,7 @@ class TaggingAdditionView(BasicListActionView):
 
                     for obj_pk in form_data['checked_objects']:
 
-                        obj_to_be_tagged = InfoObject.objects.get(pk=obj_pk)
+                        obj_to_be_tagged = model_class.objects.get(pk=obj_pk)
 
                         found_action = False
                         for action in self.action_list:
@@ -1433,4 +1435,9 @@ class TaggingAdditionView(BasicListActionView):
                 return super(TaggingAdditionView,self).get(request, *args, **kwargs)
             return super(TaggingAdditionView,self).get(request, *args, **kwargs)
 
+    def fact_by_pk(self,pk):
+        for f in self.object_list:
+            if "%s" % f.pk == "%s" % pk:
+                return f
+        return None
 

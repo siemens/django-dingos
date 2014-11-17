@@ -18,7 +18,7 @@ this program; if not, write to the Free Software Foundation, Inc., 51
 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
-
+{% load dingos_tags %}
 
 
 
@@ -42,6 +42,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             {% endblock %}
 
 {% block submit_button %}
+    <input type="hidden" name="type" value="{{ view.type }}" />
     <input type="submit" name="action" value="Add tag(s)" />
     <input type="submit" name="action" value="Remove tag(s)" />
 {% endblock %}
+
+

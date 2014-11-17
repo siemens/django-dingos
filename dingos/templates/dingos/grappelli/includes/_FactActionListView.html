@@ -1,0 +1,54 @@
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+{% load dingos_tags %}
+
+<div class="grp-module grp-changelist-results">
+    <table id="result_list" cellspacing="0" class="grp-sortable">
+        {% block header_row %}
+            <thead>
+            <tr>
+            <th/>
+            <th>Fact PK</th>
+            </tr>
+            </thead>
+
+        {% endblock %}
+        <div id="id_checked_objects">
+        <tbody>
+
+       {% for checkbox in view.form.checked_objects %}
+       {% with pk=checkbox.choice_label %}
+       {% fact_by_pk pk as fact %}
+           <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+               <td> {{ checkbox.tag }}</td>
+               {% block instance_columns %}
+                    <td>
+                        {{ fact.pk }}
+                    </td>
+               {% endblock %}
+           </tr>
+           <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+                {% show_FactTagsListDisplay fact%}
+           </tr>
+         {% endwith %}
+       {% endfor %}
+       </tbody>
+     </div>
+ </table>
+</div>

@@ -37,51 +37,29 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                         {% include "dingos/grappelli/includes/CheckboxActionHeaderColumn.html" %}
 
-                        <th scope="col"  class="sortable column-fact-pk">
-			                {% render_table_ordering "fact__id" "Fact PK" %}
-                        </th>
-                        <th scope="col"  class="sortable column-timestamp">
-			                {% render_table_ordering "" "" %}
-                        </th>
-                        <th scope="col"  class="sortable column-created">
-                            {% render_table_ordering "" "" %}
-                        </th>
-                        <th scope="col"  class="sortable column-name">
-			                {% render_table_ordering "" "" %}
-                        </th>
-                        <th scope="col"  class="sortable column-objecttype">
-                            {% render_table_ordering "" "" %}
-                        </th>
+                        {% for column, value in view.facts.0.items %}
+                            <th scope="col" class="sortable">
+                                {{ column }}
+                            </th>
+                        {% endfor %}
                     </tr>
-		  </thead>
+		      </thead>
                 {% endblock %}
 
 
                 {% block rows %}
                     <tbody>
-
+                    <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
                     {% for fact in view.facts %}
-                        <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
-                            {% include "dingos/grappelli/includes/CheckboxActionColumn.html" %}
-
-                            <td>
-                                {{ fact | get_key:"fact.pk"}}
-                            </td>
-                            <td>
-                                {{ fact.exporter }}
-                            </td>
-                            <td>
-                                {{ fact.hash_value }}
-                            </td>
-                            <td>
-                                {{ fact.hash_type }}
-                            </td>
-                            <td>
-                                {{ fact | get_key:"object.url" }}
-                            </td>
+                        <td class="action-input">
+                            <input class="action-select" name="action_objects" value="{{ fact | get_key:"fact.pk"}}" type="checkbox">
+                        </td>
+                        {% for column, value in fact.items %}
+                            <td>{{ value }}</td>
+                        {% endfor %}
                         </tr>
                         <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
-                            {% show_InfoObjectTagsListDisplay fact True %}
+                            {% show_FactTagsListDisplay fact True %}
                         </tr>
                     {% endfor %}
                     </tbody>

@@ -763,6 +763,7 @@ class InfoObjectExportsViewWithTagging(BasicTemplateView):
 
             ]
 
+
     def get_context_data(self, **kwargs):
         context = super(InfoObjectExportsViewWithTagging, self).get_context_data(**kwargs)
         context['fact_list'] = self.fact_list
@@ -770,7 +771,6 @@ class InfoObjectExportsViewWithTagging(BasicTemplateView):
         return context
 
     def get(self,request,*args,**kwargs):
-
         api_test = 'api_call' in request.GET
 
 
@@ -821,7 +821,7 @@ class InfoObjectExportsViewWithTagging(BasicTemplateView):
             return super(InfoObjectExportsViewWithTagging, self).get(request, *args, **kwargs)
         else:
             self.facts = result
-            self.fact_list = [item['fact.pk'] for item in result]
+            #self.fact_list = [item['fact.pk'] for item in result]
             self.template_name = 'dingos/%s/lists/ExportFactList.html' % DINGOS_TEMPLATE_FAMILY
             return super(InfoObjectExportsViewWithTagging, self).get(request, *args, **kwargs)
 

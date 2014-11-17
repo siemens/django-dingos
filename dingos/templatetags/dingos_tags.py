@@ -543,6 +543,10 @@ def dict_lookup(dict, key):
 def obj_by_pk(context, *args,**kwargs):
     return getattr(context['view'],'obj_by_pk')(*args,**kwargs)
 
+@register.assignment_tag(takes_context=True)
+def fact_by_pk(context, *args,**kwargs):
+    return getattr(context['view'],'fact_by_pk')(*args,**kwargs)
+
 @register.filter
 def nice_name(user):
     """
@@ -622,8 +626,6 @@ def show_InfoObjectTagsDisplay(context, iobject):
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsListDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
 def show_InfoObjectTagsListDisplay(context, object, showRemove = False):
     tags = []
-    print(object)
-    print(type(object))
 
     if not context['tags_queryset']:
         if isinstance(object, InfoObject):
@@ -635,18 +637,42 @@ def show_InfoObjectTagsListDisplay(context, object, showRemove = False):
                 pks = []
             content = ContentType.objects.get_for_model(InfoObject)
 
-        elif isinstance(object, dict):
-            pks = context['fact_list']
-            object_pk = object
-            content = ContentType.objects.get_for_model(Fact)
-
         query = TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag')
         context['tags_queryset'] = list(query)
 
-    for item in [x for x in context['tags_queryset'] if x.object_id == int(object['fact.pk'])]:
+    for item in [x for x in context['tags_queryset'] if x.object_id == object.pk ]:
         tags.append(item.tag)
 
     context['tags'] = tags
     context['showRemove'] = showRemove
     return context
+
+@register.inclusion_tag('dingos/%s/includes/_FactTagsListDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_FactTagsListDisplay(context, fact, showRemove = False):
+    tags = []
+    print(fact)
+    print(type(fact))
+
+    if not context['tags_queryset']:
+        if isinstance(fact, Fact):
+            pks = context['fact_list']
+            fact_pk = fact.pk
+            content = ContentType.objects.get_for_model(Fact)
+
+        elif isinstance(fact, dict):
+            pks = context['fact_list']
+            fact_pk = int(fact['fact.pk'])
+            content = ContentType.objects.get_for_model(Fact)
+
+        query = TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag')
+        context['tags_queryset'] = list(query)
+
+    for item in [x for x in context['tags_queryset'] if x.object_id == fact_pk]:
+        tags.append(item.tag)
+
+    context['tags'] = tags
+    context['showRemove'] = showRemove
+    return context
+
+
 
