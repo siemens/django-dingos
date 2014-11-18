@@ -190,7 +190,9 @@ form#query-executor #id_query {
 
 /* Fix the left column overflow, because overlapping leads to an unusable sidebar  */
 div.c-2 > .grp-module, div.c-2 .grp-module.grp-changelist-results {
-    overflow: auto;
+    /* overflow: auto; */
+    /* commented out because overflow:auto leads to an unusable choice list for tagging */
+    /* TODO solve conflict */
 }
 
 /* tagging */
@@ -209,6 +211,10 @@ div.c-2 > .grp-module, div.c-2 .grp-module.grp-changelist-results {
 
 .w-1 {
     width: 1px;
+}
+
+form[id^="catform_remove"] {
+    display: inline;
 }
 
 .middle {

@@ -16,27 +16,25 @@ this program; if not, write to the Free Software Foundation, Inc., 51
 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
-{% if tags|length > 0 %}
-<td id="tags" colspan="5">
+{% if tags|length > 0 or isEditable%}
+<td id="tags" colspan="{% if isEditable %}5{% else %}7{% endif %}">
+    {% if tags|length > 0 %}
     {% for tag in tags %}
     <span id="{{ tag.name }}" class="tag">{{ tag.name }}
-        {% if showRemove %}
+        {% if isEditable %}
             <a href="#" class="remove_tag_button" data-tag-name="{{ tag.name }}" data-iobject-id="{{ obj.pk }}">X</a>
         {% endif %}
     </span>
     {% endfor %}
+    {% endif %}
 </td>
-<td colspan="2">
-    <form id="tagform_add" method="post">
-    {% csrf_token %}
+{% if isEditable %}
+<td class="middle" colspan="2">
     {{ form.tag }}
-    <input type="hidden" name="object" value="{{ obj.pk }}" />
-    <input type="hidden" name="action" value="add" />
-    <input type="button" class="add_tag_button" value="Add" />
-    </form>
+    <input type="button" class="add_tag_button" value="Add" data-object="{{ obj.pk }}" />
 </td>
 {% endif %}
-
+{% endif %}
 
 
 

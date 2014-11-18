@@ -27,7 +27,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     {% if view.facts %}
 
-      <div class="grp-module grp-changelist-results">
+      <div class="grp-module grp-changelist-results o-visible">
 
         <table id="result_list" cellspacing="0" class="grp-sortable">
 
@@ -49,8 +49,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
                 {% block rows %}
                     <tbody>
-                    <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
                     {% for fact in view.facts %}
+                        <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
                         <td class="action-input">
                             <input class="action-select" name="action_objects" value="{{ fact | get_key:"fact.pk"}}" type="checkbox">
                         </td>

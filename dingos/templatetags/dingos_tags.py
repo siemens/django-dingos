@@ -624,7 +624,7 @@ def show_InfoObjectTagsDisplay(context, iobject):
     return context
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectTagsListDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
-def show_InfoObjectTagsListDisplay(context, object, showRemove = False):
+def show_InfoObjectTagsListDisplay(context, object, isEditable = False):
     tags = []
 
     if not context['tags_queryset']:
@@ -645,35 +645,37 @@ def show_InfoObjectTagsListDisplay(context, object, showRemove = False):
 
     context['form'] = TagForm()
     context['tags'] = tags
-    context['showRemove'] = showRemove
+    context['isEditable'] = isEditable
     return context
 
 @register.inclusion_tag('dingos/%s/includes/_FactTagsListDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
-def show_FactTagsListDisplay(context, fact, showRemove = False):
+def show_FactTagsListDisplay(context, fact, isEditable = False):
     tags = []
-    print(fact)
-    print(type(fact))
 
-    if not context['tags_queryset']:
-        if isinstance(fact, Fact):
-            pks = context['fact_list']
-            fact_pk = fact.pk
+    if isinstance(fact, Fact):
+        if not context['tags_queryset']:
+            pks = context['view'].facts
+            print("#############")
+            print(pks)
             content = ContentType.objects.get_for_model(Fact)
+            query = TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag')
+            context['tags_queryset'] = list(query)
+        fact_pk = fact.pk
 
-        elif isinstance(fact, dict):
-            pks = context['fact_list']
-            fact_pk = int(fact['fact.pk'])
+    elif isinstance(fact, dict):
+        if not context['tags_queryset']:
+            pks = [item['fact.pk'] for item in context['view'].facts]
             content = ContentType.objects.get_for_model(Fact)
-
-        query = TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag')
-        context['tags_queryset'] = list(query)
+            query = TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag')
+            context['tags_queryset'] = list(query)
+        fact_pk = int(fact['fact.pk'])
 
     for item in [x for x in context['tags_queryset'] if x.object_id == fact_pk]:
         tags.append(item.tag)
 
     context['form'] = TagForm()
     context['tags'] = tags
-    context['showRemove'] = showRemove
+    context['isEditable'] = isEditable
     return context
 
 

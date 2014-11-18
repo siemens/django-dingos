@@ -1365,6 +1365,7 @@ class TaggingAdditionView(BasicListActionView):
 
 
         if 'action_objects' in self.request.POST:
+            self.facts = [int(x) for x in self.request.POST.getlist('action_objects')]
             self._set_initial_form(tags= self.m_queryset,
                                    allow_multiple_tags=self.allow_multiple_tags)
             return super(TaggingAdditionView,self).get(request, *args, **kwargs)
@@ -1372,6 +1373,7 @@ class TaggingAdditionView(BasicListActionView):
         else:
             # So the view has been called a second time by submitting the form in the view
             # rather than from a different view. So we need to process the data in the form
+            self.facts = [int(x) for x in self.request.POST.dict().get('checked_objects_choices').split(',')]
 
             self._set_post_form(request.POST,
                                 tags = self.m_queryset,

@@ -34,7 +34,7 @@ from provider.oauth2.models import Client
 
 from braces.views import SuperuserRequiredMixin
 
-from dingos.models import InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact
+from dingos.models import InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact, Fact
 from dingos.view_classes import BasicJSONView, POSTPROCESSOR_REGISTRY
 
 import csv
@@ -828,9 +828,30 @@ class InfoObjectExportsViewWithTagging(BasicTemplateView):
             return super(InfoObjectExportsViewWithTagging, self).get(request, *args, **kwargs)
         else:
             self.facts = result
-            #self.fact_list = [item['fact.pk'] for item in result]
             self.template_name = 'dingos/%s/lists/ExportFactList.html' % DINGOS_TEMPLATE_FAMILY
             return super(InfoObjectExportsViewWithTagging, self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        ACTIONS = ['remove', 'add']
+        action = request.POST.get('action')
+        if action not in ACTIONS:
+            #TODO Exception
+            return HttpResponseRedirect(request.path)
+
+        obj_id = request.POST.get('object')
+        object = Fact.objects.get(pk=obj_id)
+
+        if action == 'remove':
+            tag_name = request.POST.get('tag')
+            object.tags.remove(tag_name)
+            return HttpResponse()
+
+        if action == 'add':
+            tag_name = request.POST.get('tag')
+            assert tag_name != '', "tag is not allowed to be a empty string"
+            tag_obj, created = Tag.objects.get_or_create(name=tag_name)
+            object.tags.add(tag_name)
+            return HttpResponse(json.dumps({'name': tag_obj.name, 'id' : tag_obj.id}), content_type="application/json")
 
 
 
