@@ -102,8 +102,7 @@ class InfoObjectList(BasicFilterView):
         return queryset
 
     def post(self, request, *args, **kwargs):
-        print(request)
-        ACTIONS = ['remove', 'add']
+        ACTIONS = ['add', 'remove']
         action = request.POST.get('action')
         if action not in ACTIONS:
             #TODO Exception
@@ -112,17 +111,17 @@ class InfoObjectList(BasicFilterView):
         obj_id = request.POST.get('object')
         object = InfoObject.objects.get(pk=obj_id)
 
-        if action == 'remove':
-            tag_name = request.POST.get('tag')
-            object.tags.remove(tag_name)
-            return HttpResponse()
-
         if action == 'add':
             tag_name = request.POST.get('tag')
             assert tag_name != '', "tag is not allowed to be a empty string"
             tag_obj, created = Tag.objects.get_or_create(name=tag_name)
             object.tags.add(tag_name)
             return HttpResponse(json.dumps({'name': tag_obj.name, 'id' : tag_obj.id}), content_type="application/json")
+
+        elif action == 'remove':
+            tag_name = request.POST.get('tag')
+            object.tags.remove(tag_name)
+            return HttpResponse()
 
 
 class InfoObjectListIncludingInternals(SuperuserRequiredMixin,InfoObjectList):
