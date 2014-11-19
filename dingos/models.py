@@ -2104,6 +2104,18 @@ FROM
  (dingos_nodeid.id = dingos_infoobject2fact.node_id_id)
 """
 
+class QueryResultTable(DingoModel):
+    timestamp = models.DateTimeField()
+    token = models.SlugField(max_length=64)
+    iobject = models.ForeignKey(InfoObject,
+                                related_name="+",
+                                )
+    key = models.CharField(max_length=128)
+    value = models.CharField(max_length=2048)
+    related_iobject = models.ForeignKey(InfoObject,
+                                        related_name="+",
+                                        )
+
 def get_or_create_iobject(identifier_uid,
                           identifier_namespace_uri,
                           iobject_type_name,
