@@ -2116,12 +2116,15 @@ class QueryResultTable(DingoModel):
     timestamp = models.DateTimeField()
     token = models.SlugField(max_length=64)
     iobject = models.ForeignKey(InfoObject,
-                                related_name="+",
+                                related_name='query_result_set'
                                 )
-    key = models.CharField(max_length=128)
-    value = models.CharField(max_length=2048)
+    key = models.CharField(max_length=128,
+                           blank = True)
+    value = models.CharField(max_length=2048,
+                             blank=True)
     related_iobject = models.ForeignKey(InfoObject,
                                         related_name="+",
+                                        null=True
                                         )
 
 def get_or_create_iobject(identifier_uid,
