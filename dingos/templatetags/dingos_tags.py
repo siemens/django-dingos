@@ -350,6 +350,22 @@ def show_InfoObject(context,
     highlight = context['highlight']
     show_NodeID = context['show_NodeID']
 
+    ##########################################################
+    print("#####################################")
+    attr = ['id','term','attribute','iobject_identifier_uri','iobject_name','node_id','value','referenced_iobject_ts','io2f','factterm','fact']
+    for k in iobject2facts:
+        #for element in attr:
+            #print "%s:%s" % (element,getattr(k, element))
+        print "%s:%s" % ('id',getattr(k.fact, 'id'))
+        print "###########################"
+
+
+
+
+
+    print("#####################################")
+    ############################################################
+
     def rowspan_map(iobject2facts):
         """
         When displaying the fact-term--value pairs, we want to

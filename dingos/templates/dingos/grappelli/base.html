@@ -70,7 +70,13 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     dataType: "json",
                     success: function (resp) {
                         var tag = '<span id="' + resp.name + '" class="tag">' + resp.name + '<a href="#" class="remove_tag_button" data-tag-name="' + resp.name + '"> X</a></span>';
-                        $(event.target).parent().siblings("#tags").append(tag);
+                        if($('table#result_list').length) {
+                            $(event.target).parent().siblings("#tags").append(tag);
+                        }
+                        else {
+                            $('td#tags').append(tag);
+                        }
+
                         add_removeHandler();
                     }
                 });
