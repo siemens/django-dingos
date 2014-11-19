@@ -21,6 +21,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('dingos', '0001_initial'),
         ('dingos', '0002_add_vIO2FValue_view'),
+        ('dingos', '0003_vio2fvalue'),
     ]
 
     operations = [
