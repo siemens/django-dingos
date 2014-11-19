@@ -18,7 +18,7 @@
 
 
 
-__version__ = '0.2.1'
+__version__ = '0.3.0'
 
 REVISION = __version__
 
@@ -304,6 +304,8 @@ DINGOS_OBJECTTYPE_ICON_RELIST_MAPPING = {}
 
 DINGOS_SEARCH_POSTPROCESSOR_REGISTRY = {}
 
+DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING = 5000
+
 
 DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
                                   'info_object_type_re':      r'.*',
@@ -321,7 +323,8 @@ DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
                                                               'description':        'Full graph traversal.',
                                                               'traversal_args':     {'direction': 'full',
                                                                                      'max_nodes': 150},
-                                                              'postprocessor':      'mantis_stix_importer.graph_postprocessors.standard_postprocessor'},
+                                                              'postprocessor':      'mantis_stix_importer.graph_postprocessors.standard_postprocessor'
+                                                              },
                                                              {'mode_key':           'up',
                                                               'menu_name':          'Up',
                                                               'title':              'Up Graph',

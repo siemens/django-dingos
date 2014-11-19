@@ -68,7 +68,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                             {% include "dingos/grappelli/includes/CheckboxActionColumn.html" %}
 
                             <td>
-                                <a href="{%url 'url.dingos.view.infoobject' pk=obj.pk %}">{% show_namespace_image obj.identifier.namespace height='30' %}:{{ obj.identifier.uid }}</a>
+                                <a href="{%url 'url.dingos.view.infoobject' pk=obj.pk %}">{% show_namespace_image obj.identifier.namespace height='25' %}:{{ obj.identifier.uid }}</a>
                             </td>
                             <td>
                                 {{obj.timestamp | date:"Y-m-d H:i:s O"}}

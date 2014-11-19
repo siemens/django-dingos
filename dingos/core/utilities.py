@@ -167,10 +167,10 @@ def get_from_django_obj(obj, fields):
     if 'Manager' in "%s" % obj.__class__:
         return (map(lambda o: get_from_django_obj(o, fields[1:]), obj.all()))
     else:
-        #print "Felder"
-        #print (fields)
-        return get_from_django_obj(getattr(obj, fields[0]), fields[1:])
-
+        try:
+            return get_from_django_obj(getattr(obj, fields[0]), fields[1:])
+        except:
+            return "ERROR (dingos.core.utilities.get_from_django_obj)"
 
 def replace_by_list(key, replacement_list):
     """
@@ -215,3 +215,18 @@ def match_regex_list(pattern_list, string):
         if not re.match(pattern, string):
             return False
     return True
+
+def dict_map(f,dictionary):
+
+    def dict_map_rec(f,path,value):
+
+        if isinstance(value,list):
+            print "list"
+            map(lambda v: dict_map_rec(f,path,v),value)
+        elif isinstance(value,dict):
+            for key in value.keys():
+                dict_map_rec(f,path+[key],value[key])
+        elif isinstance(value,basestring):
+            print "string"
+            dictionary[path[-1]] = f(path,value)
+    return dict_map_rec(f,[],dictionary)

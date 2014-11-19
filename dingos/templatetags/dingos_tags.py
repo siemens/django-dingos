@@ -329,7 +329,8 @@ def show_InfoObject(context,
                     io2f_pred = None,
                     close_div=True,
                     inner_collapsible = False,
-                    inner_fold_status = 'open'):
+                    inner_fold_status = 'open',
+                    link_pk = None):
 
     page = context['view'].request.GET.get('page')
 
@@ -377,7 +378,7 @@ def show_InfoObject(context,
         row_span_start = {}
         previous_node = []
         for io2f in iobject2facts:
-            node_id = io2f.node_id.name.split(':')
+            node_id = io2f.node_id.split(':')
             node_id_tuple = tuple(node_id)
             row_map[node_id_tuple] = {}
             comparison = zip(previous_node,node_id)
@@ -434,7 +435,8 @@ def show_InfoObject(context,
             'header_level' : map(str, range(header_level,10)),
             'close_div' : close_div,
             'inner_collapsible': inner_collapsible,
-            'inner_fold_status': inner_fold_status}
+            'inner_fold_status': inner_fold_status,
+            'link_pk':link_pk}
 
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectRevisionListDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
@@ -474,10 +476,16 @@ def show_InfoObjectMarkings(iobject):
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectAuthoredDataDisplay_vertical.html'% DINGOS_TEMPLATE_FAMILY)
 def show_AuthoringSource(iobject):
     if 'yielded_by' in dir(iobject):
-        authored_data_info = iobject.yielded_by.all().order_by('-timestamp')
+        authored_data_info = list(iobject.yielded_by.all())
+        if authored_data_info:
+            authored_data_info = authored_data_info[0]
+        else:
+            authored_data_info = None
     else:
         authored_data_info = None
-    return {'authored_data_info': authored_data_info}
+
+    return {'authored_data_info': authored_data_info,
+            'iobject_pk': iobject.pk}
 
 postprocessor_list = [x for x in sorted(DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items(),
                                         key = lambda (x,y) : y['name'])
@@ -586,7 +594,7 @@ def reachable_packages(context, current_node):
             if "STIX_Package" in node['iobject_type']:
                 result.append("<a href='%s'>%s</a>" % (node['url'], node['name']))
 
-        return ",<br/> ".join(result)
+        return ",<br> ".join(result)
     else:
         return ''
 
@@ -599,10 +607,10 @@ def show_namespace_image(namespace, height=None, width=None):
     attributes = []
 
     if height:
-        attributes.append("height='%s'" % height)
+        attributes.append("max-height:%spx;" % height)
     if width:
-        attributes.append("width='%s'" % width)
+        attributes.append("max-width:%spx;" % width)
     if namespace.image:
         image_url = settings.MEDIA_URL + str(namespace.image)
-        return "<img alt='" + namespace.uri + "' src='" + image_url + "'" + " ".join(attributes) + "/>"
+        return '<img title="%s" alt="%s" src="%s" style="%s">' % (namespace.uri, namespace.uri, image_url, "".join(attributes))
     return namespace.uri

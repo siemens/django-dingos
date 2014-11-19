@@ -249,8 +249,22 @@ class DataTypeNameSpace(DingoModel):
 
 dingos_class_map["DataTypeNameSpace"] = DataTypeNameSpace
 
-def content_file_name(filename):
-    return '/'.join(['content', 'namespace_images',filename])
+
+
+def md5_for_file(chunks):
+    md5 = hashlib.md5()
+    for data in chunks:
+        md5.update(data)
+    return md5.hexdigest()
+
+
+def content_file_name(instance, filename):
+    name = md5_for_file(getattr(instance, 'image').chunks())
+    dot_pos = filename.rfind('.')
+    ext = filename[dot_pos:][:10].lower() if dot_pos > -1 else '.unknown'
+    name += ext
+    return '/'.join(['content', 'namespace_images', name])
+
 
 class IdentifierNameSpace(DingoModel):
     """
@@ -1037,7 +1051,7 @@ class InfoObject(DingoModel):
             'iobject__timestamp',
             'iobject__name',
             'fact__value_iobject_ts',
-            'fact__fact_term__term', 
+            'fact__fact_term__term',
             'node_id__name').distinct()
 
 
@@ -1683,7 +1697,7 @@ class InfoObject(DingoModel):
 
         from .graph_traversal import follow_references
         if not graph_traversal_kargs:
-            graph_traversal_kargs = {'max_nodes':400,
+            graph_traversal_kargs = {'max_nodes':1000,
                                      'direction':'down'}
 
         graph_traversal_kargs['iobject_pks'] = iobject_pks
@@ -1694,22 +1708,47 @@ class InfoObject(DingoModel):
 
 
 
-        facts= InfoObject2Fact.objects.filter(iobject__id__in=G.nodes()).prefetch_related( 'iobject',
-                                                                                            'iobject__identifier',
-                                                                                            'iobject__identifier__namespace',
-                                                                                            'iobject__iobject_family',
-                                                                                            'iobject__iobject_type',
-                                                                                            'fact__fact_term',
-                                                                                            'fact__fact_values',
-                                                                                            'fact__fact_values__fact_data_type',
-                                                                                            'fact__value_iobject_id',
-                                                                                            'fact__value_iobject_id__latest',
-                                                                                            'fact__value_iobject_id__latest__iobject_type',
-                                                                                            'node_id').order_by('iobject__id','node_id__name')
+        io2fvs= vIO2FValue.objects.filter(iobject__id__in=G.nodes()).order_by('iobject__id','node_id').prefetch_related( 'iobject',
+                                                                                                                        'referenced_iobject_identifier__latest',)
+                                                                   #                         'iobject__identifier',
+                                                                   #                         'iobject__identifier__namespace',
+                                                                   #                         'iobject__iobject_family',
+                                                                   #                         'iobject__iobject_type',
+                                                                   #                         'fact__fact_term',
+                                                                   #                         'fact__fact_values',
+                                                                   #                         'fact__fact_values__fact_data_type',
+                                                                   #                         'fact__value_iobject_id',
+                                                                   #                         'fact__value_iobject_id__latest',
+                                                                   #                         'fact__value_iobject_id__latest__iobject_type',
+                                                                   #                         'node_id').order_by('iobject__id','node_id__name')
 
-        for fact in facts:
-            G.node[fact.iobject.id]['iobject'] = fact.iobject
-            G.node[fact.iobject.id]['facts'].append(fact)
+
+
+        last_obj_id = None
+
+        last_io2fv= None
+
+        value_list = []
+
+        for io2fv in io2fvs:
+            if last_io2fv:
+                if last_io2fv.node_id == io2fv.node_id and last_obj_id == io2fv.iobject_id:
+                    value_list.append(io2fv.value)
+                else:
+                    last_io2fv.value_list = value_list
+                    value_list = []
+            last_io2fv = io2fv
+            last_obj_id = last_io2fv.iobject_id
+
+            value_list.append(io2fv.value)
+
+        last_io2fv.value_list = value_list
+
+        for node in G.nodes_iter():
+            G.node[node]['facts'] = [x for x in io2fvs if x.iobject_id == node and 'value_list' in dir(x)]
+            G.node[node]['iobject'] = G.node[node]['facts'][0].iobject
+
+
 
         return G
 
@@ -1983,6 +2022,87 @@ class UserData(DingoModel):
 dingos_class_map["UserData"] = UserData
 
 
+class vIO2FValue(DingoModel):
+
+    id = models.PositiveIntegerField(primary_key=True)
+    term = models.CharField(max_length=512)
+    attribute=  models.CharField(max_length=128)
+    iobject_identifier_uri = models.CharField(max_length=256)
+    iobject_identifier_uid = models.SlugField(max_length=255)
+    iobject = models.ForeignKey(InfoObject,related_name=None)
+    latest_iobject = models.ForeignKey(InfoObject,related_name='+')
+    iobject_name = models.CharField(max_length=255)
+    timestamp = models.DateTimeField()
+    create_timestamp = models.DateTimeField()
+    iobject_type_name = models.SlugField(max_length=30)
+    iobject_family_name = models.SlugField(max_length=256)
+    node_id = models.CharField(max_length=256)
+    value = models.TextField()
+    referenced_iobject_ts = models.DateTimeField()
+    value_storage_location =  models.SmallIntegerField()
+    referenced_iobject_identifier = models.ForeignKey(Identifier,related_name='+')
+
+    fact_data_type = models.ForeignKey(FactDataType,related_name='+')
+    identifier = models.ForeignKey(Identifier,related_name='+')
+    io2f = models.ForeignKey(InfoObject2Fact,related_name='+')
+    factterm =  models.ForeignKey(FactTerm,related_name='+')
+    fact = models.ForeignKey(Fact,related_name='+')
+
+    class Meta:
+        managed = False
+        db_table = 'vio2fvalue'
+
+
+"""
+DROP VIEW vio2fvalue;
+
+CREATE VIEW vio2fvalue AS
+SELECT
+ CONCAT(dingos_infoobject.id,dingos_nodeid.name,dingos_factvalue.id) AS id,
+ dingos_identifiernamespace.uri as iobject_identifier_uri,
+ dingos_identifier.uid as iobject_identifier_uid,
+ dingos_infoobject.id AS iobject_id,
+ dingos_identifier.latest_id AS latest_iobject_id,
+ dingos_infoobject.name AS iobject_name,
+ dingos_infoobject.timestamp AS "timestamp",
+ dingos_infoobject.create_timestamp AS create_timestamp,
+ dingos_infoobjecttype.name AS iobject_type_name,
+ dingos_infoobjectfamily.name AS iobject_family_name,
+ dingos_nodeid.name as node_id,
+ dingos_factterm.term AS term,
+ dingos_factterm.attribute AS attribute,
+ dingos_factvalue.value AS value,
+
+ dingos_fact.value_iobject_ts as referenced_iobject_ts,
+ dingos_factvalue.storage_location as value_storage_location,
+
+ dingos_fact.value_iobject_id_id as referenced_iobject_identifier_id,
+ dingos_identifier.id AS identifier_id,
+ dingos_infoobject2fact.id AS io2f_id,
+ dingos_factterm.id AS factterm_id,
+ dingos_fact.id AS fact_id,
+ dingos_factvalue.id AS value_id
+FROM
+ dingos_infoobject
+ LEFT JOIN dingos_identifier ON
+ (dingos_identifier.id = dingos_infoobject.identifier_id)
+ LEFT JOIN dingos_infoobject2fact ON
+ (dingos_infoobject2fact.iobject_id = dingos_infoobject.id)
+ LEFT JOIN dingos_fact ON
+ (dingos_infoobject2fact.fact_id = dingos_fact.id)
+ LEFT JOIN dingos_factterm ON
+ (dingos_factterm.id = dingos_fact.fact_term_id)
+ LEFT JOIN dingos_fact_fact_values ON (dingos_fact.id = dingos_fact_fact_values.fact_id)
+ LEFT JOIN dingos_factvalue ON (dingos_fact_fact_values.factvalue_id = dingos_factvalue.id)
+ LEFT JOIN dingos_identifiernamespace ON
+ (dingos_identifier.namespace_id = dingos_identifiernamespace.id)
+ LEFT JOIN dingos_infoobjectfamily ON
+ (dingos_infoobject.iobject_family_id = dingos_infoobjectfamily.id)
+ LEFT JOIN dingos_infoobjecttype ON
+ (dingos_infoobject.iobject_type_id = dingos_infoobjecttype.id)
+ LEFT JOIN dingos_nodeid ON
+ (dingos_nodeid.id = dingos_infoobject2fact.node_id_id)
+"""
 
 def get_or_create_iobject(identifier_uid,
                           identifier_namespace_uri,
@@ -2253,5 +2373,3 @@ def write_large_value(value,storage_location=dingos.DINGOS_LARGE_VALUE_DESTINATI
         dingos_class_map['BlobStorage'].objects.get_or_create(sha256=value_hash,
                                                               content=value)
     return (value_hash,storage_location)
-
-

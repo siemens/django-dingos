@@ -95,4 +95,8 @@ if settings.configured and'DINGOS' in dir(settings):
     dingos.DINGOS_SEARCH_POSTPROCESSOR_REGISTRY = settings.DINGOS.get('SEARCH_POSTPROCESSOR_REGISTRY',
                                                                 dingos.DINGOS_SEARCH_POSTPROCESSOR_REGISTRY)
 
+if settings.configured and'DINGOS' in dir(settings):
+    dingos.DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING = settings.DINGOS.get('SEARCH_EXPORT_MAX_OBJECTS_PROCESSING',
+                                                                dingos.DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING)
+
 
