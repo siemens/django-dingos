@@ -189,6 +189,7 @@ class InfoObjectDetails(object):
             fact_pk = None
 
         result =  {'_object':iobject,
+                   '_object_pk':iobject_pk,
                    '_io2f' : io2f,
                    '_io2fv' : io2fv,
                    '_object_url': reverse('url.dingos.view.infoobject', args=[iobject_pk]),

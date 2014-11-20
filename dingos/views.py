@@ -308,7 +308,9 @@ class InfoObjectView_wo_login(BasicDetailView):
 
     @property
     def iobject2facts(self):
-        facts_in_obj =  vIO2FValue.objects.filter(iobject=self.object.id).order_by('node_id')
+        # TODO: The vIO2FValue view is such that empty objects lead to entries with no fact info in them ..., 
+        # which leads to problems below -- here we get rid of such spurious lines by checking above node_id__isnull=False
+        facts_in_obj =  vIO2FValue.objects.filter(iobject=self.object.id,node_id__isnull=False).order_by('node_id')
 
         value_list = []
         last_obj = None
@@ -321,7 +323,8 @@ class InfoObjectView_wo_login(BasicDetailView):
                     value_list = []
             last_obj = fact
             value_list.append(fact.value)
-        last_obj.value_list = value_list
+        if last_obj:
+            last_obj.value_list = value_list
 
         facts_in_obj = [x for x in facts_in_obj if 'value_list' in dir(x)]
 

@@ -72,11 +72,17 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     {%     node_indent "td"  k.node_id k.term k.attribute highlight %}
 
                             <a name="{{ k.node_id }}"> </a>
-                        {% if k.referenced_iobject_identifier %}
+                        {% if k.referenced_iobject_identifier_id %}
                             {%  if k.referenced_iobject_identifier.latest %}
-                            <a href={% url 'url.dingos.view.infoobject' k.referenced_iobject_identifier.latest.pk %}>
-                                <img src="/static/admin/img/selector-search.gif" alt="Lookup" height="16" width="16">
+			    {% url 'url.dingos.view.infoobject' k.referenced_iobject_identifier.latest.pk as ref_obj_url %}
+			    {% if ref_obj_url %}
+                            <a href="{{ref_obj_url}}">
+			      
+                              <img src="/static/admin/img/selector-search.gif" alt="Lookup" height="16" width="16">
+
                             </a>
+			    {% endif %}
+
                                 {% if k.referenced_iobject_identifier.latest.name == '' or k.referenced_iobject_identifier.latest.name == 'PLACEHOLDER' %}
                                     {{k.referenced_iobject_id.latest.iobject_type.name}}
                                 {% else %}

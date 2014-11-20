@@ -1712,8 +1712,10 @@ class InfoObject(DingoModel):
             G.node[node]['facts'] = []
 
 
+        # TODO: The vIO2FValue view is such that empty objects lead to entries with no fact info in them ..., 
+        # which leads to problems below -- here we get rid of such spurious lines by checking for node_id__isnull=False
 
-        io2fvs= vIO2FValue.objects.filter(iobject__id__in=G.nodes()).order_by('iobject__id','node_id').prefetch_related( 'iobject',
+        io2fvs= vIO2FValue.objects.filter(iobject__id__in=G.nodes(),node_id__isnull=False).order_by('iobject__id','node_id').prefetch_related( 'iobject',
                                                                                                                         'referenced_iobject_identifier__latest',)
                                                                    #                         'iobject__identifier',
                                                                    #                         'iobject__identifier__namespace',
@@ -1749,11 +1751,17 @@ class InfoObject(DingoModel):
 
         last_io2fv.value_list = value_list
 
+        # TODO: The vIO2FValue view is such that empty objects lead to entries with no fact info in them ..., 
+        # which leads to problems below -- here we get rid of such spurious lines by checking above node_id__isnull=False
+        # But if we have no facts, we cannot extract the object below, so we have to 
+        # get it by hand.
+
         for node in G.nodes_iter():
             G.node[node]['facts'] = [x for x in io2fvs if x.iobject_id == node and 'value_list' in dir(x)]
-            G.node[node]['iobject'] = G.node[node]['facts'][0].iobject
-
-
+            if G.node[node]['facts']:
+                G.node[node]['iobject'] = G.node[node]['facts'][0].iobject
+            else:
+                G.node[node]['iobject'] = InfoObject.objects.get(pk=node)
 
         return G
 
