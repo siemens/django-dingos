@@ -23,7 +23,7 @@ import pickle
 
 from django.db.models import Count, F, Q
 from django.core.urlresolvers import reverse
-from dingos.models import InfoObject2Fact, InfoObject
+from dingos.models import InfoObject2Fact, InfoObject, vIO2FValue
 from django.db import connection
 
 
@@ -66,8 +66,47 @@ def derive_image_info(node_dict):
 
     return image_info
 
-
 def follow_references(iobject_pks,
+                      direction = 'down',
+                      skip_terms=None,
+                      depth=100000,
+                      max_nodes=0,
+                      keep_graph_info=True,
+                      reverse_direction=False,
+                      graph = None):
+    #not implemented: skip_terms, keep_graph_info
+
+    cursor = connection.cursor()
+    try:
+        cursor.callproc("build_graph_table", ([int(pk) for pk in iobject_pks],direction, depth, max_nodes))
+        token = cursor.fetchone()[0]
+    finally:
+        cursor.close()
+
+    if not graph:
+        graph = nx.DiGraph()
+
+    ##############################################
+    print(token)
+
+    test = vIO2FValue.objects.filter(iobject__query_result_set__token=token).values_list()
+    #test = InfoObject.objects.filter(query_result_set__token=token).values_list()
+    for e in test:
+        print(e)
+
+    ##############################################
+
+
+
+
+
+
+
+
+    return
+
+
+def follow_references_old(iobject_pks,
                       direction = 'down',
                       skip_terms=None,
                       depth=100000,
@@ -108,7 +147,7 @@ def follow_references(iobject_pks,
 
 
 
-def follow_references_old(iobject_pks,
+def follow_references_older(iobject_pks,
                       direction = 'down',
                       skip_terms=None,
                       depth=100000,

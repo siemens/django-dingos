@@ -98,8 +98,6 @@ def build_graph(pkslist, direction, depth, max_nodes, plpy):
 
                 if e['latest_id']:
                     rnode = e['latest_id']
-                else:
-                    rnode = e['value_iobject_ts']
 
                 if node == None or rnode == None:
                     # we uncovered a link to a node that is not in the system
@@ -166,3 +164,105 @@ def build_graph(pkslist, direction, depth, max_nodes, plpy):
 
     graph_pickled = pickle.dumps(graph)
     return graph_pickled
+
+def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
+    import pickle
+    import cStringIO
+    UP_STATEMENT = "SELECT dingos_infoobject2fact.iobject_id, T5.latest_id FROM dingos_infoobject2fact INNER JOIN dingos_identifier ON ( dingos_infoobject2fact.iobject_id = dingos_identifier.latest_id ) INNER JOIN dingos_fact ON ( dingos_infoobject2fact.fact_id = dingos_fact.id ) INNER JOIN dingos_identifier T5 ON ( dingos_fact.value_iobject_id_id = T5.id ) WHERE (dingos_identifier.id IS NOT NULL AND T5.latest_id = ANY($1))"
+    DOWN_STATEMENT = "SELECT dingos_infoobject2fact.iobject_id, dingos_identifier.latest_id FROM dingos_infoobject2fact INNER JOIN dingos_fact ON ( dingos_infoobject2fact.fact_id = dingos_fact.id ) INNER JOIN dingos_identifier ON ( dingos_fact.value_iobject_id_id = dingos_identifier.id ) WHERE (dingos_infoobject2fact.iobject_id = ANY($1))"
+    reachable_pks = set()
+    result_table_nodes = set()
+    result_table_edges = set()
+    input_result_table = cStringIO.StringIO()
+
+    def get_upwards(inputlist):
+        plan_query = plpy.prepare(UP_STATEMENT, ["integer[]"])
+        ret_query = plpy.execute(plan_query, (inputlist,))
+        return ret_query
+
+    def get_downwards(inputlist):
+        plan_query = plpy.prepare(DOWN_STATEMENT, ["integer[]"])
+        ret_query = plpy.execute(plan_query, (inputlist,))
+        return ret_query
+
+    def build_graph_rec(pkslist, reachable_pks, direction, depth):
+        if direction == 'full':
+            turns = ['up', 'down']
+        else:
+            turns = [direction]
+
+        pkToVisit = set()
+
+        for turn in turns:
+
+            if turn == 'up':
+                results = get_upwards(list(pkslist))
+            else:
+                results = get_downwards(list(pkslist))
+
+            for e in results:
+                node = e['iobject_id']
+
+                rnode = e['latest_id']
+
+                if node == None or rnode == None:
+                    # we uncovered a link to a node that is not in the system
+                    continue
+
+                result_table_nodes.add(node)
+                result_table_nodes.add(rnode)
+                result_table_edges.add((node, rnode))
+
+                if turn == 'up':
+                    pkToVisit.add(node)
+                else:
+                    pkToVisit.add(rnode)
+
+            reachable_pks.add(id for id in pkslist)
+
+        if pkToVisit.issubset(reachable_pks) or depth == 0 or (max_nodes and len(result_table_nodes) + len(pkToVisit - reachable_pks) >= max_nodes):
+            #TODO max_nodes_reached
+            #graph.graph['max_nodes_reached'] = False
+            #if (max_nodes and len(graph.nodes) + len(pkToVisit - reachable_pks) >= max_nodes):
+                #graph.graph['max_nodes_reached'] = True
+            return
+
+        else:
+            return build_graph_rec(pkToVisit - reachable_pks,
+                                   reachable_pks | pkToVisit,
+                                   direction,
+                                   depth-1
+                                   )
+
+    if direction == 'both':
+        build_graph_rec(pkslist, reachable_pks, 'up', depth)
+        reachable_pks = set()
+        build_graph_rec(pkslist, reachable_pks, 'down', depth)
+    else:
+        build_graph_rec(pkslist, reachable_pks, direction, depth)
+
+    ####################################################
+    import psycopg2
+    import datetime
+    import uuid
+    DSN = "dbname=django user=postgres password=postgres123 host=localhost"
+    con = psycopg2.connect(DSN)
+    cur = con.cursor()
+
+    unique_token = uuid.uuid4()
+    current_time = datetime.datetime.now()
+
+    for node in result_table_nodes:
+        input_result_table.write("%s\t%s\t\"\"\t\"\"\t%s\t\\N\n" % (current_time, unique_token, node))
+    for (node,rnode) in result_table_edges:
+        input_result_table.write("%s\t%s\t\"\"\t\"\"\t%s\t%s\n" % (current_time, unique_token, node, rnode))
+    input_result_table.seek(0)
+
+    cur.copy_from(input_result_table, 'dingos_queryresulttable', columns=('timestamp', 'token', 'key', 'value', 'iobject_id', 'related_iobject_id'))
+    cur.close()
+    con.commit()
+    con.close()
+    #######################################################
+
+
+    return unique_token
