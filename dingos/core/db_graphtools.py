@@ -241,11 +241,14 @@ def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
     else:
         build_graph_rec(pkslist, reachable_pks, direction, depth)
 
+    for pk in pkslist:
+        result_table_nodes.add(pk)
+
     ####################################################
     import psycopg2
     import datetime
     import uuid
-    DSN = "dbname=django user=postgres password=postgres123 host=localhost"
+    DSN = "dbname=django user=mantis password=mantis host=localhost"
     con = psycopg2.connect(DSN)
     cur = con.cursor()
 
