@@ -23,7 +23,7 @@ import pickle
 
 from django.db.models import Count, F, Q
 from django.core.urlresolvers import reverse
-from dingos.models import InfoObject2Fact, InfoObject, vIO2FValue
+from dingos.models import InfoObject2Fact, InfoObject, vIO2FValue, QueryResultTable
 from django.db import connection
 
 
@@ -60,11 +60,7 @@ def _build_skip_query(skip_info):
 
 
 def derive_image_info(node_dict):
-
-    image_info = DINGOS_OBJECTTYPE_ICON_MAPPING.get(node_dict['iobject_type_family'],{}).\
-        get(node_dict['iobject_type'])
-
-    return image_info
+    image_info = DINGOS_OBJECTTYPE_ICON_MAPPING.get(node_dict['iobject_type_family'],{}).get(node_dict['iobject_type'])
 
 def follow_references(iobject_pks,
                       direction = 'down',
@@ -81,27 +77,20 @@ def follow_references(iobject_pks,
     print("graph:")
     print(graph)
 
-    values_list = ['iobject_id',                            #0
-                   'fact__value_iobject_id__latest__id',    #1
-                   'fact__value_iobject_ts',                #2
-    ]
+    values_list = []
+
+    #values_list = ['iobject_id',                            #0
+    #               'fact__value_iobject_id__latest__id',    #1
+    #               'fact__value_iobject_ts',                #2
+    #]
 
     if keep_graph_info:
-        values_list = values_list + ['fact__fact_term__term',                 #3
-                                     'fact__fact_term__attribute',            #4
-                                     'node_id__name',                         #5
-
-                                     'iobject__identifier__namespace__uri',   #6
-                                     'iobject__identifier__uid',              #7
-                                     'iobject__name',                         #8
-                                     'iobject__iobject_type__name',           #9
-                                     'iobject__iobject_type__iobject_family__name', #10
-
-                                     'fact__value_iobject_id__latest__identifier__namespace__uri', #11
-                                     'fact__value_iobject_id__latest__identifier__uid', # 12
-                                     'fact__value_iobject_id__latest__name', #13
-                                     'fact__value_iobject_id__latest__iobject_type__name', #14
-                                     'fact__value_iobject_id__latest__iobject_type__iobject_family__name', #15
+        values_list = values_list + ['id',
+                                     'identifier__namespace__uri',   #6
+                                     'identifier__uid',              #7
+                                     'name',                         #8
+                                     'iobject_type__name',           #9
+                                     'iobject_type__iobject_family__name', #10
 
 
         ]
@@ -115,87 +104,50 @@ def follow_references(iobject_pks,
 
     if not graph:
         graph = nx.DiGraph()
-        #objects = vIO2FValue.objects.filter(iobject__query_result_set__token=token).values_list(*values_list)
-        objects = InfoObject2Fact.objects.filter(iobject__query_result_set__token=token,fact__value_iobject_id__latest__id = F('iobject__query_result_set__related_iobject_id')).order_by('iobject_id').distinct('iobject_id','fact__value_iobject_id__latest__id').values_list(*values_list)
-        #TODO Queryset only for InfoObjects with no Link?
+        objects = InfoObject.objects.filter(query_result_set__token=token).order_by('pk').distinct('pk').values_list(*values_list)
         print objects.query
-        if not objects.exists():
-            objects = InfoObject.objects.filter(query_result_set__token=token).filter(query_result_set__related_iobject_id__isnull=True).prefetch_related( 'identifier__namespace', 'iobject_type', 'iobject_type__iobject_family')
-            print objects.query
-            for object in objects:
+
+        for object in objects:
+            if keep_graph_info:
+
                 node_dict = {}
-                try:
-                    url = reverse('url.dingos.view.infoobject', args=[object.pk])
-                except:
-                    url = None
-                node_dict['url'] = url
-                node_dict['identifier_ns'] =  object.identifier.namespace.uri
-                node_dict['identifier_uid'] =  object.identifier.uid
-                node_dict['name'] = object.name
-                node_dict['iobject_type'] = object.iobject_type.name
-                node_dict['iobject_type_family'] = object.iobject_type.iobject_family.name
-                graph.add_node(object.pk,node_dict)
 
-        else:
-            for object in objects:
+
                 if keep_graph_info:
-                    edge_dict = {}
-                    node_dict = {}
-                    rnode_dict = {}
+                    try:
+                        url = reverse('url.dingos.view.infoobject', args=[node])
+                    except:
+                        url = None
+                    node_dict['url'] = url
+                    node_dict['identifier_ns'] =  object[1]
+                    node_dict['identifier_uid'] =  object[2]
+                    node_dict['name'] = object[3]
+                    node_dict['iobject_type'] = object[4]
+                    node_dict['iobject_type_family'] = object[5]
 
-                    node = object[0]
-                    if object[1]:
-                        rnode = object[1]
-                    else:
-                        #TODO why timestamp??
-                        #rnode = object[2]
-                        #print("no rnode")
-                        #print(node)
-                        #print "#######"
-                        rnode = None
+                    graph.add_node(object[0],**node_dict)
 
-                    if node == None: #or rnode == None:
-                        # we uncovered a link to a node that is not in the system
-                        continue
+        edges = QueryResultTable.objects.filter(token=token,related_iobject__isnull=False)
 
-                    if keep_graph_info:
-                        try:
-                            url = reverse('url.dingos.view.infoobject', args=[node])
-                        except:
-                            url = None
-                        node_dict['url'] = url
-                        node_dict['identifier_ns'] =  object[6]
-                        node_dict['identifier_uid'] =  object[7]
-                        node_dict['name'] = object[8]
-                        node_dict['iobject_type'] = object[9]
-                        node_dict['iobject_type_family'] = object[10]
 
-                        graph.add_node(node,**node_dict)
 
-                        if rnode:
-                            try:
-                                url = reverse('url.dingos.view.infoobject', args=[rnode])
-                            except:
-                                url = None
-                            rnode_dict['url'] = url
-                            rnode_dict['identifier_ns'] = object[11]
-                            rnode_dict['identifier_uid'] = object[12]
-                            rnode_dict['name'] = object[13]
-                            rnode_dict['iobject_type'] = object[14]
-                            rnode_dict['iobject_type_family'] = object[15]
-                            graph.add_node(rnode,**rnode_dict)
-                            #print("edge added (%s,%s)" % (node,rnode))
-                            edge_dict['term'] = object[3],
-                            edge_dict['attribute'] = object[4]
-                            edge_dict['fact_node_id'] = object[5]
-                            graph.add_edge(node,rnode,**edge_dict)
+        for edge in edges:
+            edge_dict = {}
+            node = edge.iobject_id
+            rnode = edge.related_iobject_id
+            edge_dict['term'] = edge.value
+            edge_dict['attribute'] = edge.value
+            edge_dict['fact_node_id'] = '' # don't have that
+
+            graph.add_edge(node,rnode,**edge_dict)
 
 
     #TODO max_nodes_reached
     graph.graph['max_nodes_reached'] = False
 
     for n in graph.nodes():
-        graph.node[n]['image'] = derive_image_info(graph.node[n])
+        if graph.node[n]:
+            graph.node[n]['image'] = derive_image_info(graph.node[n])
     return graph
 
 
