@@ -166,7 +166,6 @@ def build_graph(pkslist, direction, depth, max_nodes, plpy):
     return graph_pickled
 
 def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
-    import pickle
     import cStringIO
     UP_STATEMENT = "SELECT dingos_infoobject2fact.iobject_id, T5.latest_id, dingos_factterm.term, dingos_factterm.attribute FROM dingos_infoobject2fact INNER JOIN dingos_identifier ON ( dingos_infoobject2fact.iobject_id = dingos_identifier.latest_id ) INNER JOIN dingos_fact ON ( dingos_infoobject2fact.fact_id = dingos_fact.id ) INNER JOIN dingos_identifier T5 ON ( dingos_fact.value_iobject_id_id = T5.id ) INNER JOIN dingos_factterm ON ( dingos_fact.fact_term_id = dingos_factterm.id ) WHERE (dingos_identifier.id IS NOT NULL AND T5.latest_id = ANY($1))"
     DOWN_STATEMENT = "SELECT dingos_infoobject2fact.iobject_id, dingos_identifier.latest_id, dingos_factterm.term, dingos_factterm.attribute FROM dingos_infoobject2fact INNER JOIN dingos_fact ON ( dingos_infoobject2fact.fact_id = dingos_fact.id ) INNER JOIN dingos_identifier ON ( dingos_fact.value_iobject_id_id = dingos_identifier.id ) INNER JOIN dingos_factterm ON ( dingos_fact.fact_term_id = dingos_factterm.id ) WHERE (dingos_infoobject2fact.iobject_id = ANY($1))"
@@ -257,12 +256,17 @@ def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
 
     unique_token = uuid.uuid4()
     current_time = datetime.datetime.now()
+    #plan = plpy.prepare("INSERT INTO dingos_queryresulttable(timestamp, token, key, value, iobject_id, related_iobject_id) VALUES ($1,$2,$3,$4,$5,$6)",['text','text','text','text','text','text'])
 
     for node in result_table_nodes:
+        #plpy.execute("INSERT INTO dingos_queryresulttable(timestamp, token, key, value, iobject_id, related_iobject_id) VALUES (%s,%s,%s,%s,%s,%s)", (current_time,unique_token,"","",node,'\\N'))
         input_result_table.write("%s\t%s\t\"\"\t\"\"\t%s\t\\N\n" % (current_time, unique_token, node))
     for ((node,rnode), edge_dict) in result_table_edges.iteritems():
+        #plpy.execute("INSERT INTO dingos_queryresulttable(timestamp, token, key, value, iobject_id, related_iobject_id) VALUES (%s,%s,%s,%s,%s,%s)",
+                     #(current_time,unique_token,edge_dict['term'],edge_dict['attribute'],node,rnode))
         input_result_table.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (current_time, unique_token, edge_dict['term'], edge_dict['attribute'], node, rnode))
     input_result_table.seek(0)
+
 
     cur.copy_from(input_result_table, 'dingos_queryresulttable', columns=('timestamp', 'token', 'key', 'value', 'iobject_id', 'related_iobject_id'))
     cur.close()

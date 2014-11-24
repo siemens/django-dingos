@@ -149,6 +149,13 @@ def follow_references(iobject_pks,
     for n in graph.nodes():
         if graph.node[n]:
             graph.node[n]['image'] = derive_image_info(graph.node[n])
+    print("Graph-Nodes-Count:")
+    print(len(graph.nodes()))
+    print("Graph-Edges-Count:")
+    print(len(graph.edges()))
+    print("Graph-Edges:")
+    for (key,value) in graph.edge.iteritems():
+        print(key,value)
     return graph
 
 
@@ -495,6 +502,13 @@ def follow_references__(iobject_pks,
                 node_dict['iobject_type_family'] = node_info.iobject_type.iobject_family.name
                 graph.add_node(node_info.pk,node_dict)
 
+    print("Graph-Nodes-Count:")
+    print(len(graph.nodes()))
+    print("Graph-Edges-Count:")
+    print(len(graph.edges()))
+    print("Graph-Edges:")
+    for (key,value) in graph.edge.iteritems():
+        print(key,value)
     return graph
 
 
