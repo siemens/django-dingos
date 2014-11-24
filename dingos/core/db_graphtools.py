@@ -168,11 +168,11 @@ def build_graph(pkslist, direction, depth, max_nodes, plpy):
 def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
     import pickle
     import cStringIO
-    UP_STATEMENT = "SELECT dingos_infoobject2fact.iobject_id, T5.latest_id FROM dingos_infoobject2fact INNER JOIN dingos_identifier ON ( dingos_infoobject2fact.iobject_id = dingos_identifier.latest_id ) INNER JOIN dingos_fact ON ( dingos_infoobject2fact.fact_id = dingos_fact.id ) INNER JOIN dingos_identifier T5 ON ( dingos_fact.value_iobject_id_id = T5.id ) WHERE (dingos_identifier.id IS NOT NULL AND T5.latest_id = ANY($1))"
-    DOWN_STATEMENT = "SELECT dingos_infoobject2fact.iobject_id, dingos_identifier.latest_id FROM dingos_infoobject2fact INNER JOIN dingos_fact ON ( dingos_infoobject2fact.fact_id = dingos_fact.id ) INNER JOIN dingos_identifier ON ( dingos_fact.value_iobject_id_id = dingos_identifier.id ) WHERE (dingos_infoobject2fact.iobject_id = ANY($1))"
+    UP_STATEMENT = "SELECT dingos_infoobject2fact.iobject_id, T5.latest_id, dingos_factterm.term, dingos_factterm.attribute FROM dingos_infoobject2fact INNER JOIN dingos_identifier ON ( dingos_infoobject2fact.iobject_id = dingos_identifier.latest_id ) INNER JOIN dingos_fact ON ( dingos_infoobject2fact.fact_id = dingos_fact.id ) INNER JOIN dingos_identifier T5 ON ( dingos_fact.value_iobject_id_id = T5.id ) INNER JOIN dingos_factterm ON ( dingos_fact.fact_term_id = dingos_factterm.id ) WHERE (dingos_identifier.id IS NOT NULL AND T5.latest_id = ANY($1))"
+    DOWN_STATEMENT = "SELECT dingos_infoobject2fact.iobject_id, dingos_identifier.latest_id, dingos_factterm.term, dingos_factterm.attribute FROM dingos_infoobject2fact INNER JOIN dingos_fact ON ( dingos_infoobject2fact.fact_id = dingos_fact.id ) INNER JOIN dingos_identifier ON ( dingos_fact.value_iobject_id_id = dingos_identifier.id ) INNER JOIN dingos_factterm ON ( dingos_fact.fact_term_id = dingos_factterm.id ) WHERE (dingos_infoobject2fact.iobject_id = ANY($1))"
     reachable_pks = set()
     result_table_nodes = set()
-    result_table_edges = set()
+    result_table_edges= dict()
     input_result_table = cStringIO.StringIO()
 
     def get_upwards(inputlist):
@@ -211,7 +211,10 @@ def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
 
                 result_table_nodes.add(node)
                 result_table_nodes.add(rnode)
-                result_table_edges.add((node, rnode))
+                result_table_edges[(node, rnode)] = {
+                    'term' : e['term'],
+                    'attribute' : e['attribute']
+                }
 
                 if turn == 'up':
                     pkToVisit.add(node)
@@ -248,7 +251,7 @@ def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
     import psycopg2
     import datetime
     import uuid
-    DSN = "dbname=django user=mantis password=mantis host=localhost"
+    DSN = "dbname=django user=postgres password=postgres123 host=localhost"
     con = psycopg2.connect(DSN)
     cur = con.cursor()
 
@@ -257,8 +260,8 @@ def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
 
     for node in result_table_nodes:
         input_result_table.write("%s\t%s\t\"\"\t\"\"\t%s\t\\N\n" % (current_time, unique_token, node))
-    for (node,rnode) in result_table_edges:
-        input_result_table.write("%s\t%s\t\"\"\t\"\"\t%s\t%s\n" % (current_time, unique_token, node, rnode))
+    for ((node,rnode), edge_dict) in result_table_edges.iteritems():
+        input_result_table.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (current_time, unique_token, edge_dict['term'], edge_dict['attribute'], node, rnode))
     input_result_table.seek(0)
 
     cur.copy_from(input_result_table, 'dingos_queryresulttable', columns=('timestamp', 'token', 'key', 'value', 'iobject_id', 'related_iobject_id'))

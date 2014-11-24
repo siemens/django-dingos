@@ -61,6 +61,7 @@ def _build_skip_query(skip_info):
 
 def derive_image_info(node_dict):
     image_info = DINGOS_OBJECTTYPE_ICON_MAPPING.get(node_dict['iobject_type_family'],{}).get(node_dict['iobject_type'])
+    return image_info
 
 def follow_references(iobject_pks,
                       direction = 'down',
@@ -135,7 +136,7 @@ def follow_references(iobject_pks,
             edge_dict = {}
             node = edge.iobject_id
             rnode = edge.related_iobject_id
-            edge_dict['term'] = edge.value
+            edge_dict['term'] = edge.key
             edge_dict['attribute'] = edge.value
             edge_dict['fact_node_id'] = '' # don't have that
 
