@@ -328,6 +328,10 @@ def render_paginator(context,is_counting=True):
 # Below we register template tags that display
 # certain aspects of an InformationObject.
 
+@register.filter
+def keyvalue(dict, key):
+    return dict[key]
+
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectFactsDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def show_InfoObject(context,
                     formset=None,
@@ -350,21 +354,15 @@ def show_InfoObject(context,
     highlight = context['highlight']
     show_NodeID = context['show_NodeID']
 
-    ##########################################################
-    print("#####################################")
-    attr = ['id','term','attribute','iobject_identifier_uri','iobject_name','node_id','value','referenced_iobject_ts','io2f','factterm','fact']
-    for k in iobject2facts:
-        #for element in attr:
-            #print "%s:%s" % (element,getattr(k, element))
-        print "%s:%s" % ('id',getattr(k.fact, 'id'))
-        print "###########################"
-
-
-
-
-
-    print("#####################################")
-    ############################################################
+    #retrieving tags for facts associated with current infoobject
+    pks = [k.fact.pk for k in iobject2facts]
+    content = ContentType.objects.get_for_model(Fact)
+    query = list(TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag'))
+    tags = dict()
+    for fact_pk in pks:
+        tags[fact_pk] = list()
+        for item in [x for x in query if x.object_id == fact_pk]:
+            tags[fact_pk].append(item.tag)
 
     def rowspan_map(iobject2facts):
         """
@@ -462,7 +460,9 @@ def show_InfoObject(context,
             'close_div' : close_div,
             'inner_collapsible': inner_collapsible,
             'inner_fold_status': inner_fold_status,
-            'link_pk':link_pk}
+            'link_pk':link_pk,
+            'tags' : tags
+            }
 
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectRevisionListDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
