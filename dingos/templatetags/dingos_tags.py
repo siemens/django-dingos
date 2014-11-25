@@ -355,14 +355,25 @@ def show_InfoObject(context,
     show_NodeID = context['show_NodeID']
 
     #retrieving tags for facts associated with current infoobject
-    pks = [k.fact.pk for k in iobject2facts]
-    content = ContentType.objects.get_for_model(Fact)
-    query = list(TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag'))
-    tags = dict()
-    for fact_pk in pks:
-        tags[fact_pk] = list()
-        for item in [x for x in query if x.object_id == fact_pk]:
-            tags[fact_pk].append(item.tag)
+    if not context['fact_tags']:
+        if context['io2fvs']:
+            pks = [k.fact_id for k in context['io2fvs']]
+        else:
+            pks = [k.fact_id for k in iobject2facts]
+
+        content = ContentType.objects.get_for_model(Fact)
+        query = list(TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag'))
+        fact_tags = dict()
+        for fact_pk in pks:
+            fact_tags[fact_pk] = list()
+            for item in [x for x in query if x.object_id == fact_pk]:
+                fact_tags[fact_pk].append(item.tag)
+
+        context['fact_tags'] = fact_tags
+
+        print fact_tags
+    else:
+        fact_tags = context['fact_tags']
 
     def rowspan_map(iobject2facts):
         """
@@ -461,7 +472,7 @@ def show_InfoObject(context,
             'inner_collapsible': inner_collapsible,
             'inner_fold_status': inner_fold_status,
             'link_pk':link_pk,
-            'tags' : tags
+            'fact_tags' : fact_tags
             }
 
 

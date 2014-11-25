@@ -365,6 +365,8 @@ class InfoObjectView_wo_login(BasicDetailView):
         context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
         context['iobject2facts'] = self.iobject2facts
+        context['fact_tags'] = None
+        context['io2fvs'] = None
         try:
             context['highlight'] = self.request.GET['highlight']
         except KeyError:

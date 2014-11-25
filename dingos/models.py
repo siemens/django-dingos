@@ -1763,6 +1763,8 @@ class InfoObject(DingoModel):
             else:
                 G.node[node]['iobject'] = InfoObject.objects.get(pk=node)
 
+        G.graph['io2fvs'] = io2fvs
+
         return G
 
     @property
