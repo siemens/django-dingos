@@ -72,6 +72,7 @@ def follow_references(iobject_pks,
                       reverse_direction=False,
                       graph = None):
     #not implemented: skip_terms
+    max_nodes = 0
     print("############")
     print("iobject_pks:")
     print(iobject_pks)
@@ -153,9 +154,10 @@ def follow_references(iobject_pks,
     print(len(graph.nodes()))
     print("Graph-Edges-Count:")
     print(len(graph.edges()))
-    print("Graph-Edges:")
-    for (key,value) in graph.edge.iteritems():
-        print(key,value)
+    #print("Graph-Edges:")
+    for e in graph.edges():
+        pass
+        #print(e)
     return graph
 
 
@@ -256,6 +258,7 @@ def follow_references__(iobject_pks,
       and a downward-traversal are to be combined into a single graph.
     """
     skip_terms = None
+    max_nodes = 0
 
     if not graph:
 
@@ -506,9 +509,10 @@ def follow_references__(iobject_pks,
     print(len(graph.nodes()))
     print("Graph-Edges-Count:")
     print(len(graph.edges()))
-    print("Graph-Edges:")
-    for (key,value) in graph.edge.iteritems():
-        print(key,value)
+    #print("Graph-Edges:")
+    for e in graph.edge.iteritems():
+        pass
+        #print(e)
     return graph
 
 
