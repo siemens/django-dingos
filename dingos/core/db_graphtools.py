@@ -170,7 +170,6 @@ def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
     import time
     start = time.time()
     plpy.log("0")
-    import cStringIO
     plpy.log("After cStringIO Import: %s" % (time.time() - start))
 
     UP_STATEMENT = "SELECT dingos_infoobject2fact.iobject_id, T5.latest_id, dingos_factterm.term, dingos_factterm.attribute FROM dingos_infoobject2fact INNER JOIN dingos_identifier ON ( dingos_infoobject2fact.iobject_id = dingos_identifier.latest_id ) INNER JOIN dingos_fact ON ( dingos_infoobject2fact.fact_id = dingos_fact.id ) INNER JOIN dingos_identifier T5 ON ( dingos_fact.value_iobject_id_id = T5.id ) INNER JOIN dingos_factterm ON ( dingos_fact.fact_term_id = dingos_factterm.id ) WHERE (dingos_identifier.id IS NOT NULL AND T5.latest_id = ANY($1))"
@@ -178,7 +177,6 @@ def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
     reachable_pks = set()
     result_table_nodes = set()
     result_table_edges= dict()
-    input_result_table = cStringIO.StringIO()
 
 
 
@@ -266,37 +264,39 @@ def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
 
     ####################################################
     import psycopg2
-    import datetime
     import uuid
     plpy.log("Finished Copy Imports: %s" % (time.time() - start))
 
-    DSN = "dbname=django user=postgres password=postgres123 host=localhost"
+    unique_token = uuid.uuid4().__str__()
+    DSN = "dbname=django user=mantis password=mantis host=localhost"
     con = psycopg2.connect(DSN)
     cur = con.cursor()
 
-    unique_token = uuid.uuid4().__str__()
-    current_time = datetime.datetime.now()
-    #plan = plpy.prepare("INSERT INTO dingos_queryresulttable(timestamp, token, key, value, iobject_id, related_iobject_id) VALUES ($1,$2,$3,$4,$5,$6)",['timestamp','text','text','text','integer','integer'])
-    #plan = """INSERT INTO dingos_queryresulttable(timestamp, token, key, value, iobject_id, related_iobject_id) VALUES (%s,%s,%s,%s,%s,%s)"""
-    #rowsToInsert = []
+    values_list = []
 
     for node in result_table_nodes:
-        #rowsToInsert.append((current_time,unique_token,"","",node, None))
-        input_result_table.write("%s\t%s\t\"\"\t\"\"\t%s\t\\N\n" % (current_time, unique_token, node))
+        values_list.append(("","",node,None))
     for ((node,rnode), attr_list) in result_table_edges.iteritems():
-        #rowsToInsert.append((current_time,unique_token,edge_dict['term'],edge_dict['attribute'],node,rnode))
         for edge_dict in attr_list:
-            input_result_table.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (current_time, unique_token, edge_dict['term'], edge_dict['attribute'], node, rnode))
-    input_result_table.seek(0)
+            values_list.append((edge_dict['term'],edge_dict['attribute'],node,rnode))
+    args_str = ','.join(cur.mogrify("(%s,%s,%s,%s)", x) for x in values_list)
+    plan = """CREATE UNLOGGED TABLE "%s" AS SELECT * FROM (VALUES %s) AS c(key, value, iobject_id, related_iobject_id);""" % (unique_token, args_str)
 
 
     plpy.log("Finished CopyString Building, Starting Copying: %s" % (time.time() - start))
-    cur.copy_from(input_result_table, 'dingos_queryresulttable', columns=('timestamp', 'token', 'key', 'value', 'iobject_id', 'related_iobject_id'))
-    #cur.executemany(plan, rowsToInsert)
-    plpy.log("Finished Copying: %s" % (time.time() - start))
-    cur.close()
-    con.commit()
-    con.close()
+    plpy.execute(plan)
+    plpy.log("Finished Copying %s" % (time.time() - start))
+    #fk_iobject_id = """ALTER TABLE "%s" ADD CONSTRAINT dingos_iobject_id_fk_dingos_infoobject_id FOREIGN KEY (iobject_id)
+      #REFERENCES dingos_infoobject (id) MATCH SIMPLE
+      #ON UPDATE NO ACTION ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED;""" % (unique_token)
+    #fk_related_iobject_id = """ALTER TABLE "%s" ADD CONSTRAINT dingos_related_iobject_id_fk_dingos_infoobject_id FOREIGN KEY (related_iobject_id)
+      #REFERENCES dingos_infoobject (id) MATCH SIMPLE
+      #ON UPDATE NO ACTION ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED;""" % (unique_token)
+    #plpy.execute(fk_iobject_id)
+    #plpy.execute(fk_related_iobject_id)
+
+
+
     #######################################################
 
 

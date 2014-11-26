@@ -22,9 +22,9 @@ import networkx as nx
 import pickle
 
 from django.db.models import Count, F, Q
+from django.db import connection
 from django.core.urlresolvers import reverse
 from dingos.models import InfoObject2Fact, InfoObject, vIO2FValue, QueryResultTable
-from django.db import connection
 
 
 from dingos import DINGOS_OBJECTTYPE_ICON_MAPPING
@@ -101,12 +101,23 @@ def follow_references(iobject_pks,
     try:
         cursor.callproc("build_graph_table", ([int(pk) for pk in iobject_pks],direction, depth, max_nodes))
         token = cursor.fetchone()[0]
-    finally:
-        cursor.close()
+    except:
+        #TODO Exception
+        return ""
 
     if not graph:
         graph = nx.MultiDiGraph()
-        objects = InfoObject.objects.filter(query_result_set__token=token).order_by('pk').distinct('pk').values_list(*values_list)
+        #objects = InfoObject.objects.filter(query_result_set__token=token).order_by('pk').distinct('pk').values_list(*values_list)
+        query = """
+                SELECT DISTINCT dingos_infoobject.id, dingos_identifiernamespace.uri as ns, dingos_identifier.uid as uid, dingos_infoobject.name as name, dingos_infoobjecttype.name as type_name, dingos_infoobjectfamily.name as ftype_name
+                FROM dingos_infoobject INNER JOIN "%(token)s" ON dingos_infoobject.id = "%(token)s".iobject_id
+                INNER JOIN dingos_identifier ON dingos_infoobject.identifier_id = dingos_identifier.id
+                INNER JOIN dingos_identifiernamespace ON dingos_identifiernamespace.id = dingos_identifier.namespace_id
+                INNER JOIN dingos_infoobjecttype ON dingos_infoobjecttype.id = dingos_infoobject.iobject_type_id
+                INNER JOIN dingos_infoobjectfamily ON dingos_infoobjectfamily.id = dingos_infoobjecttype.iobject_family_id
+                """ % {'token' : token}
+
+        objects = InfoObject.objects.raw(query)
         print objects.query
 
         for object in objects:
@@ -117,28 +128,31 @@ def follow_references(iobject_pks,
 
                 if keep_graph_info:
                     try:
-                        url = reverse('url.dingos.view.infoobject', args=[node])
+                        url = reverse('url.dingos.view.infoobject', args=[object.id])
                     except:
                         url = None
                     node_dict['url'] = url
-                    node_dict['identifier_ns'] =  object[1]
-                    node_dict['identifier_uid'] =  object[2]
-                    node_dict['name'] = object[3]
-                    node_dict['iobject_type'] = object[4]
-                    node_dict['iobject_type_family'] = object[5]
+                    node_dict['identifier_ns'] =  object.ns
+                    node_dict['identifier_uid'] =  object.uid
+                    node_dict['name'] = object.name
+                    node_dict['iobject_type'] = object.type_name
+                    node_dict['iobject_type_family'] = object.ftype_name
 
-                    graph.add_node(object[0],**node_dict)
+                    graph.add_node(object.id,**node_dict)
 
         edges = QueryResultTable.objects.filter(token=token,related_iobject__isnull=False)
-
-
+        query2 = """
+                SELECT * FROM "%(token)s" WHERE "%(token)s".related_iobject_id IS NOT NULL
+                """ % {'token' : token}
+        cursor.execute(query2)
+        edges = cursor.fetchall()
 
         for edge in edges:
             edge_dict = {}
-            node = edge.iobject_id
-            rnode = edge.related_iobject_id
-            edge_dict['term'] = edge.key
-            edge_dict['attribute'] = edge.value
+            node = edge[2]
+            rnode = edge[3]
+            edge_dict['term'] = edge[0]
+            edge_dict['attribute'] = edge[1]
             edge_dict['fact_node_id'] = '' # don't have that
 
             graph.add_edge(node,rnode,**edge_dict)
@@ -158,6 +172,7 @@ def follow_references(iobject_pks,
     for e in graph.edges():
         pass
         #print(e)
+    cursor.close()
     return graph
 
 
