@@ -105,7 +105,7 @@ def follow_references(iobject_pks,
         cursor.close()
 
     if not graph:
-        graph = nx.DiGraph()
+        graph = nx.MultiDiGraph()
         objects = InfoObject.objects.filter(query_result_set__token=token).order_by('pk').distinct('pk').values_list(*values_list)
         print objects.query
 

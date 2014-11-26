@@ -166,13 +166,21 @@ __author__ = "Philipp Lang"
 #     return graph_pickled
 
 def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
+    plpy.log("entering build_graph_table")
+    import time
+    start = time.time()
+    plpy.log("0")
     import cStringIO
+    plpy.log("After cStringIO Import: %s" % (time.time() - start))
+
     UP_STATEMENT = "SELECT dingos_infoobject2fact.iobject_id, T5.latest_id, dingos_factterm.term, dingos_factterm.attribute FROM dingos_infoobject2fact INNER JOIN dingos_identifier ON ( dingos_infoobject2fact.iobject_id = dingos_identifier.latest_id ) INNER JOIN dingos_fact ON ( dingos_infoobject2fact.fact_id = dingos_fact.id ) INNER JOIN dingos_identifier T5 ON ( dingos_fact.value_iobject_id_id = T5.id ) INNER JOIN dingos_factterm ON ( dingos_fact.fact_term_id = dingos_factterm.id ) WHERE (dingos_identifier.id IS NOT NULL AND T5.latest_id = ANY($1))"
     DOWN_STATEMENT = "SELECT dingos_infoobject2fact.iobject_id, dingos_identifier.latest_id, dingos_factterm.term, dingos_factterm.attribute FROM dingos_infoobject2fact INNER JOIN dingos_fact ON ( dingos_infoobject2fact.fact_id = dingos_fact.id ) INNER JOIN dingos_identifier ON ( dingos_fact.value_iobject_id_id = dingos_identifier.id ) INNER JOIN dingos_factterm ON ( dingos_fact.fact_term_id = dingos_factterm.id ) WHERE (dingos_infoobject2fact.iobject_id = ANY($1))"
     reachable_pks = set()
     result_table_nodes = set()
     result_table_edges= dict()
     input_result_table = cStringIO.StringIO()
+
+
 
     def get_upwards(inputlist):
         plan_query = plpy.prepare(UP_STATEMENT, ["integer[]"])
@@ -210,10 +218,17 @@ def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
 
                 result_table_nodes.add(node)
                 result_table_nodes.add(rnode)
-                result_table_edges[(node, rnode)] = {
+
+                if (node, rnode) in result_table_edges:
+                    result_table_edges[(node, rnode)].append({
                     'term' : e['term'],
                     'attribute' : e['attribute']
-                }
+                })
+                else:
+                    result_table_edges[(node, rnode)] = [{
+                    'term' : e['term'],
+                    'attribute' : e['attribute']
+                }]
 
                 if turn == 'up':
                     pkToVisit.add(node)
@@ -236,6 +251,7 @@ def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
                                    depth-1
                                    )
 
+    plpy.log("Starting Graph Traversal: %s" % (time.time() - start))
     if direction == 'both':
         build_graph_rec(pkslist, reachable_pks, 'up', depth)
         reachable_pks = set()
@@ -246,29 +262,38 @@ def build_graph_table(pkslist, direction, depth, max_nodes, plpy):
     for pk in pkslist:
         result_table_nodes.add(pk)
 
+    plpy.log("Finished Graph Traversal: %s" % (time.time() - start))
+
     ####################################################
     import psycopg2
     import datetime
     import uuid
+    plpy.log("Finished Copy Imports: %s" % (time.time() - start))
+
     DSN = "dbname=django user=postgres password=postgres123 host=localhost"
     con = psycopg2.connect(DSN)
     cur = con.cursor()
 
-    unique_token = uuid.uuid4()
+    unique_token = uuid.uuid4().__str__()
     current_time = datetime.datetime.now()
-    #plan = plpy.prepare("INSERT INTO dingos_queryresulttable(timestamp, token, key, value, iobject_id, related_iobject_id) VALUES ($1,$2,$3,$4,$5,$6)",['text','text','text','text','text','text'])
+    #plan = plpy.prepare("INSERT INTO dingos_queryresulttable(timestamp, token, key, value, iobject_id, related_iobject_id) VALUES ($1,$2,$3,$4,$5,$6)",['timestamp','text','text','text','integer','integer'])
+    #plan = """INSERT INTO dingos_queryresulttable(timestamp, token, key, value, iobject_id, related_iobject_id) VALUES (%s,%s,%s,%s,%s,%s)"""
+    #rowsToInsert = []
 
     for node in result_table_nodes:
-        #plpy.execute("INSERT INTO dingos_queryresulttable(timestamp, token, key, value, iobject_id, related_iobject_id) VALUES (%s,%s,%s,%s,%s,%s)", (current_time,unique_token,"","",node,'\\N'))
+        #rowsToInsert.append((current_time,unique_token,"","",node, None))
         input_result_table.write("%s\t%s\t\"\"\t\"\"\t%s\t\\N\n" % (current_time, unique_token, node))
-    for ((node,rnode), edge_dict) in result_table_edges.iteritems():
-        #plpy.execute("INSERT INTO dingos_queryresulttable(timestamp, token, key, value, iobject_id, related_iobject_id) VALUES (%s,%s,%s,%s,%s,%s)",
-                     #(current_time,unique_token,edge_dict['term'],edge_dict['attribute'],node,rnode))
-        input_result_table.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (current_time, unique_token, edge_dict['term'], edge_dict['attribute'], node, rnode))
+    for ((node,rnode), attr_list) in result_table_edges.iteritems():
+        #rowsToInsert.append((current_time,unique_token,edge_dict['term'],edge_dict['attribute'],node,rnode))
+        for edge_dict in attr_list:
+            input_result_table.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (current_time, unique_token, edge_dict['term'], edge_dict['attribute'], node, rnode))
     input_result_table.seek(0)
 
 
+    plpy.log("Finished CopyString Building, Starting Copying: %s" % (time.time() - start))
     cur.copy_from(input_result_table, 'dingos_queryresulttable', columns=('timestamp', 'token', 'key', 'value', 'iobject_id', 'related_iobject_id'))
+    #cur.executemany(plan, rowsToInsert)
+    plpy.log("Finished Copying: %s" % (time.time() - start))
     cur.close()
     con.commit()
     con.close()
