@@ -15,17 +15,11 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
 import networkx
 
-import networkx as nx
-import pickle
-
 from django.db.models import Count, F, Q
-from django.db import connection
 from django.core.urlresolvers import reverse
-from dingos.models import InfoObject2Fact, InfoObject, vIO2FValue, QueryResultTable
-
+from dingos.models import InfoObject2Fact, InfoObject
 
 from dingos import DINGOS_OBJECTTYPE_ICON_MAPPING
 
@@ -60,164 +54,14 @@ def _build_skip_query(skip_info):
 
 
 def derive_image_info(node_dict):
-    image_info = DINGOS_OBJECTTYPE_ICON_MAPPING.get(node_dict['iobject_type_family'],{}).get(node_dict['iobject_type'])
+
+    image_info = DINGOS_OBJECTTYPE_ICON_MAPPING.get(node_dict['iobject_type_family'],{}).\
+        get(node_dict['iobject_type'])
+
     return image_info
 
+
 def follow_references(iobject_pks,
-                      direction = 'down',
-                      skip_terms=None,
-                      depth=100000,
-                      max_nodes=0,
-                      keep_graph_info=True,
-                      reverse_direction=False,
-                      graph = None):
-    #not implemented: skip_terms
-    max_nodes = 0
-    print("############")
-    print("iobject_pks:")
-    print(iobject_pks)
-    print("graph:")
-    print(graph)
-
-    values_list = []
-
-    #values_list = ['iobject_id',                            #0
-    #               'fact__value_iobject_id__latest__id',    #1
-    #               'fact__value_iobject_ts',                #2
-    #]
-
-    if keep_graph_info:
-        values_list = values_list + ['id',
-                                     'identifier__namespace__uri',   #6
-                                     'identifier__uid',              #7
-                                     'name',                         #8
-                                     'iobject_type__name',           #9
-                                     'iobject_type__iobject_family__name', #10
-
-
-        ]
-
-    cursor = connection.cursor()
-    try:
-        cursor.callproc("build_graph_table", ([int(pk) for pk in iobject_pks],direction, depth, max_nodes))
-        token = cursor.fetchone()[0]
-    except:
-        #TODO Exception
-        return ""
-
-    if not graph:
-        graph = nx.MultiDiGraph()
-        #objects = InfoObject.objects.filter(query_result_set__token=token).order_by('pk').distinct('pk').values_list(*values_list)
-        query = """
-                SELECT DISTINCT dingos_infoobject.id, dingos_identifiernamespace.uri as ns, dingos_identifier.uid as uid, dingos_infoobject.name as name, dingos_infoobjecttype.name as type_name, dingos_infoobjectfamily.name as ftype_name
-                FROM dingos_infoobject INNER JOIN "%(token)s" ON dingos_infoobject.id = "%(token)s".iobject_id
-                INNER JOIN dingos_identifier ON dingos_infoobject.identifier_id = dingos_identifier.id
-                INNER JOIN dingos_identifiernamespace ON dingos_identifiernamespace.id = dingos_identifier.namespace_id
-                INNER JOIN dingos_infoobjecttype ON dingos_infoobjecttype.id = dingos_infoobject.iobject_type_id
-                INNER JOIN dingos_infoobjectfamily ON dingos_infoobjectfamily.id = dingos_infoobjecttype.iobject_family_id
-                """ % {'token' : token}
-
-        objects = InfoObject.objects.raw(query)
-        print objects.query
-
-        for object in objects:
-            if keep_graph_info:
-
-                node_dict = {}
-
-
-                if keep_graph_info:
-                    try:
-                        url = reverse('url.dingos.view.infoobject', args=[object.id])
-                    except:
-                        url = None
-                    node_dict['url'] = url
-                    node_dict['identifier_ns'] =  object.ns
-                    node_dict['identifier_uid'] =  object.uid
-                    node_dict['name'] = object.name
-                    node_dict['iobject_type'] = object.type_name
-                    node_dict['iobject_type_family'] = object.ftype_name
-
-                    graph.add_node(object.id,**node_dict)
-
-        edges = QueryResultTable.objects.filter(token=token,related_iobject__isnull=False)
-        query2 = """
-                SELECT * FROM "%(token)s" WHERE "%(token)s".related_iobject_id IS NOT NULL
-                """ % {'token' : token}
-        cursor.execute(query2)
-        edges = cursor.fetchall()
-
-        for edge in edges:
-            edge_dict = {}
-            node = edge[2]
-            rnode = edge[3]
-            edge_dict['term'] = edge[0]
-            edge_dict['attribute'] = edge[1]
-            edge_dict['fact_node_id'] = '' # don't have that
-
-            graph.add_edge(node,rnode,**edge_dict)
-
-
-    #TODO max_nodes_reached
-    graph.graph['max_nodes_reached'] = False
-
-    for n in graph.nodes():
-        if graph.node[n]:
-            graph.node[n]['image'] = derive_image_info(graph.node[n])
-    print("Graph-Nodes-Count:")
-    print(len(graph.nodes()))
-    print("Graph-Edges-Count:")
-    print(len(graph.edges()))
-    #print("Graph-Edges:")
-    for e in graph.edges():
-        pass
-        #print(e)
-    cursor.close()
-    return graph
-
-
-def follow_references_old(iobject_pks,
-                      direction = 'down',
-                      skip_terms=None,
-                      depth=100000,
-                      max_nodes=0,
-                      keep_graph_info=True,
-                      reverse_direction=False,
-                      graph = None):
-    #not implemented: skip_terms, keep_graph_info
-
-    cursor = connection.cursor()
-    try:
-        cursor.callproc("build_graph", ([int(pk) for pk in iobject_pks],direction, depth, max_nodes))
-        graph_serial = cursor.fetchone()
-    finally:
-        cursor.close()
-
-    graph_db = pickle.loads(graph_serial[0])
-    if not graph:
-        graph = nx.DiGraph()
-        graph.graph.update(graph_db.graph)
-    for id in graph_db.nodes:
-        graph.add_node(id, graph_db.nodes[id].attr_dic)
-        graph.add_node(id, url = reverse('url.dingos.view.infoobject', args=[id]))
-        graph.add_node(id, image = derive_image_info(graph_db.nodes[id].attr_dic))
-    for id in graph_db.edges:
-        graph.add_edge(graph_db.edges[id].start, graph_db.edges[id].end, graph_db.edges[id].attr_dic)
-    print(graph.graph['max_nodes_reached'])
-    print(len(graph))
-
-    if reverse_direction:
-        return graph.reverse()
-
-    if keep_graph_info:
-        return graph
-        #return graph.node.keys()
-    else:
-        return graph
-
-
-
-def follow_references__(iobject_pks,
                       direction = 'down',
                       skip_terms=None,
                       depth=100000,
@@ -232,12 +76,12 @@ def follow_references__(iobject_pks,
 
     - direction
 
-      Either 'down' or 'up'.
+      Either 'down' or 'up'. 
 
       'down' means that the graph is built by finding all InfoObjects referenced within
-      a fact of one of the InfoObjects within the given list of InfoObject instances,
+      a fact of one of the InfoObjects within the given list of InfoObject instances, 
       and then recursing on these newly found InfoObjects.
-
+           
       'up' means that the graph is built by finding all InfoObjects (only in their latest revision) that
       contain a reference to one of the InfoObjects contained in the given list of InfoObjects.
 
@@ -254,7 +98,7 @@ def follow_references__(iobject_pks,
 
           {'term': 'term_to_be_skipped', 'attribute': 'attribute_to_be_skippe', 'operator': 'comparison_operator'}
 
-      Each such dictionary specifies a query on term and/or attribute of a fact term. Facts with fact_terms/attributes
+      Each such dictionary specifies a query on term and/or attribute of a fact term. Facts with fact_terms/attributes 
       that match at least one of the specified ``skip_terms`` are ignored when building the graph.
 
     - depth:
@@ -272,8 +116,6 @@ def follow_references__(iobject_pks,
       If set to ``True``, source and destination of an edge are reversed. This is useful if the results of an upward-traversal
       and a downward-traversal are to be combined into a single graph.
     """
-    skip_terms = None
-    max_nodes = 0
 
     if not graph:
 
@@ -520,16 +362,7 @@ def follow_references__(iobject_pks,
                 node_dict['iobject_type_family'] = node_info.iobject_type.iobject_family.name
                 graph.add_node(node_info.pk,node_dict)
 
-    print("Graph-Nodes-Count:")
-    print(len(graph.nodes()))
-    print("Graph-Edges-Count:")
-    print(len(graph.edges()))
-    #print("Graph-Edges:")
-    for e in graph.edge.iteritems():
-        pass
-        #print(e)
     return graph
-
 
 
 

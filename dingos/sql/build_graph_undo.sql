@@ -1,1 +1,0 @@
-DROP FUNCTION build_graph(int[], text, int)

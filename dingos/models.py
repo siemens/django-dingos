@@ -2112,21 +2112,6 @@ FROM
  (dingos_nodeid.id = dingos_infoobject2fact.node_id_id)
 """
 
-class QueryResultTable(DingoModel):
-    timestamp = models.DateTimeField()
-    token = models.SlugField(max_length=64)
-    iobject = models.ForeignKey(InfoObject,
-                                related_name='query_result_set'
-                                )
-    key = models.CharField(max_length=128,
-                           blank = True)
-    value = models.CharField(max_length=2048,
-                             blank=True)
-    related_iobject = models.ForeignKey(InfoObject,
-                                        related_name="+",
-                                        null=True
-                                        )
-
 def get_or_create_iobject(identifier_uid,
                           identifier_namespace_uri,
                           iobject_type_name,
