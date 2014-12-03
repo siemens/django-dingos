@@ -339,5 +339,13 @@ DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
                                                               'description':        'Follow references down.',
                                                               'traversal_args':     {'direction': 'down',
                                                                                      'max_nodes': 150},
-                                                              'postprocessor':      'mantis_stix_importer.graph_postprocessors.standard_postprocessor'
-                                                              }]}]
+                                                              'postprocessor':      'mantis_stix_importer.graph_postprocessors.standard_postprocessor'},
+                                                             {
+                                                                 'mode_key' : 'correlation',
+                                                                 'menu_name' : 'Correlation',
+                                                                 'title' : 'Correlation Graph',
+                                                                 'description' : 'Show correlations with other InfoObjects',
+                                                                 'traversal_args' : {'direction' : 'down',
+                                                                                     'max_nodes' : 0},
+                                                                 'postprocessor' : 'mantis_malte.correlation_postprocessor'}
+                                                             ]}]
