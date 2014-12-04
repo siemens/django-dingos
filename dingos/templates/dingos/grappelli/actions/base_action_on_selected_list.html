@@ -47,7 +47,11 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 </div>
 
   <div class="grp-module">
-      {% block action_form_fields %}show fields of action form here
+      {% block action_form_fields %}
+
+      {# show fields of action form here #}
+
+<!--
     <table class="grp-full-width">
 
 
@@ -63,6 +67,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
         </tbody>
     </table>
+-->
       {% endblock %}
   </div>
     <input type="submit" value="{% block action_form_button_label %}Do it!{% endblock %}" />
