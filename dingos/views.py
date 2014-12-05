@@ -790,18 +790,19 @@ class InfoObjectJSONGraph(BasicJSONView):
 
         if 'postprocessor' in graph_mode:
             postprocessor_path = graph_mode['postprocessor']
-            try:
+
+            if True:
                 postprocessor_module = importlib.import_module(postprocessor_path)
                 postprocessor = getattr(postprocessor_module, "process")
                 graph.graph['root'] = int(iobject_id)
                 graph = postprocessor(graph)
-            except:
-                pass
+            #except:
+            #    pass
 
         if iobject_id:
             res['status'] = True
 
-            if graph.graph['max_nodes_reached']:
+            if graph.graph.get('max_nodes_reached',False):
                 res['msg'] = res['msg'] + " (partial, %s InfoObjects)" % graph_mode['traversal_args'].get('max_nodes','??')
 
             # test-code for showing only objects and their relations

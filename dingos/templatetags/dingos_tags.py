@@ -31,7 +31,7 @@ from dingos.models import BlobStorage
 from dingos.graph_traversal import follow_references
 from dingos.graph_utils import dfs_preorder_nodes
 
-from dingos.models import InfoObject, InfoObject2Fact
+from dingos.models import InfoObject, InfoObject2Fact, IdentifierNameSpace
 from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
 
 
@@ -525,8 +525,6 @@ def show_InfoObjectField(oneObject, field):
 
 @register.simple_tag
 def dict_lookup(dict, key):
-    print dict
-    print key
     return dict.get(key,'ERROR')
 
 
@@ -556,6 +554,11 @@ def highlight_if_equal(v1,v2):
 def reachable_packages(context, current_node):
     view = context["view"]
 
+    try:
+        graph = view.graph
+    except:
+        view.graph = None
+
     # The graph is generated just once per search request
     if not view.graph:
 
@@ -568,6 +571,8 @@ def reachable_packages(context, current_node):
                 pks = [one.pk for one in object_list]
             elif isinstance(object_list[0],InfoObject2Fact):
                 pks = [one.iobject.pk for one in object_list]
+            elif isinstance(object_list[0],int):
+                pks = object_list
             else:
                 pks = []
         view.graph = follow_references(pks, direction= 'up')
@@ -587,11 +592,27 @@ def reachable_packages(context, current_node):
     else:
         return ''
 
-@register.simple_tag
-def show_namespace_image(namespace, height=None, width=None):
+@register.simple_tag(takes_context=True)
+def show_namespace_image(context,namespace, height=None, width=None):
     """
     Returns the the namespace image or the namespace uri if the image does not exist
     """
+
+    if isinstance(namespace,basestring):
+        print namespace
+        view = context['view']
+        try:
+            dummy = view.namespace_map
+        except:
+            namespace_obj = IdentifierNameSpace.objects.get(uri=namespace)
+            view.namespace_map = {namespace:namespace_obj}
+        if namespace in view.namespace_map:
+            namespace = view.namespace_map[namespace]
+        else:
+            namespace_obj = IdentifierNameSpace.objects.get(uri=namespace)
+            view.namespace_map[namespace] = namespace_obj
+            namespace = namespace_obj
+
 
     attributes = []
 
