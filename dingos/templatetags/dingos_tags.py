@@ -585,7 +585,8 @@ def reachable_packages(context, current_node):
             node = view.graph.node[id]
             # TODO: Below is STIX-specific and should be factored out
             # by making the iobject type configurable
-            if "STIX_Package" in node['iobject_type']:
+            #if "STIX_Package" in node['iobject_type']:
+            if "Indicator" in node['iobject_type']:
                 result.append("<a href='%s'>%s</a>" % (node['url'], node['name']))
 
         return ",<br> ".join(result)
@@ -599,7 +600,6 @@ def show_namespace_image(context,namespace, height=None, width=None):
     """
 
     if isinstance(namespace,basestring):
-        print namespace
         view = context['view']
         try:
             dummy = view.namespace_map
