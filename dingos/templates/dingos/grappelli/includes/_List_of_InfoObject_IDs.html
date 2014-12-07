@@ -1,0 +1,8 @@
+{% load dingos_tags %}
+
+{% for node in node_list %}
+<a href="{%url 'url.dingos.view.infoobject' pk=node.0 %}">{% show_namespace_image node.1.identifier_ns height='25' %}:{{ node.1.identifier_uid }}</a>
+    {{ node.1.name }}
+{% if not forloop.last %},<br/>
+{% endif %}
+{% endfor %}

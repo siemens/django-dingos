@@ -550,7 +550,8 @@ def highlight_if_equal(v1,v2):
     else:
         return ""
 
-@register.simple_tag(takes_context=True)
+#@register.simple_tag(takes_context=True)
+@register.inclusion_tag('dingos/%s/includes/_List_of_InfoObject_IDs.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def reachable_packages(context, current_node):
     view = context["view"]
 
@@ -579,19 +580,16 @@ def reachable_packages(context, current_node):
 
     node_ids = list(dfs_preorder_nodes(view.graph, source=current_node))
 
+    resulting_nodes = []
     if view.graph.node:
-        result = []
         for id in node_ids:
             node = view.graph.node[id]
-            # TODO: Below is STIX-specific and should be factored out
-            # by making the iobject type configurable
             #if "STIX_Package" in node['iobject_type']:
             if "Indicator" in node['iobject_type']:
-                result.append("<a href='%s'>%s</a>" % (node['url'], node['name']))
+                resulting_nodes.append((id,node))
+    context['node_list'] =  resulting_nodes
+    return context
 
-        return ",<br> ".join(result)
-    else:
-        return ''
 
 @register.simple_tag(takes_context=True)
 def show_namespace_image(context,namespace, height=None, width=None):
