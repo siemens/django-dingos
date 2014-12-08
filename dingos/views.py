@@ -795,7 +795,7 @@ class InfoObjectJSONGraph(BasicJSONView):
                 postprocessor_module = importlib.import_module(postprocessor_path)
                 postprocessor = getattr(postprocessor_module, "process")
                 graph.graph['root'] = int(iobject_id)
-                graph = postprocessor(graph)
+                graph = postprocessor(graph,**(graph_mode.get('postprocessor_args',{})))
             #except:
             #    pass
 
