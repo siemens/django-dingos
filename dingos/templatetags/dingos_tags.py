@@ -330,7 +330,7 @@ def render_paginator(context,is_counting=True):
 
 @register.filter
 def keyvalue(dict, key):
-    return dict[key]
+    return dict.get(key,None)
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectFactsDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def show_InfoObject(context,
