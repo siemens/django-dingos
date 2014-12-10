@@ -622,3 +622,7 @@ def show_namespace_image(context,namespace, height=None, width=None):
         image_url = settings.MEDIA_URL + str(namespace.image)
         return '<img title="%s" alt="%s" src="%s" style="%s">' % (namespace.uri, namespace.uri, image_url, "".join(attributes))
     return namespace.uri
+
+@register.filter(name='zip')
+def zip_lists(a, b):
+  return zip(a, b)
