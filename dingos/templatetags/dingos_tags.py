@@ -25,7 +25,7 @@ from django.conf import settings
 
 from dingos import DINGOS_TEMPLATE_FAMILY
 from dingos.core import http_helpers
-from dingos.core.utilities import get_from_django_obj
+from dingos.core.utilities import get_from_django_obj,get_dict
 from dingos.models import BlobStorage
 
 from dingos.graph_traversal import follow_references
@@ -527,7 +527,14 @@ def show_InfoObjectField(oneObject, field):
 def dict_lookup(dict, key):
     return dict.get(key,'ERROR')
 
+@register.assignment_tag(takes_context=True)
+def view_dict_lookup(context,dict_name,*keys):
+    view_dict = getattr(context['view'],dict_name)
+    return get_dict(view_dict,*keys)
 
+@register.assignment_tag(takes_context=True)
+def context_dict_lookup(context,dict_name,*keys):
+    return get_dict(context[dict_name],*keys)
 
 @register.assignment_tag(takes_context=True)
 def obj_by_pk(context, *args,**kwargs):
