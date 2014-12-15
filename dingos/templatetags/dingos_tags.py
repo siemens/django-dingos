@@ -584,8 +584,7 @@ def reachable_packages(context, current_node):
     if view.graph.node:
         for id in node_ids:
             node = view.graph.node[id]
-            if node['iobject_type'] in ["STIX_Package","Indicator"]:
-                #if "Indicator" in node['iobject_type']:
+            if node['iobject_type'] in ["STIX_Package"]: # ,"Indicator"]:
                 resulting_nodes.append((id,node))
     context['node_list'] =  resulting_nodes
     return context
