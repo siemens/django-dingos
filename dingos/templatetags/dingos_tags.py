@@ -31,7 +31,7 @@ from dingos.models import BlobStorage
 from dingos.graph_traversal import follow_references
 from dingos.graph_utils import dfs_preorder_nodes
 
-from dingos.models import InfoObject, InfoObject2Fact
+from dingos.models import InfoObject, InfoObject2Fact, IdentifierNameSpace
 from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
 
 
@@ -525,8 +525,6 @@ def show_InfoObjectField(oneObject, field):
 
 @register.simple_tag
 def dict_lookup(dict, key):
-    print dict
-    print key
     return dict.get(key,'ERROR')
 
 
@@ -552,9 +550,15 @@ def highlight_if_equal(v1,v2):
     else:
         return ""
 
-@register.simple_tag(takes_context=True)
+#@register.simple_tag(takes_context=True)
+@register.inclusion_tag('dingos/%s/includes/_List_of_InfoObject_IDs.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def reachable_packages(context, current_node):
     view = context["view"]
+
+    try:
+        graph = view.graph
+    except:
+        view.graph = None
 
     # The graph is generated just once per search request
     if not view.graph:
@@ -568,30 +572,45 @@ def reachable_packages(context, current_node):
                 pks = [one.pk for one in object_list]
             elif isinstance(object_list[0],InfoObject2Fact):
                 pks = [one.iobject.pk for one in object_list]
+            elif isinstance(object_list[0],int):
+                pks = object_list
             else:
                 pks = []
         view.graph = follow_references(pks, direction= 'up')
 
     node_ids = list(dfs_preorder_nodes(view.graph, source=current_node))
 
+    resulting_nodes = []
     if view.graph.node:
-        result = []
         for id in node_ids:
             node = view.graph.node[id]
-            # TODO: Below is STIX-specific and should be factored out
-            # by making the iobject type configurable
-            if "STIX_Package" in node['iobject_type']:
-                result.append("<a href='%s'>%s</a>" % (node['url'], node['name']))
+            if node['iobject_type'] in ["STIX_Package","Indicator"]:
+                #if "Indicator" in node['iobject_type']:
+                resulting_nodes.append((id,node))
+    context['node_list'] =  resulting_nodes
+    return context
 
-        return ",<br> ".join(result)
-    else:
-        return ''
 
-@register.simple_tag
-def show_namespace_image(namespace, height=None, width=None):
+@register.simple_tag(takes_context=True)
+def show_namespace_image(context,namespace, height=None, width=None):
     """
     Returns the the namespace image or the namespace uri if the image does not exist
     """
+
+    if isinstance(namespace,basestring):
+        view = context['view']
+        try:
+            dummy = view.namespace_map
+        except:
+            namespace_obj = IdentifierNameSpace.objects.get(uri=namespace)
+            view.namespace_map = {namespace:namespace_obj}
+        if namespace in view.namespace_map:
+            namespace = view.namespace_map[namespace]
+        else:
+            namespace_obj = IdentifierNameSpace.objects.get(uri=namespace)
+            view.namespace_map[namespace] = namespace_obj
+            namespace = namespace_obj
+
 
     attributes = []
 
@@ -603,3 +622,7 @@ def show_namespace_image(namespace, height=None, width=None):
         image_url = settings.MEDIA_URL + str(namespace.image)
         return '<img title="%s" alt="%s" src="%s" style="%s">' % (namespace.uri, namespace.uri, image_url, "".join(attributes))
     return namespace.uri
+
+@register.filter(name='zip')
+def zip_lists(a, b):
+  return zip(a, b)
