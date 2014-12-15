@@ -21,6 +21,7 @@ from queryparser.placeholder_parser import PlaceholderParser
 
 import re
 from datetime import date, timedelta
+import datetime
 
 from django import forms, http
 from django.contrib import messages
@@ -752,6 +753,18 @@ class BasicCustomQueryView(BasicListView):
 
         return super(BasicListView, self).get(request, *args, **kwargs)
 
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        elif isinstance(obj, datetime.date):
+            return obj.isoformat()
+        else:
+            return super(DateTimeEncoder, self).default(obj)
+
+
+
+
 class BasicJSONView(CommonContextMixin,
                     ViewMethodMixin,
                     LoginRequiredMixin,
@@ -788,7 +801,7 @@ class BasicJSONView(CommonContextMixin,
         if isinstance(returned_obj,basestring):
             json_string = returned_obj
         else:
-            json_string = json.dumps(returned_obj,indent=self.indent)
+            json_string = json.dumps(returned_obj,indent=self.indent,cls=DateTimeEncoder)
 
         return self._get_json_response(json_string)
 

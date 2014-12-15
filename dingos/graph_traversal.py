@@ -174,6 +174,7 @@ def follow_references(iobject_pks,
                                      'fact__value_iobject_id__latest__name', #13
                                      'fact__value_iobject_id__latest__iobject_type__name', #14
                                      'fact__value_iobject_id__latest__iobject_type__iobject_family__name', #15
+                                     'iobject__timestamp' #16
 
 
         ]
@@ -269,6 +270,7 @@ def follow_references(iobject_pks,
                     node_dict['name'] = x[8]
                     node_dict['iobject_type'] = x[9]
                     node_dict['iobject_type_family'] = x[10]
+                    node_dict['timestamp'] = x[16]
 
 
                     graph.add_node(node,**node_dict)
@@ -360,6 +362,7 @@ def follow_references(iobject_pks,
                 node_dict['name'] = node_info.name
                 node_dict['iobject_type'] = node_info.iobject_type.name
                 node_dict['iobject_type_family'] = node_info.iobject_type.iobject_family.name
+                node_dict['timestamp'] = node_info.timestamp
                 graph.add_node(node_info.pk,node_dict)
 
     return graph
