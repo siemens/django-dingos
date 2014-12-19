@@ -64,6 +64,7 @@ class InfoObjectDetails(object):
         #"object_type.namespace": ("Object Type (namespace)", "iobject_type.namespace.uri",['iobject_type__namespace']),
         "object.object_family": ("Object Family", "iobject_family_name",[]),
         "fact.pk": ("Fact PK", "fact_id",[]),
+        "value.pk": ("Value PK", "factvalue_id",[]),
         "object.pk": ("Object PK", "iobject_id",[]),
     }
 
