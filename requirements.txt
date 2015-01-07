@@ -14,7 +14,7 @@ django>=1.5.5
 
 ## Django apps for templates and views used by Dingos
 
-django-grappelli>=2.4.7
+django-grappelli>=2.4.7,<2.6
 django-braces>=1.0.0
 django-filter>=0.7
 
