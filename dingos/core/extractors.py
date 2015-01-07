@@ -235,14 +235,15 @@ class InfoObjectDetails(object):
 
 
     def export(self,*args,**kwargs):
-
-        self.override_columns=kwargs.pop('override_columns',[None])[0]
+        #not working if [0] not commented out
+        self.override_columns=kwargs.pop('override_columns',[None])#[0]
 
         if self.override_columns == 'ALL':
             args = self.allowed_columns.keys()
         elif self.override_columns == 'ALMOST_ALL':
             # exclude expensive columns:
             args = set(self.allowed_columns.keys()) - set(['package_urls','package_names'])
+
 
 
         self.additional_calculations(columns=args)
