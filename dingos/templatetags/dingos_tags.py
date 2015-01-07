@@ -441,6 +441,8 @@ def show_InfoObject(context,
             'link_pk':link_pk}
 
 
+
+
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectRevisionListDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def show_InfoObjectRevisions(iobject):
     return {'object': iobject}
@@ -474,6 +476,16 @@ def show_InfoObjectIDData(iobject, show_hyperlink=False,show_title=False):
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectMarkingsListDisplay.html'% DINGOS_TEMPLATE_FAMILY)
 def show_InfoObjectMarkings(iobject):
     return {'object': iobject}
+
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectMALTECorrelationLink.html'% DINGOS_TEMPLATE_FAMILY)
+def show_InfoObjectCorrelations(iobject):
+    try:
+        from mantis_malte import __version__
+        return {'malte_installed' : True,
+                'correlation_uri' : reverse("url.mantis_malte.view.corr.infoobject",kwargs = {'pk':iobject.pk,
+                                                                                     'assignment_name' : 'default'})}
+    except:
+        return {'malte_installed' : False}
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectAuthoredDataDisplay_vertical.html'% DINGOS_TEMPLATE_FAMILY)
 def show_AuthoringSource(iobject):

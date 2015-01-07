@@ -343,7 +343,7 @@ DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
                                                              {
                                                                  'mode_key' : 'corr_auto',
                                                                  'menu_name' : 'Corr. auto',
-                                                                 'title' : 'Correlation Graph',
+                                                                 'title' : 'Correlation Graph (Auto size)',
                                                                  'description' : 'Show correlations with other InfoObjects',
                                                                  'traversal_args' : {'direction' : 'down',
                                                                                      'max_nodes' : 0},
@@ -354,8 +354,10 @@ DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
                                                                                                                           {
                                                                  'mode_key' : 'corr_small',
                                                                  'menu_name' : 'Corr S',
-                                                                 'title' : 'Correlation Graph',
-                                                                 'description' : 'Show correlations with other InfoObjects',
+                                                                 'title' : 'Correlation Graph (Small)',
+                                                                 'description' : 'Show correlations with other InfoObjects, only displaying '
+                                                                                 'the correlated top-level objects; the correlation is symbolized '
+                                                                                 'with a red edge',
                                                                  'traversal_args' : {'direction' : 'down',
                                                                                      'max_nodes' : 0},
                                                                  'postprocessor' : 'mantis_malte.correlation_postprocessor',
@@ -365,8 +367,10 @@ DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
                                                                                                                                                                                        {
                                                                  'mode_key' : 'corr_medium',
                                                                  'menu_name' : 'Corr M',
-                                                                 'title' : 'Correlation Graph',
-                                                                 'description' : 'Show correlations with other InfoObjects',
+                                                                 'title' : 'Correlation Graph (Medium)',
+                                                                 'description' : 'Show correlations with other InfoObjects, displaying the '
+                                                                                 'correlated objects (linked with a red edge) that have been found with direct link '
+                                                                                 'to the top level object(s) from which they are reachable.',
                                                                  'traversal_args' : {'direction' : 'down',
                                                                                      'max_nodes' : 0},
                                                                  'postprocessor' : 'mantis_malte.correlation_postprocessor',
@@ -376,8 +380,11 @@ DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
                                                                                                                                                                                                                                                     {
                                                                  'mode_key' : 'corr_large',
                                                                  'menu_name' : 'Corr L',
-                                                                 'title' : 'Correlation Graph',
-                                                                 'description' : 'Show correlations with other InfoObjects',
+                                                                 'title' : 'Correlation Graph (Large)',
+                                                                 'description' : 'Show correlations with other InfoObjects, displaying the '
+                                                                                 'correlated objects that have been found (linked with a red edge) '
+                                                                                 'along with intermediate objects between the corresponding top-level '
+                                                                                 'objects.',
                                                                  'traversal_args' : {'direction' : 'down',
                                                                                      'max_nodes' : 0},
                                                                  'postprocessor' : 'mantis_malte.correlation_postprocessor',
