@@ -356,8 +356,9 @@ def show_InfoObject(context,
 
     #retrieving tags for facts associated with current infoobject
     if not context['fact_tags']:
-        if context['io2fvs']:
-            pks = [k.fact_id for k in context['io2fvs']]
+        io2fvs = context['io2fvs']
+        if io2fvs:
+            pks = [k.fact_id for k in io2fvs]
         else:
             pks = [k.fact_id for k in iobject2facts]
 

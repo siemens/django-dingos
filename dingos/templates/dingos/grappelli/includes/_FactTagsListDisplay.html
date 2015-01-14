@@ -19,12 +19,12 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% load dingos_tags %}
 
 {% if tags|length > 0 or isEditable%}
-<td id="tags" colspan="{% if isEditable %}5{% else %}6{% endif %}">
+<td id="tags_{{ fact | get_key:"fact.pk"}}" colspan="{% if isEditable %}5{% else %}6{% endif %}">
     {% if tags|length > 0 %}
     {% for tag in tags %}
     <span id="{{ tag.name }}" class="tag">{{ tag.name }}
         {% if isEditable %}
-            <a href="#" class="remove_tag_button" data-tag-name="{{ tag.name }}" data-iobject-id="{{ fact | get_key:"fact.pk"}}">X</a>
+            <a href="#" class="remove_tag_button" data-tag-name="{{ tag.name }}">X</a>
         {% endif %}
     </span>
     {% endfor %}
@@ -33,7 +33,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% if isEditable %}
 <td class="middle" colspan="1">
     {{ form.tag }}
-    <input type="button" class="add_tag_button" value="Add" data-object="{{ fact | get_key:"fact.pk"}}" />
 </td>
 {% endif %}
 {% endif %}

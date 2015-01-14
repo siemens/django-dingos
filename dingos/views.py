@@ -34,7 +34,7 @@ from provider.oauth2.models import Client
 
 from braces.views import SuperuserRequiredMixin
 
-from dingos.models import InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact, Fact
+from dingos.models import InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact, Fact, dingos_class_map
 from dingos.view_classes import BasicJSONView, POSTPROCESSOR_REGISTRY
 
 import csv
@@ -1036,3 +1036,41 @@ class OAuthInfo(BasicTemplateView):
 
             self.formset = self.form_class(initial=initial)
         return super(BasicTemplateView, self).get(request, *args, **kwargs)
+
+class TaggingJSONView(BasicJSONView):
+    def returned_obj(self):
+        POST = self.request.POST.copy()
+        ACTIONS = ['add', 'remove']
+        action = POST.get('action','')
+        res = {}
+        if action in ACTIONS:
+            obj_pks = request.POST.get('objects')
+            #TODO get type (e.g. infoobject or fact)
+            type = 'InfoObject'
+            model = dingos_class_map.get(type,None)
+            if model:
+                objects = model.objects.get(pk__in=obj_pks)
+            if action == 'add':
+                #
+            elif action == 'remove':
+        return res
+
+
+
+        def post(self, request, *args, **kwargs):
+
+
+
+        object = InfoObject.objects.get(pk=obj_id)
+
+        if action == 'add':
+            tag_name = request.POST.get('tag')
+            assert tag_name != '', "tag is not allowed to be a empty string"
+            tag_obj, created = Tag.objects.get_or_create(name=tag_name)
+            object.tags.add(tag_name)
+            return HttpResponse(json.dumps({'name': tag_obj.name, 'id' : tag_obj.id}), content_type="application/json")
+
+        elif action == 'remove':
+            tag_name = request.POST.get('tag')
+            object.tags.remove(tag_name)
+            return HttpResponse()

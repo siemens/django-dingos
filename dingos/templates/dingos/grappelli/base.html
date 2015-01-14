@@ -40,47 +40,52 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
   <script src="{% static 'dingos/js/django-dingos.js' %}"></script>
   <script type="text/javascript" charset="utf-8">
 (function($) {
-    function add_removeHandler() {
-        $('.remove_tag_button').click(function (event) {
+    function add_removeHandler(){
+        $('.remove_tag_button').each(function(){
+          $(this).click(function (event) {
             var tag_name = $(event.target).data('tag-name');
-            var obj_id = $(event.target).data('iobject-id');
+            var obj_id = $(event.target).closest('tr').data('obj-id');
             $.post("", { action: "remove", tag: tag_name, object : obj_id});
-            if((obj_id != null) && ($(event.target).parent().siblings().length == 0))
-            {
-                $(event.target).parent().parent().remove();
+            if(obj_id != null){
+              $(event.target).parent().remove();
             }
-            else
-            {
-                $(event.target).parent().remove();
-            }
+        });
         });
     }
 
     $(document).ready(function () {
+        //register removeHandler for all tags
         add_removeHandler();
-        $('.add_tag_button').click(function (event) {
-            var tag_name = $(event.target).parent().children("input#id_tag").val();
-            if(tag_name != "" && $(event.target).parent().siblings("#tags").children("span#" + tag_name).length == 0) {
-                var obj_id = $(event.target).data('object');
-                $.ajax({
-                    url: "",
-                    type: "POST",
-                    data: { action: "add", tag: tag_name, object: obj_id} ,
-                    dataType: "json",
-                    success: function (resp) {
-                        var tag = '<span id="' + resp.name + '" class="tag">' + resp.name + '<a href="#" class="remove_tag_button" data-tag-name="' + resp.name + '"> X</a></span>';
-                        if($('table#result_list').length) {
-                            $(event.target).parent().siblings("#tags").append(tag);
-                        }
-                        else {
-                            $('td#tags').append(tag);
-                        }
 
-                        add_removeHandler();
-                    }
-                });
+        //bind keypress event to all tag input fields
+        $('input#id_tag').each(function(){
+          $(this).keypress(function(event){
+            if(event.isDefaultPrevented()){
+              return;
             }
-        });
+            //TODO check if event.key is supported by all browsers
+            //https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
+            //ASCII 13 --> Carriage Return
+            if(event.keyCode === 13){
+              var tag_name = $(event.target).val();
+              var obj_id = $(event.target).closest('tr').data('obj-id');
+              var tag_container = $('td#tags_' + obj_id);
+              if(tag_name != "" && tag_container.children("span#" + tag_name).length == 0) {
+                  $.ajax({
+                      url: "",
+                      type: "POST",
+                      data: { action: "add", tag: tag_name, object: obj_id} ,
+                      dataType: "json",
+                      success: function (resp) {
+                          var tag = '<span id="' + resp.name + '" class="tag">' + resp.name + '<a href="#" class="remove_tag_button" data-tag-name="' + resp.name + '"> X</a></span>';
+                          tag_container.append(tag);
+                          add_removeHandler();
+                      }
+                  });
+              }
+              event.preventDefault();
+            }});
+          });
     });
 })(django.jQuery);
   </script>

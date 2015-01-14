@@ -23,7 +23,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
         <tbody>
             <tr>
                 <th class="nowrap w-1 middle">Tags</th>
-                <td id="tags">
+                <td id="tags_{{ object.id }}">
                     {% for tag in tags %}
                     <span id="{{ tag.name }}" class="tag">{{ tag.name }}
                         <a href="#" class="remove_tag_button" data-tag-name="{{ tag.name }}">X</a>
@@ -31,15 +31,11 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     {% endfor %}
                 </td>
             </tr>
-            <tr>
+            <tr data-obj-id="{{ object.id }}">
                 <th class="nowrap w-1 middle">Add tags: </th>
                 <td>
-                    <form id="tagform_add" method="post">
                     {% csrf_token %}
                     {{ form.tag }}
-                    <input type="hidden" name="action" value="add" />
-                    <input type="button" class="add_tag_button" value="Add" />
-                    </form>
                 </td>
             </tr>
         </tbody>
