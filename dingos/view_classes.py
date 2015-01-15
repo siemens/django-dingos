@@ -1293,6 +1293,57 @@ class SimpleMarkingAdditionView(BasicListActionView):
                 return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
 
+
+def processTagging(action,obj_pks,type,tags):
+    print "processTagging called"
+    print action
+    print obj_pks
+    print type
+    print tags
+
+    # generic function for adding single or multiple tags to single or multiple objects of the same type.
+
+    res = {}
+    ACTIONS = ['add', 'remove']
+    if action in ACTIONS:
+        model = dingos_class_map.get(type,None)
+        if model:
+            objects = model.objects.filter(pk__in=obj_pks)
+        if tags:
+            if not isinstance(tags,list):
+                tags = [tags]
+            if action == 'add':
+                if isinstance(tags[0],str) or isinstance(tags[0],unicode):
+                    for object in objects:
+                        object.tags.add(*tags)
+                        #TODO multiple values?
+                        if len(tags) == 1 and len(obj_pks) == 1:
+                            res['name'] = tags[0]
+                            res['id'] = object.pk
+
+                elif isinstance(tags[0],int):
+                    tags = Tag.objects.filter(id__in=tags).values_list('name',flat=True)
+                    for object in objects:
+                        object.tags.add(*tags)
+                    res['success'] = True
+                    #TODO what should be passed in res, e.g. TaggingActionView
+                return res
+
+            elif action == 'remove':
+                if isinstance(tags[0],str) or isinstance(tags[0],unicode):
+                    for object in objects:
+                        object.tags.remove(*tags)
+                        #TODO success?
+
+                elif isinstance(tags[0],int):
+                    tags = Tag.objects.filter(id__in=tags).values_list('name',flat=True)
+                    for object in objects:
+                        object.tags.remove(*tags)
+                    res['success'] = True
+                    #TODO what should be passed in res, e.g. TaggingActionView
+                return res
+
+
 class TaggingAdditionView(BasicListActionView):
 
     # Override the following parameters in views inheriting from this view.
@@ -1307,45 +1358,13 @@ class TaggingAdditionView(BasicListActionView):
 
     #select tag objects
     tagging_queryset = Tag.objects.all()
-    tagging_query = None
 
-    max_tag_choices=20
     allow_multiple_tags=True
     form_class = TaggingAdditionForm
 
-    #action to perform
-    #{'action_predicate': <function taking form_data and object to be acted upon,
-    #                       returning True or False
-    #                       whether action is to be carried out on the given object>,
-    #  'action_function': <function taking cleaned form data and object to be acted upon
-    #                      Should return
-    #                         (True, 'Success message')
-    #                      for successful execution or
-    #                         (False, 'Error message')
-    #                      for problem in executing action
-
     action_list = []
-
-    @staticmethod
-    def action_add_tag(tag, iobject):
-        iobject.tags.add(tag)
-        return (True, 'Success message')
-
-    @staticmethod
-    def action_remove_tag(tag, iobject):
-        iobject.tags.remove(tag)
-        return (True, 'Success message')
-
-    action_list.append({'action_predicate': lambda x,y,action: action == 'Add tag(s)',
-                        'action_function': action_add_tag.__func__,
-                        })
-
-    action_list.append({'action_predicate': lambda x,y,action: action == 'Remove tag(s)',
-                        'action_function': action_remove_tag.__func__,
-                        })
-
-    def tagged_obj_name_function(self,x):
-        return x.name
+    action_list.append({'action_predicate': lambda x : True,
+                        'action_function': processTagging})
 
     @property
     def m_queryset(self):
@@ -1354,15 +1373,13 @@ class TaggingAdditionView(BasicListActionView):
         or created from self.tagging_query
         """
         if self.tagging_queryset:
-            return self.tagging_queryset.values_list('pk','name')[0:self.max_tag_choices]
-        #TODO else branch
+            return self.tagging_queryset.values_list('pk','name')
 
     def post(self, request, *args, **kwargs):
         type = request.POST.get('type', None)
         model_class = dingos_class_map[type]
         self.action_model_query = model_class.objects.all()
         self.type = type
-
 
         if 'action_objects' in self.request.POST:
             self.facts = [int(x) for x in self.request.POST.getlist('action_objects')]
@@ -1382,48 +1399,26 @@ class TaggingAdditionView(BasicListActionView):
             # React on a valid form
             if self.form.is_valid():
                 form_data = self.form.cleaned_data
+            found_action = False
+            for action in self.action_list:
+                if found_action:
+                    break
+                action_predicate = action['action_predicate']
+                action_function = action['action_function']
 
-                content_type = ContentType.objects.get_for_model(self.action_model_query.model)
+                if action_predicate(True):
+                    found_action = True
 
-                if isinstance(form_data['tag_to_add'],list):
-                    tag_to_add = form_data['tag_to_add']
-                else:
-                    tag_to_add = [form_data['tag_to_add']]
-
-                for tag_pk in tag_to_add:
-
-                    # Read out object with which tag is to be carried out
-                    tag_obj = Tag.objects.get(pk=tag_pk)
-
-                    # Create the tags
-
-                    for obj_pk in form_data['checked_objects']:
-
-                        obj_to_be_tagged = model_class.objects.get(pk=obj_pk)
-
-                        found_action = False
-                        for action in self.action_list:
-                            if found_action:
-                                break
-                            action_predicate = action['action_predicate']
-                            action_function = action['action_function']
-                            mark_after_failure = action.get('tag_after_failure',False)
-                            action_for_existing_marking = action.get('action_for_existing_tagging',False)
-
-                            if action_predicate(tag_obj, obj_to_be_tagged, request.POST['action']):
-                                found_action = True
-                                #TODO skipping ignored
-
-                                if self.debug_action:
-                                    (success,action_msg) = (True,"DEBUG: Action has not been carried out")
-                                else:
-                                    (success,action_msg) = action_function(tag_obj,obj_to_be_tagged)
-
-                        if not found_action:
-                            message = """%s could not be tagged: %s.""" % (self.tagged_obj_name_function(obj_to_be_tagged),
-                                                                           self.no_action_error_message)
-                            messages.error(self.request,message)
-
+                    if self.debug_action:
+                        (success,action_msg) = (True,"DEBUG: Action has not been carried out")
+                    else:
+                        action = request.POST['action'].split(" ")[0].lower()
+                        type = request.POST['type']
+                        res = action_function(action,form_data['checked_objects'],type,[int(x) for x in form_data['tag_to_add']])
+                        #TODO handle res(ult) and exceptions/error logging
+            if not found_action:
+                message = self.no_action_error_message
+                messages.error(self.request,message)
 
                 #Clear checkboxes by emptying the corresponding parameter in the form data and
                 #recreating the form object from this data
@@ -1432,7 +1427,6 @@ class TaggingAdditionView(BasicListActionView):
                 self._set_post_form(form_data,
                                     tags = self.m_queryset,
                                     allow_multiple_tags= self.allow_multiple_tags)
-
 
                 return super(TaggingAdditionView,self).get(request, *args, **kwargs)
             return super(TaggingAdditionView,self).get(request, *args, **kwargs)

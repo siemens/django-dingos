@@ -58,7 +58,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                             <td>{{ value }}</td>
                         {% endfor %}
                         </tr>
-                        <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+                        <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}" data-obj-id="{{ fact | get_key:"fact.pk"}}" data-obj-type="Fact">
                             {% show_FactTagsListDisplay fact True %}
                         </tr>
                     {% endfor %}
@@ -71,7 +71,5 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             {% endif %}
         </div>
   {%  endif %}
-
-
-
+{% include 'autocomplete_light/static.html' %}
 {% endblock %}

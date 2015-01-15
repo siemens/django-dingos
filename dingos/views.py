@@ -51,7 +51,7 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_INFOOBJECT_GRAPH_TYPES
 
 from braces.views import LoginRequiredMixin
-from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView, BasicCustomQueryView
+from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView, BasicCustomQueryView, processTagging
 from queryparser.queryparser import QueryParser
 from queryparser.querylexer import QueryLexerException
 from queryparser.querytree import FilterCollection, QueryParserException
@@ -101,6 +101,7 @@ class InfoObjectList(BasicFilterView):
             'identifier').order_by('-latest_of__pk')
         return queryset
 
+    #TODO refactor: delete if JSONView working
     def post(self, request, *args, **kwargs):
         ACTIONS = ['add', 'remove']
         action = request.POST.get('action')
@@ -374,6 +375,7 @@ class InfoObjectView_wo_login(BasicDetailView):
 
         return context
 
+    #TODO refactor: delete if JSONView working
     def post(self, request, *args, **kwargs):
         object = self.get_object()
         ACTIONS = ['add', 'remove']
@@ -1038,39 +1040,13 @@ class OAuthInfo(BasicTemplateView):
         return super(BasicTemplateView, self).get(request, *args, **kwargs)
 
 class TaggingJSONView(BasicJSONView):
+    @property
     def returned_obj(self):
-        POST = self.request.POST.copy()
-        ACTIONS = ['add', 'remove']
-        action = POST.get('action','')
-        res = {}
-        if action in ACTIONS:
-            obj_pks = request.POST.get('objects')
-            #TODO get type (e.g. infoobject or fact)
-            type = 'InfoObject'
-            model = dingos_class_map.get(type,None)
-            if model:
-                objects = model.objects.get(pk__in=obj_pks)
-            if action == 'add':
-                #
-            elif action == 'remove':
-        return res
-
-
-
-        def post(self, request, *args, **kwargs):
-
-
-
-        object = InfoObject.objects.get(pk=obj_id)
-
-        if action == 'add':
-            tag_name = request.POST.get('tag')
-            assert tag_name != '', "tag is not allowed to be a empty string"
-            tag_obj, created = Tag.objects.get_or_create(name=tag_name)
-            object.tags.add(tag_name)
-            return HttpResponse(json.dumps({'name': tag_obj.name, 'id' : tag_obj.id}), content_type="application/json")
-
-        elif action == 'remove':
-            tag_name = request.POST.get('tag')
-            object.tags.remove(tag_name)
-            return HttpResponse()
+        if self.request.is_ajax() and self.request.method == 'POST':
+            data = json.loads(self.request.body)
+            action = self.kwargs.get('action','')
+            obj_pks = data.get('objects',[])
+            type = data.get('type','')
+            tag_name = data.get('tag','')
+            if action and obj_pks and type and tag_name:
+                return processTagging(action,obj_pks,type,tag_name)
