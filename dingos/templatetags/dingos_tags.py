@@ -356,8 +356,9 @@ def show_InfoObject(context,
 
     #retrieving tags for facts associated with current infoobject
     if not context['fact_tags']:
-        if context['io2fvs']:
-            pks = [k.fact_id for k in context['io2fvs']]
+        io2fvs = context['io2fvs']
+        if io2fvs:
+            pks = [k.fact_id for k in io2fvs]
         else:
             pks = [k.fact_id for k in iobject2facts]
 
@@ -370,8 +371,6 @@ def show_InfoObject(context,
                 fact_tags[fact_pk].append(item.tag)
 
         context['fact_tags'] = fact_tags
-
-        print fact_tags
     else:
         fact_tags = context['fact_tags']
 
@@ -556,15 +555,9 @@ def show_InfoObjectField(oneObject, field):
     else:
         return result
 
-
-
 @register.simple_tag
 def dict_lookup(dict, key):
-    print dict
-    print key
     return dict.get(key,'ERROR')
-
-
 
 @register.assignment_tag(takes_context=True)
 def obj_by_pk(context, *args,**kwargs):
@@ -682,8 +675,6 @@ def show_FactTagsListDisplay(context, fact, isEditable = False):
     if isinstance(fact, Fact):
         if not context['tags_queryset']:
             pks = context['view'].facts
-            print("#############")
-            print(pks)
             content = ContentType.objects.get_for_model(Fact)
             query = TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag')
             context['tags_queryset'] = list(query)
@@ -700,6 +691,7 @@ def show_FactTagsListDisplay(context, fact, isEditable = False):
     for item in [x for x in context['tags_queryset'] if x.object_id == fact_pk]:
         tags.append(item.tag)
 
+    context['fact_id'] = fact_pk
     context['form'] = TagForm()
     context['tags'] = tags
     context['isEditable'] = isEditable

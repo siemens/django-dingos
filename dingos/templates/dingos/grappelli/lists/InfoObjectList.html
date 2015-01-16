@@ -86,7 +86,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                                 {%reachable_packages obj.pk %}
                             </td>
                         </tr>
-                        <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+                        <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}" data-obj-id="{{ obj.pk }}" data-obj-type="InfoObject">
                             {% show_InfoObjectTagsListDisplay obj True %}
                         </tr>
                     {% endfor %}

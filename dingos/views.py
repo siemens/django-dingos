@@ -34,7 +34,7 @@ from provider.oauth2.models import Client
 
 from braces.views import SuperuserRequiredMixin
 
-from dingos.models import InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact, Fact
+from dingos.models import InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact, Fact, dingos_class_map
 from dingos.view_classes import BasicJSONView, POSTPROCESSOR_REGISTRY
 
 import csv
@@ -51,7 +51,7 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_INFOOBJECT_GRAPH_TYPES
 
 from braces.views import LoginRequiredMixin
-from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView, BasicCustomQueryView
+from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView, BasicCustomQueryView, processTagging
 from queryparser.queryparser import QueryParser
 from queryparser.querylexer import QueryLexerException
 from queryparser.querytree import FilterCollection, QueryParserException
@@ -101,6 +101,7 @@ class InfoObjectList(BasicFilterView):
             'identifier').order_by('-latest_of__pk')
         return queryset
 
+    #TODO refactor: delete if JSONView working
     def post(self, request, *args, **kwargs):
         ACTIONS = ['add', 'remove']
         action = request.POST.get('action')
@@ -374,6 +375,7 @@ class InfoObjectView_wo_login(BasicDetailView):
 
         return context
 
+    #TODO refactor: delete if JSONView working
     def post(self, request, *args, **kwargs):
         object = self.get_object()
         ACTIONS = ['add', 'remove']
@@ -1036,3 +1038,15 @@ class OAuthInfo(BasicTemplateView):
 
             self.formset = self.form_class(initial=initial)
         return super(BasicTemplateView, self).get(request, *args, **kwargs)
+
+class TaggingJSONView(BasicJSONView):
+    @property
+    def returned_obj(self):
+        if self.request.is_ajax() and self.request.method == 'POST':
+            data = json.loads(self.request.body)
+            action = self.kwargs.get('action','')
+            obj_pks = data.get('objects',[])
+            type = data.get('type','')
+            tag_name = data.get('tag','')
+            if action and obj_pks and type and tag_name:
+                return processTagging(action,obj_pks,type,tag_name)

@@ -110,6 +110,11 @@ urlpatterns = patterns('',
     # Autocomplete
     url(r'^autocomplete/', include('autocomplete_light.urls')),
 
+    # Tagging
+    url(r'^tagging/(?P<action>\w*)',
+        views.TaggingJSONView.as_view(),
+        name="url.dingos.tagging"),
+
     # Uncommenting below enables an edit view for InfoObjects
     # that will overwrite an InfoObject without creating an
     # new revision!!!
