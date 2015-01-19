@@ -405,7 +405,9 @@
 
       //bind keypress event to all tag input fields
       $('input#id_tag').each(function(){
-        $(this).keypress(function(event){
+        //keypress isn't fired when new tag is added to autocomplete field
+        //keydown working but could lead to conflict with autocomplete dropdown "enter selection"
+        $(this).keydown(function(event){
           if(event.isDefaultPrevented()){
             return;
           }
