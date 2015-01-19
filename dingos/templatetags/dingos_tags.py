@@ -473,7 +473,7 @@ def show_InfoObjectIDData(iobject, show_hyperlink=False,show_title=False):
             'show_title': show_title}
 
 
-@register.inclusion_tag('dingos/%s/includes/_InfoObjectMarkingsListDisplay.html'% DINGOS_TEMPLATE_FAMILY)
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectMarkingsListDisplayNoCount.html'% DINGOS_TEMPLATE_FAMILY)
 def show_InfoObjectMarkings(iobject):
     return {'object': iobject}
 
