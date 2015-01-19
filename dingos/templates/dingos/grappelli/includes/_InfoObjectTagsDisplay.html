@@ -21,7 +21,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     <table class="grp-full-width">
         <tbody>
-            <tr data-obj-id="{{ object.id }}">
+            <tr data-obj-id="{{ object.id }}" data-obj-type="InfoObject">
                 <th class="nowrap w-1 middle">Tags</th>
                 <td id="tags_{{ object.id }}">
                     {% for tag in tags %}
@@ -31,7 +31,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     {% endfor %}
                 </td>
             </tr>
-            <tr data-obj-id="{{ object.id }}">
+            <tr data-obj-id="{{ object.id }}" data-obj-type="InfoObject">
                 <th class="nowrap w-1 middle">Add tags: </th>
                 <td>
                     {% csrf_token %}
