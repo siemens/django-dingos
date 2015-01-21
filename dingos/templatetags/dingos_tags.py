@@ -22,16 +22,17 @@ from django.utils import html
 from django.utils.html import conditional_escape, strip_tags
 from django.utils.safestring import mark_safe
 from django.conf import settings
+from django.db.models import F
 
 from dingos import DINGOS_TEMPLATE_FAMILY
 from dingos.core import http_helpers
-from dingos.core.utilities import get_from_django_obj
+from dingos.core.utilities import get_from_django_obj,listify
 from dingos.models import BlobStorage
 
 from dingos.graph_traversal import follow_references
 from dingos.graph_utils import dfs_preorder_nodes
 
-from dingos.models import InfoObject, InfoObject2Fact, Fact
+from dingos.models import InfoObject, InfoObject2Fact, Fact, vIO2FValue
 from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
 
 from dingos.forms import TagForm
@@ -256,6 +257,12 @@ def sliceupto(value, upto):
 def get_key(value, arg):
     return value.get(arg, None)
 
+#TODO refactor all dict get filters
+@register.filter
+def get_value(dict, key):
+    if dict:
+        return dict.get(key,None)
+
 @register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_table_ordering(context, index, title):
     """
@@ -354,25 +361,50 @@ def show_InfoObject(context,
     highlight = context['highlight']
     show_NodeID = context['show_NodeID']
 
-    #retrieving tags for facts associated with current infoobject
-    if not context['fact_tags']:
-        io2fvs = context['io2fvs']
+    ######################################################################################################
+
+    tag_dict = context.get('tag_dict',None)
+    if not tag_dict:
+        io2fvs = context.get('io2fvs',None)
         if io2fvs:
-            pks = [k.fact_id for k in io2fvs]
+            iobj_pks = [k.iobject_id for k in io2fvs]
         else:
-            pks = [k.fact_id for k in iobject2facts]
+            iobj_pks = [k.iobject_id for k in iobject2facts]
 
-        content = ContentType.objects.get_for_model(Fact)
-        query = list(TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag'))
-        fact_tags = dict()
-        for fact_pk in pks:
-            fact_tags[fact_pk] = list()
-            for item in [x for x in query if x.object_id == fact_pk]:
-                fact_tags[fact_pk].append(item.tag)
+        #filter(fact__tag_through__isnull=False) workarround to achieve INNER JOIN
+        sel = ['iobject_id','fact_id','fact__tag_through__tag__name']
+        tags_q = list(vIO2FValue.objects.filter(iobject_id__in = iobj_pks).filter(referenced_iobject_identifier_id__isnull=True)\
+            .filter(fact__tag_through__isnull=False).values_list(*sel))
+        tag_map = {}
+        for tag in tags_q:
+            iobj = tag_map.setdefault(tag[0],{})
+            fact = iobj.setdefault(tag[1],[])
+            fact.append(tag[2])
+        context['tag_dict'] = tag_map
 
-        context['fact_tags'] = fact_tags
-    else:
-        fact_tags = context['fact_tags']
+    ##############################################################################################
+
+    # #retrieving tags for facts associated with current infoobject
+    # if not context['fact_tags']:
+    #     io2fvs = context['io2fvs']
+    #     if io2fvs:
+    #         pks = [k.fact_id for k in io2fvs]
+    #     else:
+    #         pks = [k.fact_id for k in iobject2facts]
+    #
+    #     content = ContentType.objects.get_for_model(Fact)
+    #     query = list(TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag'))
+    #     fact_tags = dict()
+    #     for fact_pk in pks:
+    #         fact_tags[fact_pk] = list()
+    #         for item in [x for x in query if x.object_id == fact_pk]:
+    #             fact_tags[fact_pk].append(item.tag)
+    #
+    #     context['fact_tags'] = fact_tags
+    # else:
+    #     fact_tags = context['fact_tags']
+
+    ################################################################################################
 
     def rowspan_map(iobject2facts):
         """
@@ -471,7 +503,7 @@ def show_InfoObject(context,
             'inner_collapsible': inner_collapsible,
             'inner_fold_status': inner_fold_status,
             'link_pk':link_pk,
-            'fact_tags' : fact_tags
+            'tag_dict':context['tag_dict']
             }
 
 
@@ -698,4 +730,17 @@ def show_FactTagsListDisplay(context, fact, isEditable = False):
     return context
 
 
+@register.inclusion_tag('dingos/%s/includes/_TagDisplay.html'% DINGOS_TEMPLATE_FAMILY)
+def show_TagDisplay(tags, obj_id, isEditable = False):
+    context = {}
+    context['tags'] = tags
+    context['isEditable'] = isEditable
+    context['tagged_obj_id'] = obj_id
+    return context
+
+@register.simple_tag()
+def show_addTagInput(obj_id):
+    form = TagForm()
+    form.fields['tag'].widget.attrs.update({'data-obj': obj_id})
+    return form.fields['tag'].widget.render('tag','')
 
