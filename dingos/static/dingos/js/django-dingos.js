@@ -379,8 +379,7 @@
     $('.remove_tag_button').each(function(){
       $(this).click(function (event) {
         var tag_name = $(event.target).data('tag-name');
-        var obj_info = $(event.target).closest('tr');
-        console.log(obj_info);
+        var obj_info = $(event.target).closest('[data-obj-id]');
         var obj_id = obj_info.data('obj-id');
         var obj_type = obj_info.data('obj-type');
         $.ajax({
@@ -405,9 +404,9 @@
 
       //bind keypress event to all tag input fields
       $('input#id_tag').each(function(){
-        //keypress isn't fired when new tag is added to autocomplete field
-        //keydown working but could lead to conflict with autocomplete dropdown "enter selection"
-        $(this).keydown(function(event){
+        //mobile version: show button? search icon?
+        $(this).keypress(function(event){
+          console.log("keypress-input")
           if(event.isDefaultPrevented()){
             return;
           }
@@ -416,10 +415,10 @@
           //ASCII 13 --> Carriage Return
           if(event.keyCode === 13){
             var tag_name = $(event.target).val();
-            var obj_info = $(event.target).closest('tr');
-            var obj_id = obj_info.data('obj-id');
-            var obj_type = obj_info.data('obj-type');
-            var tag_container = $('td#tags_' + obj_id);
+            var obj_id = $(this).data('obj-id');
+            var obj_type = $(this).data('obj-type');
+            var tag_container = $("#tags[data-obj-id='" + obj_id + "']");
+            console.log(tag_container);
             if(tag_name != "" && tag_container.children("span#" + tag_name).length == 0) {
               $.ajax({
                 url: "/mantis/tagging/add",
@@ -429,7 +428,7 @@
                 contentType: 'application/json; charset=UTF-8',
                 dataType: "json",
                 success: function (resp) {
-                  var tag = '<span id="' + resp.name + '" class="tag">' + resp.name + '<a href="#" class="remove_tag_button" data-tag-name="' + resp.name + '"> X</a></span>';
+                  var tag = '<span id="' + resp.name + '" class="tag">' + resp.name + '<a class="remove_tag_button" data-tag-name="' + resp.name + '"> X</a></span>';
                   tag_container.append(tag);
                   add_removeHandler();
                 }
