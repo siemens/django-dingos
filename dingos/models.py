@@ -998,6 +998,7 @@ class InfoObject(DingoModel):
                                          from type and facts flagged as 'naming'.""")
 
     tags = TaggableManager()
+    tag_through = generic.GenericRelation(TaggedItem)
 
     #@property
     #def marking_thru(self):

@@ -65,7 +65,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                         </tr>
                     {% endif %}
 
-                    <tr data-obj-id="{{ k.fact_id }}" data-obj-type="Fact">
+                    <tr>
                     {% if show_NodeID%}
                     <td>{{k.node_id}}</td>
                     {% endif %}
@@ -119,15 +119,13 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     </td>
                     {% endif %}
                     {% with tags=tag_dict|get_value:k.iobject_id|get_value:k.fact_id %}
-                      {% if tags %}
-                        <td class="w-1 nowrap middle">
+                      <td id="tags" class="w-1 nowrap middle" data-obj-id="{{ k.fact_id }}" data-obj-type="Fact">
+                        {% show_addTagInput k.fact_id "Fact" %}
+                        {% if tags %}
                           {% show_TagDisplay tags k.fact_id True %}
-                        </td>
-                      {% endif %}
+                        {% endif %}
+                      </td>
                     {% endwith %}
-                    <td class="w-1 nowrap middle">
-                      {% show_addTagInput k.fact_id %}
-                    </td>
                     </tr>
                 {% endfor %}
             </table>

@@ -1,0 +1,54 @@
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+{% load dingos_tags %}
+
+<div class="grp-module grp-collapse grp-open" style="overflow: visible">
+  <h2 class="grp-collapse-handler">Tagging Data</h2>
+
+  <table class="grp-full-width">
+    <tbody>
+      <tr>
+        <th class="nowrap w-1 middle">Tags</th>
+        <td id="tags" class="middle" data-obj-id="{{ object.id }}" data-obj-type="{{ object|type }}">
+        {% with tags=tag_dict|get_value:object.id %}
+          {% if tags %}
+            {% show_TagDisplay tags object.id isEditable %}
+          {% endif %}
+        {% endwith %}
+        </td>
+      </tr>
+      {% if isEditable %}
+      <tr>
+        <th class="nowrap w-1 middle">Add tags: </th>
+        <td>
+          {% show_addTagInput object.id object|type %}
+        </td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+
+
+
+
+
+
+

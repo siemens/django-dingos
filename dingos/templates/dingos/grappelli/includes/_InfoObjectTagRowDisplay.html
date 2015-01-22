@@ -16,25 +16,19 @@ this program; if not, write to the Free Software Foundation, Inc., 51
 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
-{% if tags|length > 0 or isEditable%}
-<td id="tags_{{ obj.pk }}" colspan="{% if isEditable %}5{% else %}7{% endif %}">
-    {% if tags|length > 0 %}
-    {% for tag in tags %}
-    <span id="{{ tag.name }}" class="tag">{{ tag.name }}
-        {% if isEditable %}
-            <a href="#" class="remove_tag_button" data-tag-name="{{ tag.name }}">X</a>
-        {% endif %}
-    </span>
-    {% endfor %}
-    {% endif %}
-</td>
-{% if isEditable %}
-<td class="middle" colspan="2">
-    {{ form.tag }}
-</td>
-{% endif %}
-{% endif %}
+{% load dingos_tags %}
 
+<td id="tags" class="middle" data-obj-id="{{ object.id }}" data-obj-type="{{ object|type }}" colspan="{{ col_count }}">
+  {% if tags %}
+    {% show_TagDisplay tags object.id isEditable %}
+  {% endif %}
+</td>
+
+{% if isEditable %}
+<td class="w-1 nowrap middle" colspan="1">
+  {% show_addTagInput object.id object|type %}
+</td>
+{% endif %}
 
 
 
