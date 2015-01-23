@@ -37,8 +37,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils.http import urlquote
 
 from taggit.managers import TaggableManager
-
-
+from taggit.models import TaggedItem
 
 import dingos.read_settings
 
@@ -888,6 +887,7 @@ class Fact(DingoModel):
                                                          object rather than the latest revision.""")
 
     tags = TaggableManager()
+    tag_through = generic.GenericRelation(TaggedItem)
 
 
     class Meta:
@@ -998,6 +998,7 @@ class InfoObject(DingoModel):
                                          from type and facts flagged as 'naming'.""")
 
     tags = TaggableManager()
+    tag_through = generic.GenericRelation(TaggedItem)
 
     #@property
     #def marking_thru(self):

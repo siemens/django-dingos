@@ -83,7 +83,6 @@ class InfoObjectList(BasicFilterView):
 
     title = 'List of Info Objects (generic filter)'
 
-
     @property
     def queryset(self):
         queryset = InfoObject.objects.\
@@ -100,30 +99,6 @@ class InfoObjectList(BasicFilterView):
             'iobject_family_revision',
             'identifier').order_by('-latest_of__pk')
         return queryset
-
-    #TODO refactor: delete if JSONView working
-    def post(self, request, *args, **kwargs):
-        ACTIONS = ['add', 'remove']
-        action = request.POST.get('action')
-        if action not in ACTIONS:
-            #TODO Exception
-            return HttpResponseRedirect(request.path)
-
-        obj_id = request.POST.get('object')
-        object = InfoObject.objects.get(pk=obj_id)
-
-        if action == 'add':
-            tag_name = request.POST.get('tag')
-            assert tag_name != '', "tag is not allowed to be a empty string"
-            tag_obj, created = Tag.objects.get_or_create(name=tag_name)
-            object.tags.add(tag_name)
-            return HttpResponse(json.dumps({'name': tag_obj.name, 'id' : tag_obj.id}), content_type="application/json")
-
-        elif action == 'remove':
-            tag_name = request.POST.get('tag')
-            object.tags.remove(tag_name)
-            return HttpResponse()
-
 
 class InfoObjectListIncludingInternals(SuperuserRequiredMixin,InfoObjectList):
 
@@ -182,7 +157,6 @@ class InfoObjectsEmbedded(BasicListView):
         context = super(InfoObjectsEmbedded, self).get_context_data(**kwargs)
         context['iobject'] = self.iobject
         return context
-
 
 class SimpleFactSearch(BasicFilterView):
 
@@ -248,9 +222,6 @@ class UniqueSimpleFactSearch(BasicFilterView):
     def get_reduced_query_string(self):
         return self.get_query_string(remove=['fact__fact_term','fact__fact_values','page'])
 
-
-
-
 class InfoObjectRedirect(RedirectView):
 
     permanent = False
@@ -271,9 +242,6 @@ class InfoObjectRedirect(RedirectView):
             return object_specific_view
         else:
             return 'url.dingos.view.infoobject.standard'
-
-
-
 
 class InfoObjectView_wo_login(BasicDetailView):
     """
@@ -375,38 +343,12 @@ class InfoObjectView_wo_login(BasicDetailView):
 
         return context
 
-    #TODO refactor: delete if JSONView working
-    def post(self, request, *args, **kwargs):
-        object = self.get_object()
-        ACTIONS = ['add', 'remove']
-        action = request.POST.get('action')
-        if action not in ACTIONS:
-            #TODO Exception
-            return HttpResponseRedirect(request.path)
-
-
-        if action == 'add':
-            tag_name = request.POST.get('tag')
-            assert tag_name != '', "tag is not allowed to be a empty string"
-            tag_obj, created = Tag.objects.get_or_create(name=tag_name)
-            object.tags.add(tag_name)
-            return HttpResponse(json.dumps({'name': tag_obj.name, 'id' : tag_obj.id}), content_type="application/json")
-
-        elif action == 'remove':
-            tag_name = request.POST.get('tag')
-            object.tags.remove(tag_name)
-            return HttpResponse()
-
-
-
-
 class InfoObjectView(LoginRequiredMixin,InfoObjectView_wo_login):
     """
     View for viewing an InfoObject.
     """
 
     pass
-
 
 class BasicInfoObjectEditView(LoginRequiredMixin,InfoObjectView_wo_login):
     """
@@ -519,7 +461,6 @@ class UserPrefsView(BasicInfoObjectEditView):
         except KeyError, err:
             pass
         return UserData.get_user_data_iobject(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
-
 
 class CustomSearchesEditView(BasicTemplateView):
     """
@@ -657,7 +598,6 @@ class InfoObjectJSONView(BasicDetailView):
                                  content_type='application/json',
                                  **httpresponse_kwargs)
 
-
 class CustomInfoObjectSearchView(BasicCustomQueryView):
     #list_actions = [ ('Share', 'url.dingos.action_demo', 0),
     #                 ('Do something else', 'url.dingos.action_demo', 0),
@@ -665,8 +605,6 @@ class CustomInfoObjectSearchView(BasicCustomQueryView):
     #                  ]
 
     pass
-
-
 
 class CustomFactSearchView(BasicCustomQueryView):
 
@@ -690,9 +628,6 @@ class CustomFactSearchView(BasicCustomQueryView):
                         'fact__value_iobject_id__latest',
                         'fact__value_iobject_id__latest__iobject_type',
                         'node_id')
-
-
-
 
 class InfoObjectExportsView(BasicTemplateView):
     # When building the graph, we skip references to the kill chain. This is because
@@ -760,34 +695,38 @@ class InfoObjectExportsView(BasicTemplateView):
             response.write(result)
             return response
 
-class InfoObjectExportsViewWithTagging(BasicTemplateView):
+#TODO refactor!
+class InfoObjectExportsViewWithTagging(BasicListView):
+    template_name = 'dingos/%s/lists/ExportFactList.html' % DINGOS_TEMPLATE_FAMILY
+
+    breadcrumbs = (('Test','https://www.google.de'),
+                   ('Test2',None),
+                   ('Test3',None))
+
+    list_actions = [
+                ('Tag', 'url.dingos.action.add_tagging', 0),
+            ]
+
     skip_terms = [
         # We do not want to follow 'Related Object' links and similar
         {'term':'Related','operator':'icontains'},
         ]
 
-    fact_list = []
-
+    #max nodes to discover by graph building (follow references)
     max_objects = None
 
-    list_actions = [
+    fact_ids = []
 
-                ('Tag', 'url.dingos.action.add_tagging', 0),
-
-            ]
-
+    @property
+    def queryset(self):
+        queryset = Fact.objects.filter(id__in=self.fact_ids)
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super(InfoObjectExportsViewWithTagging, self).get_context_data(**kwargs)
-        context['fact_list'] = self.fact_list
-        context['list_actions'] = self.list_actions if hasattr(self, 'list_actions') else []
         return context
 
     def get(self,request,*args,**kwargs):
-        api_test = 'api_call' in request.GET
-
-
-
         iobject_id = self.kwargs.get('pk', None)
 
         graph= follow_references([iobject_id],
@@ -796,18 +735,13 @@ class InfoObjectExportsViewWithTagging(BasicTemplateView):
                                  max_nodes=self.max_objects,
                                  )
 
-
         exporter = self.kwargs.get('exporter', None)
 
-
         if exporter in POSTPROCESSOR_REGISTRY:
-
             postprocessor_class = POSTPROCESSOR_REGISTRY[exporter]
-
             postprocessor = postprocessor_class(graph=graph,
                                                 query_mode='vIO2FValue',
                                                 )
-
 
             if 'columns' in self.request.GET:
                 columns = self.request.GET.get('columns')
@@ -816,51 +750,24 @@ class InfoObjectExportsViewWithTagging(BasicTemplateView):
             else:
                 columns = []
 
-            kwargs = {
-                'format' : 'dict'
-            }
+            kwargs = {'format' : 'dict'}
             kwargs.update(self.request.GET)
             (content_type,result) = postprocessor.export(*columns,**kwargs)
-            print(result)
+            print "---------------------"
+            print result
+            print content_type
+            print "---------------------------------"
 
         else:
-            content_type = None
             result = 'NO EXPORTER %s DEFINED' % exporter
 
-        if api_test:
-            self.api_result = result
-            self.api_result_content_type = content_type
-            self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
-            return super(InfoObjectExportsViewWithTagging, self).get(request, *args, **kwargs)
-        else:
-            self.facts = result
-            self.template_name = 'dingos/%s/lists/ExportFactList.html' % DINGOS_TEMPLATE_FAMILY
-            return super(InfoObjectExportsViewWithTagging, self).get(request, *args, **kwargs)
+        self.result = result
+        self.fact_ids = []
+        for x in result:
+            x['fact.pk'] = int(x['fact.pk'])
+            self.fact_ids.append(x['fact.pk'])
 
-    def post(self, request, *args, **kwargs):
-        ACTIONS = ['remove', 'add']
-        action = request.POST.get('action')
-        if action not in ACTIONS:
-            #TODO Exception
-            return HttpResponseRedirect(request.path)
-
-        obj_id = request.POST.get('object')
-        object = Fact.objects.get(pk=obj_id)
-
-        if action == 'remove':
-            tag_name = request.POST.get('tag')
-            object.tags.remove(tag_name)
-            return HttpResponse()
-
-        if action == 'add':
-            tag_name = request.POST.get('tag')
-            assert tag_name != '', "tag is not allowed to be a empty string"
-            tag_obj, created = Tag.objects.get_or_create(name=tag_name)
-            object.tags.add(tag_name)
-            return HttpResponse(json.dumps({'name': tag_obj.name, 'id' : tag_obj.id}), content_type="application/json")
-
-
-
+        return super(InfoObjectExportsViewWithTagging, self).get(request, *args, **kwargs)
 
 class InfoObjectJSONGraph(BasicJSONView):
     """

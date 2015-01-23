@@ -213,14 +213,14 @@ div.c-2 > .grp-module, div.c-2 .grp-module.grp-changelist-results {
     width: 1px;
 }
 
-form[id^="catform_remove"] {
-    display: inline;
-}
-
 .middle {
     vertical-align: middle;
 }
 
 table {
     width: 100%;
+}
+
+.remove_tag_button {
+    cursor: pointer;
 }

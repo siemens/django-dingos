@@ -33,6 +33,7 @@ from django.utils.http import urlquote_plus
 from django.views.generic import DetailView, ListView, TemplateView, View
 from django.views.generic.base import ContextMixin
 from django_filters.views import FilterView
+from django.http import Http404
 
 from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
 
@@ -126,12 +127,13 @@ class CommonContextMixin(ContextMixin):
 
     object_list_len = None
 
+    tags_dict = None
+
     def get_context_data(self, **kwargs):
 
         context = super(CommonContextMixin, self).get_context_data(**kwargs)
 
         context['title'] = self.title if hasattr(self, 'title') else '[TITLE MISSING]'
-
 
         context['list_actions'] = self.list_actions if hasattr(self, 'list_actions') else []
 
@@ -165,10 +167,8 @@ class CommonContextMixin(ContextMixin):
         context['customization'] = wrapped_settings
         context['saved_searches'] = wrapped_saved_searches
 
-        context['tags_queryset'] = None
-
-
         return context
+
 
 class ViewMethodMixin(object):
     """
@@ -340,6 +340,7 @@ class ViewMethodMixin(object):
                 return o
         return None
 
+
 class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
     """
     Basic class for defining list views: includes the necessary mixins
@@ -363,7 +364,6 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
     def paginate_by(self):
         item_count = self.lookup_customization('dingos','view','pagination','lines',default=20)
         return item_count
-
 
 
 class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,FilterView):
@@ -511,7 +511,6 @@ class BasicTemplateView(CommonContextMixin,
     breadcrumbs = (('Dingo',None),
                    ('View',None),
     )
-
 
 
 class BasicCustomQueryView(BasicListView):
@@ -762,6 +761,7 @@ class BasicCustomQueryView(BasicListView):
 
         return super(BasicListView, self).get(request, *args, **kwargs)
 
+
 class BasicJSONView(CommonContextMixin,
                     ViewMethodMixin,
                     LoginRequiredMixin,
@@ -808,8 +808,6 @@ class BasicJSONView(CommonContextMixin,
                                   **httpresponse_kwargs)
 
 
-from django.http import Http404
-
 class BasicXMLView(CommonContextMixin,
                     ViewMethodMixin,
                     LoginRequiredMixin,
@@ -829,7 +827,6 @@ class BasicXMLView(CommonContextMixin,
                                      content_type='application/xml')
 
 
-
 class BasicView(CommonContextMixin,
                 ViewMethodMixin,
                 LoginRequiredMixin,
@@ -841,7 +838,6 @@ class BasicView(CommonContextMixin,
 
     def render_to_response(self, context):
         raise NotImplementedError("No render_to_response method implemented!")
-
 
 
 class BasicListActionView(BasicListView):
@@ -1307,9 +1303,8 @@ def processTagging(action,obj_pks,type,tags):
     ACTIONS = ['add', 'remove']
     if action in ACTIONS:
         model = dingos_class_map.get(type,None)
-        if model:
+        if model and tags:
             objects = model.objects.filter(pk__in=obj_pks)
-        if tags:
             if not isinstance(tags,list):
                 tags = [tags]
             if action == 'add':
@@ -1342,7 +1337,6 @@ def processTagging(action,obj_pks,type,tags):
                     res['success'] = True
                     #TODO what should be passed in res, e.g. TaggingActionView
                 return res
-
 
 class TaggingAdditionView(BasicListActionView):
 
