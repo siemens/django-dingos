@@ -361,50 +361,23 @@ def show_InfoObject(context,
     highlight = context['highlight']
     show_NodeID = context['show_NodeID']
 
-    ######################################################################################################
-
     tag_dict = context.get('tag_dict',None)
     if not tag_dict:
         io2fvs = context.get('io2fvs',None)
         if io2fvs:
-            iobj_pks = [k.iobject_id for k in io2fvs]
+            iobj_pks = set([k.iobject_id for k in io2fvs if k.referenced_iobject_identifier_id == None])
         else:
-            iobj_pks = [k.iobject_id for k in iobject2facts]
+            iobj_pks = set([k.iobject_id for k in iobject2facts if k.fact.value_iobject_id == None])
 
         #filter(fact__tag_through__isnull=False) workarround to achieve INNER JOIN
         sel = ['iobject_id','fact_id','fact__tag_through__tag__name']
-        tags_q = list(vIO2FValue.objects.filter(iobject_id__in = iobj_pks).filter(referenced_iobject_identifier_id__isnull=True)\
-            .filter(fact__tag_through__isnull=False).values_list(*sel))
+        tags_q = list(vIO2FValue.objects.filter(iobject_id__in = iobj_pks).filter(fact__tag_through__isnull=False).values_list(*sel))
         tag_map = {}
         for tag in tags_q:
             iobj = tag_map.setdefault(tag[0],{})
             fact = iobj.setdefault(tag[1],[])
             fact.append(tag[2])
         context['tag_dict'] = tag_map
-
-    ##############################################################################################
-
-    # #retrieving tags for facts associated with current infoobject
-    # if not context['fact_tags']:
-    #     io2fvs = context['io2fvs']
-    #     if io2fvs:
-    #         pks = [k.fact_id for k in io2fvs]
-    #     else:
-    #         pks = [k.fact_id for k in iobject2facts]
-    #
-    #     content = ContentType.objects.get_for_model(Fact)
-    #     query = list(TaggedItem.objects.filter(content_type_id = content.id).filter(object_id__in = pks).select_related('tag'))
-    #     fact_tags = dict()
-    #     for fact_pk in pks:
-    #         fact_tags[fact_pk] = list()
-    #         for item in [x for x in query if x.object_id == fact_pk]:
-    #             fact_tags[fact_pk].append(item.tag)
-    #
-    #     context['fact_tags'] = fact_tags
-    # else:
-    #     fact_tags = context['fact_tags']
-
-    ################################################################################################
 
     def rowspan_map(iobject2facts):
         """
@@ -682,7 +655,7 @@ def getTags(objects):
     objects = listify(objects)
     model = type(objects[0])
     sel = ['id','tag_through__tag__name']
-    tags_q = model.objects.filter(id__in = [x.id for x in objects]).filter(tag_through__isnull=False).values_list(*sel)
+    tags_q = model.objects.filter(id__in = set([x.id for x in objects])).filter(tag_through__isnull=False).values_list(*sel)
 
     tag_map = {}
     for tag in tags_q:
