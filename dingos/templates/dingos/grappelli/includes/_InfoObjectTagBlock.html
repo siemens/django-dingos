@@ -26,7 +26,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
       <tr>
         <th class="nowrap w-1 middle">Tags</th>
         <td id="tags" class="middle" data-obj-id="{{ object.id }}" data-obj-type="{{ object|type }}">
-        {% with tags=tag_dict|get_value:object.id %}
+        {% with tags=tag_dict|get_value:object.id|get_value:'tags' %}
           {% if tags %}
             {% show_TagDisplay tags object.id isEditable %}
           {% endif %}
