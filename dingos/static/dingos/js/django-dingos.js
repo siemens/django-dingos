@@ -398,45 +398,48 @@
     });
     }
 
+    function add_tag(event){
+      var tag_name = $(event.target).val();
+      var obj_id = $(event.target).data('obj-id');
+      var obj_type = $(event.target).data('obj-type');
+      var tag_container = $("#tags[data-obj-id='" + obj_id + "']");
+      if(tag_name != "" && tag_container.children("span#" + tag_name).length == 0) {
+        $.ajax({
+          url: "/mantis/tagging/add",
+          type: "POST",
+          data: JSON.stringify({ tag: tag_name, objects: [obj_id], type: obj_type}) ,
+          processData: false,
+          contentType: 'application/json; charset=UTF-8',
+          dataType: "json",
+          success: function (resp) {
+            var tag = '<span id="' + resp.name + '" class="tag">' + resp.name + '<a class="remove_tag_button" data-tag-name="' + resp.name + '"> X</a></span>';
+            tag_container.append(tag);
+            add_removeHandler();
+          }
+        });
+      }
+      $(event.target).val('');
+    }
+
     $(document).ready(function () {
       //register removeHandler for all tags
       add_removeHandler();
 
-      //bind keypress event to all tag input fields
+      //add new tag on return (ASCII 13 --> Carriage Return) on input field
       $('input#id_tag').each(function(){
-        //mobile version: show button? search icon?
         $(this).keypress(function(event){
-          console.log("keypress-input")
           if(event.isDefaultPrevented()){
             return;
           }
-          //TODO check if event.keyCode is supported by all browsers
-          //https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
-          //ASCII 13 --> Carriage Return
           if(event.keyCode === 13){
-            var tag_name = $(event.target).val();
-            var obj_id = $(this).data('obj-id');
-            var obj_type = $(this).data('obj-type');
-            var tag_container = $("#tags[data-obj-id='" + obj_id + "']");
-            console.log(tag_container);
-            if(tag_name != "" && tag_container.children("span#" + tag_name).length == 0) {
-              $.ajax({
-                url: "/mantis/tagging/add",
-                type: "POST",
-                data: JSON.stringify({ tag: tag_name, objects: [obj_id], type: obj_type}) ,
-                processData: false,
-                contentType: 'application/json; charset=UTF-8',
-                dataType: "json",
-                success: function (resp) {
-                  var tag = '<span id="' + resp.name + '" class="tag">' + resp.name + '<a class="remove_tag_button" data-tag-name="' + resp.name + '"> X</a></span>';
-                  tag_container.append(tag);
-                  add_removeHandler();
-                }
-              });
-            }
+            add_tag(event);
             event.preventDefault();
           }});
         });
+      //if tag is selected via autocomplete (return or mouse click), add it immediately
+      $(document).bind('selectChoice', function(e, choice, autocomplete) {
+        add_tag(e);
+      });
     });
 
 

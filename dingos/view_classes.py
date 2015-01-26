@@ -1291,12 +1291,6 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
 
 def processTagging(action,obj_pks,type,tags):
-    print "processTagging called"
-    print action
-    print obj_pks
-    print type
-    print tags
-
     # generic function for adding single or multiple tags to single or multiple objects of the same type.
 
     res = {}

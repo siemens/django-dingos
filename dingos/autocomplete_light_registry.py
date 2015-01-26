@@ -8,7 +8,7 @@ class TagAutocomplete(autocomplete_light.AutocompleteModelBase):
 
     attrs={
         'placeholder': 'Type in tag here..',
-        'data-autocomplete-minimum-characters' : 2,
+        'data-autocomplete-minimum-characters' : 2
         }
 
 autocomplete_light.register(TagAutocomplete)
