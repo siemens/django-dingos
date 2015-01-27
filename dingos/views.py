@@ -382,7 +382,7 @@ class InfoObjectView_wo_login(BasicDetailView):
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
         context['iobject2facts'] = self.iobject2facts
 
-        if self.__class__ == type(InfoObjectView):
+        if self.__class__ == InfoObjectView:
             context['tag_dict'] = getTags(self.object,complex=True)
 
         context['io2fvs'] = None
@@ -798,10 +798,6 @@ class InfoObjectExportsViewWithTagging(BasicListView):
             kwargs = {'format' : 'dict'}
             kwargs.update(self.request.GET)
             (content_type,result) = postprocessor.export(*columns,**kwargs)
-            print "---------------------"
-            print result
-            print content_type
-            print "---------------------------------"
 
         else:
             result = 'NO EXPORTER %s DEFINED' % exporter
@@ -994,11 +990,11 @@ class OAuthInfo(BasicTemplateView):
 class TaggingJSONView(BasicJSONView):
     @property
     def returned_obj(self):
-        if self.request.is_ajax() and self.request.method == 'POST':
+        if self.request.is_ajax() and self.request.method == 'POST' and self.request.user.is_authenticated():
             data = json.loads(self.request.body)
             action = self.kwargs.get('action','')
             obj_pks = data.get('objects',[])
             type = data.get('type','')
             tag_name = data.get('tag','')
             if action and obj_pks and type and tag_name:
-                return processTagging(action,obj_pks,type,tag_name)
+                return processTagging(action,obj_pks,type,tag_name,self.request.user)
