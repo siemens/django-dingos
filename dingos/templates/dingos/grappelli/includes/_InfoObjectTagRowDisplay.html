@@ -18,7 +18,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% load dingos_tags %}
 
-<td id="tags" class="middle" data-obj-id="{{ object.id }}" data-obj-type="{{ object|type }}" colspan="{{ col_count }}">
+<td id="tags" class="middle tag-block" data-obj-id="{{ object.id }}" data-obj-type="{{ object|type }}" colspan="{{ col_count }}">
   {% if tags %}
     {% show_TagDisplay tags object.id isEditable %}
   {% endif %}

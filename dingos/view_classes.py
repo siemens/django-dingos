@@ -50,7 +50,7 @@ from dingos.core.template_helpers import ConfigDictWrapper
 from dingos.core.utilities import get_dict, replace_by_list
 from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm, PlaceholderForm, TaggingAdditionForm
 from dingos.queryparser.placeholder_parser import PlaceholderParser
-from dingos.models import InfoObject, UserData, Marking2X, Fact, dingos_class_map
+from dingos.models import InfoObject, UserData, Marking2X, Fact, dingos_class_map, TaggingHistory
 
 from core.http_helpers import get_query_string
 from taggit.models import Tag
@@ -1290,13 +1290,7 @@ class SimpleMarkingAdditionView(BasicListActionView):
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
 
 
-def processTagging(action,obj_pks,type,tags):
-    print "processTagging called"
-    print action
-    print obj_pks
-    print type
-    print tags
-
+def processTagging(action,obj_pks,type,tags,user):
     # generic function for adding single or multiple tags to single or multiple objects of the same type.
 
     res = {}
@@ -1304,7 +1298,7 @@ def processTagging(action,obj_pks,type,tags):
     if action in ACTIONS:
         model = dingos_class_map.get(type,None)
         if model and tags:
-            objects = model.objects.filter(pk__in=obj_pks)
+            objects = list(model.objects.filter(pk__in=obj_pks))
             if not isinstance(tags,list):
                 tags = [tags]
             if action == 'add':
@@ -1315,6 +1309,7 @@ def processTagging(action,obj_pks,type,tags):
                         if len(tags) == 1 and len(obj_pks) == 1:
                             res['name'] = tags[0]
                             res['id'] = object.pk
+                    TaggingHistory.bulk_create_tagging_history(action,user,tags,objects)
 
                 elif isinstance(tags[0],int):
                     tags = Tag.objects.filter(id__in=tags).values_list('name',flat=True)
@@ -1322,6 +1317,7 @@ def processTagging(action,obj_pks,type,tags):
                         object.tags.add(*tags)
                     res['success'] = True
                     #TODO what should be passed in res, e.g. TaggingActionView
+                    TaggingHistory.bulk_create_tagging_history(action,user,tags,objects)
                 return res
 
             elif action == 'remove':
@@ -1329,6 +1325,7 @@ def processTagging(action,obj_pks,type,tags):
                     for object in objects:
                         object.tags.remove(*tags)
                         #TODO success?
+                    TaggingHistory.bulk_create_tagging_history(action,user,tags,objects)
 
                 elif isinstance(tags[0],int):
                     tags = Tag.objects.filter(id__in=tags).values_list('name',flat=True)
@@ -1336,6 +1333,7 @@ def processTagging(action,obj_pks,type,tags):
                         object.tags.remove(*tags)
                     res['success'] = True
                     #TODO what should be passed in res, e.g. TaggingActionView
+                    TaggingHistory.bulk_create_tagging_history(action,user,tags,objects)
                 return res
 
 class TaggingAdditionView(BasicListActionView):
@@ -1408,7 +1406,7 @@ class TaggingAdditionView(BasicListActionView):
                     else:
                         action = request.POST['action'].split(" ")[0].lower()
                         type = request.POST['type']
-                        res = action_function(action,form_data['checked_objects'],type,[int(x) for x in form_data['tag_to_add']])
+                        res = action_function(action,form_data['checked_objects'],type,[int(x) for x in form_data['tag_to_add']],request.user)
                         #TODO handle res(ult) and exceptions/error logging
             if not found_action:
                 message = self.no_action_error_message

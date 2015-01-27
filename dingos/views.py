@@ -36,6 +36,7 @@ from braces.views import SuperuserRequiredMixin
 
 from dingos.models import InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact, Fact, dingos_class_map
 from dingos.view_classes import BasicJSONView, POSTPROCESSOR_REGISTRY
+from dingos.core.utilities import listify
 
 import csv
 
@@ -62,8 +63,54 @@ from dingos.graph_traversal import follow_references
 
 from dingos.core.utilities import match_regex_list
 
-from taggit.models import Tag
+def getTags(objects,complex=False,model=None):
+    """
+    :param objects: single/multiple objects or object pks
+    :param complex: iobject and fact tags if set to True
+    :param model: type of objects have to be provided if using object pks
+    :return: dict like following:
 
+    { <IObjectPK> ; { 'tags' : [<list of tags on current IObject>],
+                      <FactPK> : [<list of tags on current Fact>],
+                      ...
+                    }
+    }
+    """
+
+    tag_map = {}
+    objects = listify(objects)
+
+    def _simple_q(_objects,model):
+        if not model:
+            model = type(_objects[0])
+        obj_pks = objects if isinstance(objects[0],int) else set([x.id for x in objects])
+        cols = ['id','tag_through__tag__name']
+        tags_q = model.objects.filter(id__in = obj_pks).filter(tag_through__isnull=False).values_list(*cols)
+        return tags_q
+
+    if complex:
+        #filter(fact__tag_through__isnull=False) workarround to achieve INNER JOIN
+        cols = ['iobject_id','fact_id','fact__tag_through__tag__name']
+        iobj_tags_q = list(_simple_q(objects,model=model))
+        iobj_pks = objects if model else set([x.id for x in objects])
+        fact_tags_q = list(vIO2FValue.objects.filter(iobject_id__in = iobj_pks).filter(fact__tag_through__isnull=False).values_list(*cols))
+        tag_map = {}
+        for tag in iobj_tags_q:
+            iobj = tag_map.setdefault(tag[0],{})
+            tags = iobj.setdefault('tags',[])
+            tags.append(tag[1])
+        for tag in fact_tags_q:
+            iobj = tag_map.setdefault(tag[0],{})
+            fact = iobj.setdefault(tag[1],[])
+            fact.append(tag[2])
+
+    else:
+        tags_q = _simple_q(objects,model=model)
+        for tag in tags_q:
+            tag_list = tag_map.setdefault(tag[0],[])
+            tag_list.append(tag[1])
+
+    return tag_map
 
 class InfoObjectList(BasicFilterView):
 
@@ -334,7 +381,10 @@ class InfoObjectView_wo_login(BasicDetailView):
         context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
         context['iobject2facts'] = self.iobject2facts
-        context['fact_tags'] = None
+
+        if self.__class__ == InfoObjectView:
+            context['tag_dict'] = getTags(self.object,complex=True)
+
         context['io2fvs'] = None
         try:
             context['highlight'] = self.request.GET['highlight']
@@ -695,13 +745,8 @@ class InfoObjectExportsView(BasicTemplateView):
             response.write(result)
             return response
 
-#TODO refactor!
 class InfoObjectExportsViewWithTagging(BasicListView):
     template_name = 'dingos/%s/lists/ExportFactList.html' % DINGOS_TEMPLATE_FAMILY
-
-    breadcrumbs = (('Test','https://www.google.de'),
-                   ('Test2',None),
-                   ('Test3',None))
 
     list_actions = [
                 ('Tag', 'url.dingos.action.add_tagging', 0),
@@ -753,10 +798,6 @@ class InfoObjectExportsViewWithTagging(BasicListView):
             kwargs = {'format' : 'dict'}
             kwargs.update(self.request.GET)
             (content_type,result) = postprocessor.export(*columns,**kwargs)
-            print "---------------------"
-            print result
-            print content_type
-            print "---------------------------------"
 
         else:
             result = 'NO EXPORTER %s DEFINED' % exporter
@@ -949,11 +990,11 @@ class OAuthInfo(BasicTemplateView):
 class TaggingJSONView(BasicJSONView):
     @property
     def returned_obj(self):
-        if self.request.is_ajax() and self.request.method == 'POST':
+        if self.request.is_ajax() and self.request.method == 'POST' and self.request.user.is_authenticated():
             data = json.loads(self.request.body)
             action = self.kwargs.get('action','')
             obj_pks = data.get('objects',[])
             type = data.get('type','')
             tag_name = data.get('tag','')
             if action and obj_pks and type and tag_name:
-                return processTagging(action,obj_pks,type,tag_name)
+                return processTagging(action,obj_pks,type,tag_name,self.request.user)

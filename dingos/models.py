@@ -37,7 +37,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils.http import urlquote
 
 from taggit.managers import TaggableManager
-from taggit.models import TaggedItem
+from taggit.models import Tag,TaggedItem
 
 import dingos.read_settings
 
@@ -2389,3 +2389,37 @@ def write_large_value(value,storage_location=dingos.DINGOS_LARGE_VALUE_DESTINATI
         dingos_class_map['BlobStorage'].objects.get_or_create(sha256=value_hash,
                                                               content=value)
     return (value_hash,storage_location)
+
+
+class TaggingHistory(DingoModel):
+    ADD = 0
+    REMOVE = 1
+    ACTIONS = [
+        (ADD,'Added'),
+        (REMOVE,'Removed')
+    ]
+
+    timestamp = models.DateTimeField(auto_now_add=True,primary_key=True)
+    action = models.SmallIntegerField(choices=ACTIONS)
+    user = models.ForeignKey(User,related_name='tagging_history')
+    content_type = models.ForeignKey(ContentType)
+    object_id = models.PositiveIntegerField()
+    tobject = generic.GenericForeignKey('content_type', 'object_id')
+
+    tag = models.ForeignKey(Tag,related_name='tag_history')
+
+    @classmethod
+    def bulk_create_tagging_history(cls,action,user,tags,objects):
+        print "--------------entered bulk_create_tagging_history--------------"
+        print action
+        print user
+        print tags
+        print objects
+        action = getattr(cls,action.upper())
+        if not isinstance(tags[0],Tag):
+            tags = Tag.objects.filter(name__in=tags)
+        TaggingHistory.objects.bulk_create(
+            [TaggingHistory(action=action,user=user,tobject=objects[0],tag=x) for x in tags]
+        )
+
+dingos_class_map["TaggingHistory"] = TaggingHistory
