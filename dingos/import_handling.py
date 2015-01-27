@@ -417,7 +417,7 @@ class DingoImportHandling(object):
         # We collect the read embedded objects in the following list
         embedded_objects = deque()
 
-        def xml_import_(element, depth=0, type_info=None, inherited_id_and_rev_info=None):
+        def xml_import_(element, depth=0, type_info=None, inherited_id_and_rev_info=None,ns_mapping=None):
             """
             Recursive import function
             """
@@ -432,14 +432,44 @@ class DingoImportHandling(object):
                 return None
 
 
-            #try:
-            #    namespace = element.ns()
-            #    ns_mapping[namespace.name]=namespace.content
-            #except:
-            #    pass
+
 
             result = DingoObjDict()
 
+            # XML can carry namespace info (attributes with form 'xmlns:foo') anywhere
+            # inside the document. Therefore, we need to adjust the namespace as we
+            # find these definitions ... and should restore the previous namespace info
+            # when we leave the scope of such an internal namespace definition.
+
+            # The problem here is that we maintain the namespace info in a mutable dictionary
+            # that is passed to the importer function from a calling class, where it is
+            # referenced as 'self.namespace_dict'; the importer also calls functions defined
+            # in that class, that make use of 'self.namespace_dict.
+            #
+            # This means: for things to work, we need to always have the current namespace
+            # info in that dictionary and we may not break the link between ns_mapping
+            # (the passed argument) and the 'self.namespace_dict', i.e., capers like
+            # ns_mapping = ns_mapping.copy() may not occur.
+            #
+            # What we do is: the following: before modifying the namespace, we
+            # copy the contents, and when we leave the function, we update ns_mapping
+            # with these contents. That is not exactly the same as restoring the information,
+            # because additional declarations that were made in a sub element stay
+            # within the namespace dictionary, but there seems to be no harm in that.
+
+
+            ns_mapping_saved = {}
+            try:
+                ns_def = element.nsDefs()
+                if ns_def:
+                    ns_mapping_saved = ns_mapping.copy()
+                    logger.debug("Local namespace found in element %s" % element.name)
+                    while ns_def:
+                        ns_mapping[ns_def.name] = ns_def.content
+                        ns_def = ns_def.next
+
+            except:
+                pass
             # Add properties to result dictionary for this element
 
             if element.properties:
@@ -452,8 +482,6 @@ class DingoImportHandling(object):
                             result["@%s:%s" % (prop.ns().name, prop.name)] = prop.content
                         except:
                             result["@%s" % prop.name] = prop.content
-
-
 
             # see if there is a namespace
 
@@ -632,6 +660,9 @@ class DingoImportHandling(object):
                                 logger.debug(
                                     "Adding XML subtree starting with element %s and type info %s to pending stack." % (
                                     id_and_revision_info, embedded_ns))
+                                # The child will be processed later, so we need to communicate the
+                                # current namespace information:
+                                child.dingos_ns_info = ns_mapping.copy()
                                 _import_pending_stack.append((id_and_revision_info, embedded_ns, child))
                             else:
                                 # For example, in cybox 1.0, the following occurs::
@@ -643,11 +674,15 @@ class DingoImportHandling(object):
                                     "Not adding element %s with type info %s to pending stack because element is empty." % (
                                     id_and_revision_info, embedded_ns))
                         else:
-                            child_import = xml_import_(child, depth + 1, inherited_id_and_rev_info=inherited_id_and_rev_info)
+                            child_import = xml_import_(child, depth + 1,
+                                                       inherited_id_and_rev_info=inherited_id_and_rev_info,
+                                                       ns_mapping = ns_mapping)
                             if child_import:
                                 element_dicts.append(child_import)
                     else:
-                        child_import = xml_import_(child, depth + 1, inherited_id_and_rev_info=inherited_id_and_rev_info)
+                        child_import = xml_import_(child, depth + 1,
+                                                   inherited_id_and_rev_info=inherited_id_and_rev_info,
+                                                   ns_mapping = ns_mapping)
                         if child_import:
                             element_dicts.append(child_import)
 
@@ -710,6 +745,10 @@ class DingoImportHandling(object):
             except:
                 pass
 
+            # Restore the namespace before leaving the function
+
+            ns_mapping.update(ns_mapping_saved)
+
             return transformer(element.name, result)
 
 
@@ -728,20 +767,6 @@ class DingoImportHandling(object):
                 xml_content = content_file.read()
 
 
-
-
-
-
-
-        # Extract namespace information (if any)
-        try:
-            ns_def = root.nsDefs()
-            while ns_def:
-                ns_mapping[ns_def.name] = ns_def.content
-                ns_def = ns_def.next
-        except:
-            pass
-
         # Extract ID and timestamp for root element
 
         main_id_and_rev_info = id_and_revision_extractor(root)
@@ -752,7 +777,7 @@ class DingoImportHandling(object):
         # As side effect, it pushes the XML nodes of
         # found embedded objects onto the pending stack
 
-        (main_elt_name, main_elt_dict) = xml_import_(root, 0)
+        (main_elt_name, main_elt_dict) = xml_import_(root, 0,ns_mapping=ns_mapping)
 
         # We now go through the pending stack.
         # For each found embedded object, xml_import_ pushes
@@ -767,14 +792,29 @@ class DingoImportHandling(object):
         do_not_process_list = []
 
         while _import_pending_stack:
+            saved_namespace_info = {}
             (id_and_revision_info, type_info, elt) = _import_pending_stack.pop()
             if 'defer_processing' in id_and_revision_info:
                 do_not_process_list.append((id_and_revision_info,type_info,elt))
 
             else:
+                try:
+                    # This is a deferred processing, so we need to extract
+                    # what was the namespace information at that time
+                    # from the child.
+                    local_ns_info = elt.dingos_ns_info
+                    saved_namespace_info = ns_mapping.copy()
+                    ns_mapping.update(local_ns_info)
+                except:
+                    pass
+
                 (elt_name, elt_dict) = xml_import_(elt, 0,
                                                    type_info=type_info,
-                                                   inherited_id_and_rev_info=id_and_revision_info.copy())
+                                                   inherited_id_and_rev_info=id_and_revision_info.copy(),
+                                                   ns_mapping=ns_mapping)
+
+                # Restore the namespace info to what it was before
+                ns_mapping.update(saved_namespace_info)
 
                 embedded_objects.append({'id_and_rev_info': id_and_revision_info,
                                              'elt_name': elt_name,
@@ -787,8 +827,6 @@ class DingoImportHandling(object):
                 'unprocessed' : do_not_process_list,
                 'file_content': xml_content}
 
-
-        #pp.pprint(result)
 
         return result
 
