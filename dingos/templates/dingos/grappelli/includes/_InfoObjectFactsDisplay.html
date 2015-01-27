@@ -119,7 +119,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     </td>
                     {% endif %}
                     {% with tags=tag_dict|get_value:k.iobject_id|get_value:k.fact_id %}
-                      <td id="tags" class="w-1 nowrap middle" data-obj-id="{{ k.fact_id }}" data-obj-type="Fact">
+                      <td id="tags" class="w-1 middle tag-row" data-obj-id="{{ k.fact_id }}" data-obj-type="Fact">
                         {% if k.value_list.0 %}
                           {% show_addTagInput k.fact_id "Fact" %}
                         {% endif %}

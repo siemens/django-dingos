@@ -196,17 +196,30 @@ div.c-2 > .grp-module, div.c-2 .grp-module.grp-changelist-results {
 }
 
 /* tagging */
+#tags input {
+    display: block;
+    margin: 0 auto;
+}
+
 .tag {
     display: inline-block;
     border: #AAA 1px solid;
     border-radius: 3px;
-    padding: 5px;
     background-color: #CCEBFF;
-    margin-right: 10px;
 }
 
 .tag:last-of-type {
     margin-left: 0;
+}
+
+.tag-block .tag {
+    margin-right: 10px;
+    padding: 5px;
+}
+
+.tag-row .tag {
+    margin-top: 10px;
+    padding: 3px;
 }
 
 .w-1 {
@@ -224,3 +237,4 @@ table {
 .remove_tag_button {
     cursor: pointer;
 }
+
