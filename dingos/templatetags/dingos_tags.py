@@ -261,8 +261,14 @@ def get_key(value, arg):
 #TODO refactor all dict get filters
 @register.filter
 def get_value(dict, key):
+    print dict
+    print key
     if dict:
         return dict.get(key,None)
+
+
+
+
 
 @register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_table_ordering(context, index, title):
@@ -356,9 +362,18 @@ def show_InfoObject(context,
 
     page = context['view'].request.GET.get('page')
 
+    if link_pk:
+        all_tags = set(reduce(lambda x,y: x+y,context['tag_dict'].get(link_pk,{}).values(),[]))
+    else:
+        all_tags = []
+
     iobject = context['view'].object
     if not iobject2facts:
         iobject2facts = context['view'].iobject2facts
+    #else:
+    #    # if iobject2facts is provided, we may be showing a different object
+    #    # then given as 'object' in the context
+    #    iobject = iobject2facts[0].iobject_id
     highlight = context['highlight']
     show_NodeID = context['show_NodeID']
 
@@ -459,7 +474,8 @@ def show_InfoObject(context,
             'inner_collapsible': inner_collapsible,
             'inner_fold_status': inner_fold_status,
             'link_pk':link_pk,
-            'tag_dict':context['tag_dict']
+            'tag_dict':context['tag_dict'],
+            'all_tags':all_tags
             }
 
 
