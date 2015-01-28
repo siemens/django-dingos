@@ -27,7 +27,7 @@ from django.db.models import F
 from dingos import DINGOS_TEMPLATE_FAMILY
 from dingos.core import http_helpers
 from dingos.core.utilities import get_from_django_obj
-from dingos.models import BlobStorage
+from dingos.models import BlobStorage,dingos_class_map
 from dingos.views import getTags
 
 from dingos.graph_traversal import follow_references
@@ -260,9 +260,15 @@ def get_key(value, arg):
 
 #TODO refactor all dict get filters
 @register.filter
-def get_value(dict, key):
-    if dict:
-        return dict.get(key,None)
+def get_value(coll, key):
+    if coll:
+        if isinstance(coll,list) and isinstance(key,int):
+            try:
+                return coll[key]
+            except IndexError:
+                return None
+
+        return coll.get(key,None)
 
 @register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_table_ordering(context, index, title):
@@ -674,3 +680,9 @@ def show_addTagInput(obj_id, obj_type):
         })
     return form.fields['tag'].widget.render('tag','')
 
+@register.filter()
+def content_type_match(id,obj_string):
+    type = ContentType.objects.get_for_model(dingos_class_map.get(obj_string,''))
+    if type:
+        return True if type.id == id else False
+    return False

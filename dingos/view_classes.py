@@ -34,6 +34,7 @@ from django.views.generic import DetailView, ListView, TemplateView, View
 from django.views.generic.base import ContextMixin
 from django_filters.views import FilterView
 from django.http import Http404
+from django.core.urlresolvers import reverse
 
 from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
 
@@ -54,7 +55,7 @@ from dingos.models import InfoObject, UserData, Marking2X, Fact, dingos_class_ma
 
 from core.http_helpers import get_query_string
 from taggit.models import Tag
-from django.apps import AppConfig
+from django.apps import apps
 
 POSTPROCESSOR_REGISTRY = {}
 
@@ -1428,4 +1429,47 @@ class TaggingAdditionView(BasicListActionView):
             if "%s" % f.pk == "%s" % pk:
                 return f
         return None
+
+
+class TagHistoryView(BasicTemplateView):
+    template_name = 'dingos/%s/lists/TagHistoryList.html' % DINGOS_TEMPLATE_FAMILY
+
+    title = 'Tag History'
+
+    tag = None
+
+    possible_models = {
+            InfoObject : ['id','name','identifier__uid'],
+            Fact : ['id','fact_term__term','fact_term__attribute','fact_values__value']
+        }
+
+    def get_context_data(self, **kwargs):
+        context = super(TagHistoryView, self).get_context_data(**kwargs)
+
+        cols_history = ['timestamp','action','user__username','content_type_id','object_id']
+        sel_rel = ['tag','user','content_type']
+        history_q = list(TaggingHistory.objects.select_related(*sel_rel).filter(tag__name=self.tag).order_by('timestamp').values(*cols_history))
+
+        obj_info_mapping = {}
+        for model,cols in self.possible_models.items():
+            content_id = ContentType.objects.get_for_model(model).id
+            setattr(self,'pks',set([x['object_id'] for x in history_q if x['content_type_id'] == content_id]))
+            model_q = model.objects.filter(id__in=self.pks).values(*cols)
+            current_model_map = obj_info_mapping.setdefault(content_id,{})
+            for obj in model_q:
+                current_model_map[obj['id']] = obj
+            del self.pks
+
+        context['tag'] = self.tag
+        context['history'] = history_q
+        context['map_objs'] = obj_info_mapping
+        context['map_action'] = TaggingHistory.ACTIONS
+        return context
+
+    def get(self, request, *args, **kwargs):
+        tag = kwargs.pop('tag',None)
+        if tag:
+            self.tag = tag
+        return super(TagHistoryView,self).get(request, *args, **kwargs)
+
 

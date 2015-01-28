@@ -2390,7 +2390,6 @@ def write_large_value(value,storage_location=dingos.DINGOS_LARGE_VALUE_DESTINATI
                                                               content=value)
     return (value_hash,storage_location)
 
-
 class TaggingHistory(DingoModel):
     ADD = 0
     REMOVE = 1
@@ -2410,16 +2409,16 @@ class TaggingHistory(DingoModel):
 
     @classmethod
     def bulk_create_tagging_history(cls,action,user,tags,objects):
-        print "--------------entered bulk_create_tagging_history--------------"
-        print action
-        print user
-        print tags
-        print objects
         action = getattr(cls,action.upper())
         if not isinstance(tags[0],Tag):
-            tags = Tag.objects.filter(name__in=tags)
-        TaggingHistory.objects.bulk_create(
-            [TaggingHistory(action=action,user=user,tobject=objects[0],tag=x) for x in tags]
-        )
+            if isinstance(tags[0],int):
+                tags = Tag.objects.filter(id__in=tags)
+            else:
+                tags = Tag.objects.filter(name__in=tags)
+
+        entry_list = []
+        for object in objects:
+                entry_list.extend([TaggingHistory(action=action,user=user,tobject=object,tag=x) for x in tags])
+        TaggingHistory.objects.bulk_create(entry_list)
 
 dingos_class_map["TaggingHistory"] = TaggingHistory
