@@ -998,3 +998,4 @@ class TaggingJSONView(BasicJSONView):
             tag_name = data.get('tag','')
             if action and obj_pks and type and tag_name:
                 return processTagging(action,obj_pks,type,tag_name,self.request.user)
+        return {}
