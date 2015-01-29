@@ -51,7 +51,7 @@ from dingos.core.template_helpers import ConfigDictWrapper
 from dingos.core.utilities import get_dict, replace_by_list
 from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm, PlaceholderForm, TaggingAdditionForm
 from dingos.queryparser.placeholder_parser import PlaceholderParser
-from dingos.models import InfoObject, UserData, Marking2X, Fact, dingos_class_map, TaggingHistory
+from dingos.models import InfoObject, UserData, Marking2X, Fact, dingos_class_map, TaggingHistory, Identifier
 
 from core.http_helpers import get_query_string
 from taggit.models import Tag
@@ -939,18 +939,11 @@ class BasicListActionView(BasicListView):
         self.queryset = self.action_model_query.filter(pk__in = object_set)
         # We create the form
         kwargs['checked_objects_choices'] = object_set
-        self.form = self.form_class({# We need a way to remember all objects that can be selected;
-                                               # for this, we abuse a hidden field in which we collect a list
-                                               # of object pks.
-                                               'checked_objects_choices': ','.join(object_set),
-                                               # We also preset all objects as checked
-                                               'checked_objects' : object_set},
-                                              # The parameters below are used to create the field for
-                                              # selecting marking objects and the multiple choice field
-                                              # for selecting objects.
-                                              *args,
-                                              **kwargs)
-
+        initial = {
+            'checked_objects_choices' : ','.join(object_set),
+            'checked_objects' : object_set
+        }
+        self.form = self.form_class(*args,**kwargs)
 
     def _set_post_form(self,*args,**kwargs):
         object_set =  self.request.POST.dict().get('checked_objects_choices').split(',')
@@ -962,9 +955,7 @@ class BasicListActionView(BasicListView):
         kwargs['checked_objects_choices'] = object_set
 
         # Create the form object, this time from the POST data
-        self.form = self.form_class(
-                                    *args,
-                                    **kwargs)
+        self.form = self.form_class(*args,**kwargs)
 
     def post(self, request, *args, **kwargs):
 
@@ -1350,7 +1341,7 @@ class TaggingAdditionView(BasicListActionView):
     action_model_query = None
 
     #select tag objects
-    tagging_queryset = Tag.objects.all()
+    tagging_queryset = Tag.objects.all().values_list('pk','name')
 
     allow_multiple_tags=True
     form_class = TaggingAdditionForm
@@ -1359,35 +1350,44 @@ class TaggingAdditionView(BasicListActionView):
     action_list.append({'action_predicate': lambda x : True,
                         'action_function': processTagging})
 
-    @property
-    def m_queryset(self):
-        """
-        Queryset for selecting possible tags, either taken directly from self.tagging_queryset
-        or created from self.tagging_query
-        """
-        if self.tagging_queryset:
-            return self.tagging_queryset.values_list('pk','name')
+    ###########################################################################################################
+    def _set_initial_form(self,*args,**kwargs):
+        action_objects = self.request.POST.getlist('action_objects')
+        self.queryset = self.action_model_query.filter(id__in=action_objects)
+        initial = {}
+        initial['checked_objects_choices'] = ','.join(action_objects)
+        initial['checked_objects'] = action_objects
+        kwargs['checked_objects_choices'] = action_objects
+        self.form = self.form_class(initial=initial,*args,**kwargs)
+
+    def _set_post_form(self,*args,**kwargs):
+        checked_objects_choices =  self.request.POST.dict().get('checked_objects_choices').split(',')
+
+        # Set the queryset for redisplaying the view with these objects
+
+        self.queryset = self.action_model_query.filter(id__in=self.object_set)
+
+        kwargs['checked_objects_choices'] = checked_objects_choices
+
+        # Create the form object, this time from the POST data
+        self.form = self.form_class(*args,**kwargs)
+          ############################################################################################################
 
     def post(self, request, *args, **kwargs):
-        type = request.POST.get('type', None)
-        model_class = dingos_class_map[type]
-        self.action_model_query = model_class.objects.all()
-        self.type = type
+        self.type = request.POST.get('type', None)
+        self.model_class = dingos_class_map.get(self.type,None)
+        if not self.model_class:
+            raise ObjectDoesNotExist("dingos model class does not exist: %s - check if there is a hidden type input field in html" % (self.type))
+        self.action_model_query = self.model_class.objects.all()
 
-        if 'action_objects' in self.request.POST:
-            self.facts = [int(x) for x in self.request.POST.getlist('action_objects')]
-            self._set_initial_form(tags= self.m_queryset,
-                                   allow_multiple_tags=self.allow_multiple_tags)
+        if 'action_objects' in request.POST:
+            self._set_initial_form(tags=self.tagging_queryset,allow_multiple_tags=self.allow_multiple_tags)
             return super(TaggingAdditionView,self).get(request, *args, **kwargs)
 
         else:
-            # So the view has been called a second time by submitting the form in the view
-            # rather than from a different view. So we need to process the data in the form
-            self.facts = [int(x) for x in self.request.POST.dict().get('checked_objects_choices').split(',')]
+            print self.request.POST
 
-            self._set_post_form(request.POST,
-                                tags = self.m_queryset,
-                                allow_multiple_tags = self.allow_multiple_tags)
+            self._set_post_form(tags = self.m_queryset,allow_multiple_tags = self.allow_multiple_tags)
 
             # React on a valid form
             if self.form.is_valid():
@@ -1406,8 +1406,7 @@ class TaggingAdditionView(BasicListActionView):
                         (success,action_msg) = (True,"DEBUG: Action has not been carried out")
                     else:
                         action = request.POST['action'].split(" ")[0].lower()
-                        type = request.POST['type']
-                        res = action_function(action,form_data['checked_objects'],type,[int(x) for x in form_data['tag_to_add']],request.user)
+                        res = action_function(action,form_data['checked_objects'],self.type,[int(x) for x in form_data['tag_to_add']],request.user)
                         #TODO handle res(ult) and exceptions/error logging
             if not found_action:
                 message = self.no_action_error_message

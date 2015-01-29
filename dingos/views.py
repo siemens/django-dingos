@@ -65,7 +65,7 @@ from dingos.core.utilities import match_regex_list
 
 def getTags(objects,complex=False,model=None):
     """
-    :param objects: single/multiple objects or object pks
+    :param objects: single/multiple objects or object pks as list or set
     :param complex: iobject and fact tags if set to True
     :param model: type of objects have to be provided if using object pks
     :return: dict like following:
@@ -76,8 +76,9 @@ def getTags(objects,complex=False,model=None):
                     }
     }
     """
-
     tag_map = {}
+    if isinstance(objects,set):
+        objects = list(objects)
     objects = listify(objects)
 
     def _simple_q(_objects,model):
@@ -85,30 +86,30 @@ def getTags(objects,complex=False,model=None):
             model = type(_objects[0])
         obj_pks = objects if isinstance(objects[0],int) else set([x.id for x in objects])
         cols = ['id','tag_through__tag__name']
-        tags_q = model.objects.filter(id__in = obj_pks).filter(tag_through__isnull=False).values_list(*cols)
+        tags_q = model.objects.filter(id__in = obj_pks).filter(tag_through__isnull=False).values(*cols)
         return tags_q
 
     if complex:
         #filter(fact__tag_through__isnull=False) workarround to achieve INNER JOIN
-        cols = ['iobject_id','fact_id','fact__tag_through__tag__name']
-        iobj_tags_q = list(_simple_q(objects,model=model))
-        iobj_pks = objects if model else set([x.id for x in objects])
-        fact_tags_q = list(vIO2FValue.objects.filter(iobject_id__in = iobj_pks).filter(fact__tag_through__isnull=False).values_list(*cols))
+        cols = ['identifier_id','fact_id','fact__tag_through__tag__name']
+        ident_pks_q = list(_simple_q(objects,model=model))
+        ident_pks = objects if model else set([x.id for x in objects])
+        fact_tags_q = list(vIO2FValue.objects.filter(identifier_id__in = ident_pks).filter(fact__tag_through__isnull=False).values(*cols))
         tag_map = {}
-        for tag in iobj_tags_q:
-            iobj = tag_map.setdefault(tag[0],{})
-            tags = iobj.setdefault('tags',[])
-            tags.append(tag[1])
+        for tag in ident_pks_q:
+            ident = tag_map.setdefault(tag['id'],{})
+            tags = ident.setdefault('tags',[])
+            tags.append(tag['tag_through__tag__name'])
         for tag in fact_tags_q:
-            iobj = tag_map.setdefault(tag[0],{})
-            fact = iobj.setdefault(tag[1],[])
-            fact.append(tag[2])
+            ident = tag_map.setdefault(tag['identifier_id'],{})
+            fact = ident.setdefault(tag['fact_id'],[])
+            fact.append(tag['fact__tag_through__tag__name'])
 
     else:
         tags_q = _simple_q(objects,model=model)
         for tag in tags_q:
-            tag_list = tag_map.setdefault(tag[0],[])
-            tag_list.append(tag[1])
+            tag_list = tag_map.setdefault(tag['id'],[])
+            tag_list.append(tag['tag_through__tag__name'])
 
     return tag_map
 
@@ -383,7 +384,7 @@ class InfoObjectView_wo_login(BasicDetailView):
         context['iobject2facts'] = self.iobject2facts
 
         if self.__class__ == InfoObjectView:
-            context['tag_dict'] = getTags(self.object,complex=True)
+            context['tag_dict'] = getTags(self.object.identifier,complex=True)
 
         context['io2fvs'] = None
         try:

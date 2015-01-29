@@ -997,9 +997,6 @@ class InfoObject(DingoModel):
                             help_text="""Name of the information object, usually auto generated.
                                          from type and facts flagged as 'naming'.""")
 
-    tags = TaggableManager()
-    tag_through = generic.GenericRelation(TaggedItem)
-
     #@property
     #def marking_thru(self):
     #    """
@@ -1798,6 +1795,9 @@ class Identifier(DingoModel):
     latest = models.OneToOneField(InfoObject,
                                   null=True, # need this for creation (hen-egg problem)
                                   related_name="latest_of")
+
+    tags = TaggableManager()
+    tag_through = generic.GenericRelation(TaggedItem)
 
 
     def __unicode__(self):

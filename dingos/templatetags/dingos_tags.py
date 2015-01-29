@@ -270,10 +270,6 @@ def get_value(coll, key):
 
         return coll.get(key,None)
 
-
-
-
-
 @register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_table_ordering(context, index, title):
     """
@@ -666,9 +662,10 @@ def show_InfoObjectTagBlockDisplay(context, object, isEditable=False):
 def show_InfoObjectTagRowDisplay(context, curr_obj, col_count, isEditable=False):
     view = context["view"]
     if view.tags_dict is None:
-        objects = list(context.get('object_list',[]))
-        if objects:
-            view.tags_dict = getTags(objects)
+        iobjects = list(context.get('object_list',[]))
+        ident_objects = [x.identifier for x in iobjects]
+        if ident_objects:
+            view.tags_dict = getTags(ident_objects)
     return {
         'object' : curr_obj,
         'isEditable' : isEditable,
