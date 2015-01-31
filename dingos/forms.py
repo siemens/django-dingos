@@ -93,21 +93,16 @@ class EditInfoObjectFieldForm(forms.Form):
 
 class BasicListActionForm(forms.Form):
     def __init__(self, *args, **kwargs):
-        if 'checked_objects_choices' in kwargs:
-            checked_objects = kwargs['checked_objects_choices']
-            del(kwargs['checked_objects_choices'])
-        else:
-            checked_objects = []
+        choices = kwargs.pop('choices',[])
         super(BasicListActionForm, self).__init__(*args, **kwargs)
 
-        self.fields['checked_objects'] = forms.MultipleChoiceField(choices=(map(lambda x: (x,x),checked_objects)),
+        self.fields['checked_objects'] = forms.MultipleChoiceField(choices=(map(lambda x: (x,x),choices)),
                                                                    widget=forms.CheckboxSelectMultiple)
         self.fields['checked_objects_choices'] = forms.CharField(widget=forms.HiddenInput)
 
 
 class SimpleMarkingAdditionForm(BasicListActionForm):
     def __init__(self, *args, **kwargs):
-
         marking_choices = kwargs.pop('markings')
         allow_multiple_markings = kwargs.pop('allow_multiple_markings',None)
 
@@ -119,10 +114,8 @@ class SimpleMarkingAdditionForm(BasicListActionForm):
 
 class TaggingAdditionForm(BasicListActionForm):
     def __init__(self, *args, **kwargs):
-
-        tagging_choices = kwargs.pop('tags')
+        tagging_choices = kwargs.pop('tags',[])
         allow_multiple_tags = kwargs.pop('allow_multiple_tags',None)
-
         super(TaggingAdditionForm, self).__init__(*args, **kwargs)
         if allow_multiple_tags:
             self.fields['tag_to_add'] = forms.MultipleChoiceField(choices=tagging_choices)
