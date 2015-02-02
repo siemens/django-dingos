@@ -1275,14 +1275,16 @@ class SimpleMarkingAdditionView(BasicListActionView):
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
 
 
-def processTagging(action,obj_pks,type,tags,user):
+def processTagging(action,obj_pks,type,tags,**kwargs):
     # generic function for adding single or multiple tags to single or multiple objects of the same type.
 
     res = {}
     ACTIONS = ['add', 'remove']
     if action in ACTIONS:
         model = dingos_class_map.get(type,None)
-        if model and tags:
+        user = kwargs.pop('user',None)
+        comment = kwargs.pop('comment')
+        if model and tags and user:
             objects = list(model.objects.filter(pk__in=obj_pks))
             if not isinstance(tags,list):
                 tags = [tags]
@@ -1294,7 +1296,7 @@ def processTagging(action,obj_pks,type,tags,user):
                         if len(tags) == 1 and len(obj_pks) == 1:
                             res['name'] = tags[0]
                             res['id'] = object.pk
-                    TaggingHistory.bulk_create_tagging_history(action,user,tags,objects)
+                    TaggingHistory.bulk_create_tagging_history(action,tags,objects,user,comment)
 
                 elif isinstance(tags[0],int):
                     tags = Tag.objects.filter(id__in=tags).values_list('name',flat=True)
@@ -1302,7 +1304,7 @@ def processTagging(action,obj_pks,type,tags,user):
                         object.tags.add(*tags)
                     res['success'] = True
                     #TODO what should be passed in res, e.g. TaggingActionView
-                    TaggingHistory.bulk_create_tagging_history(action,user,tags,objects)
+                    TaggingHistory.bulk_create_tagging_history(action,tags,objects,user,comment)
                 return res
 
             elif action == 'remove':
@@ -1310,7 +1312,7 @@ def processTagging(action,obj_pks,type,tags,user):
                     for object in objects:
                         object.tags.remove(*tags)
                         #TODO success?
-                    TaggingHistory.bulk_create_tagging_history(action,user,tags,objects)
+                    TaggingHistory.bulk_create_tagging_history(action,tags,objects,user,comment)
 
                 elif isinstance(tags[0],int):
                     tags = Tag.objects.filter(id__in=tags).values_list('name',flat=True)
@@ -1318,7 +1320,7 @@ def processTagging(action,obj_pks,type,tags,user):
                         object.tags.remove(*tags)
                     res['success'] = True
                     #TODO what should be passed in res, e.g. TaggingActionView
-                    TaggingHistory.bulk_create_tagging_history(action,user,tags,objects)
+                    TaggingHistory.bulk_create_tagging_history(action,tags,objects,user,comment)
                 return res
 
 class TaggingAdditionView(BasicListActionView):

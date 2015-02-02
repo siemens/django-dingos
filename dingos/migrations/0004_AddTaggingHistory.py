@@ -22,6 +22,7 @@ class Migration(migrations.Migration):
                 ('timestamp', models.DateTimeField(auto_now_add=True, serialize=False, primary_key=True)),
                 ('action', models.SmallIntegerField(choices=[(0, b'Added'), (1, b'Removed')])),
                 ('object_id', models.PositiveIntegerField()),
+                ('comment', models.TextField(blank=True)),
                 ('content_type', models.ForeignKey(to='contenttypes.ContentType')),
                 ('tag', models.ForeignKey(related_name=b'tag_history', to='taggit.Tag')),
                 ('user', models.ForeignKey(related_name=b'tagging_history', to=settings.AUTH_USER_MODEL)),
@@ -38,7 +39,7 @@ class Migration(migrations.Migration):
             preserve_default=True,
         ),
         migrations.AddField(
-            model_name='infoobject',
+            model_name='identifier',
             name='tags',
             field=taggit.managers.TaggableManager(to='taggit.Tag', through='taggit.TaggedItem', help_text='A comma-separated list of tags.', verbose_name='Tags'),
             preserve_default=True,

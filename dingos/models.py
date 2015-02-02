@@ -2404,11 +2404,11 @@ class TaggingHistory(DingoModel):
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField()
     tobject = generic.GenericForeignKey('content_type', 'object_id')
-
+    comment = models.TextField(blank=True)
     tag = models.ForeignKey(Tag,related_name='tag_history')
 
     @classmethod
-    def bulk_create_tagging_history(cls,action,user,tags,objects):
+    def bulk_create_tagging_history(cls,action,tags,objects,user,comment):
         action = getattr(cls,action.upper())
         if not isinstance(tags[0],Tag):
             if isinstance(tags[0],int):
@@ -2418,7 +2418,7 @@ class TaggingHistory(DingoModel):
 
         entry_list = []
         for object in objects:
-                entry_list.extend([TaggingHistory(action=action,user=user,tobject=object,tag=x) for x in tags])
+                entry_list.extend([TaggingHistory(action=action,user=user,comment=comment,tobject=object,tag=x) for x in tags])
         TaggingHistory.objects.bulk_create(entry_list)
 
 dingos_class_map["TaggingHistory"] = TaggingHistory

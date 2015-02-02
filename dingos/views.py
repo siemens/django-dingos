@@ -997,6 +997,7 @@ class TaggingJSONView(BasicJSONView):
             obj_pks = data.get('objects',[])
             type = data.get('type','')
             tag_name = data.get('tag','')
+            comment = data.get('comment','')
             if action and obj_pks and type and tag_name:
-                return processTagging(action,obj_pks,type,tag_name,self.request.user)
+                return processTagging(action,obj_pks,type,tag_name,user=self.request.user,comment=comment)
         return {}
