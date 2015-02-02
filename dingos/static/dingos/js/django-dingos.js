@@ -378,22 +378,9 @@
     function add_removeHandler(){
     $('.remove_tag_button').each(function(){
       $(this).click(function (event) {
-        var tag_name = $(event.target).data('tag-name');
-        var obj_info = $(event.target).closest('[data-obj-id]');
-        var obj_id = obj_info.data('obj-id');
-        var obj_type = obj_info.data('obj-type');
-        $.ajax({
-          url: "/mantis/tagging/remove",
-            type: "POST",
-            data: JSON.stringify({ tag: tag_name, objects: [obj_id], type: obj_type}) ,
-            processData: false,
-            contentType: 'application/json; charset=UTF-8',
-            dataType: "json"
-        });
-        //TODO success msg/err
-        if(obj_id != null){
-          $(event.target).parent().remove();
-        }
+        $('#deleteTag')
+            .data('tag_info',$(this))
+            .dialog('open');
       });
     });
     }
@@ -440,6 +427,41 @@
       $(document).bind('selectChoice', function(e, choice, autocomplete) {
         add_tag(e);
       });
+
+      //dialog onTagDelete
+      $('#deleteTag').dialog({
+        autoOpen: false,
+        buttons: [
+          {
+            text: "Delete Tag",
+            click: function() {
+              var tag = $('#deleteTag').data('tag_info');
+              var tag_name = tag.data('tag-name');
+              var obj_info = tag.closest('[data-obj-id]');
+              var obj_id = obj_info.data('obj-id');
+              var obj_type = obj_info.data('obj-type');
+              var comment = $('#tag-remove-comment').val();
+              $.ajax({
+                url: "/mantis/tagging/remove",
+                  type: "POST",
+                  data: JSON.stringify({ tag: tag_name, objects: [obj_id], type: obj_type, comment: comment}),
+                  processData: false,
+                  contentType: 'application/json; charset=UTF-8',
+                  dataType: "json"
+              });
+              //TODO success msg/err
+              if(obj_id != null){
+                tag.parent().remove();
+              }
+              $( this ).dialog('close');
+
+            }
+          }
+        ]
+      });
+
+
+
     });
 
 
