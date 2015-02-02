@@ -1412,8 +1412,8 @@ class TagHistoryView(BasicTemplateView):
     tag = None
 
     possible_models = {
-            InfoObject : ['id','name','identifier__uid'],
-            Fact : ['id','fact_term__term','fact_term__attribute','fact_values__value']
+            Fact : ['id','fact_term__term','fact_term__attribute','fact_values__value'],
+            Identifier : ['id','latest__name','uid','latest__id']
         }
 
     def get_context_data(self, **kwargs):
@@ -1444,5 +1444,3 @@ class TagHistoryView(BasicTemplateView):
         if tag:
             self.tag = tag
         return super(TagHistoryView,self).get(request, *args, **kwargs)
-
-

@@ -15,9 +15,9 @@
               <td>{{ entry.user__username }}</td>
               {% with obj=map_obj|get_value:entry.object_id %}
 
-              {% if entry.content_type_id|content_type_match:"InfoObject" %}
-                <td>{{ obj.identifier__uid }}</td>
-                <td><a href="{% url "url.dingos.view.infoobject" obj.id %}">{{ obj.name }}</a></td>
+              {% if entry.content_type_id|content_type_match:"Identifier" %}
+                <td>{{ obj.uid }}</td>
+                <td><a href="{% url "url.dingos.view.infoobject" obj.latest__id %}">{{ obj.latest__name }}</a></td>
 
               {% elif entry.content_type_id|content_type_match:"Fact" %}
                 <td>{{ obj.fact_term__term }}{% if obj.fact_term__attribute %}{{ obj.fact_term__attribute }}{% endif %}</td>
