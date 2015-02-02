@@ -662,10 +662,11 @@ def show_InfoObjectTagBlockDisplay(context, object, isEditable=False):
 def show_InfoObjectTagRowDisplay(context, curr_obj, col_count, isEditable=False):
     view = context["view"]
     if view.tags_dict is None:
-        iobjects = list(context.get('object_list',[]))
-        ident_objects = [x.identifier for x in iobjects]
-        if ident_objects:
-            view.tags_dict = getTags(ident_objects)
+        objects = list(context.get('object_list',[]))
+        if objects and isinstance(objects[0],InfoObject):
+            objects = [x.identifier for x in objects]
+        if objects:
+            view.tags_dict = getTags(objects)
     return {
         'object' : curr_obj,
         'isEditable' : isEditable,
