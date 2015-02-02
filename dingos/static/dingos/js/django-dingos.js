@@ -399,7 +399,8 @@
           contentType: 'application/json; charset=UTF-8',
           dataType: "json",
           success: function (resp) {
-            var tag = '<span id="' + resp.name + '" class="tag">' + resp.name + '<a class="remove_tag_button" data-tag-name="' + resp.name + '"> X</a></span>';
+            var name = resp[obj_id][0];
+            var tag = '<span id="' + name + '" class="tag">' + name + '<a class="remove_tag_button" data-tag-name="' + name + '"> X</a></span>';
             tag_container.append(tag);
             add_removeHandler();
           }
@@ -431,6 +432,7 @@
       //dialog onTagDelete
       $('#deleteTag').dialog({
         autoOpen: false,
+        title: "Delete Tag Comment",
         buttons: [
           {
             text: "Delete Tag",
@@ -441,20 +443,25 @@
               var obj_id = obj_info.data('obj-id');
               var obj_type = obj_info.data('obj-type');
               var comment = $('#tag-remove-comment').val();
-              $.ajax({
-                url: "/mantis/tagging/remove",
-                  type: "POST",
-                  data: JSON.stringify({ tag: tag_name, objects: [obj_id], type: obj_type, comment: comment}),
-                  processData: false,
-                  contentType: 'application/json; charset=UTF-8',
-                  dataType: "json"
-              });
-              //TODO success msg/err
-              if(obj_id != null){
-                tag.parent().remove();
+              if(comment != "") {
+                $.ajax({
+                  url: "/mantis/tagging/remove",
+                    type: "POST",
+                    data: JSON.stringify({ tag: tag_name, objects: [obj_id], type: obj_type, comment: comment}),
+                    processData: false,
+                    contentType: 'application/json; charset=UTF-8',
+                    dataType: "json",
+                    success: function (resp) {
+                    if(resp[obj_id][0] === tag_name){
+                      tag.parent().remove();
+                    }
+                  }
+                });
+                $(this).dialog('close');
               }
-              $( this ).dialog('close');
-
+              else {
+                alert("No comment provided - please enter a comment.")
+              }
             }
           }
         ]

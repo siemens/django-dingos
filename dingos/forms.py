@@ -121,7 +121,7 @@ class TaggingAdditionForm(BasicListActionForm):
             self.fields['tag_to_add'] = forms.MultipleChoiceField(choices=tagging_choices)
         else:
             self.fields['tag_to_add'] = forms.ChoiceField(choices=tagging_choices)
-
+        self.fields['comment'] = forms.CharField(widget=forms.Textarea)
 
 class OAuthInfoForm(forms.Form):
     """

@@ -93,6 +93,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     </tbody>
                 {% endblock %}
             </table>
+            {% include "dingos/grappelli/includes/_TagDeleteForm.html" %}
             {% if list_actions %}
                 <input type="hidden" name="type" value="InfoObject" />
                 </form>

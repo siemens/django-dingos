@@ -22,7 +22,8 @@
               {% elif entry.content_type_id|content_type_match:"Fact" %}
                 <td>{{ obj.fact_term__term }}{% if obj.fact_term__attribute %}{{ obj.fact_term__attribute }}{% endif %}</td>
                 <td>{{ obj.fact_values__value }}</td>
-            {% endif %}
+              {% endif %}
+              <td>{{ entry.comment }}</td>
             </tr>
           {% endwith %}
           {% endwith %}

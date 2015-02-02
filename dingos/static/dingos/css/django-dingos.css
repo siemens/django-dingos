@@ -238,3 +238,7 @@ table {
     cursor: pointer;
 }
 
+.ui-button.ui-button-text-only {
+    width: 100px;
+}
+

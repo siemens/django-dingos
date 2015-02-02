@@ -35,6 +35,7 @@ from django.views.generic.base import ContextMixin
 from django_filters.views import FilterView
 from django.http import Http404
 from django.core.urlresolvers import reverse
+from django.contrib.auth.models import User
 
 from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
 
@@ -48,7 +49,7 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
 
 from dingos import graph_traversal
 from dingos.core.template_helpers import ConfigDictWrapper
-from dingos.core.utilities import get_dict, replace_by_list
+from dingos.core.utilities import get_dict, replace_by_list, listify
 from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm, PlaceholderForm, TaggingAdditionForm
 from dingos.queryparser.placeholder_parser import PlaceholderParser
 from dingos.models import InfoObject, UserData, Marking2X, Fact, dingos_class_map, TaggingHistory, Identifier
@@ -1276,52 +1277,55 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
 
 def processTagging(action,obj_pks,type,tags,**kwargs):
-    # generic function for adding single or multiple tags to single or multiple objects of the same type.
+
+    def _preprocess_tags(tags):
+        if isinstance(tags,set):
+            tags = list(tags)
+        else:
+            tags = listify(tags)
+
+        possible_tag_types = {
+            str : lambda tags: tags,
+            unicode : lambda tags: tags,
+            int : lambda tags: Tag.objects.filter(id__in=tags).values_list('name',flat=True)
+        }
+        type = tags[0].__class__
+        preprocess = possible_tag_types.get(type,None)
+        tags = preprocess(tags)
+
+        if tags is None:
+            raise TypeError("%s not a possible type for tags - possible types are %s") % (type,possible_tag_types.keys())
+        else:
+            return tags
 
     res = {}
     ACTIONS = ['add', 'remove']
     if action in ACTIONS:
+        tags = _preprocess_tags(tags)
         model = dingos_class_map.get(type,None)
+        if model is None:
+            raise ObjectDoesNotExist('no suitable model found named %s') % (model)
         user = kwargs.pop('user',None)
-        comment = kwargs.pop('comment')
-        if model and tags and user:
-            objects = list(model.objects.filter(pk__in=obj_pks))
-            if not isinstance(tags,list):
-                tags = [tags]
-            if action == 'add':
-                if isinstance(tags[0],str) or isinstance(tags[0],unicode):
-                    for object in objects:
-                        object.tags.add(*tags)
-                        #TODO multiple values?
-                        if len(tags) == 1 and len(obj_pks) == 1:
-                            res['name'] = tags[0]
-                            res['id'] = object.pk
-                    TaggingHistory.bulk_create_tagging_history(action,tags,objects,user,comment)
+        if user is None or not isinstance(user,User):
+            raise ObjectDoesNotExist('no user for this action provided')
+        comment = kwargs.pop('comment','')
 
-                elif isinstance(tags[0],int):
-                    tags = Tag.objects.filter(id__in=tags).values_list('name',flat=True)
-                    for object in objects:
-                        object.tags.add(*tags)
-                    res['success'] = True
-                    #TODO what should be passed in res, e.g. TaggingActionView
-                    TaggingHistory.bulk_create_tagging_history(action,tags,objects,user,comment)
-                return res
+        objects = list(model.objects.filter(pk__in=obj_pks))
+        if action == 'add':
+            for object in objects:
+                object.tags.add(*tags)
+                res[object.id] = tags
 
-            elif action == 'remove':
-                if isinstance(tags[0],str) or isinstance(tags[0],unicode):
-                    for object in objects:
-                        object.tags.remove(*tags)
-                        #TODO success?
-                    TaggingHistory.bulk_create_tagging_history(action,tags,objects,user,comment)
+        elif action == 'remove':
+            for object in objects:
+                object.tags.remove(*tags)
+                res[object.id] = tags
+    else:
+        raise NotImplementedError('%s not a possible action to perform') % (action)
 
-                elif isinstance(tags[0],int):
-                    tags = Tag.objects.filter(id__in=tags).values_list('name',flat=True)
-                    for object in objects:
-                        object.tags.remove(*tags)
-                    res['success'] = True
-                    #TODO what should be passed in res, e.g. TaggingActionView
-                    TaggingHistory.bulk_create_tagging_history(action,tags,objects,user,comment)
-                return res
+    TaggingHistory.bulk_create_tagging_history(action,tags,objects,user,comment)
+    return res
+
 
 class TaggingAdditionView(BasicListActionView):
 
@@ -1382,8 +1386,7 @@ class TaggingAdditionView(BasicListActionView):
                         else:
                             objects = [int(x) for x in form_data['checked_objects']]
                             curr_type = self.type
-                        res = action_function(action,objects,curr_type,[int(x) for x in form_data['tag_to_add']],request.user)
-                        #TODO handle res(ult) and exceptions/error logging
+                        action_function(action,objects,curr_type,[int(x) for x in form_data['tag_to_add']],user=request.user,comment=form_data['comment'])
             if not found_action:
                 message = self.no_action_error_message
                 messages.error(self.request,message)
@@ -1421,7 +1424,7 @@ class TagHistoryView(BasicTemplateView):
     def get_context_data(self, **kwargs):
         context = super(TagHistoryView, self).get_context_data(**kwargs)
 
-        cols_history = ['timestamp','action','user__username','content_type_id','object_id']
+        cols_history = ['timestamp','action','user__username','content_type_id','object_id','comment']
         sel_rel = ['tag','user','content_type']
         history_q = list(TaggingHistory.objects.select_related(*sel_rel).filter(tag__name=self.tag).order_by('timestamp').values(*cols_history))
 
