@@ -1382,13 +1382,17 @@ class TaggingAdditionView(BasicListActionView):
                         (success,action_msg) = (True,"DEBUG: Action has not been carried out")
                     else:
                         action = request.POST['action'].split(" ")[0].lower()
-                        if self.type == 'InfoObject':
-                            objects = Identifier.objects.filter(iobject_set__id__in=form_data['checked_objects']).distinct('id').values_list('id',flat=True)
-                            curr_type = 'Identifier'
+                        if action == 'remove' and form_data['comment'] == '':
+                            messages.error(self.request,"A comment must be provided in order to delete tags!")
+
                         else:
-                            objects = [int(x) for x in form_data['checked_objects']]
-                            curr_type = self.type
-                        action_function(action,objects,curr_type,[int(x) for x in form_data['tag_to_add']],user=request.user,comment=form_data['comment'])
+                            if self.type == 'InfoObject':
+                                objects = Identifier.objects.filter(iobject_set__id__in=form_data['checked_objects']).distinct('id').values_list('id',flat=True)
+                                curr_type = 'Identifier'
+                            else:
+                                objects = [int(x) for x in form_data['checked_objects']]
+                                curr_type = self.type
+                            action_function(action,objects,curr_type,[int(x) for x in form_data['tag_to_add']],user=request.user,comment=form_data['comment'])
             if not found_action:
                 message = self.no_action_error_message
                 messages.error(self.request,message)
@@ -1475,7 +1479,7 @@ class TaggedObjectsView(BasicTemplateView):
                 matching_items = list(model.objects.filter(tag_through__tag__id = tag_id).values(*cols))
                 model_objects_mapping[model.__name__] = matching_items
         except:
-            pass      
+            pass
         context['tag'] = self.tag
         context['model_objects_mapping'] = model_objects_mapping
         return context
