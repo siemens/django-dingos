@@ -1713,8 +1713,8 @@ class InfoObject(DingoModel):
         # TODO: The vIO2FValue view is such that empty objects lead to entries with no fact info in them ..., 
         # which leads to problems below -- here we get rid of such spurious lines by checking for node_id__isnull=False
 
-        io2fvs= vIO2FValue.objects.filter(iobject__id__in=G.nodes(),node_id__isnull=False).order_by('iobject__id','node_id').prefetch_related( 'iobject',
-                                                                                                                        'referenced_iobject_identifier__latest',)
+        pref_rel = ['iobject','referenced_iobject_identifier__latest','identifier']
+        io2fvs= vIO2FValue.objects.filter(iobject__id__in=G.nodes(),node_id__isnull=False).order_by('iobject__id','node_id').prefetch_related(*pref_rel)
                                                                    #                         'iobject__identifier',
                                                                    #                         'iobject__identifier__namespace',
                                                                    #                         'iobject__iobject_family',
