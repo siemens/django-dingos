@@ -1366,6 +1366,8 @@ class TaggingAdditionView(BasicListActionView):
             # React on a valid form
             if self.form.is_valid():
                 form_data = self.form.cleaned_data
+            else:
+                return super(TaggingAdditionView,self).get(request, *args, **kwargs)
             found_action = False
             for action in self.action_list:
                 if found_action:
