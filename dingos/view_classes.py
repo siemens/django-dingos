@@ -1451,3 +1451,37 @@ class TagHistoryView(BasicTemplateView):
         if tag:
             self.tag = tag
         return super(TagHistoryView,self).get(request, *args, **kwargs)
+
+
+class TaggedObjectsView(BasicTemplateView):
+    template_name = 'dingos/%s/lists/TaggedObjectsList.html' % DINGOS_TEMPLATE_FAMILY
+
+    title = 'Tagged Items'
+
+    tag = None
+
+    possible_models = {
+            Fact : ['fact_term__term','fact_term__attribute','fact_values__value'],
+            Identifier : ['latest__name','uid','latest__id']
+        }
+
+    def get_context_data(self, **kwargs):
+        context = super(TaggedObjectsView, self).get_context_data(**kwargs)
+        model_objects_mapping =  {}
+
+        try:
+            tag_id = Tag.objects.get(name=self.tag).id
+            for model,cols in self.possible_models.items():
+                matching_items = list(model.objects.filter(tag_through__tag__id = tag_id).values(*cols))
+                model_objects_mapping[model.__name__] = matching_items
+        except:
+            pass      
+        context['tag'] = self.tag
+        context['model_objects_mapping'] = model_objects_mapping
+        return context
+
+    def get(self, request, *args, **kwargs):
+        tag = kwargs.pop('tag',None)
+        if tag:
+            self.tag = tag
+        return super(TaggedObjectsView,self).get(request, *args, **kwargs)

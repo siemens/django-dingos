@@ -1,0 +1,29 @@
+{% extends "dingos/grappelli/lists/base_lists_one_column.html" %}
+
+{% load dingos_tags %}
+
+{% block content %}
+  <div class="c-2">
+    <div class="grp-module">
+      <h2 class="grp-collapse-handler">{% block list_title %}Objects tagged with "{{ tag }}"{% endblock %}</h2>
+        {% for model,items in model_objects_mapping.items %}
+          <div class="grp-module grp-collapse grp-open">
+            <h3 class="grp-collapse-handler">{{ model }}</h3>
+            <table>
+              {% for item in items %}
+              <tr>
+                {% if model == 'Identifier' %}
+                  <td>{{ item.uid }}</td>
+                  <td><a href="{% url "url.dingos.view.infoobject" item.latest__id %}">{{ item.latest__name }}</a></td>
+                {% elif model == "Fact" %}
+                  <td>{{ item.fact_term__term }}{% if item.fact_term__attribute %}{{ item.fact_term__attribute }}{% endif %}</td>
+                  <td>{{ item.fact_values__value }}</td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </table>
+          </div>
+        {% endfor %}
+    </div>
+  </div>
+{% endblock %}
