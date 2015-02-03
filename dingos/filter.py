@@ -138,7 +138,7 @@ class InfoObjectFilter(django_filters.FilterSet):
 
     create_timestamp = ExtendedDateRangeFilter(label="Import Timestamp")
 
-    tags = django_filters.ModelChoiceFilter(
+    identifier__tag_through__tag__name = django_filters.ModelChoiceFilter(
         queryset= Tag.objects.all(),
         required=None,
         label="Tags",
@@ -148,7 +148,7 @@ class InfoObjectFilter(django_filters.FilterSet):
         order_by = create_order_keyword_list(['identifier__uid','timestamp','create_timestamp','name','iobject_type'])
         model = InfoObject
         fields = ['iobject_type','iobject_type__name','iobject_type__iobject_family','name',
-                  'identifier__namespace','identifier__uid','timestamp', 'create_timestamp','marking_thru__marking__identifier__uid', 'tags']
+                  'identifier__namespace','identifier__uid','timestamp', 'create_timestamp','marking_thru__marking__identifier__uid', 'identifier__tag_through__tag__name']
 
 
 class CompleteInfoObjectFilter(django_filters.FilterSet):
