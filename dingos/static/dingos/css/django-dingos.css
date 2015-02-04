@@ -195,6 +195,12 @@ div.c-2 > .grp-module, div.c-2 .grp-module.grp-changelist-results {
     /* TODO solve conflict */
 }
 
+/**Fix grappelli iobject link image not to break**/
+.grp-collapse.grp-closed > .grp-collapse-handler .stay-inline {
+    display: inline !important;
+}
+
+
 /* tagging */
 #tags input {
     display: block;
