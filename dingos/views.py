@@ -901,7 +901,7 @@ class InfoObjectJSONGraph(BasicJSONView):
             res['status'] = True
 
             if graph.graph.get('max_nodes_reached',False):
-                res['msg'] = res['msg'] + " (partial, %s InfoObjects)" % graph_mode['traversal_args'].get('max_nodes','??')
+                res['msg'] = res['msg'] + " (partial)"
 
             # test-code for showing only objects and their relations
             #nodes_to_remove = []
