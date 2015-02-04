@@ -18,30 +18,24 @@
 from django import template
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.urlresolvers import reverse
+from django.contrib.contenttypes.models import ContentType
 from django.utils import html
 from django.utils.html import conditional_escape, strip_tags
 from django.utils.safestring import mark_safe
 from django.conf import settings
 from django.db.models import F
 
-from dingos import DINGOS_TEMPLATE_FAMILY
+from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY,DINGOS_TEMPLATE_FAMILY
 from dingos.core import http_helpers
-from dingos.core.utilities import get_from_django_obj
-from dingos.models import BlobStorage,dingos_class_map
 from dingos.views import getTags
-
+from dingos.core.utilities import get_from_django_obj,get_dict
+from dingos.models import BlobStorage,dingos_class_map
 from dingos.graph_traversal import follow_references
 from dingos.graph_utils import dfs_preorder_nodes
-
-from dingos.models import InfoObject, InfoObject2Fact, Fact, vIO2FValue
-from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
-
+from dingos.models import InfoObject, InfoObject2Fact, Fact, vIO2FValue, IdentifierNameSpace
 from dingos.forms import TagForm
 
 from taggit.models import TaggedItem, Tag
-from django.contrib.contenttypes.models import ContentType
-
-
 
 
 register = template.Library()
@@ -563,6 +557,18 @@ def show_InfoObjectField(oneObject, field):
 def dict_lookup(dict, key):
     return dict.get(key,'ERROR')
 
+<<<<<<< HEAD
+=======
+@register.assignment_tag(takes_context=True)
+def view_dict_lookup(context,dict_name,*keys):
+    view_dict = getattr(context['view'],dict_name)
+    return get_dict(view_dict,*keys)
+
+@register.assignment_tag(takes_context=True)
+def context_dict_lookup(context,dict_name,*keys):
+    return get_dict(context[dict_name],*keys)
+
+>>>>>>> mantis_actionables
 @register.assignment_tag(takes_context=True)
 def obj_by_pk(context, *args,**kwargs):
     return getattr(context['view'],'obj_by_pk')(*args,**kwargs)
@@ -588,9 +594,15 @@ def highlight_if_equal(v1,v2):
     else:
         return ""
 
-@register.simple_tag(takes_context=True)
+#@register.simple_tag(takes_context=True)
+@register.inclusion_tag('dingos/%s/includes/_List_of_InfoObject_IDs.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def reachable_packages(context, current_node):
     view = context["view"]
+
+    try:
+        graph = view.graph
+    except:
+        view.graph = None
 
     # The graph is generated just once per search request
     if not view.graph:
@@ -604,30 +616,44 @@ def reachable_packages(context, current_node):
                 pks = [one.pk for one in object_list]
             elif isinstance(object_list[0],InfoObject2Fact):
                 pks = [one.iobject.pk for one in object_list]
+            elif isinstance(object_list[0],int):
+                pks = object_list
             else:
                 pks = []
         view.graph = follow_references(pks, direction= 'up')
 
     node_ids = list(dfs_preorder_nodes(view.graph, source=current_node))
 
+    resulting_nodes = []
     if view.graph.node:
-        result = []
         for id in node_ids:
             node = view.graph.node[id]
-            # TODO: Below is STIX-specific and should be factored out
-            # by making the iobject type configurable
-            if "STIX_Package" in node['iobject_type']:
-                result.append("<a href='%s'>%s</a>" % (node['url'], node['name']))
+            if node['iobject_type'] in ["STIX_Package"]: # ,"Indicator"]:
+                resulting_nodes.append((id,node))
+    context['node_list'] =  resulting_nodes
+    return context
 
-        return ",<br> ".join(result)
-    else:
-        return ''
 
-@register.simple_tag
-def show_namespace_image(namespace, height=None, width=None):
+@register.simple_tag(takes_context=True)
+def show_namespace_image(context,namespace, height=None, width=None):
     """
     Returns the the namespace image or the namespace uri if the image does not exist
     """
+
+    if isinstance(namespace,basestring):
+        view = context['view']
+        try:
+            dummy = view.namespace_map
+        except:
+            namespace_obj = IdentifierNameSpace.objects.get(uri=namespace)
+            view.namespace_map = {namespace:namespace_obj}
+        if namespace in view.namespace_map:
+            namespace = view.namespace_map[namespace]
+        else:
+            namespace_obj = IdentifierNameSpace.objects.get(uri=namespace)
+            view.namespace_map[namespace] = namespace_obj
+            namespace = namespace_obj
+
 
     attributes = []
 
@@ -640,6 +666,7 @@ def show_namespace_image(namespace, height=None, width=None):
         return '<img title="%s" alt="%s" src="%s" style="%s">' % (namespace.uri, namespace.uri, image_url, "".join(attributes))
     return namespace.uri
 
+<<<<<<< HEAD
 @register.filter(name='type')
 def getType(object):
     return type(object).__name__
@@ -698,3 +725,8 @@ def content_type_match(id,obj_string):
     if type:
         return True if type.id == id else False
     return False
+=======
+@register.filter(name='zip')
+def zip_lists(a, b):
+  return zip(a, b)
+>>>>>>> mantis_actionables

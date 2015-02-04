@@ -339,5 +339,49 @@ DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
                                                               'description':        'Follow references down.',
                                                               'traversal_args':     {'direction': 'down',
                                                                                      'max_nodes': 150},
-                                                              'postprocessor':      'mantis_stix_importer.graph_postprocessors.standard_postprocessor'
-                                                              }]}]
+                                                              'postprocessor':      'mantis_stix_importer.graph_postprocessors.standard_postprocessor'},
+                                                             {
+                                                                 'mode_key' : 'corr_auto',
+                                                                 'menu_name' : 'Corr. auto',
+                                                                 'title' : 'Correlation Graph',
+                                                                 'description' : 'Show correlations with other InfoObjects',
+                                                                 'traversal_args' : {'direction' : 'down',
+                                                                                     'max_nodes' : 0},
+                                                                 'postprocessor' : 'mantis_malte.correlation_postprocessor',
+                                                                 'postprocessor_args' : {'unfolding': 'auto'}
+
+                                                                 },
+                                                                                                                          {
+                                                                 'mode_key' : 'corr_small',
+                                                                 'menu_name' : 'Corr S',
+                                                                 'title' : 'Correlation Graph',
+                                                                 'description' : 'Show correlations with other InfoObjects',
+                                                                 'traversal_args' : {'direction' : 'down',
+                                                                                     'max_nodes' : 0},
+                                                                 'postprocessor' : 'mantis_malte.correlation_postprocessor',
+                                                                 'postprocessor_args' : {'unfolding': 'minimal'}
+
+                                                                 },
+                                                                                                                                                                                       {
+                                                                 'mode_key' : 'corr_medium',
+                                                                 'menu_name' : 'Corr M',
+                                                                 'title' : 'Correlation Graph',
+                                                                 'description' : 'Show correlations with other InfoObjects',
+                                                                 'traversal_args' : {'direction' : 'down',
+                                                                                     'max_nodes' : 0},
+                                                                 'postprocessor' : 'mantis_malte.correlation_postprocessor',
+                                                                 'postprocessor_args' : {'unfolding': 'concise'}
+
+                                                                 },
+                                                                                                                                                                                                                                                    {
+                                                                 'mode_key' : 'corr_large',
+                                                                 'menu_name' : 'Corr L',
+                                                                 'title' : 'Correlation Graph',
+                                                                 'description' : 'Show correlations with other InfoObjects',
+                                                                 'traversal_args' : {'direction' : 'down',
+                                                                                     'max_nodes' : 0},
+                                                                 'postprocessor' : 'mantis_malte.correlation_postprocessor',
+                                                                 'postprocessor_args' : {'unfolding': 'full'}
+
+                                                                 }
+                                                             ]}]

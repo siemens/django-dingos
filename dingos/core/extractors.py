@@ -64,6 +64,7 @@ class InfoObjectDetails(object):
         #"object_type.namespace": ("Object Type (namespace)", "iobject_type.namespace.uri",['iobject_type__namespace']),
         "object.object_family": ("Object Family", "iobject_family_name",[]),
         "fact.pk": ("Fact PK", "fact_id",[]),
+        "value.pk": ("Value PK", "factvalue_id",[]),
         "object.pk": ("Object PK", "iobject_id",[]),
     }
 
@@ -233,14 +234,15 @@ class InfoObjectDetails(object):
 
 
     def export(self,*args,**kwargs):
-
-        self.override_columns=kwargs.pop('override_columns',[None])[0]
+        #not working if [0] not commented out
+        self.override_columns=kwargs.pop('override_columns',[None])#[0]
 
         if self.override_columns == 'ALL':
             args = self.allowed_columns.keys()
         elif self.override_columns == 'ALMOST_ALL':
             # exclude expensive columns:
             args = set(self.allowed_columns.keys()) - set(['package_urls','package_names'])
+
 
 
         self.additional_calculations(columns=args)

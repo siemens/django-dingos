@@ -174,6 +174,7 @@ def follow_references(iobject_pks,
                                      'fact__value_iobject_id__latest__name', #13
                                      'fact__value_iobject_id__latest__iobject_type__name', #14
                                      'fact__value_iobject_id__latest__iobject_type__iobject_family__name', #15
+                                     'iobject__timestamp' #16
 
 
         ]
@@ -269,6 +270,7 @@ def follow_references(iobject_pks,
                     node_dict['name'] = x[8]
                     node_dict['iobject_type'] = x[9]
                     node_dict['iobject_type_family'] = x[10]
+                    node_dict['timestamp'] = x[16]
 
 
                     graph.add_node(node,**node_dict)
@@ -339,28 +341,28 @@ def follow_references(iobject_pks,
     else:
         follow_references_rec(iobject_pks,reachable_iobject_pks,edge_set,direction,depth,graph)
 
-    nodes_without_edges = []
+    nodes_without_edges = set()
     for obj_pk in iobject_pks:
-        if not obj_pk in graph.node:
-            nodes_without_edges.append(obj_pk)
-        if nodes_without_edges:
-            node_infos = InfoObject.objects.filter(pk__in=nodes_without_edges).prefetch_related( 'identifier__namespace',
-                                     'iobject_type',
-                                     'iobject_type__iobject_family')
+        nodes_without_edges.add(obj_pk)
+    if nodes_without_edges:
+        node_infos = InfoObject.objects.filter(pk__in=nodes_without_edges).prefetch_related( 'identifier__namespace',
+                                 'iobject_type',
+                                 'iobject_type__iobject_family')
 
-            for node_info in node_infos:
-                node_dict = {}
-                try:
-                    url = reverse('url.dingos.view.infoobject', args=[node_info.pk])
-                except:
-                    url = None
-                node_dict['url'] = url
-                node_dict['identifier_ns'] =  node_info.identifier.namespace.uri
-                node_dict['identifier_uid'] =  node_info.identifier.uid
-                node_dict['name'] = node_info.name
-                node_dict['iobject_type'] = node_info.iobject_type.name
-                node_dict['iobject_type_family'] = node_info.iobject_type.iobject_family.name
-                graph.add_node(node_info.pk,node_dict)
+        for node_info in node_infos:
+            node_dict = {}
+            try:
+                url = reverse('url.dingos.view.infoobject', args=[node_info.pk])
+            except:
+                url = None
+            node_dict['url'] = url
+            node_dict['identifier_ns'] =  node_info.identifier.namespace.uri
+            node_dict['identifier_uid'] =  node_info.identifier.uid
+            node_dict['name'] = node_info.name
+            node_dict['iobject_type'] = node_info.iobject_type.name
+            node_dict['iobject_type_family'] = node_info.iobject_type.iobject_family.name
+            node_dict['timestamp'] = node_info.timestamp
+            graph.add_node(node_info.pk,node_dict)
 
     return graph
 

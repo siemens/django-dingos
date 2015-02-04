@@ -55,10 +55,12 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                 {% block header_row %}
                     <thead>
                         <tr>
-                            {% include "dingos/grappelli/includes/CheckboxActionColumn.html" %}
+                            {% include "dingos/grappelli/includes/CheckboxActionHeaderColumn.html" %}
 
                             {% for col_header in col_headers %}
-                                <th scope="col" class="sortable column-identifier">{{ col_header }}</th>
+                            <th scope="col" class="sortable column-identifier"><div class="grp-text">
+                                <a href="#" onclick="return false;">{{ col_header }}</a>
+                            </div></th>
                             {% endfor %}
                             <th scope="col"></th>
                         </tr>

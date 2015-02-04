@@ -2045,8 +2045,6 @@ class vIO2FValue(DingoModel):
     attribute=  models.CharField(max_length=128)
     iobject_identifier_uri = models.CharField(max_length=256)
     iobject_identifier_uid = models.SlugField(max_length=255)
-    iobject = models.ForeignKey(InfoObject,related_name=None)
-    latest_iobject = models.ForeignKey(InfoObject,related_name='+')
     iobject_name = models.CharField(max_length=255)
     timestamp = models.DateTimeField()
     create_timestamp = models.DateTimeField()
@@ -2054,15 +2052,32 @@ class vIO2FValue(DingoModel):
     iobject_family_name = models.SlugField(max_length=256)
     node_id = models.CharField(max_length=256)
     value = models.TextField()
-    referenced_iobject_ts = models.DateTimeField()
     value_storage_location =  models.SmallIntegerField()
-    referenced_iobject_identifier = models.ForeignKey(Identifier,related_name='+')
 
-    fact_data_type = models.ForeignKey(FactDataType,related_name='+')
-    identifier = models.ForeignKey(Identifier,related_name='+')
-    io2f = models.ForeignKey(InfoObject2Fact,related_name='+')
-    factterm =  models.ForeignKey(FactTerm,related_name='+')
-    fact = models.ForeignKey(Fact,related_name='+')
+    referenced_iobject_identifier = models.ForeignKey(Identifier,
+                                                      related_name='+',
+                                                      on_delete=models.DO_NOTHING)
+    referenced_iobject_ts = models.DateTimeField()
+
+    iobject = models.ForeignKey(InfoObject,
+                                related_name=None,
+                                on_delete=models.DO_NOTHING)
+    latest_iobject = models.ForeignKey(InfoObject,related_name='+',
+                                       on_delete=models.DO_NOTHING)
+    fact_data_type = models.ForeignKey(FactDataType,related_name='+',
+                                       on_delete=models.DO_NOTHING)
+    identifier = models.ForeignKey(Identifier,related_name='+',
+                                   on_delete=models.DO_NOTHING)
+    io2f = models.ForeignKey(InfoObject2Fact,related_name='+',
+                             on_delete=models.DO_NOTHING)
+    factterm =  models.ForeignKey(FactTerm,related_name='+',
+                                  on_delete=models.DO_NOTHING)
+    fact = models.ForeignKey(Fact,related_name='+',
+                             on_delete=models.DO_NOTHING)
+
+    factvalue = models.ForeignKey(FactValue,related_name='+',
+                             on_delete=models.DO_NOTHING)
+
 
     class Meta:
         managed = False

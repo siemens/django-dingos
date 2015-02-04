@@ -93,6 +93,11 @@ def set_dict(dictionary, value, command='set', *keys):
             existing[keys[len(keys) - 1]].append(value)
         else:
             existing[keys[len(keys) - 1]] = [value]
+    elif command == 'add_elt':
+        if keys[len(keys) - 1] in existing:
+            existing[keys[len(keys) - 1]].add(value)
+        else:
+            existing[keys[len(keys) - 1]] = set([value])
     elif command == 'set_or_append':
         if keys[len(keys) - 1] in existing:
             if type(keys[len(keys) - 1]) == type([]):
