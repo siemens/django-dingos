@@ -557,8 +557,6 @@ def show_InfoObjectField(oneObject, field):
 def dict_lookup(dict, key):
     return dict.get(key,'ERROR')
 
-<<<<<<< HEAD
-=======
 @register.assignment_tag(takes_context=True)
 def view_dict_lookup(context,dict_name,*keys):
     view_dict = getattr(context['view'],dict_name)
@@ -568,7 +566,6 @@ def view_dict_lookup(context,dict_name,*keys):
 def context_dict_lookup(context,dict_name,*keys):
     return get_dict(context[dict_name],*keys)
 
->>>>>>> mantis_actionables
 @register.assignment_tag(takes_context=True)
 def obj_by_pk(context, *args,**kwargs):
     return getattr(context['view'],'obj_by_pk')(*args,**kwargs)
@@ -666,7 +663,6 @@ def show_namespace_image(context,namespace, height=None, width=None):
         return '<img title="%s" alt="%s" src="%s" style="%s">' % (namespace.uri, namespace.uri, image_url, "".join(attributes))
     return namespace.uri
 
-<<<<<<< HEAD
 @register.filter(name='type')
 def getType(object):
     return type(object).__name__
@@ -725,8 +721,7 @@ def content_type_match(id,obj_string):
     if type:
         return True if type.id == id else False
     return False
-=======
+
 @register.filter(name='zip')
 def zip_lists(a, b):
   return zip(a, b)
->>>>>>> mantis_actionables
