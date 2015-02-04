@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
         ('taggit', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('contenttypes', '0001_initial'),
-        ('dingos', '0003_vio2fvalue'),
+        ('dingos', '0004_modify_vIO2FValue_view'),
     ]
 
     operations = [
