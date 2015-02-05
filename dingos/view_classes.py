@@ -54,7 +54,7 @@ from dingos.core.template_helpers import ConfigDictWrapper
 from dingos.core.utilities import get_dict, replace_by_list, listify
 from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm, PlaceholderForm, TaggingAdditionForm
 from dingos.queryparser.placeholder_parser import PlaceholderParser
-from dingos.models import InfoObject, UserData, Marking2X, Fact, dingos_class_map, TaggingHistory, Identifier
+from dingos.models import InfoObject, UserData, Marking2X, Fact, dingos_class_map, TaggingHistory, Identifier, vIO2FValue
 
 from core.http_helpers import get_query_string
 from taggit.models import Tag
@@ -1477,7 +1477,7 @@ class TagHistoryView(BasicTemplateView):
         self.tag = kwargs.pop('tag',None)
         return super(TagHistoryView,self).get(request, *args, **kwargs)
 
-
+from dingos.templatetags.dingos_tags import reachable_packages
 class TaggedObjectsView(BasicTemplateView):
     template_name = 'dingos/%s/lists/TaggedObjectsList.html' % DINGOS_TEMPLATE_FAMILY
 
@@ -1500,7 +1500,26 @@ class TaggedObjectsView(BasicTemplateView):
             else:
                 tag_id = [Tag.objects.get(name=self.tag).id]
             for model,cols in self.possible_models.items():
-                matching_items = list(model.objects.filter(tag_through__tag__id__in = tag_id).distinct('id').values(*cols))
+                if model == Fact and self.display == 'factdetails':
+                    cols = [''.join('fact__' + x) for x in cols]
+                    cols.append('iobject_id')
+                    matching_items_tmp = list(vIO2FValue.objects.filter(fact__tag_through__tag__id__in = tag_id).values_list(*cols))
+                    parent_iobj_pks = []
+                    matching_items = set()
+                    for x in matching_items_tmp:
+                        parent_iobj_pks.append(x[len(x)-1])
+                        matching_items.add(x[:len(x)-1])
+                    top_level_pks = []
+                    mapping_parent_top = {}
+                    context['object_list'] = parent_iobj_pks
+                    for parent_pk in parent_iobj_pks:
+                        found_top_level_objects = reachable_packages(context,parent_pk)['node_list']
+                        mapping_parent_top[parent_pk] = found_top_level_objects
+
+                    print mapping_parent_top
+
+                else:
+                    matching_items = list(model.objects.filter(tag_through__tag__id__in = tag_id).distinct('id').values_list(*cols))
                 model_objects_mapping[model.__name__] = matching_items
         except:
             pass
@@ -1509,6 +1528,7 @@ class TaggedObjectsView(BasicTemplateView):
         return context
 
     def get(self, request, *args, **kwargs):
+        self.display = request.GET.get('display')
         self.mode = request.GET.get('mode')
         self.tag = kwargs.pop('tag')
         return super(TaggedObjectsView,self).get(request, *args, **kwargs)
