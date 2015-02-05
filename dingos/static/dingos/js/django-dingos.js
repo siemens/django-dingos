@@ -464,6 +464,7 @@
                     }
                   }
                 });
+                $('#tag-remove-comment').val('');
                 $(this).dialog('close');
               }
               else {
