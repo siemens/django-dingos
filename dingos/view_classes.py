@@ -1342,7 +1342,7 @@ def processTagging(action,obj_pks,type,tags,**kwargs):
     else:
         raise NotImplementedError('%s not a possible action to perform') % (action)
 
-    TaggingHistory.bulk_create_tagging_history(action,tags,objects,user,comment)
+    TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,comment)
     return res
 
 
@@ -1451,7 +1451,10 @@ class TagHistoryView(BasicTemplateView):
 
         cols_history = ['timestamp','action','user__username','content_type_id','object_id','comment']
         sel_rel = ['tag','user','content_type']
-        history_q = list(TaggingHistory.objects.select_related(*sel_rel).filter(tag__name=self.tag).order_by('timestamp').values(*cols_history))
+        if self.mode == 'contains':
+            history_q = list(TaggingHistory.objects.select_related(*sel_rel).filter(tag__name__contains=self.tag).order_by('timestamp').values(*cols_history))
+        else:
+            history_q = list(TaggingHistory.objects.select_related(*sel_rel).filter(tag__name=self.tag).order_by('timestamp').values(*cols_history))
 
         obj_info_mapping = {}
         for model,cols in self.possible_models.items():
@@ -1470,9 +1473,8 @@ class TagHistoryView(BasicTemplateView):
         return context
 
     def get(self, request, *args, **kwargs):
-        tag = kwargs.pop('tag',None)
-        if tag:
-            self.tag = tag
+        self.mode = request.GET.get('mode')
+        self.tag = kwargs.pop('tag',None)
         return super(TagHistoryView,self).get(request, *args, **kwargs)
 
 
@@ -1493,9 +1495,12 @@ class TaggedObjectsView(BasicTemplateView):
         model_objects_mapping =  {}
 
         try:
-            tag_id = Tag.objects.get(name=self.tag).id
+            if self.mode == 'contains':
+                tag_id = Tag.objects.filter(name__contains=self.tag).values_list('id',flat=True)
+            else:
+                tag_id = [Tag.objects.get(name=self.tag).id]
             for model,cols in self.possible_models.items():
-                matching_items = list(model.objects.filter(tag_through__tag__id = tag_id).values(*cols))
+                matching_items = list(model.objects.filter(tag_through__tag__id__in = tag_id).distinct('id').values(*cols))
                 model_objects_mapping[model.__name__] = matching_items
         except:
             pass
@@ -1504,7 +1509,6 @@ class TaggedObjectsView(BasicTemplateView):
         return context
 
     def get(self, request, *args, **kwargs):
-        tag = kwargs.pop('tag',None)
-        if tag:
-            self.tag = tag
+        self.mode = request.GET.get('mode')
+        self.tag = kwargs.pop('tag')
         return super(TaggedObjectsView,self).get(request, *args, **kwargs)

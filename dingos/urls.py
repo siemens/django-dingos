@@ -111,11 +111,11 @@ urlpatterns = patterns('',
     url(r'^autocomplete/', include('autocomplete_light.urls')),
 
     # Tagging
-    url(r'^tagging/history/(?P<tag>\w*)',
+    url(r'^tagging/history/(?P<tag>[a-zA-Z0-9_\-]*)',
         TagHistoryView.as_view(),
         name='url.dingos.tagging.history'),
 
-    url(r'^tagging/info/(?P<tag>\w*)',
+    url(r'^tagging/info/(?P<tag>[a-zA-Z0-9_\-]*)',
         TaggedObjectsView.as_view(),
         name='url.dingos.tagging.objects'),
 
