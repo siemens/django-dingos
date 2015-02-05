@@ -46,7 +46,8 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
                    DINGOS_SAVED_SEARCHES_TYPE_NAME, \
                    DINGOS_DEFAULT_SAVED_SEARCHES,\
                    DINGOS_SEARCH_POSTPROCESSOR_REGISTRY,\
-                   DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING
+                   DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING,\
+                   TAGGING_REGEX
 
 from dingos import graph_traversal
 from dingos.core.template_helpers import ConfigDictWrapper
@@ -1302,17 +1303,23 @@ def processTagging(action,obj_pks,type,tags,**kwargs):
         }
         type = tags[0].__class__
         preprocess = possible_tag_types.get(type,None)
+        if preprocess is None:
+            raise TypeError("%s not a possible type for tags - possible types are %s") % (type,possible_tag_types.keys())
         tags = preprocess(tags)
 
-        if tags is None:
-            raise TypeError("%s not a possible type for tags - possible types are %s") % (type,possible_tag_types.keys())
-        else:
-            return tags
+        not_allowed = []
+        if TAGGING_REGEX:
+            for tag in tags:
+                if not any(regex.match(tag) for regex in TAGGING_REGEX):
+                    not_allowed.append(tag)
+                    tags.remove(tag)
+
+        return tags,not_allowed
 
     res = {}
     ACTIONS = ['add', 'remove']
     if action in ACTIONS:
-        tags = _preprocess_tags(tags)
+        tags_to_add,not_allowed_tags = _preprocess_tags(tags)
         model = dingos_class_map.get(type,None)
         if model is None:
             raise ObjectDoesNotExist('no suitable model found named %s') % (model)
@@ -1322,15 +1329,16 @@ def processTagging(action,obj_pks,type,tags,**kwargs):
         comment = kwargs.pop('comment','')
 
         objects = list(model.objects.filter(pk__in=obj_pks))
+        res['err'] = not_allowed_tags
         if action == 'add':
             for object in objects:
-                object.tags.add(*tags)
-                res[object.id] = tags
+                object.tags.add(*tags_to_add)
+                res[object.id] = tags_to_add
 
         elif action == 'remove':
             for object in objects:
-                object.tags.remove(*tags)
-                res[object.id] = tags
+                object.tags.remove(*tags_to_add)
+                res[object.id] = tags_to_add
     else:
         raise NotImplementedError('%s not a possible action to perform') % (action)
 

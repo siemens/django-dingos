@@ -15,6 +15,7 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import re
 
 
 
@@ -392,3 +393,8 @@ DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
 
                                                                  }
                                                              ]}]
+
+#if tags should match specific requirements, add regex to check here
+TAGGING_REGEX = [
+    #re.compile(r"^INV-[0-9]+(-[A-Za-z0-9]+)?$")
+]

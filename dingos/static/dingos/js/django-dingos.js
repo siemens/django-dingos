@@ -399,10 +399,17 @@
           contentType: 'application/json; charset=UTF-8',
           dataType: "json",
           success: function (resp) {
-            var name = resp[obj_id][0];
-            var tag = '<span id="' + name + '" class="tag">' + name + '<a class="remove_tag_button" data-tag-name="' + name + '"> X</a></span>';
-            tag_container.append(tag);
-            add_removeHandler();
+            var not_allowed_tag = resp['err'];
+            if(not_allowed_tag.length) {
+              alert("This tag is not matching the patterns of possible tags:\n" + not_allowed_tag);
+            }
+
+            else {
+              var name = resp[obj_id][0];
+              var tag = '<span id="' + name + '" class="tag">' + name + '<a class="remove_tag_button" data-tag-name="' + name + '"> X</a></span>';
+              tag_container.append(tag);
+              add_removeHandler();
+            }
           }
         });
       }
