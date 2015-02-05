@@ -357,6 +357,8 @@ def show_InfoObject(context,
     page = context['view'].request.GET.get('page')
 
     if link_pk:
+        print title
+        print link_pk
         all_tags = set(reduce(lambda x,y: x+y,context['tag_dict'].get(link_pk,{}).values(),[]))
     else:
         all_tags = []

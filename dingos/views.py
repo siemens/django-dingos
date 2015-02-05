@@ -63,6 +63,24 @@ from dingos.graph_traversal import follow_references
 
 from dingos.core.utilities import match_regex_list
 
+
+
+def getTagsbyModel(things,model=None):
+    def _simple_q(_objects,model):
+        if not model:
+            model = type(_objects[0])
+        obj_pks = things if isinstance(things[0],int) else set([x.id for x in things])
+        cols = ['id','tag_through__tag__name']
+        tags_q = model.objects.filter(id__in = obj_pks).filter(tag_through__isnull=False).values(*cols)
+        return tags_q
+    tags_q = _simple_q(things,model=model)
+    tag_map = {}
+    for tag in tags_q:
+        tag_list = tag_map.setdefault(tag['id'],[])
+        tag_list.append(tag['tag_through__tag__name'])
+    return tag_map
+
+
 def getTags(objects,complex=False,model=None):
     """
     :param objects: single/multiple objects or object pks as list or set
@@ -76,10 +94,20 @@ def getTags(objects,complex=False,model=None):
                     }
     }
     """
+    print "getTags called"
     tag_map = {}
     if isinstance(objects,set):
         objects = list(objects)
+
     objects = listify(objects)
+    print "Objects: %s" % map(lambda x: x.pk, objects)
+    print "Model"
+    if not model:
+        print type(objects[0])
+    else:
+        print model
+
+
 
     def _simple_q(_objects,model):
         if not model:
@@ -110,7 +138,7 @@ def getTags(objects,complex=False,model=None):
         for tag in tags_q:
             tag_list = tag_map.setdefault(tag['id'],[])
             tag_list.append(tag['tag_through__tag__name'])
-
+    print tag_map
     return tag_map
 
 class InfoObjectList(BasicFilterView):
