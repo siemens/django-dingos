@@ -27,12 +27,12 @@ from django.db.models import F
 
 from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY,DINGOS_TEMPLATE_FAMILY
 from dingos.core import http_helpers
-from dingos.views import getTags
+from dingos.views import getTags, getTagsbyModel
 from dingos.core.utilities import get_from_django_obj,get_dict
 from dingos.models import BlobStorage,dingos_class_map
 from dingos.graph_traversal import follow_references
 from dingos.graph_utils import dfs_preorder_nodes
-from dingos.models import InfoObject, InfoObject2Fact, Fact, vIO2FValue, IdentifierNameSpace
+from dingos.models import Identifier, InfoObject, InfoObject2Fact, Fact, vIO2FValue, IdentifierNameSpace
 from dingos.forms import TagForm
 
 from taggit.models import TaggedItem, Tag
@@ -357,7 +357,7 @@ def show_InfoObject(context,
     page = context['view'].request.GET.get('page')
 
     if link_pk:
-        all_tags = set(reduce(lambda x,y: x+y,context['tag_dict'].get(link_pk,{}).values(),[]))
+        all_tags = set(reduce(lambda x,y: x+y,context['tag_dict']['iobjects'].get(link_pk,{}).values(),[]))
     else:
         all_tags = []
 
@@ -693,19 +693,36 @@ def show_InfoObjectTagBlockDisplay(context, object, isEditable=False):
     context['isEditable'] = isEditable
     return context
 
+
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectTagRowDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
-def show_InfoObjectTagRowDisplay(context, curr_obj, col_count, isEditable=False):
+def show_GenericTagRowDisplay(context, object, col_count, isEditable=False):
     view = context["view"]
-    if view.tags_dict is None:
+
+    try:
+        simple_tags_dict = view.simple_tags_dict
+    except:
         objects = list(context.get('object_list',[]))
-        if objects and isinstance(objects[0],InfoObject):
-            objects = [x.identifier for x in objects]
-        if objects:
-            view.tags_dict = getTags(objects)
+        view.simple_tags_dict = getTagsbyModel(objects)
     return {
-        'object' : curr_obj,
+        'object' : object,
         'isEditable' : isEditable,
-        'tags' : view.tags_dict.get(curr_obj if isinstance(curr_obj,int) else curr_obj.id,[]),
+        'tags' : view.simple_tags_dict.get(object.id,[]),
+        'col_count' : col_count
+    }
+
+
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectTagRowDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_InfoObjectTagRowDisplay(context, object, col_count, isEditable=False):
+    view = context["view"]
+    try:
+        simple_tags_dict = view.simple_tags_dict
+    except:
+        identifiers = list(map(lambda x: x.identifier_id, context.get('object_list',[])))
+        view.simple_tags_dict = getTagsbyModel(identifiers,Identifier)
+    return {
+        'identifier' : object.identifier,
+        'isEditable' : isEditable,
+        'tags' : view.simple_tags_dict.get(object.identifier.id,[]),
         'col_count' : col_count
     }
 
