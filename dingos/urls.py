@@ -117,7 +117,7 @@ urlpatterns = patterns('',
 
     url(r'^tagging/info/(?P<tag>[a-zA-Z0-9_\-]*)',
         TaggedObjectsView.as_view(),
-        name='url.dingos.tagging.objects'),
+        name='url.dingos.tagging.tagged_things'),
 
     url(r'^tagging/(?P<action>\w*)',
         views.TaggingJSONView.as_view(),

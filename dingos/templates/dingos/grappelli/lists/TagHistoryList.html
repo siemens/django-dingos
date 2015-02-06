@@ -7,17 +7,53 @@
     <div class="grp-module">
       <h2 class="grp-collapse-handler">{% block list_title %}Timeline for Tag "{{ tag }}"{% endblock %}</h2>
         <table>
+          <thead>
+            <tr>
+             <th>
+               Date
+             </th>
+             {% if mode == 'contains' %}
+                <th>
+                    Tag
+                </th>
+             {% endif %}
+             <th>
+               Action
+             </th>
+             <th>
+               User
+             </th>
+             <th>
+               Fact Term or Identifier
+             </th>
+             <th>
+               Fact Value or Object Name
+             </th>
+             <th>
+               Comment
+             </th>
+          </tr>
+          </thead>
+
         {% for entry in history %}
           {% with map_obj=map_objs|get_value:entry.content_type_id %}
             <tr>
               <td>{{ entry.timestamp }}</td>
+               {% if mode == 'contains' %}
+                <td>
+                {% show_TagDisplay entry.tag__name None False %}
+                </td>
+               {% endif %}
               <td>{% with action=map_action|get_value:entry.action %}{{ action.1 }}{% endwith %}</td>
               <td>{{ entry.user__username }}</td>
               {% with obj=map_obj|get_value:entry.object_id %}
 
               {% if entry.content_type_id|content_type_match:"Identifier" %}
-                <td>{{ obj.uid }}</td>
-                <td><a href="{% url "url.dingos.view.infoobject" obj.latest__id %}">{{ obj.latest__name }}</a></td>
+                <td><a href="{% url "url.dingos.view.infoobject" obj.latest__id %}">
+                    {% show_namespace_image obj.namespace__uri height='25' %}:{{ obj.uid }}
+                    </a>
+                </td>
+                <td>{{ obj.latest__name }}</td>
 
               {% elif entry.content_type_id|content_type_match:"Fact" %}
                 <td>{{ obj.fact_term__term }}{% if obj.fact_term__attribute %}{{ obj.fact_term__attribute }}{% endif %}</td>

@@ -1446,13 +1446,13 @@ class TagHistoryView(BasicTemplateView):
 
     possible_models = {
             Fact : ['id','fact_term__term','fact_term__attribute','fact_values__value'],
-            Identifier : ['id','latest__name','uid','latest__id']
+            Identifier : ['id','latest__name','uid','latest__id','namespace__uri']
         }
 
     def get_context_data(self, **kwargs):
         context = super(TagHistoryView, self).get_context_data(**kwargs)
 
-        cols_history = ['timestamp','action','user__username','content_type_id','object_id','comment']
+        cols_history = ['tag__name','timestamp','action','user__username','content_type_id','object_id','comment']
         sel_rel = ['tag','user','content_type']
         if self.mode == 'contains':
             history_q = list(TaggingHistory.objects.select_related(*sel_rel).filter(tag__name__contains=self.tag).order_by('timestamp').values(*cols_history))
@@ -1468,7 +1468,7 @@ class TagHistoryView(BasicTemplateView):
             for obj in model_q:
                 current_model_map[obj['id']] = obj
             del self.pks
-
+        context['mode'] = self.mode
         context['tag'] = self.tag
         context['history'] = history_q
         context['map_objs'] = obj_info_mapping
@@ -1478,6 +1478,10 @@ class TagHistoryView(BasicTemplateView):
     def get(self, request, *args, **kwargs):
         self.mode = request.GET.get('mode')
         self.tag = kwargs.pop('tag',None)
+        if self.mode == 'contains':
+            self.title = "Timeline for tags containing string '%s'" % self.tag
+        else:
+            self.title = "Timeline for tag '%s'" % self.tag
         return super(TagHistoryView,self).get(request, *args, **kwargs)
 
 from dingos.templatetags.dingos_tags import reachable_packages

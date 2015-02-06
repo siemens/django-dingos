@@ -729,7 +729,11 @@ def show_InfoObjectTagRowDisplay(context, object, col_count, isEditable=False):
 @register.inclusion_tag('dingos/%s/includes/_TagDisplay.html'% DINGOS_TEMPLATE_FAMILY)
 def show_TagDisplay(tags, obj_id, isEditable = False):
     context = {}
-    context['tags'] = tags
+    if isinstance(tags,basestring):
+        context['tags'] = [tags]
+    else:
+        context['tags'] = tags
+
     context['isEditable'] = isEditable
     context['tagged_obj_id'] = obj_id
     return context
