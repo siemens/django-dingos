@@ -1288,6 +1288,7 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
 
 def processTagging(action,obj_pks,type,tags,**kwargs):
+    print "Passed tags %s" % tags
 
     def _preprocess_tags(tags):
         if isinstance(tags,set):
@@ -1333,6 +1334,11 @@ def processTagging(action,obj_pks,type,tags,**kwargs):
                 res[object.id] = tags
     else:
         raise NotImplementedError('%s not a possible action to perform') % (action)
+
+    # Remove
+    print action
+    print tags
+    print objects
 
     TaggingHistory.bulk_create_tagging_history(action,tags,objects,user,comment)
     return res

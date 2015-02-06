@@ -34,7 +34,7 @@ from provider.oauth2.models import Client
 
 from braces.views import SuperuserRequiredMixin
 
-from dingos.models import InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact, Fact, dingos_class_map
+from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact, Fact, dingos_class_map
 from dingos.view_classes import BasicJSONView, POSTPROCESSOR_REGISTRY
 from dingos.core.utilities import listify
 
@@ -81,9 +81,9 @@ def getTagsbyModel(things,model=None):
     return tag_map
 
 
-def getTags(objects,complex=False,model=None):
+def getTags(iobjects):
     """
-    :param objects: single/multiple objects or object pks as list or set
+    :param iobjects: single/multiple objects or object pks as list or set
     :param complex: iobject and fact tags if set to True
     :param model: type of objects have to be provided if using object pks
     :return: dict like following:
@@ -94,50 +94,32 @@ def getTags(objects,complex=False,model=None):
                     }
     }
     """
-    print "getTags called"
-    tag_map = {}
-    if isinstance(objects,set):
-        objects = list(objects)
-
-    objects = listify(objects)
-    print "Objects: %s" % map(lambda x: x.pk, objects)
-    print "Model"
-    if not model:
-        print type(objects[0])
-    else:
-        print model
+    tag_map = {'identifiers': {},
+               'iobjects': {}}
 
 
+    if isinstance(iobjects,set):
+        iobjects = list(iobjects)
 
-    def _simple_q(_objects,model):
-        if not model:
-            model = type(_objects[0])
-        obj_pks = objects if isinstance(objects[0],int) else set([x.id for x in objects])
-        cols = ['id','tag_through__tag__name']
-        tags_q = model.objects.filter(id__in = obj_pks).filter(tag_through__isnull=False).values(*cols)
-        return tags_q
+    iobjects = listify(iobjects)
 
-    if complex:
-        #filter(fact__tag_through__isnull=False) workarround to achieve INNER JOIN
-        cols = ['identifier_id','fact_id','fact__tag_through__tag__name']
-        ident_pks_q = list(_simple_q(objects,model=model))
-        ident_pks = objects if model else set([x.id for x in objects])
-        fact_tags_q = list(vIO2FValue.objects.filter(identifier_id__in = ident_pks).filter(fact__tag_through__isnull=False).values(*cols))
-        tag_map = {}
-        for tag in ident_pks_q:
-            ident = tag_map.setdefault(tag['id'],{})
-            tags = ident.setdefault('tags',[])
-            tags.append(tag['tag_through__tag__name'])
-        for tag in fact_tags_q:
-            ident = tag_map.setdefault(tag['identifier_id'],{})
-            fact = ident.setdefault(tag['fact_id'],[])
-            fact.append(tag['fact__tag_through__tag__name'])
 
-    else:
-        tags_q = _simple_q(objects,model=model)
-        for tag in tags_q:
-            tag_list = tag_map.setdefault(tag['id'],[])
-            tag_list.append(tag['tag_through__tag__name'])
+    tag_map['identifiers'] = getTagsbyModel(map(lambda x: x.identifier_id, iobjects),Identifier)
+
+
+
+    o_tag_map = tag_map['iobjects']
+
+    cols = ['iobject_id','fact_id','fact__tag_through__tag__name']
+
+    fact_tags_q = list(vIO2FValue.objects.filter(iobject__in = iobjects).filter(fact__tag_through__isnull=False).values(*cols))
+
+
+    for tag in fact_tags_q:
+        obj_map = o_tag_map.setdefault(tag['iobject_id'],{})
+        fact_list = obj_map.setdefault(tag['fact_id'],[])
+        fact_list.append(tag['fact__tag_through__tag__name'])
+
     print tag_map
     return tag_map
 
@@ -412,7 +394,7 @@ class InfoObjectView_wo_login(BasicDetailView):
         context['iobject2facts'] = self.iobject2facts
 
         if self.__class__ == InfoObjectView:
-            context['tag_dict'] = getTags(self.object.identifier,complex=True)
+            context['tag_dict'] = getTags(self.object)
 
         context['io2fvs'] = None
         try:

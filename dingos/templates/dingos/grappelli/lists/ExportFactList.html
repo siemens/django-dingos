@@ -49,7 +49,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
               <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
                 {# row|length needed for right colspan, would be done better in javascript #}
                 {% with pk=row|get_value:"fact.pk" %}
-                {% show_InfoObjectTagRowDisplay object_list|get_obj:pk row|length True %}
+                {% show_GenericTagRowDisplay object_list|get_obj:pk row|length True %}
                 {% endwith %}
               </tr>
         {% endfor %}

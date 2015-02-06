@@ -25,10 +25,10 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     <tbody>
       <tr>
         <th class="nowrap w-1 middle">Tags</th>
-        <td id="tags" class="middle tag-block" data-obj-id="{{ object.id }}" data-obj-type="{{ object|type }}">
-        {% with tags=tag_dict|get_value:object.id|get_value:'tags' %}
+        <td id="tags" class="middle tag-block" data-obj-id="{{ object.identifier.id }}" data-obj-type="{{ object.identifier|type }}">
+        {% with tags=tag_dict|get_value:'identifiers'|get_value:object.identifier.id %}
           {% if tags %}
-            {% show_TagDisplay tags object.id isEditable %}
+            {% show_TagDisplay tags object.identifier.id isEditable %}
           {% endif %}
         {% endwith %}
         </td>
@@ -37,7 +37,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
       <tr>
         <th class="nowrap w-1 middle">Add tags: </th>
         <td>
-          {% show_addTagInput object.id object|type %}
+          {% show_addTagInput object.identifier.id object.identifier|type %}
         </td>
       </tr>
       {% endif %}
