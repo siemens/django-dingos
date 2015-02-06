@@ -487,7 +487,7 @@ class InfoObjectDetails(object):
     def get_siblings(self,io2f):
         if not self._sibling_map:
             for vio2f in self.io2fs:
-                node_id = io2f.node_id.split(':')
+                node_id = vio2f.node_id.split(':')
                 if node_id:
                     parent_id = ":".join(node_id[0:-1])
                     set_dict(self._sibling_map,vio2f,"append",vio2f.iobject_id,parent_id)
