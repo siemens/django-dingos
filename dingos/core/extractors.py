@@ -102,13 +102,6 @@ class InfoObjectDetails(object):
         "object.pk": ("Object PK", "id",[]),
     }
 
-
-    allowed_columns = {}
-    enrich_details = True
-    format = None
-    query_mode = None
-    query_mode_restriction = ['InfoObject']
-
     _default_columns =  [('object.url', 'InfoObject URL'),
         ('exporter','Exporter')]
 
@@ -116,23 +109,40 @@ class InfoObjectDetails(object):
 
     def __init__(self,*args,**kwargs):
 
-        self.object_list = kwargs.pop('object_list',[])
-        self.io2fs = kwargs.pop('io2f_query',None)
+        self.allowed_columns = {}
+        self.enrich_details = True
+        self.format = None
+        self.query_mode = None
+        self.query_mode_restriction = ['InfoObject']
+
+        details_obj = kwargs.pop('details_obj',None)
+        if details_obj:
+            self.object_list = details_obj.object_list
+            self.io2fs = details_obj.io2fs
+            self.graph = details_obj.graph
+            self.package_graph = details_obj.package_graph
+            self.enrich_details = details_obj.enrich_details
+            self.query_mode = details_obj.query_mode
+            self._sibling_map = details_obj._sibling_map
+            self.node_map = details_obj.node_map
+        else:
+
+            self.object_list = kwargs.pop('object_list',[])
+            self.io2fs = kwargs.pop('io2f_query',None)
+            self.graph = kwargs.pop('graph',None)
+            self.package_graph = None
+            self.enrich_details = kwargs.pop('enrich_details',self.enrich_details)
+            self.query_mode = kwargs.pop('query_mode','InfoObject')
+            self.node_map = None
+            self._sibling_map = {}
+            self.initialize_object_details()
+
         self.format = kwargs.pop('format',None)
-        self.graph = kwargs.pop('graph',None)
-        self.package_graph = None
-        self.enrich_details = kwargs.pop('enrich_details',self.enrich_details)
-        self.query_mode = kwargs.pop('query_mode','InfoObject')
-
-        self._sibling_map = {}
-
-        #self.iobject_map = None
-
         self.results = []
 
-        self.node_map = None
-        self.initialize_object_details()
+        print "Exporter name %s" % self.exporter_name
         self.initialize_allowed_columns()
+
 
 
 
@@ -235,13 +245,21 @@ class InfoObjectDetails(object):
 
     def export(self,*args,**kwargs):
         #not working if [0] not commented out
-        self.override_columns=kwargs.pop('override_columns',[None])#[0]
+        override_columns=kwargs.pop('override_columns',[None])#[0]
 
-        if self.override_columns == 'ALL':
+        include_fact_id = kwargs.pop('include_fact_id',False)
+
+        if override_columns == 'ALL':
             args = self.allowed_columns.keys()
-        elif self.override_columns == 'ALMOST_ALL':
+        elif override_columns == 'ALMOST_ALL':
             # exclude expensive columns:
             args = set(self.allowed_columns.keys()) - set(['package_urls','package_names'])
+        else:
+            args= self._default_columns
+
+
+            if include_fact_id:
+                args.append('fact_id')
 
 
 
