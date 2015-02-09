@@ -739,9 +739,6 @@ class InfoObjectExportsView(BasicTemplateView):
 
             (content_type,result) = postprocessor.export(*columns,**self.request.GET)
 
-
-
-
         else:
             content_type = None
             result = 'NO EXPORTER %s DEFINED' % exporter
@@ -808,6 +805,7 @@ class InfoObjectExportsViewWithTagging(BasicListView):
 
             kwargs = {'format' : 'dict'}
             kwargs.update(self.request.GET)
+
             (content_type,result) = postprocessor.export(*columns,**kwargs)
 
         else:
