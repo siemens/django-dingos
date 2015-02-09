@@ -694,7 +694,7 @@ def show_InfoObjectTagBlockDisplay(context, object, isEditable=False):
     return context
 
 
-@register.inclusion_tag('dingos/%s/includes/_InfoObjectTagRowDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+@register.inclusion_tag('dingos/%s/includes/_GenericRowDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
 def show_GenericTagRowDisplay(context, object, col_count, isEditable=False):
     view = context["view"]
 
@@ -704,7 +704,7 @@ def show_GenericTagRowDisplay(context, object, col_count, isEditable=False):
         objects = list(context.get('object_list',[]))
         view.simple_tags_dict = getTagsbyModel(objects)
     return {
-        'object' : object,
+        'thing' : object,
         'isEditable' : isEditable,
         'tags' : view.simple_tags_dict.get(object.id,[]),
         'col_count' : col_count

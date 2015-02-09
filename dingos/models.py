@@ -2418,6 +2418,7 @@ class TaggingHistory(DingoModel):
     user = models.ForeignKey(User,related_name='tagging_history')
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField()
+
     tobject = generic.GenericForeignKey('content_type', 'object_id')
     comment = models.TextField(blank=True)
     tag = models.ForeignKey(Tag,related_name='tag_history')
