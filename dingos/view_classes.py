@@ -1311,6 +1311,9 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
 
 def processTagging(data,**kwargs):
+    print "-------------"
+    print data
+    print kwargs
 
     TAG_HTML =  """
                 <span id="%s" class="tag stay-inline">
@@ -1318,8 +1321,6 @@ def processTagging(data,**kwargs):
                     <a class="remove_tag_button stay-inline" data-tag-name="%s"> X</a>
                 </span>
                 """
-
-    #TODO bulk variante
 
     def _preprocess_tags(tags):
         if isinstance(tags,set):
@@ -1377,8 +1378,7 @@ def processTagging(data,**kwargs):
                         res['html'] = TAG_HTML % (tag,url,tag,tag)
                         res['status'] = 0
                     else:
-                        pass
-                        #TODO bulk
+                        res['status'] = 0
                 comment = '' if not user_data else user_data
                 TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,comment)
 
@@ -1386,7 +1386,7 @@ def processTagging(data,**kwargs):
                 if user_data is None:
                     res['additional'] = {
                         'dialog_id' : 'dialog-tagging-remove',
-                        'msg' : 'To delete this tag, enter a comment on this action here.'
+                        'msg' : 'To delete a tag, a comment is required.'
                     }
                     res['status'] = 1
                 else:
@@ -1462,17 +1462,29 @@ class TaggingAdditionView(BasicListActionView):
                         (success,action_msg) = (True,"DEBUG: Action has not been carried out")
                     else:
                         action = request.POST['action'].split(" ")[0].lower()
-                        if action == 'remove' and form_data['comment'] == '':
-                            messages.error(self.request,"A comment must be provided in order to delete tags!")
-
+                        if self.type == 'InfoObject':
+                            objects = Identifier.objects.filter(iobject_set__id__in=form_data['checked_objects']).distinct('id').values_list('id',flat=True)
+                            curr_type = 'Identifier'
                         else:
-                            if self.type == 'InfoObject':
-                                objects = Identifier.objects.filter(iobject_set__id__in=form_data['checked_objects']).distinct('id').values_list('id',flat=True)
-                                curr_type = 'Identifier'
-                            else:
-                                objects = [int(x) for x in form_data['checked_objects']]
-                                curr_type = self.type
-                            action_function(action,objects,curr_type,[int(x) for x in form_data['tag_to_add']],user=request.user,comment=form_data['comment'])
+                            objects = [int(x) for x in form_data['checked_objects']]
+                            curr_type = self.type
+                        data = {
+                            'action' : action,
+                            'objects' : objects,
+                            'obj_type' : curr_type,
+                            'tag_names' : [int(x) for x in form_data['tag_to_add']],
+                            'user_data' : form_data['comment']
+                        }
+
+                        extra = {
+                            'user' : request.user,
+                            'bulk' : True
+                        }
+
+                        res = action_function(data,**extra)
+                        if res['status'] == -1:
+                            messages.error(self.request,res['err'])
+
             if not found_action:
                 message = self.no_action_error_message
                 messages.error(self.request,message)
