@@ -213,9 +213,9 @@ class InfoObjectDetails(object):
                    '_io2fv' : io2fv,
                    'io2fv' : io2fv,
                    '_object_url': reverse('url.dingos.view.infoobject', args=[iobject_pk]),
-                   'actionable_type' : None,
-                   'actionable_subtype' : None,
-                   'actionable_info' : None,
+                   'actionable_type' : '',
+                   'actionable_subtype' : '',
+                   'actionable_info' : '',
                    }
 
         if io2fv:

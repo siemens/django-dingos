@@ -1311,7 +1311,6 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
 
 def processTagging(action,obj_pks,type,tags,**kwargs):
-    print "Passed tags %s" % tags
 
     def _preprocess_tags(tags):
         if isinstance(tags,set):
@@ -1375,9 +1374,9 @@ class TaggingAdditionView(BasicListActionView):
 
     # Override the following parameters in views inheriting from this view.
 
-    title = 'Tag objects'
+    title = 'Bulk tagging'
 
-    description = """Allows the user to add tags to multiple infoobjects at once."""
+    description = """Manage tags on several objects. Be sure to enter a comment when deleting a tag."""
 
     template_name = 'dingos/%s/actions/TagingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
 

@@ -24,7 +24,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             <thead>
             <tr>
             <th/>
-            <th>Fact PK</th>
+            <th>Fact</th>
+            <th>Tags</th>
             </tr>
             </thead>
 
@@ -41,11 +42,10 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     <td>
                         {{ fact.fact_term }} = {% for value in fact.fact_values.all %} {{ value }} {% if not forloop.last %}, {% endif %} {% endfor %}
                     </td>
+                   {% show_GenericTagRowDisplay fact 1 False %}
                {% endblock %}
            </tr>
-           <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
-                {% show_GenericTagRowDisplay fact 2 False %}
-           </tr>
+
          {% endwith %}
        {% endfor %}
        </tbody>

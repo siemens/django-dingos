@@ -49,7 +49,8 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_SAVED_SEARCHES_TYPE_NAME, \
     DINGOS_DEFAULT_SAVED_SEARCHES, \
     DINGOS_OBJECTTYPE_VIEW_MAPPING, \
-    DINGOS_INFOOBJECT_GRAPH_TYPES
+    DINGOS_INFOOBJECT_GRAPH_TYPES, \
+    DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
 
 from braces.views import LoginRequiredMixin
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView, BasicCustomQueryView, processTagging
@@ -692,9 +693,15 @@ class CustomFactSearchView(BasicCustomQueryView):
                         'node_id')
 
 class InfoObjectExportsView(BasicListView):
-    # When building the graph, we skip references to the kill chain. This is because
-    # in STIX reports where the kill chain information is consistently used, it completly
-    # messes up the graph display.
+
+    @property
+    def title(self):
+        exporter = self.kwargs.get('exporter', None)
+
+
+        iobject_name =  self.graph.node[int(self.kwargs.get('pk'))]['name']
+        exporter_name = DINGOS_SEARCH_POSTPROCESSOR_REGISTRY[exporter]['name']
+        return "%s on '%s'" % (exporter_name,iobject_name)
 
     skip_terms = [
         # We do not want to follow 'Related Object' links and similar
@@ -732,6 +739,7 @@ class InfoObjectExportsView(BasicListView):
                                  direction='down',
                                  max_nodes=self.max_objects,
                                  )
+        self.graph = graph
 
 
         exporter = self.kwargs.get('exporter', None)
@@ -743,11 +751,20 @@ class InfoObjectExportsView(BasicListView):
             kwargs.update(self.request.GET)
 
         if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
+            # If no format info has been given, json is the default
+            # Because we may need to work with the result, we first
+            # have a dictionary returned which we then convert into
+            # a json when everything is done
+
             kwargs['format'] = 'dict'
             combined_result = []
         else:
             combined_result = ''
 
+        if not raw_output:
+            # make sure that we get all information in the result items
+            # required by the exporter view
+            kwargs['override_columns'] = 'EXPORTER'
 
         if exporter in POSTPROCESSOR_REGISTRY:
 
@@ -767,7 +784,7 @@ class InfoObjectExportsView(BasicListView):
                 else:
                     columns = []
 
-                (content_type,result) = postprocessor.export(*columns,override_columns='EXPORTER',**kwargs)
+                (content_type,result) = postprocessor.export(*columns,**kwargs)
 
                 combined_result += result
 
