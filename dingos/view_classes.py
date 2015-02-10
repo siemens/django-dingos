@@ -1288,8 +1288,16 @@ class SimpleMarkingAdditionView(BasicListActionView):
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
 
 
-def processTagging(action,obj_pks,type,tags,**kwargs):
-    print "Passed tags %s" % tags
+def processTagging(data,**kwargs):
+
+    TAG_HTML =  """
+                <span id="%s" class="tag stay-inline">
+                    <a href="%s" class="stay-inline">%s</a>
+                    <a class="remove_tag_button stay-inline" data-tag-name="%s"> X</a>
+                </span>
+                """
+
+    #TODO bulk variante
 
     def _preprocess_tags(tags):
         if isinstance(tags,set):
@@ -1317,34 +1325,57 @@ def processTagging(action,obj_pks,type,tags,**kwargs):
 
         return tags,not_allowed
 
+    action = data['action']
+    obj_pks = data['objects']
+    obj_type = data['obj_type']
+    tags = listify(data['tag_names'])
+    print "Passed tags %s" % tags
+
     res = {}
     ACTIONS = ['add', 'remove']
     if action in ACTIONS:
         tags_to_add,not_allowed_tags = _preprocess_tags(tags)
-        model = dingos_class_map.get(type,None)
+        model = dingos_class_map.get(obj_type,None)
         if model is None:
             raise ObjectDoesNotExist('no suitable model found named %s') % (model)
         user = kwargs.pop('user',None)
         if user is None or not isinstance(user,User):
             raise ObjectDoesNotExist('no user for this action provided')
-        comment = kwargs.pop('comment','')
 
         objects = list(model.objects.filter(pk__in=obj_pks))
-        res['err'] = not_allowed_tags
-        if action == 'add':
-            for object in objects:
-                object.tags.add(*tags_to_add)
-                res[object.id] = tags_to_add
+        user_data = data.get('user_data','')
 
-        elif action == 'remove':
-            for object in objects:
-                object.tags.remove(*tags_to_add)
-                res[object.id] = tags_to_add
+        if tags_to_add:
+            if action == 'add':
+                for object in objects:
+                    object.tags.add(*tags_to_add)
+                    if not kwargs['bulk']:
+                        tag = tags_to_add[0]
+                        url = urlresolvers.reverse('url.dingos.tagging.tagged_things',args=[tag])
+                        res['html'] = TAG_HTML % (tag,url,tag,tag)
+                        res['status'] = 0
+                    else:
+                        pass
+                        #TODO bulk
+                TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,comment)
+
+            elif action == 'remove':
+                if not user_data:
+                    res['additional'] = {
+                        'dialog_id' : 'dialog-tagging-remove',
+                        'msg' : 'To delete this tag, enter a comment on this action here.'
+                    }
+                    res['status'] = 1
+                else:
+                    for object in objects:
+                        object.tags.remove(*tags_to_add)
+                    TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,user_data)
+                    res['status'] = 0
+        else:
+            res['err'] = "tag not allowed: %s" % (not_allowed_tags)
+            res['status'] = -1
     else:
         raise NotImplementedError('%s not a possible action to perform') % (action)
-
-
-    TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,comment)
 
     return res
 

@@ -49,10 +49,11 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_SAVED_SEARCHES_TYPE_NAME, \
     DINGOS_DEFAULT_SAVED_SEARCHES, \
     DINGOS_OBJECTTYPE_VIEW_MAPPING, \
-    DINGOS_INFOOBJECT_GRAPH_TYPES
+    DINGOS_INFOOBJECT_GRAPH_TYPES, \
+    TAGGING_PROCESSING
 
 from braces.views import LoginRequiredMixin
-from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView, BasicCustomQueryView, processTagging
+from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView, BasicCustomQueryView
 from queryparser.queryparser import QueryParser
 from queryparser.querylexer import QueryLexerException
 from queryparser.querytree import FilterCollection, QueryParserException
@@ -1001,16 +1002,22 @@ class OAuthInfo(BasicTemplateView):
             self.formset = self.form_class(initial=initial)
         return super(BasicTemplateView, self).get(request, *args, **kwargs)
 
+
 class TaggingJSONView(BasicJSONView):
     @property
     def returned_obj(self):
         if self.request.is_ajax() and self.request.method == 'POST' and self.request.user.is_authenticated():
-            data = json.loads(self.request.body)
-            action = self.kwargs.get('action','')
-            obj_pks = data.get('objects',[])
-            type = data.get('type','')
-            tag_name = data.get('tag','')
-            comment = data.get('comment','')
-            if action and obj_pks and type and tag_name:
-                return processTagging(action,obj_pks,type,tag_name,user=self.request.user,comment=comment)
-        return {}
+            json_data = json.loads(self.request.body)
+            json_data['tag_type'] = 'dingos'
+            package = json_data['tag_type']
+            func_to_import = TAGGING_PROCESSING[package]
+            mod_name, func_name = func_to_import.rsplit('.',1)
+            mod = importlib.import_module(mod_name)
+            processTagging = getattr(mod,func_name)
+            extra = {
+                'user' : self.request.user,
+                'bulk' : False
+            }
+
+            res = processTagging(json_data,**extra)
+            return res

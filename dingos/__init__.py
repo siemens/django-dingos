@@ -398,3 +398,8 @@ DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
 TAGGING_REGEX = [
     #re.compile(r"^INV-[0-9]+(-[A-Za-z0-9]+)?$")
 ]
+
+TAGGING_PROCESSING = {
+    'dingos' : 'dingos.view_classes.processTagging',
+    'actionables' : 'path'
+}

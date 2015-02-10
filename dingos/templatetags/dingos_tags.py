@@ -743,8 +743,7 @@ def show_addTagInput(obj_id, obj_type):
     form = TagForm()
     form.fields['tag'].widget.attrs.update({
         'data-obj-id': obj_id,
-        'data-obj-type' : obj_type,
-        'id' : "id_tag"
+        'data-obj-type' : obj_type
         })
     return form.fields['tag'].widget.render('tag','')
 
