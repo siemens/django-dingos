@@ -64,8 +64,30 @@ POSTPROCESSOR_REGISTRY = {}
 
 
 for (postprocessor_key,postprocessor_data) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
-    my_module = importlib.import_module(postprocessor_data['module'])
-    POSTPROCESSOR_REGISTRY[postprocessor_key] = getattr(my_module,postprocessor_data['class'])
+    if 'module' in postprocessor_data:
+        try:
+            my_module = importlib.import_module(postprocessor_data['module'])
+        except:
+            my_module = None
+        if my_module:
+            POSTPROCESSOR_REGISTRY[postprocessor_key] = [getattr(my_module,postprocessor_data['class'])]
+    elif 'postprocessor_predicate' in postprocessor_data:
+        predicate = postprocessor_data['postprocessor_predicate']
+        postprocessor_list = []
+        for (postprocessor_key2,postprocessor_data2) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
+            print predicate(postprocessor_key2,postprocessor_data2)
+            print postprocessor_key2
+            print postprocessor_data2
+            if predicate(postprocessor_key2,postprocessor_data2) and 'module' in postprocessor_data2:
+                try:
+                    my_module = importlib.import_module(postprocessor_data2['module'])
+                except:
+                    my_module = None
+                if my_module:
+                    postprocessor_list.append(getattr(my_module,postprocessor_data2['class']))
+        POSTPROCESSOR_REGISTRY[postprocessor_key] = postprocessor_list
+
+print "Registry %s" % POSTPROCESSOR_REGISTRY
 
 
 class UncountingPaginator(Paginator):
@@ -1532,37 +1554,62 @@ class TaggedObjectsView(BasicTemplateView):
         context = super(TaggedObjectsView, self).get_context_data(**kwargs)
         model_objects_mapping =  {}
 
-        try:
-            if self.mode == 'contains':
-                tag_id = Tag.objects.filter(name__contains=self.tag).values_list('id',flat=True)
+        if self.mode == 'contains':
+            tag_id = Tag.objects.filter(name__contains=self.tag).values_list('id',flat=True)
+        else:
+            tag_id = [Tag.objects.get(name=self.tag).id]
+        for model,cols in self.possible_models.items():
+            if model == Fact and self.display == 'factdetails':
+                cols = ['term','attribute','value','iobject_id','fact_id']
+                matching_items_tmp = list(vIO2FValue.objects.filter(fact__tag_through__tag__id__in = tag_id).values(*cols))
+
+                matching_items = set()
+
+                fact2parent = {}
+                parent2toplevel = {}
+                iobj2nodeinfo = {}
+                parent_iobj_pks = set()
+
+
+                for x in matching_items_tmp:
+                    parent_list = fact2parent.setdefault(x['fact_id'],[])
+                    parent_list.append(x['iobject_id'])
+                    parent_iobj_pks.add(x['iobject_id'])
+                    row = (x['term'],x['attribute'],x['value'],x['fact_id'])
+                    matching_items.add(row)
+
+                context['object_list'] = list(parent_iobj_pks)
+                for parent_pk in parent_iobj_pks:
+                    found_top_level_objects = reachable_packages(context,parent_pk)['node_list']
+                    top_list = parent2toplevel.setdefault(parent_pk,[])
+                    for (pk,node_info) in found_top_level_objects:
+                        top_list.append(pk)
+                        if not pk in iobj2nodeinfo.keys():
+                            iobj2nodeinfo[pk] = (node_info['identifier_ns'],node_info['identifier_uid'],node_info['name'])
+
+                #retrieve missing iobj infos
+                no_info = parent_iobj_pks - set(iobj2nodeinfo.keys())
+                infos = vIO2FValue.objects.filter(iobject_id__in=no_info).distinct('iobject_id').values('iobject_id','iobject_identifier_uri','iobject_identifier_uid','iobject_name')
+                for x in infos:
+                    iobj2nodeinfo[x['iobject_id']] = (x['iobject_identifier_uri'],x['iobject_identifier_uid'],x['iobject_name'])
+
+                context['fact2parent'] = fact2parent
+                context['parent2toplevel'] = parent2toplevel
+                context['iobj2nodeinfo'] = iobj2nodeinfo
+
             else:
-                tag_id = [Tag.objects.get(name=self.tag).id]
-            for model,cols in self.possible_models.items():
-                if model == Fact and self.display == 'factdetails':
-                    cols = [''.join('fact__' + x) for x in cols]
-                    cols.append('iobject_id')
-                    matching_items_tmp = list(vIO2FValue.objects.filter(fact__tag_through__tag__id__in = tag_id).values_list(*cols))
-                    parent_iobj_pks = []
-                    matching_items = set()
-                    for x in matching_items_tmp:
-                        parent_iobj_pks.append(x[len(x)-1])
-                        matching_items.add(x[:len(x)-1])
-                    top_level_pks = []
-                    mapping_parent_top = {}
-                    context['object_list'] = parent_iobj_pks
-                    for parent_pk in parent_iobj_pks:
-                        found_top_level_objects = reachable_packages(context,parent_pk)['node_list']
-                        mapping_parent_top[parent_pk] = found_top_level_objects
+                matching_items = list(model.objects.filter(tag_through__tag__id__in = tag_id).distinct('id').values_list(*cols))
+            print "-------"
+            print model
+            print matching_items
+            model_objects_mapping[model.__name__] = matching_items
 
-                    print mapping_parent_top
-
-                else:
-                    matching_items = list(model.objects.filter(tag_through__tag__id__in = tag_id).distinct('id').values_list(*cols))
-                model_objects_mapping[model.__name__] = matching_items
-        except:
-            pass
         context['tag'] = self.tag
         context['model_objects_mapping'] = model_objects_mapping
+
+        for x in model_objects_mapping.get('Fact',[]):
+            print x
+
         return context
 
     def get(self, request, *args, **kwargs):

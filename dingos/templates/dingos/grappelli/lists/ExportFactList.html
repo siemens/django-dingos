@@ -21,37 +21,64 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% load dingos_tags %}
 
 {% block objects %}
-  {% if object_list %}
+
     <div class="grp-module grp-changelist-results o-visible">
       <table id="result_list" cellspacing="0" class="grp-sortable">
         {% for row in view.result %}
           {% if forloop.first %}
             <thead>
-              <tr>
+            <tr>
                 {% include "dingos/grappelli/includes/CheckboxActionHeaderColumn.html" %}
-                {% for column_name in row.keys %}
-                <th scope="col" class="sortable">
-                    {{ column_name }}
+
+                <th>
+                    Fact Term
                 </th>
-                {% endfor %}
+                <th>
+                    Value
+                </th>
+                <th>
+                    Actionable Type
+                </th>
+                <th>
+                    Actionable Subtype
+                </th>
+                <th>
+                    Actionable Info
+                </th>
+
               </tr>
             </thead>
             <tbody>
-            {% endif %}
+          {% endif %}
+            {% with pk=row|get_value:"fact.pk" %}
+            {% with fact_obj=object_list|get_obj:pk%}
+
               <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
                 <td class="action-input">
                     <input class="action-select" name="action_objects" value="{{ row|get_value:"fact.pk"}}" type="checkbox">
                 </td>
-                {% for value in row.values %}
-                <td>{{ value }}</td>
-                {% endfor %}
+                <td>
+                {% with attribute=row|get_value:"attribute" %}
+                    {% if attribute %}
+                    {{ row|get_value:"term" }}@{{ attribute }}
+                    {%  else %}
+                    {{ row|get_value:"term" }}
+                    {% endif %}
+                {% endwith %}
+                </td>
+                <td>{{ row|get_value:"value" }}</td>
+                <td>{{ row|get_value:"actionable_type" }}</td>
+                <td>{{ row|get_value:"actionable_subtype" }}</td>
+                <td>{{ row|get_value:"actionable_info" }}</td>
               </tr>
               <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
                 {# row|length needed for right colspan, would be done better in javascript #}
-                {% with pk=row|get_value:"fact.pk" %}
-                {% show_GenericTagRowDisplay object_list|get_obj:pk row|length True %}
-                {% endwith %}
+                {% show_GenericTagRowDisplay fact_obj 4 True %}
+
               </tr>
+            {% endwith %}
+            {% endwith %}
+
         {% endfor %}
             </tbody>
       </table>
@@ -61,6 +88,6 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
         </form>
       {% endif %}
     </div>
-  {%  endif %}
+
 {% include 'autocomplete_light/static.html' %}
 {% endblock %}

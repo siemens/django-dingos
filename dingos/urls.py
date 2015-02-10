@@ -52,6 +52,11 @@ urlpatterns = patterns('',
         views.InfoObjectExportsView.as_view(),
         name= "url.dingos.view.infoobject.exports"),
 
+    url(r'^View/InfoObject/(?P<pk>\d*)/export/(?P<exporter>[a-zA-Z0-9_-]+)/raw/?(?P<api_call>api_test)?$',
+        views.InfoObjectExportsView.as_view(),
+        kwargs = {'raw_output':True},
+        name= "url.dingos.view.infoobject.exports.raw"),
+
     url(r'^View/InfoObject/(?P<pk>\d*)/json$',
         views.InfoObjectJSONView.as_view(),
         name= "url.dingos.view.infoobject.json"),    
@@ -59,11 +64,6 @@ urlpatterns = patterns('',
     url(r'^View/InfoOject/Embedded/(?P<pk>\d*)/$', views.InfoObjectsEmbedded.as_view(), name="url.dingos.view.infoobject.embedded"),
 
     url(r'^View/InfoObject/(?P<pk>\d*)(/specific)?/graph$', views.InfoObjectJSONGraph.as_view(), name= "url.dingos.view.infoobject.json_graph"),
-
-    url(r'^View/InfoObject/(?P<pk>\d*)/exportt/(?P<exporter>[a-zA-Z0-9_-]+)/?(?P<api_call>api_test)?$',
-        views.InfoObjectExportsViewWithTagging.as_view(),
-        name = "url.dingos.view.infoobject.exportswithtag"),
-
 
 
     # Administration

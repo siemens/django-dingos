@@ -79,6 +79,7 @@ def getTagsbyModel(things,model=None):
     for tag in tags_q:
         tag_list = tag_map.setdefault(tag['id'],[])
         tag_list.append(tag['tag_through__tag__name'])
+    print tag_map
     return tag_map
 
 
@@ -691,7 +692,7 @@ class CustomFactSearchView(BasicCustomQueryView):
                         'fact__value_iobject_id__latest__iobject_type',
                         'node_id')
 
-class InfoObjectExportsView(BasicTemplateView):
+class InfoObjectExportsView(BasicListView):
     # When building the graph, we skip references to the kill chain. This is because
     # in STIX reports where the kill chain information is consistently used, it completly
     # messes up the graph display.
@@ -703,87 +704,28 @@ class InfoObjectExportsView(BasicTemplateView):
 
     max_objects = None
 
-
-    def get(self,request,*args,**kwargs):
-
-        api_test = 'api_call' in request.GET
-
-
-
-        iobject_id = self.kwargs.get('pk', None)
-
-        graph= follow_references([iobject_id],
-                                 skip_terms = self.skip_terms,
-                                 direction='down',
-                                 max_nodes=self.max_objects,
-                                 )
-
-
-        exporter = self.kwargs.get('exporter', None)
-
-
-        if exporter in POSTPROCESSOR_REGISTRY:
-
-            postprocessor_class = POSTPROCESSOR_REGISTRY[exporter]
-
-            postprocessor = postprocessor_class(graph=graph,
-                                                query_mode='vIO2FValue',
-                                                )
-
-
-            if 'columns' in self.request.GET:
-                columns = self.request.GET.get('columns')
-                columns = map(lambda x: x.strip(),columns.split(','))
-
-            else:
-                columns = []
-
-            (content_type,result) = postprocessor.export(*columns,**self.request.GET)
-
-
-
-
-        else:
-            content_type = None
-            result = 'NO EXPORTER %s DEFINED' % exporter
-
-        if api_test:
-            self.api_result = result
-            self.api_result_content_type = content_type
-            self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
-            return super(InfoObjectExportsView, self).get(request, *args, **kwargs)
-        else:
-            response = HttpResponse(content_type=content_type)
-            response.write(result)
-            return response
-
-class InfoObjectExportsViewWithTagging(BasicListView):
-    template_name = 'dingos/%s/lists/ExportFactList.html' % DINGOS_TEMPLATE_FAMILY
+    # We provide an action view for tagging the displayed facts
 
     list_actions = [
                 ('Tag', 'url.dingos.action.add_tagging', 0),
             ]
 
-    skip_terms = [
-        # We do not want to follow 'Related Object' links and similar
-        {'term':'Related','operator':'icontains'},
-        ]
-
-    #max nodes to discover by graph building (follow references)
-    max_objects = None
-
-    fact_ids = []
+    # We require the queryset in order to use the
+    # action mechanism of the list view
 
     @property
     def queryset(self):
         queryset = Fact.objects.filter(id__in=self.fact_ids)
         return queryset
 
-    def get_context_data(self, **kwargs):
-        context = super(InfoObjectExportsViewWithTagging, self).get_context_data(**kwargs)
-        return context
+
 
     def get(self,request,*args,**kwargs):
+
+        raw_output = kwargs.get('raw_output',False)
+
+        api_test = 'api_call' in request.GET
+
         iobject_id = self.kwargs.get('pk', None)
 
         graph= follow_references([iobject_id],
@@ -792,35 +734,68 @@ class InfoObjectExportsViewWithTagging(BasicListView):
                                  max_nodes=self.max_objects,
                                  )
 
+
         exporter = self.kwargs.get('exporter', None)
 
-        if exporter in POSTPROCESSOR_REGISTRY:
-            postprocessor_class = POSTPROCESSOR_REGISTRY[exporter]
-            postprocessor = postprocessor_class(graph=graph,
-                                                query_mode='vIO2FValue',
-                                                )
 
-            if 'columns' in self.request.GET:
-                columns = self.request.GET.get('columns')
-                columns = map(lambda x: x.strip(),columns.split(','))
-
-            else:
-                columns = []
-
-            kwargs = {'format' : 'dict'}
-            kwargs.update(self.request.GET)
-            (content_type,result) = postprocessor.export(*columns,**kwargs)
-
+        if not raw_output:
+            kwargs['format'] = 'dict'
         else:
-            result = 'NO EXPORTER %s DEFINED' % exporter
+            kwargs.update(self.request.GET)
 
-        self.result = result
-        self.fact_ids = []
-        for x in result:
-            x['fact.pk'] = int(x['fact.pk'])
-            self.fact_ids.append(x['fact.pk'])
+        if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
+            kwargs['format'] = 'dict'
+            combined_result = []
+        else:
+            combined_result = ''
 
-        return super(InfoObjectExportsViewWithTagging, self).get(request, *args, **kwargs)
+
+        if exporter in POSTPROCESSOR_REGISTRY:
+
+            postprocessor_classes = POSTPROCESSOR_REGISTRY[exporter]
+
+            postprocessor = None
+            for postprocessor_class in postprocessor_classes:
+
+                postprocessor = postprocessor_class(graph=graph,
+                                                    query_mode='vIO2FValue',
+                                                    details_obj = postprocessor,
+                                                    )
+                if 'columns' in self.request.GET:
+                    columns = self.request.GET.get('columns')
+                    columns = map(lambda x: x.strip(),columns.split(','))
+
+                else:
+                    columns = []
+
+                (content_type,result) = postprocessor.export(*columns,override_columns='EXPORTER',**kwargs)
+
+                combined_result += result
+
+            self.result = combined_result
+
+            if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
+                combined_result = json.dumps(combined_result,indent=2)
+                content_type = 'application/json'
+        else:
+            content_type = None
+            combined_result = 'NO EXPORTER %s DEFINED' % exporter
+
+        if api_test:
+            self.api_result = combined_result
+            self.api_result_content_type = content_type
+            self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
+            return super(InfoObjectExportsView, self).get(request, *args, **kwargs)
+        elif not raw_output:
+            self.template_name = 'dingos/%s/lists/ExportFactList.html' % DINGOS_TEMPLATE_FAMILY
+            self.fact_ids = map(lambda x: x.get('fact.pk'),self.result)
+
+            return super(InfoObjectExportsView, self).get(request, *args, **kwargs)
+        else:
+            response = HttpResponse(content_type=content_type)
+            response.write(combined_result)
+            return response
+
 
 
 class InfoObjectJSONGraph(BasicJSONView):
