@@ -64,8 +64,15 @@ class InfoObjectDetails(object):
         #"object_type.namespace": ("Object Type (namespace)", "iobject_type.namespace.uri",['iobject_type__namespace']),
         "object.object_family": ("Object Family", "iobject_family_name",[]),
         "fact.pk": ("Fact PK", "fact_id",[]),
+        "term" : ("Term", "term", []),
+        "attribute" : ("Attribute", "attribute", []),
+        "value" : ("Value", "value", []),
         "value.pk": ("Value PK", "factvalue_id",[]),
         "object.pk": ("Object PK", "iobject_id",[]),
+        "actionable_type": ("Actionable Type", "actionable_type",[]),
+        "actionable_subtype": ("Actionable Subtype", "actionable_subtype",[]),
+        "actionable_info": ("Actionable Info", "actionable_info",[]),
+
     }
 
 
@@ -100,6 +107,7 @@ class InfoObjectDetails(object):
         "object.object_type": ("Object Type","iobject.iobject_type",['iobject__iobject_type','iobject__iobject_type__namespace']),
         "fact.pk": ("Fact PK", "fact_id",[]),
         "object.pk": ("Object PK", "id",[]),
+
     }
 
     _default_columns =  [('object.url', 'InfoObject URL'),
@@ -108,7 +116,7 @@ class InfoObjectDetails(object):
     exporter_name = None
 
     def __init__(self,*args,**kwargs):
-
+        print kwargs
         self.allowed_columns = {}
         self.enrich_details = True
         self.format = None
@@ -203,8 +211,17 @@ class InfoObjectDetails(object):
                    '_object_pk':iobject_pk,
                    '_io2f' : io2f,
                    '_io2fv' : io2fv,
+                   'io2fv' : io2fv,
                    '_object_url': reverse('url.dingos.view.infoobject', args=[iobject_pk]),
+                   'actionable_type' : None,
+                   'actionable_subtype' : None,
+                   'actionable_info' : None,
                    }
+
+        if io2fv:
+            result['term'] = io2fv.term
+            result['attribute'] = io2fv.attribute
+            result['value'] = io2fv.value
 
         if io2f:
             result['_fact_id'] = io2f.fact_id
@@ -244,24 +261,21 @@ class InfoObjectDetails(object):
 
 
     def export(self,*args,**kwargs):
+        print "Export %s" % kwargs
         #not working if [0] not commented out
-        override_columns=kwargs.pop('override_columns',[None])#[0]
+        override_columns=kwargs.pop('override_columns',[None])
+        if isinstance(override_columns,list):
+            override_columns= override_columns[0]
 
-        include_fact_id = kwargs.pop('include_fact_id',False)
 
         if override_columns == 'ALL':
             args = self.allowed_columns.keys()
         elif override_columns == 'ALMOST_ALL':
             # exclude expensive columns:
             args = set(self.allowed_columns.keys()) - set(['package_urls','package_names'])
-        else:
-            args= self._default_columns
-
-
-            if include_fact_id:
-                args.append('fact_id')
-
-
+        elif override_columns == 'EXPORTER':
+            args = set(self.allowed_columns.keys()) -  set(['package_urls','package_names'])
+            args.update(set(['term','attribute','value']))
 
         self.additional_calculations(columns=args)
 
@@ -312,8 +326,9 @@ class InfoObjectDetails(object):
             # from a string argument. So we do it here until this issue is
             # fixed in the query parser
 
-            if kwargs[key][0]=="'":
-                kwargs[key]=kwargs[key][1:-1]
+            if isinstance(kwargs[key],basestring):
+                if kwargs[key][0]=="'":
+                    kwargs[key]=kwargs[key][1:-1]
 
 
         self.extractor(**kwargs)

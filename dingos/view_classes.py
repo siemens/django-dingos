@@ -64,8 +64,30 @@ POSTPROCESSOR_REGISTRY = {}
 
 
 for (postprocessor_key,postprocessor_data) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
-    my_module = importlib.import_module(postprocessor_data['module'])
-    POSTPROCESSOR_REGISTRY[postprocessor_key] = getattr(my_module,postprocessor_data['class'])
+    if 'module' in postprocessor_data:
+        try:
+            my_module = importlib.import_module(postprocessor_data['module'])
+        except:
+            my_module = None
+        if my_module:
+            POSTPROCESSOR_REGISTRY[postprocessor_key] = [getattr(my_module,postprocessor_data['class'])]
+    elif 'postprocessor_predicate' in postprocessor_data:
+        predicate = postprocessor_data['postprocessor_predicate']
+        postprocessor_list = []
+        for (postprocessor_key2,postprocessor_data2) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
+            print predicate(postprocessor_key2,postprocessor_data2)
+            print postprocessor_key2
+            print postprocessor_data2
+            if predicate(postprocessor_key2,postprocessor_data2) and 'module' in postprocessor_data2:
+                try:
+                    my_module = importlib.import_module(postprocessor_data2['module'])
+                except:
+                    my_module = None
+                if my_module:
+                    postprocessor_list.append(getattr(my_module,postprocessor_data2['class']))
+        POSTPROCESSOR_REGISTRY[postprocessor_key] = postprocessor_list
+
+print "Registry %s" % POSTPROCESSOR_REGISTRY
 
 
 class UncountingPaginator(Paginator):
