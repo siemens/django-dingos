@@ -1365,7 +1365,7 @@ def processTagging(data,**kwargs):
             raise ObjectDoesNotExist('no user for this action provided')
 
         objects = list(model.objects.filter(pk__in=obj_pks))
-        user_data = data.get('user_data','')
+        user_data = data.get('user_data',None)
 
         if tags_to_add:
             if action == 'add':
@@ -1379,20 +1379,25 @@ def processTagging(data,**kwargs):
                     else:
                         pass
                         #TODO bulk
+                comment = '' if not user_data else user_data
                 TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,comment)
 
             elif action == 'remove':
-                if not user_data:
+                if user_data is None:
                     res['additional'] = {
                         'dialog_id' : 'dialog-tagging-remove',
                         'msg' : 'To delete this tag, enter a comment on this action here.'
                     }
                     res['status'] = 1
                 else:
-                    for object in objects:
-                        object.tags.remove(*tags_to_add)
-                    TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,user_data)
-                    res['status'] = 0
+                    if user_data == '':
+                        res['status'] = -1
+                        res['err'] = "no comment provided - tag not deleted"
+                    else:
+                        for object in objects:
+                            object.tags.remove(*tags_to_add)
+                        TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,user_data)
+                        res['status'] = 0
         else:
             res['err'] = "tag not allowed: %s" % (not_allowed_tags)
             res['status'] = -1

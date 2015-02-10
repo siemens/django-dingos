@@ -374,41 +374,62 @@
 	});
     }
 
-    //tagging
-    function add_removeHandler(){
-    $('.remove_tag_button').each(function(){
-      $(this).click(function (event) {
-        $('#deleteTag')
-            .data('tag_info',$(this))
-            .dialog('open');
-      });
-    });
+    /* TAGGING */
+    //Status Codes
+    var SUCCESS = 0;
+    var FAIL = -1;
+    var QUERY_ADDITIONAL_INFO = 1;
+
+    function handleQuery(json_data,additional,tag) {
+      var dialog_id = additional['dialog_id'];
+      var msg = additional['msg'];
+      var dialog = $("#" + dialog_id);
+      dialog.val(msg);
+      dialog.data('json_data',json_data).data('tag',tag).dialog('open');
     }
 
+    //add_tag_handler
     function add_tag(event){
       var tag_name = $(event.target).val();
-      var obj_id = $(event.target).data('obj-id');
-      var obj_type = $(event.target).data('obj-type');
+      var tag_type = $(event.target).data('tag-type');
+      var json_data = {};
+      json_data['tag_names'] = tag_name;
+      json_data['tag_type'] = tag_type;
+      json_data['action'] = 'add';
+
+      switch(tag_type){
+        case 'dingos':
+          var obj_id = $(event.target).data('obj-id');
+          var obj_type = $(event.target).data('obj-type');
+          json_data['objects'] = [obj_id];
+          json_data['obj_type'] = obj_type
+          break;
+
+        case 'actionables':
+          break;
+      }
       var tag_container = $("#tags[data-obj-id='" + obj_id + "']");
-      if(tag_name != "" && tag_container.children("span#" + tag_name).length == 0) {
+
+      if(tag_container.children("#" + tag_name).length == 0) {
         $.ajax({
-          url: "/mantis/tagging/add",
+          url: "/mantis/tagging/process",
           type: "POST",
-          data: JSON.stringify({ tag: tag_name, objects: [obj_id], type: obj_type}) ,
+          data: JSON.stringify(json_data),
           processData: false,
           contentType: 'application/json; charset=UTF-8',
           dataType: "json",
-          success: function (resp) {
-            var not_allowed_tag = resp['err'];
-            if(not_allowed_tag.length) {
-              alert("This tag is not matching the patterns of possible tags:\n" + not_allowed_tag);
-            }
-
-            else {
-              var name = resp[obj_id][0];
-              var tag = '<span id="' + name + '" class="tag">' + name + '<a class="remove_tag_button" data-tag-name="' + name + '"> X</a></span>';
-              tag_container.append(tag);
-              add_removeHandler();
+          success: function (resp_data) {
+            switch(resp_data['status']) {
+              case SUCCESS:
+                tag_container.append(resp_data['html']);
+                add_removeHandler();
+                break;
+              case FAIL:
+                alert(resp_data['err']);
+                break;
+              case QUERY_ADDITIONAL_INFO:
+                handleQuery(json_data,resp_data['additional']);
+                break;
             }
           }
         });
@@ -416,10 +437,56 @@
       $(event.target).val('');
     }
 
-    $(document).ready(function () {
-      //register removeHandler for all tags
-      add_removeHandler();
+    function add_removeHandler(){
+    $('.remove_tag_button').each(function(){
+      $(this).click(function (event) {
+        var tag_name = $(this).data('tag-name');
+        var tag_type = $(this).data('tag-type');
+        var json_data = {};
+        json_data['tag_names'] = tag_name;
+        json_data['tag_type'] = tag_type;
+        json_data['action'] = 'remove';
 
+        switch(tag_type){
+          case 'dingos':
+            var obj_info = $(this).closest('[data-obj-id]');
+            var obj_id = obj_info.data('obj-id');
+            var obj_type = obj_info.data('obj-type');
+            json_data['objects'] = [obj_id];
+            json_data['obj_type'] = obj_type;
+            break;
+
+          case 'actionables':
+            break;
+        }
+        var tag_container = $("#tags[data-obj-id='" + obj_id + "']");
+        var tag = $(this).parent();
+        $.ajax({
+          url: "/mantis/tagging/process",
+          type: "POST",
+          data: JSON.stringify(json_data),
+          processData: false,
+          contentType: 'application/json; charset=UTF-8',
+          dataType: "json",
+          success: function (resp_data) {
+            switch(resp_data['status']) {
+              case SUCCESS:
+                tag.remove();
+                break;
+              case FAIL:
+                alert(resp_data['err']);
+                break;
+              case QUERY_ADDITIONAL_INFO:
+                handleQuery(json_data,resp_data['additional'],tag);
+                break;
+            }
+          }
+        });
+      });
+    });
+    }
+
+    $(document).ready(function () {
       //add new tag on return (ASCII 13 --> Carriage Return) on input field
       $('input#id_tag').each(function(){
         $(this).keypress(function(event){
@@ -436,48 +503,51 @@
         add_tag(e);
       });
 
-      //dialog onTagDelete
-      $('#deleteTag').dialog({
+      //register removeHandler for all tags
+      add_removeHandler();
+
+      //initialize remove tag dialog
+      //tagging remove dialog
+      $('#dialog-tagging-remove').dialog({
         autoOpen: false,
-        title: "Delete Tag Comment",
+        title: "Remove Tag Additional Info",
         buttons: [
           {
-            text: "Delete Tag",
+            text: "Delete",
             click: function() {
-              var tag = $('#deleteTag').data('tag_info');
-              var tag_name = tag.data('tag-name');
-              var obj_info = tag.closest('[data-obj-id]');
-              var obj_id = obj_info.data('obj-id');
-              var obj_type = obj_info.data('obj-type');
-              var comment = $('#tag-remove-comment').val();
-              if(comment != "") {
-                $.ajax({
-                  url: "/mantis/tagging/remove",
-                    type: "POST",
-                    data: JSON.stringify({ tag: tag_name, objects: [obj_id], type: obj_type, comment: comment}),
-                    processData: false,
-                    contentType: 'application/json; charset=UTF-8',
-                    dataType: "json",
-                    success: function (resp) {
-                    if(resp[obj_id][0] === tag_name){
-                      tag.parent().remove();
-                    }
+              var dialog = $('#dialog-tagging-remove');
+              var json_data = dialog.data('json_data');
+              var tag = dialog.data('tag');
+              var dialog_comment_field = $('#tagging-remove-comment');
+              var input = dialog_comment_field.val();
+              json_data['user_data'] = input;
+              $.ajax({
+                url: "/mantis/tagging/process",
+                  type: "POST",
+                  data: JSON.stringify(json_data),
+                  processData: false,
+                  contentType: 'application/json; charset=UTF-8',
+                  dataType: "json",
+                  success: function (resp_data) {
+                  switch(resp_data['status']) {
+                    case SUCCESS:
+                      tag.remove();
+                      break;
+                    case FAIL:
+                      alert(resp_data['err']);
+                      break;
                   }
-                });
-                $('#tag-remove-comment').val('');
-                $(this).dialog('close');
-              }
-              else {
-                alert("No comment provided - please enter a comment.")
-              }
+                }
+              });
+              dialog_comment_field.val('');
+              $(this).dialog('close');
             }
           }
         ]
       });
 
+});
 
-
-    });
 
 
 }(django.jQuery)); // Reuse django injected jQuery library
