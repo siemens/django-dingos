@@ -1311,14 +1311,11 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
 
 def processTagging(data,**kwargs):
-    print "-------------"
-    print data
-    print kwargs
 
     TAG_HTML =  """
                 <span id="%s" class="tag stay-inline">
                     <a href="%s" class="stay-inline">%s</a>
-                    <a class="remove_tag_button stay-inline" data-tag-name="%s"> X</a>
+                    <a class="remove_tag_button stay-inline" data-tag-name="%s" data-tag-type="dingos"> X</a>
                 </span>
                 """
 
@@ -1351,7 +1348,7 @@ def processTagging(data,**kwargs):
     action = data['action']
     obj_pks = data['objects']
     obj_type = data['obj_type']
-    tags = listify(data['tag_names'])
+    tags = listify(data['tags'])
     print "Passed tags %s" % tags
 
     res = {}

@@ -401,5 +401,5 @@ TAGGING_REGEX = [
 
 TAGGING_PROCESSING = {
     'dingos' : 'dingos.view_classes.processTagging',
-    'actionables' : 'path'
+    'actionables' : 'mantis_actionables.views.processActionablesTagging'
 }

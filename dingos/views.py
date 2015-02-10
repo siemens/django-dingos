@@ -983,7 +983,6 @@ class TaggingJSONView(BasicJSONView):
     def returned_obj(self):
         if self.request.is_ajax() and self.request.method == 'POST' and self.request.user.is_authenticated():
             json_data = json.loads(self.request.body)
-            json_data['tag_type'] = 'dingos'
             package = json_data['tag_type']
             func_to_import = TAGGING_PROCESSING[package]
             mod_name, func_name = func_to_import.rsplit('.',1)

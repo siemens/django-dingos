@@ -390,10 +390,10 @@
 
     //add_tag_handler
     function add_tag(event){
-      var tag_name = $(event.target).val();
       var tag_type = $(event.target).data('tag-type');
+      var tags = $(event.target).val();
       var json_data = {};
-      json_data['tag_names'] = tag_name;
+      json_data['tags'] = tags;
       json_data['tag_type'] = tag_type;
       json_data['action'] = 'add';
 
@@ -401,16 +401,23 @@
         case 'dingos':
           var obj_id = $(event.target).data('obj-id');
           var obj_type = $(event.target).data('obj-type');
-          json_data['objects'] = [obj_id];
           json_data['obj_type'] = obj_type
           break;
 
         case 'actionables':
-          break;
+            var obj_id = $(event.target).data('obj-id');
+            var url = document.URL;
+            if(url.charAt(url.length-1) == "/") {
+              url = url.substr(0, url.length - 1);
+            }
+            var curr_context = url.substr(url.lastIndexOf('/') + 1);
+            break;
       }
       var tag_container = $("#tags[data-obj-id='" + obj_id + "']");
+      json_data['objects'] = [obj_id];
+      json_data['curr_context'] = curr_context;
 
-      if(tag_container.children("#" + tag_name).length == 0) {
+      if(tag_container.children("#" + tags).length == 0) {
         $.ajax({
           url: "/mantis/tagging/process",
           type: "POST",
@@ -437,13 +444,14 @@
       $(event.target).val('');
     }
 
+
     function add_removeHandler(){
     $('.remove_tag_button').each(function(){
       $(this).click(function (event) {
-        var tag_name = $(this).data('tag-name');
         var tag_type = $(this).data('tag-type');
+        var tags = $(this).data('tag-name');
         var json_data = {};
-        json_data['tag_names'] = tag_name;
+        json_data['tags'] = tags;
         json_data['tag_type'] = tag_type;
         json_data['action'] = 'remove';
 
@@ -452,14 +460,22 @@
             var obj_info = $(this).closest('[data-obj-id]');
             var obj_id = obj_info.data('obj-id');
             var obj_type = obj_info.data('obj-type');
-            json_data['objects'] = [obj_id];
-            json_data['obj_type'] = obj_type;
+            json_data['obj_type'] = obj_type
             break;
 
           case 'actionables':
-            break;
+              var obj_info = $(this).closest('[data-obj-id]');
+              var obj_id = obj_info.data('obj-id');
+              var url = document.URL;
+              if(url.charAt(url.length-1) == "/") {
+                url = url.substr(0, url.length - 1);
+              }
+              var curr_context = url.substr(url.lastIndexOf('/') + 1);
+              json_data['curr_context'] = curr_context;
+              break;
         }
         var tag_container = $("#tags[data-obj-id='" + obj_id + "']");
+        json_data['objects'] = [obj_id];
         var tag = $(this).parent();
         $.ajax({
           url: "/mantis/tagging/process",
