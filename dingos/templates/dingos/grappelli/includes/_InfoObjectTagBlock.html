@@ -28,7 +28,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
         <td id="tags" class="middle tag-block" data-obj-id="{{ object.identifier.id }}" data-obj-type="{{ object.identifier|type }}">
         {% with tags=tag_dict|get_value:'identifiers'|get_value:object.identifier.id %}
           {% if tags %}
-            {% show_TagDisplay tags object.identifier.id isEditable %}
+            {% show_TagDisplay tags object.identifier.id 'dingos' isEditable %}
           {% endif %}
         {% endwith %}
         </td>
@@ -43,7 +43,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
       {% endif %}
     </tbody>
   </table>
-  {% include "dingos/grappelli/includes/_TagDeleteForm.html" %}
+  {% include "dingos/grappelli/includes/_TaggingDialogs.html" %}
 </div>
 
 

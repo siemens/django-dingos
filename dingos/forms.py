@@ -139,7 +139,7 @@ class OAuthNewClientForm(forms.Form):
     new_client = forms.CharField(required=True, max_length=100, widget=widgets.TextInput(attrs={'size': '100', 'class': 'vTextField'}))
 
 class TagForm(autocomplete_light.ModelForm):
-    tag = autocomplete_light.ChoiceField(widget = autocomplete_light.TextWidget('TagAutocomplete'))
+    tag = autocomplete_light.ChoiceField(widget = autocomplete_light.TextWidget('TagAutocompleteDingos'))
     class Meta:
         model = Tag
         exclude = ['slug', 'name']

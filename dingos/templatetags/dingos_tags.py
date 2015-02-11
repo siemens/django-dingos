@@ -695,7 +695,7 @@ def show_InfoObjectTagBlockDisplay(context, object, isEditable=False):
 
 
 @register.inclusion_tag('dingos/%s/includes/_GenericRowDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
-def show_GenericTagRowDisplay(context, object, col_count, isEditable=False):
+def show_GenericTagRowDisplay(context, object, col_count, tag_type, isEditable=False):
     view = context["view"]
 
     try:
@@ -708,7 +708,7 @@ def show_GenericTagRowDisplay(context, object, col_count, isEditable=False):
         'thing' : object,
         'isEditable' : isEditable,
         'tags' : view.simple_tags_dict.get(object.id,[]),
-        'col_count' : col_count
+        'col_count' : col_count,
     }
 
 
@@ -728,15 +728,22 @@ def show_InfoObjectTagRowDisplay(context, object, col_count, isEditable=False):
     }
 
 @register.inclusion_tag('dingos/%s/includes/_TagDisplay.html'% DINGOS_TEMPLATE_FAMILY)
-def show_TagDisplay(tags, obj_id, isEditable = False):
+def show_TagDisplay(tags, obj_id, tag_type, isEditable = False):
     context = {}
     if isinstance(tags,basestring):
         context['tags'] = [tags]
     else:
         context['tags'] = tags
 
+    if tag_type == 'dingos':
+        context['view_url'] = 'url.dingos.tagging.tagged_things'
+    #TODO may be filled once a tagged objects view is created in actionables
+    elif tag_type == 'actionables':
+        context['view_url'] = ''
+
     context['isEditable'] = isEditable
     context['tagged_obj_id'] = obj_id
+    context['tag_type'] = tag_type
     return context
 
 @register.simple_tag()
@@ -744,8 +751,7 @@ def show_addTagInput(obj_id, obj_type):
     form = TagForm()
     form.fields['tag'].widget.attrs.update({
         'data-obj-id': obj_id,
-        'data-obj-type' : obj_type,
-        'id' : "id_tag"
+        'data-obj-type' : obj_type
         })
     return form.fields['tag'].widget.render('tag','')
 

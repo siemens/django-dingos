@@ -1310,7 +1310,18 @@ class SimpleMarkingAdditionView(BasicListActionView):
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
 
 
-def processTagging(action,obj_pks,type,tags,**kwargs):
+#<<<<<<< HEAD
+#def processTagging(action,obj_pks,type,tags,**kwargs):
+#=======
+def processTagging(data,**kwargs):
+
+    TAG_HTML =  """
+                <span id="%s" class="tag stay-inline">
+                    <a href="%s" class="stay-inline">%s</a>
+                    <a class="remove_tag_button stay-inline" data-tag-name="%s" data-tag-type="dingos"> X</a>
+                </span>
+                """
+    #>>>>>>> e2c007b7cc6719f662d13e0d4447a763d9c485f1
 
     def _preprocess_tags(tags):
         if isinstance(tags,set):
@@ -1338,34 +1349,61 @@ def processTagging(action,obj_pks,type,tags,**kwargs):
 
         return tags,not_allowed
 
+    action = data['action']
+    obj_pks = data['objects']
+    obj_type = data['obj_type']
+    tags = listify(data['tags'])
+    print "Passed tags %s" % tags
+
     res = {}
     ACTIONS = ['add', 'remove']
     if action in ACTIONS:
         tags_to_add,not_allowed_tags = _preprocess_tags(tags)
-        model = dingos_class_map.get(type,None)
+        model = dingos_class_map.get(obj_type,None)
         if model is None:
             raise ObjectDoesNotExist('no suitable model found named %s') % (model)
         user = kwargs.pop('user',None)
         if user is None or not isinstance(user,User):
             raise ObjectDoesNotExist('no user for this action provided')
-        comment = kwargs.pop('comment','')
 
         objects = list(model.objects.filter(pk__in=obj_pks))
-        res['err'] = not_allowed_tags
-        if action == 'add':
-            for object in objects:
-                object.tags.add(*tags_to_add)
-                res[object.id] = tags_to_add
+        user_data = data.get('user_data',None)
 
-        elif action == 'remove':
-            for object in objects:
-                object.tags.remove(*tags_to_add)
-                res[object.id] = tags_to_add
+        if tags_to_add:
+            if action == 'add':
+                for object in objects:
+                    object.tags.add(*tags_to_add)
+                    if not kwargs['bulk']:
+                        tag = tags_to_add[0]
+                        url = urlresolvers.reverse('url.dingos.tagging.tagged_things',args=[tag])
+                        res['html'] = TAG_HTML % (tag,url,tag,tag)
+                        res['status'] = 0
+                    else:
+                        res['status'] = 0
+                comment = '' if not user_data else user_data
+                TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,comment)
+
+            elif action == 'remove':
+                if user_data is None:
+                    res['additional'] = {
+                        'dialog_id' : 'dialog-tagging-remove',
+                        'msg' : 'To delete a tag, a comment is required.'
+                    }
+                    res['status'] = 1
+                else:
+                    if user_data == '':
+                        res['status'] = -1
+                        res['err'] = "no comment provided - tag not deleted"
+                    else:
+                        for object in objects:
+                            object.tags.remove(*tags_to_add)
+                        TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,user_data)
+                        res['status'] = 0
+        else:
+            res['err'] = "tag not allowed: %s" % (not_allowed_tags)
+            res['status'] = -1
     else:
         raise NotImplementedError('%s not a possible action to perform') % (action)
-
-
-    TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,comment)
 
     return res
 
@@ -1425,17 +1463,29 @@ class TaggingAdditionView(BasicListActionView):
                         (success,action_msg) = (True,"DEBUG: Action has not been carried out")
                     else:
                         action = request.POST['action'].split(" ")[0].lower()
-                        if action == 'remove' and form_data['comment'] == '':
-                            messages.error(self.request,"A comment must be provided in order to delete tags!")
-
+                        if self.type == 'InfoObject':
+                            objects = Identifier.objects.filter(iobject_set__id__in=form_data['checked_objects']).distinct('id').values_list('id',flat=True)
+                            curr_type = 'Identifier'
                         else:
-                            if self.type == 'InfoObject':
-                                objects = Identifier.objects.filter(iobject_set__id__in=form_data['checked_objects']).distinct('id').values_list('id',flat=True)
-                                curr_type = 'Identifier'
-                            else:
-                                objects = [int(x) for x in form_data['checked_objects']]
-                                curr_type = self.type
-                            action_function(action,objects,curr_type,[int(x) for x in form_data['tag_to_add']],user=request.user,comment=form_data['comment'])
+                            objects = [int(x) for x in form_data['checked_objects']]
+                            curr_type = self.type
+                        data = {
+                            'action' : action,
+                            'objects' : objects,
+                            'obj_type' : curr_type,
+                            'tag_names' : [int(x) for x in form_data['tag_to_add']],
+                            'user_data' : form_data['comment']
+                        }
+
+                        extra = {
+                            'user' : request.user,
+                            'bulk' : True
+                        }
+
+                        res = action_function(data,**extra)
+                        if res['status'] == -1:
+                            messages.error(self.request,res['err'])
+
             if not found_action:
                 message = self.no_action_error_message
                 messages.error(self.request,message)
