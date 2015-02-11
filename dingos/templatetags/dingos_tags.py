@@ -695,7 +695,7 @@ def show_InfoObjectTagBlockDisplay(context, object, isEditable=False):
 
 
 @register.inclusion_tag('dingos/%s/includes/_GenericRowDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
-def show_GenericTagRowDisplay(context, object, col_count, tag_type, isEditable=False):
+def show_GenericTagRowDisplay(context, object, col_count, isEditable=False):
     view = context["view"]
 
     try:
@@ -728,7 +728,7 @@ def show_InfoObjectTagRowDisplay(context, object, col_count, isEditable=False):
     }
 
 @register.inclusion_tag('dingos/%s/includes/_TagDisplay.html'% DINGOS_TEMPLATE_FAMILY)
-def show_TagDisplay(tags, obj_id, tag_type, isEditable = False):
+def show_TagDisplay(tags, tag_type, isEditable = False):
     context = {}
     if isinstance(tags,basestring):
         context['tags'] = [tags]
@@ -742,7 +742,7 @@ def show_TagDisplay(tags, obj_id, tag_type, isEditable = False):
         context['view_url'] = ''
 
     context['isEditable'] = isEditable
-    context['tagged_obj_id'] = obj_id
+    #context['tagged_obj_id'] = obj_id
     context['tag_type'] = tag_type
     return context
 
