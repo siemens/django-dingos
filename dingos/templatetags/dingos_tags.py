@@ -735,6 +735,12 @@ def show_TagDisplay(tags, obj_id, tag_type, isEditable = False):
     else:
         context['tags'] = tags
 
+    if tag_type == 'dingos':
+        context['view_url'] = 'url.dingos.tagging.tagged_things'
+    #TODO may be filled once a tagged objects view is created in actionables
+    elif tag_type == 'actionables':
+        context['view_url'] = ''
+
     context['isEditable'] = isEditable
     context['tagged_obj_id'] = obj_id
     context['tag_type'] = tag_type
