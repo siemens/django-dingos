@@ -695,7 +695,7 @@ def show_InfoObjectTagBlockDisplay(context, object, isEditable=False):
 
 
 @register.inclusion_tag('dingos/%s/includes/_GenericRowDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
-def show_GenericTagRowDisplay(context, object, col_count, tag_type, isEditable=False):
+def show_GenericTagRowDisplay(context, object, col_count, isEditable=False):
     view = context["view"]
 
     try:
