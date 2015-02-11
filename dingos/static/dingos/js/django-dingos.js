@@ -390,32 +390,30 @@
 
     //add_tag_handler
     function add_tag(event){
-      var tag_type = $(event.target).data('tag-type');
-      var tags = $(event.target).val();
       var json_data = {};
-      json_data['tags'] = tags;
+      var tag_type = $(event.target).data('tag-type');
       json_data['tag_type'] = tag_type;
+      var tags = $(event.target).val();
+      json_data['tags'] = tags;
       json_data['action'] = 'add';
 
       switch(tag_type){
         case 'dingos':
           var obj_id = $(event.target).data('obj-id');
+          json_data['objects'] = [obj_id];
           var obj_type = $(event.target).data('obj-type');
           json_data['obj_type'] = obj_type
           break;
 
         case 'actionables':
             var obj_id = $(event.target).data('obj-id');
-            var url = document.URL;
-            if(url.charAt(url.length-1) == "/") {
-              url = url.substr(0, url.length - 1);
-            }
-            var curr_context = url.substr(url.lastIndexOf('/') + 1);
+            json_data['objects'] = [obj_id];
+            //get current context from current URL
+            var curr_context = $(event.target).data('curr-context');
+            json_data['curr_context'] = curr_context;
             break;
       }
       var tag_container = $("#tags[data-obj-id='" + obj_id + "']");
-      json_data['objects'] = [obj_id];
-      json_data['curr_context'] = curr_context;
 
       if(tag_container.children("#" + tags).length == 0) {
         $.ajax({
@@ -448,34 +446,29 @@
     function add_removeHandler(){
     $('.remove_tag_button').each(function(){
       $(this).click(function (event) {
-        var tag_type = $(this).data('tag-type');
-        var tags = $(this).data('tag-name');
         var json_data = {};
-        json_data['tags'] = tags;
+        var tag_type = $(this).data('tag-type');
         json_data['tag_type'] = tag_type;
+        var tags = $(this).data('tag-name');
+        json_data['tags'] = tags;
         json_data['action'] = 'remove';
+
+        var obj_info = $(this).closest('[data-obj-id]');
+        var obj_id = obj_info.data('obj-id');
+        json_data['objects'] = [obj_id];
 
         switch(tag_type){
           case 'dingos':
-            var obj_info = $(this).closest('[data-obj-id]');
-            var obj_id = obj_info.data('obj-id');
             var obj_type = obj_info.data('obj-type');
-            json_data['obj_type'] = obj_type
+            json_data['obj_type'] = obj_type;
             break;
 
           case 'actionables':
-              var obj_info = $(this).closest('[data-obj-id]');
-              var obj_id = obj_info.data('obj-id');
-              var url = document.URL;
-              if(url.charAt(url.length-1) == "/") {
-                url = url.substr(0, url.length - 1);
-              }
-              var curr_context = url.substr(url.lastIndexOf('/') + 1);
+              var curr_context = $(this).closest('#tags').data('curr-context');
               json_data['curr_context'] = curr_context;
               break;
         }
         var tag_container = $("#tags[data-obj-id='" + obj_id + "']");
-        json_data['objects'] = [obj_id];
         var tag = $(this).parent();
         $.ajax({
           url: "/mantis/tagging/process",
