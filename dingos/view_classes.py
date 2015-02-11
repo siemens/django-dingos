@@ -37,6 +37,7 @@ from django_filters.views import FilterView
 from django.http import Http404
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
+from django.template.loader import render_to_string
 
 from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
 
@@ -1309,15 +1310,8 @@ class SimpleMarkingAdditionView(BasicListActionView):
                 return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
 
-
+from dingos.templatetags.dingos_tags import show_TagDisplay
 def processTagging(data,**kwargs):
-
-    TAG_HTML =  """
-                <span id="%s" class="tag stay-inline">
-                    <a href="%s" class="stay-inline">%s</a>
-                    <a class="remove_tag_button stay-inline" data-tag-name="%s" data-tag-type="dingos"> X</a>
-                </span>
-                """
 
     def _preprocess_tags(tags):
         if isinstance(tags,set):
@@ -1371,8 +1365,9 @@ def processTagging(data,**kwargs):
                     object.tags.add(*tags_to_add)
                     if not kwargs['bulk']:
                         tag = tags_to_add[0]
-                        url = urlresolvers.reverse('url.dingos.tagging.tagged_things',args=[tag])
-                        res['html'] = TAG_HTML % (tag,url,tag,tag)
+                        curr_context = show_TagDisplay([tag],'dingos',isEditable=True)
+                        tag_html = render_to_string('dingos/%s/includes/_TagDisplay.html' % (DINGOS_TEMPLATE_FAMILY),curr_context)
+                        res['html'] = tag_html
                         res['status'] = 0
                     else:
                         res['status'] = 0
