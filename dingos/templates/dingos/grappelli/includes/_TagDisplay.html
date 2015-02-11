@@ -16,8 +16,11 @@ this program; if not, write to the Free Software Foundation, Inc., 51
 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
+
+{# data-obj="{{ tagged_obj_id }}" #}
+
 {% for tag in tags %}
-  <span id="{{ tag }}" class="tag stay-inline" data-obj="{{ tagged_obj_id }}" >
+  <span id="{{ tag }}" class="tag stay-inline">
     {% url view_url tag=tag as the_url %}
       {% if the_url %}
        <a href={{the_url}} class="stay-inline">{{ tag }} </a>
