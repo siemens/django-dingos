@@ -1415,6 +1415,8 @@ class TaggingAdditionView(BasicListActionView):
     #select tag objects
     tagging_queryset = Tag.objects.all().values_list('pk','name')
 
+    pk2tag_dict = dict(tagging_queryset)
+
     allow_multiple_tags=True
     form_class = TaggingAdditionForm
 
@@ -1465,7 +1467,7 @@ class TaggingAdditionView(BasicListActionView):
                             'action' : action,
                             'objects' : objects,
                             'obj_type' : curr_type,
-                            'tag_names' : [int(x) for x in form_data['tag_to_add']],
+                            'tags' : map(lambda x: self.pk2tag_dict.get(x),[int(x) for x in form_data['tag_to_add']]),
                             'user_data' : form_data['comment']
                         }
 
@@ -1473,7 +1475,6 @@ class TaggingAdditionView(BasicListActionView):
                             'user' : request.user,
                             'bulk' : True
                         }
-
                         res = action_function(data,**extra)
                         if res['status'] == -1:
                             messages.error(self.request,res['err'])
