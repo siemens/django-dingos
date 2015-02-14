@@ -798,6 +798,7 @@ class InfoObjectExportsView(BasicListView):
         else:
             content_type = None
             combined_result = 'NO EXPORTER %s DEFINED' % exporter
+            self.result = combined_result
 
         if api_test:
             self.api_result = combined_result
