@@ -51,7 +51,7 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_OBJECTTYPE_VIEW_MAPPING, \
     DINGOS_INFOOBJECT_GRAPH_TYPES, \
     DINGOS_SEARCH_POSTPROCESSOR_REGISTRY, \
-    TAGGING_PROCESSING
+    DINGOS_TAGGING_PROCESSING
 
 
 from braces.views import LoginRequiredMixin
@@ -1003,7 +1003,7 @@ class TaggingJSONView(BasicJSONView):
         if self.request.is_ajax() and self.request.method == 'POST' and self.request.user.is_authenticated():
             json_data = json.loads(self.request.body)
             package = json_data['tag_type']
-            func_to_import = TAGGING_PROCESSING[package]
+            func_to_import = DINGOS_TAGGING_PROCESSING[package]
             mod_name, func_name = func_to_import.rsplit('.',1)
             mod = importlib.import_module(mod_name)
             processTagging = getattr(mod,func_name)

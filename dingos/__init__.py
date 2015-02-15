@@ -395,11 +395,13 @@ DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
                                                              ]}]
 
 #if tags should match specific requirements, add regex to check here
-TAGGING_REGEX = [
-    #re.compile(r"^INV-[0-9]+(-[A-Za-z0-9]+)?$")
+DINGOS_TAGGING_REGEX = [
+    re.compile(r"^INVES-[0-9]+(-[A-Za-z0-9]+)?$")
 ]
 
-TAGGING_PROCESSING = {
+DINGOS_TAGGING_PROCESSING = {
     'dingos' : 'dingos.view_classes.processTagging',
     'actionables' : 'mantis_actionables.views.processActionablesTagging'
 }
+
+DINGOS_TAGGING_POSTPROCESSING = {'Fact':'mantis_actionables.mantis_import.update_and_transfer_tags'}

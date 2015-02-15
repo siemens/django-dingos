@@ -48,7 +48,10 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
                    DINGOS_DEFAULT_SAVED_SEARCHES,\
                    DINGOS_SEARCH_POSTPROCESSOR_REGISTRY,\
                    DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING,\
-                   TAGGING_REGEX
+                   DINGOS_TAGGING_REGEX,\
+                   DINGOS_TAGGING_POSTPROCESSING
+
+
 
 from dingos import graph_traversal
 from dingos.core.template_helpers import ConfigDictWrapper
@@ -1332,9 +1335,9 @@ def processTagging(data,**kwargs):
         tags = preprocess(tags)
 
         not_allowed = []
-        if TAGGING_REGEX:
+        if DINGOS_TAGGING_REGEX:
             for tag in tags:
-                if not any(regex.match(tag) for regex in TAGGING_REGEX):
+                if not any(regex.match(tag) for regex in DINGOS_TAGGING_REGEX):
                     not_allowed.append(tag)
                     tags.remove(tag)
 
@@ -1344,8 +1347,6 @@ def processTagging(data,**kwargs):
     obj_pks = data['objects']
     obj_type = data['obj_type']
     tags = listify(data['tags'])
-    print "Passed tags %s" % tags
-
     res = {}
     ACTIONS = ['add', 'remove']
     if action in ACTIONS:
@@ -1391,6 +1392,12 @@ def processTagging(data,**kwargs):
                             object.tags.remove(*tags_to_add)
                         TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,user_data)
                         res['status'] = 0
+            if obj_type in DINGOS_TAGGING_POSTPROCESSING:
+                mod_name, func_name = DINGOS_TAGGING_POSTPROCESSING[obj_type].rsplit('.',1)
+                mod = importlib.import_module(mod_name)
+                postprocessor = getattr(mod,func_name)
+                print "Found postprocessor %s" % postprocessor
+                postprocessor(obj_pks,user=user)
         else:
             res['err'] = "tag not allowed: %s" % (not_allowed_tags)
             res['status'] = -1
