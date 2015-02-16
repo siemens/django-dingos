@@ -15,6 +15,10 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
+
+
+
 from django import template
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.urlresolvers import reverse
@@ -37,6 +41,7 @@ from dingos.forms import TagForm
 
 from taggit.models import TaggedItem, Tag
 
+logger = logging.getLogger(__name__)
 
 register = template.Library()
 
@@ -695,19 +700,27 @@ def show_InfoObjectTagBlockDisplay(context, object, isEditable=False):
 
 
 @register.inclusion_tag('dingos/%s/includes/_GenericRowDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
-def show_GenericTagRowDisplay(context, object, col_count, isEditable=False):
+def show_GenericTagRowDisplay(context, object, col_count, isEditable=False,debug_pk = None):
     view = context["view"]
+
 
     try:
         simple_tags_dict = view.simple_tags_dict
     except:
         objects = list(context.get('object_list',[]))
-        print "Objects: %s" % map(lambda x: x.id, objects)
+        logger.debug("Object list contains %s" % map(lambda x: x.id, objects))
         view.simple_tags_dict = getTagsbyModel(objects)
+    try:
+        object_id = object.id
+    except:
+        object_id = -1
+        tags = ["ERROR"]
+        logger.error("Could not find fact with pk %s in object_list: Maybe somebody has turned on pagination"
+                     " on the view?" % debug_pk)
     return {
         'thing' : object,
         'isEditable' : isEditable,
-        'tags' : view.simple_tags_dict.get(object.id,[]),
+        'tags' : view.simple_tags_dict.get(object_id,[]),
         'col_count' : col_count,
     }
 

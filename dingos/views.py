@@ -726,6 +726,20 @@ class InfoObjectExportsView(BasicListView):
         queryset = Fact.objects.filter(id__in=self.fact_ids)
         return queryset
 
+    # Because the export is generated out of one or more post-processors,
+    # we cannot use the pagination features of the BasicListView here:
+    # those assume that pagination as applied to the object list is
+    # can be carried out by modifying the queryset -- but here,
+    # we abuse the queryset simply to make for the view available
+    # the fact objects that have been returned by the exporters.
+    # If we want this view to be paginated, it has to be rewritten
+    # completely, caching the result of the exporter runs and
+    # populating the single pages from there!!!
+
+    # ATTENTION: changing paginate_by to something non-zero will
+    # lead to errors (see above)
+
+    paginate_by = 0
 
 
     def get(self,request,*args,**kwargs):
