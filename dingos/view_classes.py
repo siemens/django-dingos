@@ -1396,7 +1396,6 @@ def processTagging(data,**kwargs):
                 mod_name, func_name = DINGOS_TAGGING_POSTPROCESSING[obj_type].rsplit('.',1)
                 mod = importlib.import_module(mod_name)
                 postprocessor = getattr(mod,func_name)
-                print "Found postprocessor %s" % postprocessor
                 postprocessor(obj_pks,user=user)
         else:
             res['err'] = "tag not allowed: %s" % (not_allowed_tags)
