@@ -65,7 +65,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                                 </table>
 				<div style="padding-top:10px;text-align:right;">
                                   <input name="action" value="Submit Query" type="submit" />
+                                {% if view.allow_save_search %}
                                   <input name="action" value="Save Search" type="submit" />
+                                {% endif %}
                                 </div>
                             </form>
                         </div>

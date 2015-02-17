@@ -32,6 +32,7 @@ from django.core.paginator import PageNotAnInteger, Paginator, EmptyPage
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.http import urlquote_plus
 from django.views.generic import DetailView, ListView, TemplateView, View
+from django.views.generic.edit import UpdateView
 from django.views.generic.base import ContextMixin
 from django_filters.views import FilterView
 from django.http import Http404
@@ -427,6 +428,8 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
 
             ]
 
+    allow_save_search=True
+
     @property
     def paginator_class(self):
         if not self.counting_paginator:
@@ -542,6 +545,9 @@ class BasicTemplateView(CommonContextMixin,
                    ('View',None),
     )
 
+
+class BasicUpdateView(LoginRequiredMixin,UpdateView):
+    pass
 
 class BasicCustomQueryView(BasicListView):
     page_to_show = 1
