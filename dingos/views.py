@@ -1028,3 +1028,32 @@ class TaggingJSONView(BasicJSONView):
 
             res = processTagging(json_data,**extra)
             return res
+
+
+class TaggedObjectsView(BasicTemplateView):
+    template_name = 'dingos/%s/lists/TaggedObjectsList.html' % DINGOS_TEMPLATE_FAMILY
+
+    @property
+    def title(self):
+        if self.mode == 'contains':
+            return "Tags containing '%s'" % self.tag
+        else:
+            return "Tag %s" % self.tag
+
+    tag = None
+
+    def get_context_data(self, **kwargs):
+        context = super(TaggedObjectsView, self).get_context_data(**kwargs)
+        context['tag'] = self.tag
+        context['display'] = self.display
+        context['mode'] = self.mode
+
+        context['newclientform'] = OAuthNewClientForm
+        return context
+
+
+    def get(self, request, *args, **kwargs):
+        self.display = request.GET.get('display')
+        self.mode = request.GET.get('mode')
+        self.tag = kwargs.pop('tag')
+        return super(TaggedObjectsView,self).get(request, *args, **kwargs)

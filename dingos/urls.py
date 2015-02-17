@@ -22,7 +22,7 @@ from django.shortcuts import redirect
 
 from dingos import views
 
-from dingos.view_classes import SimpleMarkingAdditionView, TaggingAdditionView, TagHistoryView, TaggedObjectsView
+from dingos.view_classes import SimpleMarkingAdditionView, TaggingAdditionView, TagHistoryView
 
 from dingos import filter
 from dingos.models import InfoObject
@@ -116,7 +116,7 @@ urlpatterns = patterns('',
         name='url.dingos.tagging.history'),
 
     url(r'^tagging/info/(?P<tag>[a-zA-Z0-9_\-]*)$',
-        TaggedObjectsView.as_view(),
+        views.TaggedObjectsView.as_view(),
         name='url.dingos.tagging.tagged_things'),
 
     url(r'^tagging/process$',
