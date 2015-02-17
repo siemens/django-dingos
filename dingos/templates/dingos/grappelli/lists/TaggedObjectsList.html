@@ -2,8 +2,14 @@
 
 {% load dingos_tags %}
 
+{% load tagging_widgets %}
+
+
+
 {% block content %}
   <div class="c-2">
+  {% show_TaggedThings tag=tag  %}
+
     <div class="grp-module">
       <h2 class="grp-collapse-handler">{% block list_title %}Objects tagged with "{{ tag }}"{% endblock %}</h2>
         {% for model,items in model_objects_mapping.items %}

@@ -16,17 +16,20 @@ this program; if not, write to the Free Software Foundation, Inc., 51
 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endcomment %}
 
+{% load dingos_tags %}
 
-{# data-obj="{{ tagged_obj_id }}" #}
+
 
 {% for tag in tags %}
   <span id="{{ tag }}" class="tag stay-inline">
-    {% url view_url tag=tag as the_url %}
-      {% if the_url %}
-       <a href={{the_url}} class="stay-inline">{{ tag }} </a>
-      {% else %}
-        {{ tag }}
-      {% endif %}
+
+    {% tag_link_url tag tag_context tag_type as the_url %}
+    {% if the_url %}
+     <a href={{the_url}} class="stay-inline">{{ tag }} </a>
+    {% else %}
+      {{ tag }}
+    {% endif %}
+
     {% if isEditable %}
         <a class="remove_tag_button stay-inline" data-tag-name="{{ tag }}" data-tag-type="{{ tag_type }}">X</a>
     {% endif %}

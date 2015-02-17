@@ -29,7 +29,10 @@ from django.utils.safestring import mark_safe
 from django.conf import settings
 from django.db.models import F
 
-from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY,DINGOS_TEMPLATE_FAMILY
+from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY,\
+    DINGOS_TEMPLATE_FAMILY, \
+    DINGOS_MANTIS_ACTIONABLES_CONTEXT_TAG_REGEX
+
 from dingos.core import http_helpers
 from dingos.views import getTags, getTagsbyModel
 from dingos.core.utilities import get_from_django_obj,get_dict
@@ -740,23 +743,44 @@ def show_InfoObjectTagRowDisplay(context, object, col_count, isEditable=False):
         'col_count' : col_count
     }
 
+@register.assignment_tag
+def tag_link_url(tag,tag_context=None,tag_type='dingos'):
+    the_url = None
+    if tag_type == 'dingos':
+        if any(regex.match(tag) for regex in DINGOS_MANTIS_ACTIONABLES_CONTEXT_TAG_REGEX):
+            # This is a tag that is transferred into mantis_actionables, so we
+            # make the url point to the view there
+            try:
+                the_url = reverse('actionables_context_view',args=[tag])
+            except:
+                the_url = None
+        else:
+            try:
+                the_url = reverse('url.dingos.tagging.tagged_things',args=[tag])
+            except:
+                the_url = None
+    elif tag_type == 'actionables':
+        try:
+            the_url = reverse('actionables_context_view',args=[tag_context])
+        except:
+            the_url = None
+    return the_url
+
+
 @register.inclusion_tag('dingos/%s/includes/_TagDisplay.html'% DINGOS_TEMPLATE_FAMILY)
-def show_TagDisplay(tags, tag_type, isEditable = False):
+def show_TagDisplay(tags, tag_type, isEditable = False, tag_context = None):
     context = {}
     if isinstance(tags,basestring):
         context['tags'] = [tags]
     else:
         context['tags'] = tags
 
-    if tag_type == 'dingos':
-        context['view_url'] = 'url.dingos.tagging.tagged_things'
-    #TODO may be filled once a tagged objects view is created in actionables
-    elif tag_type == 'actionables':
-        context['view_url'] = ''
-
     context['isEditable'] = isEditable
-    #context['tagged_obj_id'] = obj_id
+    context['dingos_url_name'] = 'actionables_context_view' #'url.dingos.tagging.tagged_things'
+    context['actionables_url_name'] = 'actionables_context_view'
+
     context['tag_type'] = tag_type
+    context['tag_context'] = tag_context
     return context
 
 @register.simple_tag()

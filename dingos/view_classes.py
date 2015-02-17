@@ -1554,6 +1554,7 @@ class TagHistoryView(BasicTemplateView):
             self.title = "Timeline for tag '%s'" % self.tag
         return super(TagHistoryView,self).get(request, *args, **kwargs)
 
+
 from dingos.templatetags.dingos_tags import reachable_packages
 class TaggedObjectsView(BasicTemplateView):
     template_name = 'dingos/%s/lists/TaggedObjectsList.html' % DINGOS_TEMPLATE_FAMILY

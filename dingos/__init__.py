@@ -399,9 +399,19 @@ DINGOS_TAGGING_REGEX = [
      re.compile(r"^INVES-[0-9]+(-[A-Za-z0-9]+)?$")
 ]
 
+
+DINGOS_MANTIS_ACTIONABLES_CONTEXT_TAG_REGEX = [
+    re.compile(r"^INVES-[0-9]+(-[A-Za-z0-9]+)?$")
+]
+
+
 DINGOS_TAGGING_PROCESSING = {
     'dingos' : 'dingos.view_classes.processTagging',
     'actionables' : 'mantis_actionables.views.processActionablesTagging'
 }
 
+
+
 DINGOS_TAGGING_POSTPROCESSING = {'Fact':'mantis_actionables.mantis_import.update_and_transfer_tags'}
+
+
