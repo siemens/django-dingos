@@ -2426,15 +2426,16 @@ class TaggingHistory(DingoModel):
     @classmethod
     def bulk_create_tagging_history(cls,action,tags,objects,user,comment):
         action = getattr(cls,action.upper())
-        if not isinstance(list(tags)[0],Tag):
-            if isinstance(list(tags)[0],int):
-                tags = Tag.objects.filter(id__in=tags)
-            else:
-                tags = Tag.objects.filter(name__in=tags)
+        if tags:
+            if not isinstance(list(tags)[0],Tag):
+                if isinstance(list(tags)[0],int):
+                    tags = Tag.objects.filter(id__in=tags)
+                else:
+                    tags = Tag.objects.filter(name__in=tags)
 
-        entry_list = []
-        for object in objects:
-                entry_list.extend([TaggingHistory(action=action,user=user,comment=comment,tobject=object,tag=x) for x in tags])
-        TaggingHistory.objects.bulk_create(entry_list)
+            entry_list = []
+            for object in objects:
+                    entry_list.extend([TaggingHistory(action=action,user=user,comment=comment,tobject=object,tag=x) for x in tags])
+            TaggingHistory.objects.bulk_create(entry_list)
 
 dingos_class_map["TaggingHistory"] = TaggingHistory
