@@ -82,7 +82,7 @@ def getTagsbyModel(things,model=None):
     for tag in tags_q:
         tag_list = tag_map.setdefault(tag['id'],[])
         tag_list.append(tag['tag_through__tag__name'])
-    print tag_map
+
     return tag_map
 
 
@@ -125,7 +125,7 @@ def getTags(iobjects):
         fact_list = obj_map.setdefault(tag['fact_id'],[])
         fact_list.append(tag['fact__tag_through__tag__name'])
 
-    print tag_map
+
     return tag_map
 
 class InfoObjectList(BasicFilterView):
@@ -474,7 +474,7 @@ class BasicInfoObjectEditView(LoginRequiredMixin,InfoObjectView_wo_login):
         super(InfoObjectView_wo_login,self).get(request, *args, **kwargs)
         self.build_form()
 
-        print self.index
+
         user_data = self.get_user_data()
         self.formset = self.form_class(request.POST.dict())
 

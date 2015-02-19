@@ -80,9 +80,6 @@ for (postprocessor_key,postprocessor_data) in DINGOS_SEARCH_POSTPROCESSOR_REGIST
         predicate = postprocessor_data['postprocessor_predicate']
         postprocessor_list = []
         for (postprocessor_key2,postprocessor_data2) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
-            print predicate(postprocessor_key2,postprocessor_data2)
-            print postprocessor_key2
-            print postprocessor_data2
             if predicate(postprocessor_key2,postprocessor_data2) and 'module' in postprocessor_data2:
                 try:
                     my_module = importlib.import_module(postprocessor_data2['module'])
@@ -91,8 +88,6 @@ for (postprocessor_key,postprocessor_data) in DINGOS_SEARCH_POSTPROCESSOR_REGIST
                 if my_module:
                     postprocessor_list.append(getattr(my_module,postprocessor_data2['class']))
         POSTPROCESSOR_REGISTRY[postprocessor_key] = postprocessor_list
-
-print "Registry %s" % POSTPROCESSOR_REGISTRY
 
 
 class UncountingPaginator(Paginator):
@@ -774,7 +769,7 @@ class BasicCustomQueryView(BasicListView):
 
                         if result_format == 'table':
                             self.results = result
-                            print result
+
                             self.col_headers = col_specs['headers']
                             self.selected_cols = col_specs['selected_fields']
                             self.template_name = 'dingos/%s/searches/CustomSearch.html' % DINGOS_TEMPLATE_FAMILY

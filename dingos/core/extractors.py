@@ -116,7 +116,7 @@ class InfoObjectDetails(object):
     exporter_name = None
 
     def __init__(self,*args,**kwargs):
-        print kwargs
+
         self.allowed_columns = {}
         self.enrich_details = True
         self.format = None
@@ -148,7 +148,7 @@ class InfoObjectDetails(object):
         self.format = kwargs.pop('format',None)
         self.results = []
 
-        print "Exporter name %s" % self.exporter_name
+
         self.initialize_allowed_columns()
 
 
@@ -261,7 +261,7 @@ class InfoObjectDetails(object):
 
 
     def export(self,*args,**kwargs):
-        print "Export %s" % kwargs
+
         #not working if [0] not commented out
         override_columns=kwargs.pop('override_columns',[None])
         if isinstance(override_columns,list):
