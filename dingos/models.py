@@ -2413,7 +2413,7 @@ class TaggingHistory(DingoModel):
         (REMOVE,'Removed')
     ]
 
-    timestamp = models.DateTimeField(auto_now_add=True,primary_key=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
     action = models.SmallIntegerField(choices=ACTIONS)
     user = models.ForeignKey(User,related_name='tagging_history')
     content_type = models.ForeignKey(ContentType)

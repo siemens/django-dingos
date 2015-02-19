@@ -51,7 +51,8 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_OBJECTTYPE_VIEW_MAPPING, \
     DINGOS_INFOOBJECT_GRAPH_TYPES, \
     DINGOS_SEARCH_POSTPROCESSOR_REGISTRY, \
-    DINGOS_TAGGING_PROCESSING
+    DINGOS_TAGGING_PROCESSING, \
+    DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT
 
 
 from braces.views import LoginRequiredMixin
@@ -813,6 +814,12 @@ class InfoObjectExportsView(BasicListView):
             content_type = None
             combined_result = 'NO EXPORTER %s DEFINED' % exporter
             self.result = combined_result
+
+        mod_name, func_name = DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT.rsplit('.',1)
+        mod = importlib.import_module(mod_name)
+        async_export_to_actionables = getattr(mod,func_name)
+        #from .tasks import async_export_to_actionables
+        async_export_to_actionables.delay(iobject_id,self.result)
 
         if api_test:
             self.api_result = combined_result
