@@ -116,11 +116,13 @@ class InfoObjectFilter(django_filters.FilterSet):
         label="InfoObject Family",
         to_field_name='id')
 
-    identifier__namespace = django_filters.ModelChoiceFilter(
-        queryset= IdentifierNameSpace.objects.exclude(uri__exact=DINGOS_ID_NAMESPACE_URI),
-        required=None,
-        label="ID Namespace",
-        to_field_name='id')
+    identifier__namespace__uri = django_filters.CharFilter(lookup_type='icontains',
+                                                label='ID Namespace contains')
+    #ModelChoiceFilter(
+    #    queryset= IdentifierNameSpace.objects.exclude(uri__exact=DINGOS_ID_NAMESPACE_URI),
+    #    required=None,
+    #    label="ID Namespace",
+    #    to_field_name='id')
 
     name = django_filters.CharFilter(lookup_type='icontains',
                                                 label='Name contains')
@@ -148,7 +150,8 @@ class InfoObjectFilter(django_filters.FilterSet):
         order_by = create_order_keyword_list(['identifier__uid','timestamp','create_timestamp','name','iobject_type'])
         model = InfoObject
         fields = ['iobject_type','iobject_type__name','iobject_type__iobject_family','name',
-                  'identifier__namespace','identifier__uid','timestamp', 'create_timestamp','marking_thru__marking__identifier__uid', 'identifier__tag_through__tag__name']
+                  'identifier__namespace__uri','identifier__uid','timestamp', 'create_timestamp','marking_thru__marking__identifier__uid']
+
 
 
 class CompleteInfoObjectFilter(django_filters.FilterSet):
