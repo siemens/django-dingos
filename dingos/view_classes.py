@@ -416,12 +416,12 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
 
     fields_for_api_call = ['name']
 
-    list_actions = [
-
-                ('Mark', 'url.dingos.action.add_marking', 0),
-                ('Tag', 'url.dingos.action.add_tagging', 0)
-
-            ]
+    #list_actions = [
+    #
+    #            ('Mark', 'url.dingos.action.add_marking', 0),
+    #            ('Tag', 'url.dingos.action.add_tagging', 0)
+    #
+    #        ]
 
     allow_save_search=True
 
