@@ -477,7 +477,8 @@ def show_InfoObject(context,
             'inner_fold_status': inner_fold_status,
             'link_pk':link_pk,
             'tag_dict':context['tag_dict'],
-            'all_tags':all_tags
+            'all_tags':all_tags,
+            'tagging_conf' : context['tagging_conf']
             }
 
 

@@ -168,6 +168,17 @@ class CommonContextMixin(ContextMixin):
         context['object_list_len'] = self.object_list_len
 
 
+        # Tagging configuration
+        context['tagging_conf'] = {}
+
+        context['tagging_conf']['object_list'] = {}
+        context['tagging_conf']['object_list']['tags_shown'] = False
+        context['tagging_conf']['object_list']['tags_editable'] = False
+
+        context['tagging_conf']['fact'] = {}
+        context['tagging_conf']['fact']['tags_shown'] = True
+        context['tagging_conf']['fact']['tags_editable'] = False
+
         user_data_dict = self.get_user_data()
 
         # We use the ConfigDictWrapper to wrap the data dictionaries. This allows the
