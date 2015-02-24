@@ -15,26 +15,36 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
+
+
+
 from django import template
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.urlresolvers import reverse
+from django.contrib.contenttypes.models import ContentType
 from django.utils import html
 from django.utils.html import conditional_escape, strip_tags
 from django.utils.safestring import mark_safe
 from django.conf import settings
+from django.db.models import F
 
-from dingos import DINGOS_TEMPLATE_FAMILY
+from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY,\
+    DINGOS_TEMPLATE_FAMILY, \
+    DINGOS_MANTIS_ACTIONABLES_CONTEXT_TAG_REGEX
+
 from dingos.core import http_helpers
+from dingos.views import getTags, getTagsbyModel
 from dingos.core.utilities import get_from_django_obj,get_dict
-from dingos.models import BlobStorage
-
+from dingos.models import BlobStorage,dingos_class_map
 from dingos.graph_traversal import follow_references
 from dingos.graph_utils import dfs_preorder_nodes
+from dingos.models import Identifier, InfoObject, InfoObject2Fact, Fact, vIO2FValue, IdentifierNameSpace
+from dingos.forms import TagForm
 
-from dingos.models import InfoObject, InfoObject2Fact, IdentifierNameSpace
-from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY
+from taggit.models import TaggedItem, Tag
 
-
+logger = logging.getLogger(__name__)
 
 register = template.Library()
 
@@ -246,7 +256,21 @@ def sliceupto(value, upto):
     except (ValueError, TypeError):
         return value
 
+@register.filter
+def get_key(value, arg):
+    return value.get(arg, None)
 
+#TODO refactor all dict get filters
+@register.filter
+def get_value(coll, key):
+    if coll:
+        if isinstance(coll,list) and isinstance(key,int):
+            try:
+                return coll[key]
+            except IndexError:
+                return None
+
+        return coll.get(key,None)
 
 @register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_table_ordering(context, index, title):
@@ -320,6 +344,10 @@ def render_paginator(context,is_counting=True):
 # Below we register template tags that display
 # certain aspects of an InformationObject.
 
+@register.filter
+def keyvalue(dict, key):
+    return dict.get(key,None)
+
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectFactsDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def show_InfoObject(context,
                     formset=None,
@@ -336,9 +364,18 @@ def show_InfoObject(context,
 
     page = context['view'].request.GET.get('page')
 
+    if link_pk:
+        all_tags = set(reduce(lambda x,y: x+y,context['tag_dict']['iobjects'].get(link_pk,{}).values(),[]))
+    else:
+        all_tags = []
+
     iobject = context['view'].object
     if not iobject2facts:
         iobject2facts = context['view'].iobject2facts
+    #else:
+    #    # if iobject2facts is provided, we may be showing a different object
+    #    # then given as 'object' in the context
+    #    iobject = iobject2facts[0].iobject_id
     highlight = context['highlight']
     show_NodeID = context['show_NodeID']
 
@@ -438,7 +475,11 @@ def show_InfoObject(context,
             'close_div' : close_div,
             'inner_collapsible': inner_collapsible,
             'inner_fold_status': inner_fold_status,
-            'link_pk':link_pk}
+            'link_pk':link_pk,
+            'tag_dict':context['tag_dict'],
+            'all_tags':all_tags,
+            'tagging_conf' : context['tagging_conf']
+            }
 
 
 
@@ -533,8 +574,6 @@ def show_InfoObjectField(oneObject, field):
     else:
         return result
 
-
-
 @register.simple_tag
 def dict_lookup(dict, key):
     return dict.get(key,'ERROR')
@@ -551,6 +590,10 @@ def context_dict_lookup(context,dict_name,*keys):
 @register.assignment_tag(takes_context=True)
 def obj_by_pk(context, *args,**kwargs):
     return getattr(context['view'],'obj_by_pk')(*args,**kwargs)
+
+@register.assignment_tag(takes_context=True)
+def fact_by_pk(context, *args,**kwargs):
+    return getattr(context['view'],'fact_by_pk')(*args,**kwargs)
 
 @register.filter
 def nice_name(user):
@@ -640,6 +683,122 @@ def show_namespace_image(context,namespace, height=None, width=None):
         image_url = settings.MEDIA_URL + str(namespace.image)
         return '<img title="%s" alt="%s" src="%s" style="%s">' % (namespace.uri, namespace.uri, image_url, "".join(attributes))
     return namespace.uri
+
+@register.filter(name='type')
+def getType(object):
+    return type(object).__name__
+
+@register.filter(name='get_obj')
+def getObject(obj_list,pk):
+    for x in obj_list:
+        if x.id == int(pk):
+            return x
+
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectTagBlock.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_InfoObjectTagBlockDisplay(context, object, isEditable=False):
+    #context = {}
+    #context['tag_dict'] = getTags(object)
+    context['object'] = object
+    context['isEditable'] = isEditable
+    return context
+
+
+@register.inclusion_tag('dingos/%s/includes/_GenericRowDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_GenericTagRowDisplay(context, object, col_count, isEditable=False,debug_pk = None):
+    view = context["view"]
+
+
+    try:
+        simple_tags_dict = view.simple_tags_dict
+    except:
+        objects = list(context.get('object_list',[]))
+        logger.debug("Object list contains %s" % map(lambda x: x.id, objects))
+        view.simple_tags_dict = getTagsbyModel(objects)
+    try:
+        object_id = object.id
+    except:
+        object_id = -1
+        tags = ["ERROR"]
+        logger.error("Could not find fact with pk %s in object_list: Maybe somebody has turned on pagination"
+                     " on the view?" % debug_pk)
+    return {
+        'thing' : object,
+        'isEditable' : isEditable,
+        'tags' : view.simple_tags_dict.get(object_id,[]),
+        'col_count' : col_count,
+    }
+
+
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectTagRowDisplay.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_InfoObjectTagRowDisplay(context, object, col_count, isEditable=False):
+    view = context["view"]
+    try:
+        simple_tags_dict = view.simple_tags_dict
+    except:
+        identifiers = list(map(lambda x: x.identifier_id, context.get('object_list',[])))
+        view.simple_tags_dict = getTagsbyModel(identifiers,Identifier)
+    return {
+        'identifier' : object.identifier,
+        'isEditable' : isEditable,
+        'tags' : view.simple_tags_dict.get(object.identifier.id,[]),
+        'col_count' : col_count
+    }
+
+@register.assignment_tag
+def tag_link_url(tag,tag_context=None,tag_type='dingos'):
+    the_url = None
+    if tag_type == 'dingos':
+        if any(regex.match(tag) for regex in DINGOS_MANTIS_ACTIONABLES_CONTEXT_TAG_REGEX):
+            # This is a tag that is transferred into mantis_actionables, so we
+            # make the url point to the view there
+            try:
+                the_url = reverse('actionables_context_view',args=[tag])
+            except:
+                the_url = None
+        else:
+            try:
+                the_url = reverse('url.dingos.tagging.tagged_things',args=[tag])
+            except:
+                the_url = None
+    elif tag_type == 'actionables':
+        try:
+            the_url = reverse('actionables_context_view',args=[tag_context])
+        except:
+            the_url = None
+    return the_url
+
+
+@register.inclusion_tag('dingos/%s/includes/_TagDisplay.html'% DINGOS_TEMPLATE_FAMILY)
+def show_TagDisplay(tags, tag_type, isEditable = False, tag_context = None):
+    context = {}
+    if isinstance(tags,basestring):
+        context['tags'] = [tags]
+    else:
+        context['tags'] = tags
+
+    context['isEditable'] = isEditable
+    context['dingos_url_name'] = 'actionables_context_view' #'url.dingos.tagging.tagged_things'
+    context['actionables_url_name'] = 'actionables_context_view'
+
+    context['tag_type'] = tag_type
+    context['tag_context'] = tag_context
+    return context
+
+@register.simple_tag()
+def show_addTagInput(obj_id, obj_type):
+    form = TagForm()
+    form.fields['tag'].widget.attrs.update({
+        'data-obj-id': obj_id,
+        'data-obj-type' : obj_type
+        })
+    return form.fields['tag'].widget.render('tag','')
+
+@register.filter()
+def content_type_match(id,obj_string):
+    type = ContentType.objects.get_for_model(dingos_class_map.get(obj_string,''))
+    if type:
+        return True if type.id == id else False
+    return False
 
 @register.filter(name='zip')
 def zip_lists(a, b):

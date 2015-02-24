@@ -31,6 +31,8 @@ from django.utils.timezone import now
 
 from dingos import DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, DINGOS_ID_NAMESPACE_URI
 
+from taggit.models import Tag
+
 _truncate = lambda dt: dt.replace(hour=0, minute=0, second=0)
 
 def create_order_keyword_list(keywords):
@@ -138,11 +140,18 @@ class InfoObjectFilter(django_filters.FilterSet):
 
     create_timestamp = ExtendedDateRangeFilter(label="Import Timestamp")
 
+    identifier__tag_through__tag__name = django_filters.ModelChoiceFilter(
+        queryset= Tag.objects.all(),
+        required=None,
+        label="Tags",
+        to_field_name='id')
+
     class Meta:
         order_by = create_order_keyword_list(['identifier__uid','timestamp','create_timestamp','name','iobject_type'])
         model = InfoObject
         fields = ['iobject_type','iobject_type__name','iobject_type__iobject_family','name',
                   'identifier__namespace__uri','identifier__uid','timestamp', 'create_timestamp','marking_thru__marking__identifier__uid']
+
 
 
 class CompleteInfoObjectFilter(django_filters.FilterSet):

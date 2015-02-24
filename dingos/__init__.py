@@ -15,6 +15,7 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import re
 
 
 
@@ -392,3 +393,26 @@ DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
 
                                                                  }
                                                              ]}]
+
+#if tags should match specific requirements, add regex to check here
+DINGOS_TAGGING_REGEX = [
+     re.compile(r"^INVES-[0-9]+(-[A-Za-z0-9]+)?$")
+]
+
+
+DINGOS_MANTIS_ACTIONABLES_CONTEXT_TAG_REGEX = [
+    re.compile(r"^INVES-[0-9]+(-[A-Za-z0-9]+)?$")
+]
+
+
+DINGOS_TAGGING_PROCESSING = {
+    'dingos' : 'dingos.view_classes.processTagging',
+    'actionables' : 'mantis_actionables.views.processActionablesTagging'
+}
+
+
+
+DINGOS_TAGGING_POSTPROCESSING = {'Fact':'mantis_actionables.mantis_import.update_and_transfer_tags'}
+
+DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT = 'mantis_actionables.tasks.async_export_to_actionables'
+

@@ -1,4 +1,4 @@
-django>=1.7
+django>=1.7,<1.8
 
 ## For testing
 # Uncomment below for tox tests to run through successfully.
@@ -17,7 +17,8 @@ django>=1.7
 django-grappelli>=2.4.7
 django-braces>=1.0.0
 django-filter>=0.7
-
+django-taggit>=0.12.2
+django-autocomplete-light>=2.0.1	
 ## XML libraries
 
 #libxml2-python>=2.6.21

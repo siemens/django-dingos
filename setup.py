@@ -45,7 +45,9 @@ setup(
                       'ply>=3.4',
                       'networkx>=1.9',
                       'django-oauth2-provider>=0.2.6.1',
-                      'Pillow>=2.5.3'
+                      'Pillow>=2.5.3',
+                      'django-taggit>=0.12.2',
+                      'django-autocomplete-light==2.0.1',
     ],
     license="GPLv2+",
     zip_safe=False,

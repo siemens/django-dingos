@@ -374,4 +374,189 @@
 	});
     }
 
+    /* TAGGING */
+    //Status Codes
+    var SUCCESS = 0;
+    var FAIL = -1;
+    var QUERY_ADDITIONAL_INFO = 1;
+
+    function handleQuery(json_data,additional,tag) {
+      var dialog_id = additional['dialog_id'];
+      var msg = additional['msg'];
+      var dialog = $("#" + dialog_id);
+      dialog.val(msg);
+      dialog.data('json_data',json_data).data('tag',tag).dialog('open');
+    }
+
+    //add_tag_handler
+    function add_tag(event){
+      var json_data = {};
+      var tag_type = $(event.target).data('tag-type');
+      json_data['tag_type'] = tag_type;
+      var tags = $(event.target).val();
+      json_data['tags'] = tags;
+      json_data['action'] = 'add';
+
+      switch(tag_type){
+        case 'dingos':
+          var obj_id = $(event.target).data('obj-id');
+          json_data['objects'] = [obj_id];
+          var obj_type = $(event.target).data('obj-type');
+          json_data['obj_type'] = obj_type
+          break;
+
+        case 'actionables':
+            var obj_id = $(event.target).data('obj-id');
+            json_data['objects'] = [obj_id];
+            //get current context from current URL
+            var curr_context = $(event.target).data('curr-context');
+            json_data['curr_context'] = curr_context;
+            break;
+      }
+      var tag_container = $("#tags[data-obj-id='" + obj_id + "']");
+
+      if(tag_container.children("#" + tags).length == 0) {
+        $.ajax({
+          url: "/mantis/tagging/process",
+          type: "POST",
+          data: JSON.stringify(json_data),
+          processData: false,
+          contentType: 'application/json; charset=UTF-8',
+          dataType: "json",
+          success: function (resp_data) {
+            switch(resp_data['status']) {
+              case SUCCESS:
+                tag_container.append(resp_data['html']);
+                add_removeHandler();
+                break;
+              case FAIL:
+                alert(resp_data['err']);
+                break;
+              case QUERY_ADDITIONAL_INFO:
+                handleQuery(json_data,resp_data['additional']);
+                break;
+            }
+          }
+        });
+      }
+      $(event.target).val('');
+    }
+
+
+    function add_removeHandler(){
+    $('.remove_tag_button').each(function(){
+      $(this).click(function (event) {
+        var json_data = {};
+        var tag_type = $(this).data('tag-type');
+        json_data['tag_type'] = tag_type;
+        var tags = $(this).data('tag-name');
+        json_data['tags'] = tags;
+        json_data['action'] = 'remove';
+
+        var obj_info = $(this).closest('[data-obj-id]');
+        var obj_id = obj_info.data('obj-id');
+        json_data['objects'] = [obj_id];
+
+        switch(tag_type){
+          case 'dingos':
+            var obj_type = obj_info.data('obj-type');
+            json_data['obj_type'] = obj_type;
+            break;
+
+          case 'actionables':
+              var curr_context = $(this).closest('#tags').data('curr-context');
+              json_data['curr_context'] = curr_context;
+              break;
+        }
+        var tag_container = $("#tags[data-obj-id='" + obj_id + "']");
+        var tag = $(this).parent();
+        $.ajax({
+          url: "/mantis/tagging/process",
+          type: "POST",
+          data: JSON.stringify(json_data),
+          processData: false,
+          contentType: 'application/json; charset=UTF-8',
+          dataType: "json",
+          success: function (resp_data) {
+            switch(resp_data['status']) {
+              case SUCCESS:
+                tag.remove();
+                break;
+              case FAIL:
+                alert(resp_data['err']);
+                break;
+              case QUERY_ADDITIONAL_INFO:
+                handleQuery(json_data,resp_data['additional'],tag);
+                break;
+            }
+          }
+        });
+      });
+    });
+    }
+
+    $(document).ready(function () {
+      //add new tag on return (ASCII 13 --> Carriage Return) on input field
+      $('input#id_tag').each(function(){
+        $(this).keypress(function(event){
+          if(event.isDefaultPrevented()){
+            return;
+          }
+          if(event.keyCode === 13){
+            add_tag(event);
+            event.preventDefault();
+          }});
+        });
+      //if tag is selected via autocomplete (return or mouse click), add it immediately
+      $(document).bind('selectChoice', function(e, choice, autocomplete) {
+        add_tag(e);
+      });
+
+      //register removeHandler for all tags
+      add_removeHandler();
+
+      //initialize remove tag dialog
+      //tagging remove dialog
+      $('#dialog-tagging-remove').dialog({
+        autoOpen: false,
+        title: "Remove Tag Additional Info",
+        buttons: [
+          {
+            text: "Delete",
+            click: function() {
+              var dialog = $('#dialog-tagging-remove');
+              var json_data = dialog.data('json_data');
+              var tag = dialog.data('tag');
+              var dialog_comment_field = $('#tagging-remove-comment');
+              var input = dialog_comment_field.val();
+              json_data['user_data'] = input;
+              $.ajax({
+                url: "/mantis/tagging/process",
+                  type: "POST",
+                  data: JSON.stringify(json_data),
+                  processData: false,
+                  contentType: 'application/json; charset=UTF-8',
+                  dataType: "json",
+                  success: function (resp_data) {
+                  switch(resp_data['status']) {
+                    case SUCCESS:
+                      tag.remove();
+                      break;
+                    case FAIL:
+                      alert(resp_data['err']);
+                      break;
+                  }
+                }
+              });
+              dialog_comment_field.val('');
+              $(this).dialog('close');
+            }
+          }
+        ]
+      });
+
+});
+
+
+
 }(django.jQuery)); // Reuse django injected jQuery library

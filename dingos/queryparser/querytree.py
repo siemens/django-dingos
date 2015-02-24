@@ -34,8 +34,12 @@ POSTPROCESSOR_REGISTRY = {}
 
 
 for (postprocessor_key,postprocessor_data) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
-    my_module = importlib.import_module(postprocessor_data['module'])
-    POSTPROCESSOR_REGISTRY[postprocessor_key] = getattr(my_module,postprocessor_data['class'])
+    try:
+        my_module = importlib.import_module(postprocessor_data['module'])
+    except:
+        my_module = None
+    if my_module:
+        POSTPROCESSOR_REGISTRY[postprocessor_key] = getattr(my_module,postprocessor_data['class'])
 
 
 

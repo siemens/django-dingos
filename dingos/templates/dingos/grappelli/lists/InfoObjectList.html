@@ -86,11 +86,21 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                                 {%reachable_packages obj.pk %}
                             </td>
                         </tr>
+                        {% if tagging_conf.object_list.tags_shown %}
+                        <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+                            {% show_InfoObjectTagRowDisplay obj 6 tagging_conf.object_list.tags_editable %}
+                        </tr>
+                        {% endif %}
                     {% endfor %}
                     </tbody>
                 {% endblock %}
             </table>
-            {% if list_actions %}</form>{% endif %}
+            {% include "dingos/grappelli/includes/_TaggingDialogs.html" %}
+            {% if list_actions %}
+                <input type="hidden" name="type" value="InfoObject" />
+                </form>
+            {% endif %}
+        {% include 'autocomplete_light/static.html' %}
         </div>
   {%  endif %}
 

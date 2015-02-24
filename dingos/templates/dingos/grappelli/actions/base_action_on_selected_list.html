@@ -38,7 +38,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% block right_column %}
 
-<div class="grp-module">
+{# TODO remove margin-top here, should be solved globally #}
+<div class="grp-module" style="margin-top: 32px;">
     <h2>{% block tool_title %} Action {% endblock %}</h2>
 
 <div class="grp_row">
@@ -70,7 +71,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
       {% endblock %}
   </div>
-    <input type="submit" value="{% block action_form_button_label %}Do it!{% endblock %}" />
+    {% block submit_button %}<input type="submit" value="{% block action_form_button_label %}Do it!{% endblock %}" />{% endblock %}
 </div>
 
 
@@ -83,51 +84,13 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 {% endblock %}
 
 {% block objects %}
-
-   <div class="grp-module grp-changelist-results">
-
-    <table id="result_list" cellspacing="0" class="grp-sortable">
-
-        {% block header_row %}
-            <thead>
-            <tr>
-            <th/>
-            <th>Identifier</th>
-            <th>Name</th>
-            </tr>
-            </thead>
-
-        {% endblock %}
-
-        <div id="id_checked_objects">
-
-
-       <tbody>
-
-       {% for checkbox in view.form.checked_objects %}
-         {% with pk=checkbox.choice_label %}
-         {% obj_by_pk pk as obj %}
-
-
-           <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
-               <td> {{ checkbox.tag }}</td>
-               {% block instance_columns %}
-               <td>
-                   <a href="{%url 'url.dingos.view.infoobject' pk=obj.pk %}">{{ obj.identifier }}</a>
-               </td>
-               <td>
-                   {{obj.name | insert_wbr }}
-               </td>
-               {% endblock %}
-
-           </tr>
-         {% endwith %}
-       {% endfor %}
-       </tbody>
-     </div>
- </table>
-
-</div>
+    {% if view.type == "InfoObject" %}
+        {% include "dingos/grappelli/includes/_InfoObjectActionListView.html" %}
+    {% elif view.type ==  "Fact" %}
+        {% include "dingos/grappelli/includes/_FactActionListView.html" %}
+    {% else %}
+        No type found
+    {% endif %}
 {% endblock %}
 
 

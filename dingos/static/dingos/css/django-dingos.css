@@ -190,5 +190,61 @@ form#query-executor #id_query {
 
 /* Fix the left column overflow, because overlapping leads to an unusable sidebar  */
 div.c-2 > .grp-module, div.c-2 .grp-module.grp-changelist-results {
-    overflow: auto;
+    /* overflow: auto; */
+    /* commented out because overflow:auto leads to an unusable choice list for tagging */
+    /* TODO solve conflict */
 }
+
+/**Fix grappelli iobject link image not to break**/
+.grp-collapse.grp-closed > .grp-collapse-handler .stay-inline {
+    display: inline !important;
+}
+
+
+/* tagging */
+#tags input {
+    display: block;
+    margin: 0 auto;
+}
+
+.tag {
+    display: inline-block;
+    border: #AAA 1px solid;
+    border-radius: 3px;
+    background-color: #CCEBFF;
+}
+
+.tag:last-of-type {
+    margin-left: 0;
+}
+
+.tag-block .tag {
+    margin-right: 10px;
+    padding: 5px;
+}
+
+.tag-row .tag {
+    margin-top: 10px;
+    padding: 3px;
+}
+
+.w-1 {
+    width: 1px;
+}
+
+.middle {
+    vertical-align: middle;
+}
+
+table {
+    width: 100%;
+}
+
+.remove_tag_button {
+    cursor: pointer;
+}
+
+.ui-button.ui-button-text-only {
+    width: 100px;
+}
+

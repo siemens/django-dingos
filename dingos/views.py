@@ -18,7 +18,7 @@
 import json
 import re
 from django import http
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import F
 from django.forms.formsets import formset_factory
 from django.shortcuts import get_object_or_404
@@ -34,8 +34,9 @@ from provider.oauth2.models import Client
 
 from braces.views import SuperuserRequiredMixin
 
-from dingos.models import InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact
+from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact, Fact, dingos_class_map
 from dingos.view_classes import BasicJSONView, POSTPROCESSOR_REGISTRY
+from dingos.core.utilities import listify
 
 import csv
 
@@ -48,7 +49,11 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_SAVED_SEARCHES_TYPE_NAME, \
     DINGOS_DEFAULT_SAVED_SEARCHES, \
     DINGOS_OBJECTTYPE_VIEW_MAPPING, \
-    DINGOS_INFOOBJECT_GRAPH_TYPES
+    DINGOS_INFOOBJECT_GRAPH_TYPES, \
+    DINGOS_SEARCH_POSTPROCESSOR_REGISTRY, \
+    DINGOS_TAGGING_PROCESSING, \
+    DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT
+
 
 from braces.views import LoginRequiredMixin
 from view_classes import BasicFilterView, BasicDetailView, BasicTemplateView, BasicListView, BasicCustomQueryView
@@ -62,6 +67,66 @@ from dingos.graph_traversal import follow_references
 
 from dingos.core.utilities import match_regex_list
 
+
+
+def getTagsbyModel(things,model=None):
+    def _simple_q(_objects,model):
+        if not model:
+            model = type(_objects[0])
+        obj_pks = things if isinstance(things[0],int) else set([x.id for x in things])
+        cols = ['id','tag_through__tag__name']
+        tags_q = model.objects.filter(id__in = obj_pks).filter(tag_through__isnull=False).values(*cols)
+        return tags_q
+    tags_q = _simple_q(things,model=model)
+    tag_map = {}
+    for tag in tags_q:
+        tag_list = tag_map.setdefault(tag['id'],[])
+        tag_list.append(tag['tag_through__tag__name'])
+
+    return tag_map
+
+
+def getTags(iobjects):
+    """
+    :param iobjects: single/multiple objects or object pks as list or set
+    :param complex: iobject and fact tags if set to True
+    :param model: type of objects have to be provided if using object pks
+    :return: dict like following:
+
+    { <IObjectPK> ; { 'tags' : [<list of tags on current IObject>],
+                      <FactPK> : [<list of tags on current Fact>],
+                      ...
+                    }
+    }
+    """
+    tag_map = {'identifiers': {},
+               'iobjects': {}}
+
+
+    if isinstance(iobjects,set):
+        iobjects = list(iobjects)
+
+    iobjects = listify(iobjects)
+
+
+    tag_map['identifiers'] = getTagsbyModel(map(lambda x: x.identifier_id, iobjects),Identifier)
+
+
+
+    o_tag_map = tag_map['iobjects']
+
+    cols = ['iobject_id','fact_id','fact__tag_through__tag__name']
+
+    fact_tags_q = list(vIO2FValue.objects.filter(iobject__in = iobjects).filter(fact__tag_through__isnull=False).values(*cols))
+
+
+    for tag in fact_tags_q:
+        obj_map = o_tag_map.setdefault(tag['iobject_id'],{})
+        fact_list = obj_map.setdefault(tag['fact_id'],[])
+        fact_list.append(tag['fact__tag_through__tag__name'])
+
+
+    return tag_map
 
 class InfoObjectList(BasicFilterView):
 
@@ -80,7 +145,6 @@ class InfoObjectList(BasicFilterView):
     filterset_class= InfoObjectFilter
 
     title = 'List of Info Objects (generic filter)'
-
 
     @property
     def queryset(self):
@@ -157,7 +221,6 @@ class InfoObjectsEmbedded(BasicListView):
         context['iobject'] = self.iobject
         return context
 
-
 class SimpleFactSearch(BasicFilterView):
 
     counting_paginator = False
@@ -222,9 +285,6 @@ class UniqueSimpleFactSearch(BasicFilterView):
     def get_reduced_query_string(self):
         return self.get_query_string(remove=['fact__fact_term','fact__fact_values','page'])
 
-
-
-
 class InfoObjectRedirect(RedirectView):
 
     permanent = False
@@ -245,9 +305,6 @@ class InfoObjectRedirect(RedirectView):
             return object_specific_view
         else:
             return 'url.dingos.view.infoobject.standard'
-
-
-
 
 class InfoObjectView_wo_login(BasicDetailView):
     """
@@ -340,6 +397,11 @@ class InfoObjectView_wo_login(BasicDetailView):
         context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
         context['iobject2facts'] = self.iobject2facts
+
+        if self.__class__ == InfoObjectView:
+            context['tag_dict'] = getTags(self.object)
+
+        context['io2fvs'] = None
         try:
             context['highlight'] = self.request.GET['highlight']
         except KeyError:
@@ -347,17 +409,12 @@ class InfoObjectView_wo_login(BasicDetailView):
 
         return context
 
-
-
-
-
 class InfoObjectView(LoginRequiredMixin,InfoObjectView_wo_login):
     """
     View for viewing an InfoObject.
     """
 
     pass
-
 
 class BasicInfoObjectEditView(LoginRequiredMixin,InfoObjectView_wo_login):
     """
@@ -417,7 +474,7 @@ class BasicInfoObjectEditView(LoginRequiredMixin,InfoObjectView_wo_login):
         super(InfoObjectView_wo_login,self).get(request, *args, **kwargs)
         self.build_form()
 
-        print self.index
+
         user_data = self.get_user_data()
         self.formset = self.form_class(request.POST.dict())
 
@@ -470,7 +527,6 @@ class UserPrefsView(BasicInfoObjectEditView):
         except KeyError, err:
             pass
         return UserData.get_user_data_iobject(user=self.request.user,data_kind=DINGOS_USER_PREFS_TYPE_NAME)
-
 
 class CustomSearchesEditView(BasicTemplateView):
     """
@@ -608,7 +664,6 @@ class InfoObjectJSONView(BasicDetailView):
                                  content_type='application/json',
                                  **httpresponse_kwargs)
 
-
 class CustomInfoObjectSearchView(BasicCustomQueryView):
     #list_actions = [ ('Share', 'url.dingos.action_demo', 0),
     #                 ('Do something else', 'url.dingos.action_demo', 0),
@@ -616,8 +671,6 @@ class CustomInfoObjectSearchView(BasicCustomQueryView):
     #                  ]
 
     pass
-
-
 
 class CustomFactSearchView(BasicCustomQueryView):
 
@@ -642,13 +695,16 @@ class CustomFactSearchView(BasicCustomQueryView):
                         'fact__value_iobject_id__latest__iobject_type',
                         'node_id')
 
+class InfoObjectExportsView(BasicListView):
+
+    @property
+    def title(self):
+        exporter = self.kwargs.get('exporter', None)
 
 
-
-class InfoObjectExportsView(BasicTemplateView):
-    # When building the graph, we skip references to the kill chain. This is because
-    # in STIX reports where the kill chain information is consistently used, it completly
-    # messes up the graph display.
+        iobject_name =  self.graph.node[int(self.kwargs.get('pk'))]['name']
+        exporter_name = DINGOS_SEARCH_POSTPROCESSOR_REGISTRY[exporter]['name']
+        return "%s on '%s'" % (exporter_name,iobject_name)
 
     skip_terms = [
         # We do not want to follow 'Related Object' links and similar
@@ -657,12 +713,41 @@ class InfoObjectExportsView(BasicTemplateView):
 
     max_objects = None
 
+    # We provide an action view for tagging the displayed facts
+
+    list_actions = [
+                ('Tag', 'url.dingos.action.add_tagging', 0),
+            ]
+
+    # We require the queryset in order to use the
+    # action mechanism of the list view
+
+    @property
+    def queryset(self):
+        queryset = Fact.objects.filter(id__in=self.fact_ids)
+        return queryset
+
+    # Because the export is generated out of one or more post-processors,
+    # we cannot use the pagination features of the BasicListView here:
+    # those assume that pagination as applied to the object list is
+    # can be carried out by modifying the queryset -- but here,
+    # we abuse the queryset simply to make for the view available
+    # the fact objects that have been returned by the exporters.
+    # If we want this view to be paginated, it has to be rewritten
+    # completely, caching the result of the exporter runs and
+    # populating the single pages from there!!!
+
+    # ATTENTION: changing paginate_by to something non-zero will
+    # lead to errors (see above)
+
+    paginate_by = 0
+
 
     def get(self,request,*args,**kwargs):
 
+        raw_output = kwargs.get('raw_output',False)
+
         api_test = 'api_call' in request.GET
-
-
 
         iobject_id = self.kwargs.get('pk', None)
 
@@ -671,47 +756,85 @@ class InfoObjectExportsView(BasicTemplateView):
                                  direction='down',
                                  max_nodes=self.max_objects,
                                  )
+        self.graph = graph
 
 
         exporter = self.kwargs.get('exporter', None)
 
 
+        if not raw_output:
+            kwargs['format'] = 'dict'
+        else:
+            kwargs.update(self.request.GET)
+
+        if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
+            # If no format info has been given, json is the default
+            # Because we may need to work with the result, we first
+            # have a dictionary returned which we then convert into
+            # a json when everything is done
+
+            kwargs['format'] = 'dict'
+            combined_result = []
+        else:
+            combined_result = ''
+
+        if not raw_output:
+            # make sure that we get all information in the result items
+            # required by the exporter view
+            kwargs['override_columns'] = 'EXPORTER'
+
         if exporter in POSTPROCESSOR_REGISTRY:
 
-            postprocessor_class = POSTPROCESSOR_REGISTRY[exporter]
+            postprocessor_classes = POSTPROCESSOR_REGISTRY[exporter]
 
-            postprocessor = postprocessor_class(graph=graph,
-                                                query_mode='vIO2FValue',
-                                                )
+            postprocessor = None
+            for postprocessor_class in postprocessor_classes:
 
+                postprocessor = postprocessor_class(graph=graph,
+                                                    query_mode='vIO2FValue',
+                                                    details_obj = postprocessor,
+                                                    )
+                if 'columns' in self.request.GET:
+                    columns = self.request.GET.get('columns')
+                    columns = map(lambda x: x.strip(),columns.split(','))
 
-            if 'columns' in self.request.GET:
-                columns = self.request.GET.get('columns')
-                columns = map(lambda x: x.strip(),columns.split(','))
+                else:
+                    columns = []
 
-            else:
-                columns = []
+                (content_type,result) = postprocessor.export(*columns,**kwargs)
 
-            (content_type,result) = postprocessor.export(*columns,**self.request.GET)
+                combined_result += result
 
+            self.result = combined_result
 
-
-
+            if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
+                combined_result = json.dumps(combined_result,indent=2)
+                content_type = 'application/json'
         else:
             content_type = None
-            result = 'NO EXPORTER %s DEFINED' % exporter
+            combined_result = 'NO EXPORTER %s DEFINED' % exporter
+            self.result = combined_result
+
+        mod_name, func_name = DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT.rsplit('.',1)
+        mod = importlib.import_module(mod_name)
+        async_export_to_actionables = getattr(mod,func_name)
+        #from .tasks import async_export_to_actionables
+        async_export_to_actionables.delay(iobject_id,self.result)
 
         if api_test:
-            self.api_result = result
+            self.api_result = combined_result
             self.api_result_content_type = content_type
             self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
             return super(InfoObjectExportsView, self).get(request, *args, **kwargs)
+        elif not raw_output:
+            self.template_name = 'dingos/%s/lists/ExportFactList.html' % DINGOS_TEMPLATE_FAMILY
+            self.fact_ids = map(lambda x: x.get('fact.pk'),self.result)
+
+            return super(InfoObjectExportsView, self).get(request, *args, **kwargs)
         else:
             response = HttpResponse(content_type=content_type)
-            response.write(result)
+            response.write(combined_result)
             return response
-
-
 
 
 
@@ -893,3 +1016,51 @@ class OAuthInfo(BasicTemplateView):
 
             self.formset = self.form_class(initial=initial)
         return super(BasicTemplateView, self).get(request, *args, **kwargs)
+
+
+class TaggingJSONView(BasicJSONView):
+    @property
+    def returned_obj(self):
+        if self.request.is_ajax() and self.request.method == 'POST' and self.request.user.is_authenticated():
+            json_data = json.loads(self.request.body)
+            package = json_data['tag_type']
+            func_to_import = DINGOS_TAGGING_PROCESSING[package]
+            mod_name, func_name = func_to_import.rsplit('.',1)
+            mod = importlib.import_module(mod_name)
+            processTagging = getattr(mod,func_name)
+            extra = {
+                'user' : self.request.user,
+                'bulk' : False
+            }
+
+            res = processTagging(json_data,**extra)
+            return res
+
+
+class TaggedObjectsView(BasicTemplateView):
+    template_name = 'dingos/%s/lists/TaggedObjectsList.html' % DINGOS_TEMPLATE_FAMILY
+
+    @property
+    def title(self):
+        if self.mode == 'contains':
+            return "Tags containing '%s'" % self.tag
+        else:
+            return "Tag %s" % self.tag
+
+    tag = None
+
+    def get_context_data(self, **kwargs):
+        context = super(TaggedObjectsView, self).get_context_data(**kwargs)
+        context['tag'] = self.tag
+        context['display'] = self.display
+        context['mode'] = self.mode
+
+        context['newclientform'] = OAuthNewClientForm
+        return context
+
+
+    def get(self, request, *args, **kwargs):
+        self.display = request.GET.get('display')
+        self.mode = request.GET.get('mode')
+        self.tag = kwargs.pop('tag')
+        return super(TaggedObjectsView,self).get(request, *args, **kwargs)

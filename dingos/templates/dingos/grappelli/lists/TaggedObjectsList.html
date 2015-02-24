@@ -1,0 +1,13 @@
+{% extends "dingos/grappelli/lists/base_lists_one_column.html" %}
+
+{% load dingos_tags %}
+
+{% load tagging_widgets %}
+
+
+
+{% block content %}
+  <div class="c-2">
+  {% show_TaggedThings tag=tag  mode=mode display=display %}
+  </div>
+{% endblock %}

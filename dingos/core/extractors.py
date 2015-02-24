@@ -64,8 +64,15 @@ class InfoObjectDetails(object):
         #"object_type.namespace": ("Object Type (namespace)", "iobject_type.namespace.uri",['iobject_type__namespace']),
         "object.object_family": ("Object Family", "iobject_family_name",[]),
         "fact.pk": ("Fact PK", "fact_id",[]),
+        "term" : ("Term", "term", []),
+        "attribute" : ("Attribute", "attribute", []),
+        "value" : ("Value", "value", []),
         "value.pk": ("Value PK", "factvalue_id",[]),
         "object.pk": ("Object PK", "iobject_id",[]),
+        "actionable_type": ("Actionable Type", "actionable_type",[]),
+        "actionable_subtype": ("Actionable Subtype", "actionable_subtype",[]),
+        "actionable_info": ("Actionable Info", "actionable_info",[]),
+
     }
 
 
@@ -100,14 +107,8 @@ class InfoObjectDetails(object):
         "object.object_type": ("Object Type","iobject.iobject_type",['iobject__iobject_type','iobject__iobject_type__namespace']),
         "fact.pk": ("Fact PK", "fact_id",[]),
         "object.pk": ("Object PK", "id",[]),
+
     }
-
-
-    allowed_columns = {}
-    enrich_details = True
-    format = None
-    query_mode = None
-    query_mode_restriction = ['InfoObject']
 
     _default_columns =  [('object.url', 'InfoObject URL'),
         ('exporter','Exporter')]
@@ -116,23 +117,40 @@ class InfoObjectDetails(object):
 
     def __init__(self,*args,**kwargs):
 
-        self.object_list = kwargs.pop('object_list',[])
-        self.io2fs = kwargs.pop('io2f_query',None)
+        self.allowed_columns = {}
+        self.enrich_details = True
+        self.format = None
+        self.query_mode = None
+        self.query_mode_restriction = ['InfoObject']
+
+        details_obj = kwargs.pop('details_obj',None)
+        if details_obj:
+            self.object_list = details_obj.object_list
+            self.io2fs = details_obj.io2fs
+            self.graph = details_obj.graph
+            self.package_graph = details_obj.package_graph
+            self.enrich_details = details_obj.enrich_details
+            self.query_mode = details_obj.query_mode
+            self._sibling_map = details_obj._sibling_map
+            self.node_map = details_obj.node_map
+        else:
+
+            self.object_list = kwargs.pop('object_list',[])
+            self.io2fs = kwargs.pop('io2f_query',None)
+            self.graph = kwargs.pop('graph',None)
+            self.package_graph = None
+            self.enrich_details = kwargs.pop('enrich_details',self.enrich_details)
+            self.query_mode = kwargs.pop('query_mode','InfoObject')
+            self.node_map = None
+            self._sibling_map = {}
+            self.initialize_object_details()
+
         self.format = kwargs.pop('format',None)
-        self.graph = kwargs.pop('graph',None)
-        self.package_graph = None
-        self.enrich_details = kwargs.pop('enrich_details',self.enrich_details)
-        self.query_mode = kwargs.pop('query_mode','InfoObject')
-
-        self._sibling_map = {}
-
-        #self.iobject_map = None
-
         self.results = []
 
-        self.node_map = None
-        self.initialize_object_details()
+
         self.initialize_allowed_columns()
+
 
 
 
@@ -193,8 +211,17 @@ class InfoObjectDetails(object):
                    '_object_pk':iobject_pk,
                    '_io2f' : io2f,
                    '_io2fv' : io2fv,
+                   'io2fv' : io2fv,
                    '_object_url': reverse('url.dingos.view.infoobject', args=[iobject_pk]),
+                   'actionable_type' : '',
+                   'actionable_subtype' : '',
+                   'actionable_info' : '',
                    }
+
+        if io2fv:
+            result['term'] = io2fv.term
+            result['attribute'] = io2fv.attribute
+            result['value'] = io2fv.value
 
         if io2f:
             result['_fact_id'] = io2f.fact_id
@@ -219,7 +246,6 @@ class InfoObjectDetails(object):
             result['_package_names'] = "| ".join(package_names)
             result['_package_urls'] = "| ".join(package_urls)
 
-
         return result
 
 
@@ -235,16 +261,21 @@ class InfoObjectDetails(object):
 
 
     def export(self,*args,**kwargs):
-        #not working if [0] not commented out
-        self.override_columns=kwargs.pop('override_columns',[None])#[0]
 
-        if self.override_columns == 'ALL':
+        #not working if [0] not commented out
+        override_columns=kwargs.pop('override_columns',[None])
+        if isinstance(override_columns,list):
+            override_columns= override_columns[0]
+
+
+        if override_columns == 'ALL':
             args = self.allowed_columns.keys()
-        elif self.override_columns == 'ALMOST_ALL':
+        elif override_columns == 'ALMOST_ALL':
             # exclude expensive columns:
             args = set(self.allowed_columns.keys()) - set(['package_urls','package_names'])
-
-
+        elif override_columns == 'EXPORTER':
+            args = set(self.allowed_columns.keys()) -  set(['package_urls','package_names'])
+            args.update(set(['term','attribute','value']))
 
         self.additional_calculations(columns=args)
 
@@ -295,8 +326,9 @@ class InfoObjectDetails(object):
             # from a string argument. So we do it here until this issue is
             # fixed in the query parser
 
-            if kwargs[key][0]=="'":
-                kwargs[key]=kwargs[key][1:-1]
+            if isinstance(kwargs[key],basestring):
+                if kwargs[key][0]=="'":
+                    kwargs[key]=kwargs[key][1:-1]
 
 
         self.extractor(**kwargs)

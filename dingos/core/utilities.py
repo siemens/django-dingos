@@ -16,6 +16,7 @@
 #
 
 from django.utils.encoding import smart_text
+from django.db.models.query import QuerySet
 
 import re
 

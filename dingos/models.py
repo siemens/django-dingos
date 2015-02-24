@@ -36,7 +36,8 @@ from django.core.files.base import ContentFile
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.http import urlquote
 
-
+from taggit.managers import TaggableManager
+from taggit.models import Tag,TaggedItem
 
 import dingos.read_settings
 
@@ -885,6 +886,9 @@ class Fact(DingoModel):
                                             help_text="""Used to reference a specific revision of an information
                                                          object rather than the latest revision.""")
 
+    tags = TaggableManager()
+    tag_through = generic.GenericRelation(TaggedItem)
+
 
     class Meta:
         # Here, we cannot have database-enforced uniqueness, because we need
@@ -1006,7 +1010,6 @@ class InfoObject(DingoModel):
 
 
     marking_thru = generic.GenericRelation("Marking2X")
-
 
     class Meta:
         unique_together = (('identifier', 'timestamp'),)
@@ -1710,8 +1713,8 @@ class InfoObject(DingoModel):
         # TODO: The vIO2FValue view is such that empty objects lead to entries with no fact info in them ..., 
         # which leads to problems below -- here we get rid of such spurious lines by checking for node_id__isnull=False
 
-        io2fvs= vIO2FValue.objects.filter(iobject__id__in=G.nodes(),node_id__isnull=False).order_by('iobject__id','node_id').prefetch_related( 'iobject',
-                                                                                                                        'referenced_iobject_identifier__latest',)
+        pref_rel = ['iobject','referenced_iobject_identifier__latest','identifier']
+        io2fvs= vIO2FValue.objects.filter(iobject__id__in=G.nodes(),node_id__isnull=False).order_by('iobject__id','node_id').prefetch_related(*pref_rel)
                                                                    #                         'iobject__identifier',
                                                                    #                         'iobject__identifier__namespace',
                                                                    #                         'iobject__iobject_family',
@@ -1758,6 +1761,8 @@ class InfoObject(DingoModel):
             else:
                 G.node[node]['iobject'] = InfoObject.objects.get(pk=node)
 
+        G.graph['io2fvs'] = io2fvs
+
         return G
 
     @property
@@ -1790,6 +1795,9 @@ class Identifier(DingoModel):
     latest = models.OneToOneField(InfoObject,
                                   null=True, # need this for creation (hen-egg problem)
                                   related_name="latest_of")
+
+    tags = TaggableManager()
+    tag_through = generic.GenericRelation(TaggedItem)
 
 
     def __unicode__(self):
@@ -2396,3 +2404,38 @@ def write_large_value(value,storage_location=dingos.DINGOS_LARGE_VALUE_DESTINATI
         dingos_class_map['BlobStorage'].objects.get_or_create(sha256=value_hash,
                                                               content=value)
     return (value_hash,storage_location)
+
+class TaggingHistory(DingoModel):
+    ADD = 0
+    REMOVE = 1
+    ACTIONS = [
+        (ADD,'Added'),
+        (REMOVE,'Removed')
+    ]
+
+    timestamp = models.DateTimeField(auto_now_add=True)
+    action = models.SmallIntegerField(choices=ACTIONS)
+    user = models.ForeignKey(User,related_name='tagging_history')
+    content_type = models.ForeignKey(ContentType)
+    object_id = models.PositiveIntegerField()
+
+    tobject = generic.GenericForeignKey('content_type', 'object_id')
+    comment = models.TextField(blank=True)
+    tag = models.ForeignKey(Tag,related_name='tag_history')
+
+    @classmethod
+    def bulk_create_tagging_history(cls,action,tags,objects,user,comment):
+        action = getattr(cls,action.upper())
+        if tags:
+            if not isinstance(list(tags)[0],Tag):
+                if isinstance(list(tags)[0],int):
+                    tags = Tag.objects.filter(id__in=tags)
+                else:
+                    tags = Tag.objects.filter(name__in=tags)
+
+            entry_list = []
+            for object in objects:
+                    entry_list.extend([TaggingHistory(action=action,user=user,comment=comment,tobject=object,tag=x) for x in tags])
+            TaggingHistory.objects.bulk_create(entry_list)
+
+dingos_class_map["TaggingHistory"] = TaggingHistory

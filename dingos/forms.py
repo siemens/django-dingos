@@ -21,6 +21,10 @@ from django.forms import widgets
 
 from dingos.queryparser.placeholder_parser import PlaceholderException
 
+from taggit.models import Tag
+import autocomplete_light
+
+
 class EditSavedSearchesForm(forms.Form):
     """
     Form for editing a saved search. Used by the respective view.
@@ -88,30 +92,36 @@ class EditInfoObjectFieldForm(forms.Form):
 
 
 class BasicListActionForm(forms.Form):
-    def __init__(self, request, *args, **kwargs):
-        if 'checked_objects_choices' in kwargs:
-            checked_objects = kwargs['checked_objects_choices']
-            del(kwargs['checked_objects_choices'])
-        else:
-            checked_objects = []
-        super(BasicListActionForm, self).__init__(request,*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        choices = kwargs.pop('choices',[])
+        super(BasicListActionForm, self).__init__(*args, **kwargs)
 
-        self.fields['checked_objects'] = forms.MultipleChoiceField(choices=(map(lambda x: (x,x),checked_objects)),
+        self.fields['checked_objects'] = forms.MultipleChoiceField(choices=(map(lambda x: (x,x),choices)),
                                                                    widget=forms.CheckboxSelectMultiple)
         self.fields['checked_objects_choices'] = forms.CharField(widget=forms.HiddenInput)
 
 
 class SimpleMarkingAdditionForm(BasicListActionForm):
-    def __init__(self, request, *args, **kwargs):
-
+    def __init__(self, *args, **kwargs):
         marking_choices = kwargs.pop('markings')
         allow_multiple_markings = kwargs.pop('allow_multiple_markings',None)
 
-        super(SimpleMarkingAdditionForm, self).__init__(request,*args, **kwargs)
+        super(SimpleMarkingAdditionForm, self).__init__(*args, **kwargs)
         if allow_multiple_markings:
             self.fields['marking_to_add'] = forms.MultipleChoiceField(choices=marking_choices)
         else:
             self.fields['marking_to_add'] = forms.ChoiceField(choices=marking_choices)
+
+class TaggingAdditionForm(BasicListActionForm):
+    def __init__(self, *args, **kwargs):
+        tagging_choices = kwargs.pop('tags',[])
+        allow_multiple_tags = kwargs.pop('allow_multiple_tags',None)
+        super(TaggingAdditionForm, self).__init__(*args, **kwargs)
+        if allow_multiple_tags:
+            self.fields['tag_to_add'] = forms.MultipleChoiceField(choices=tagging_choices)
+        else:
+            self.fields['tag_to_add'] = forms.ChoiceField(choices=tagging_choices)
+        self.fields['comment'] = forms.CharField(widget=forms.Textarea,required=False)
 
 class OAuthInfoForm(forms.Form):
     """
@@ -127,3 +137,9 @@ class OAuthNewClientForm(forms.Form):
     Form to generate a new OAuth client. Used by the respective view.
     """
     new_client = forms.CharField(required=True, max_length=100, widget=widgets.TextInput(attrs={'size': '100', 'class': 'vTextField'}))
+
+class TagForm(autocomplete_light.ModelForm):
+    tag = autocomplete_light.ChoiceField(widget = autocomplete_light.TextWidget('TagAutocompleteDingos'))
+    class Meta:
+        model = Tag
+        exclude = ['slug', 'name']

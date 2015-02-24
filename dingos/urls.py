@@ -16,13 +16,13 @@
 #
 
 
-from django.conf.urls import patterns, url
+from django.conf.urls import patterns, url, include
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 
 from dingos import views
 
-from dingos.view_classes import SimpleMarkingAdditionView
+from dingos.view_classes import SimpleMarkingAdditionView, TaggingAdditionView, TagHistoryView
 
 from dingos import filter
 from dingos.models import InfoObject
@@ -52,6 +52,11 @@ urlpatterns = patterns('',
         views.InfoObjectExportsView.as_view(),
         name= "url.dingos.view.infoobject.exports"),
 
+    url(r'^View/InfoObject/(?P<pk>\d*)/export/(?P<exporter>[a-zA-Z0-9_-]+)/raw/?(?P<api_call>api_test)?$',
+        views.InfoObjectExportsView.as_view(),
+        kwargs = {'raw_output':True},
+        name= "url.dingos.view.infoobject.exports.raw"),
+
     url(r'^View/InfoObject/(?P<pk>\d*)/json$',
         views.InfoObjectJSONView.as_view(),
         name= "url.dingos.view.infoobject.json"),    
@@ -59,7 +64,6 @@ urlpatterns = patterns('',
     url(r'^View/InfoOject/Embedded/(?P<pk>\d*)/$', views.InfoObjectsEmbedded.as_view(), name="url.dingos.view.infoobject.embedded"),
 
     url(r'^View/InfoObject/(?P<pk>\d*)(/specific)?/graph$', views.InfoObjectJSONGraph.as_view(), name= "url.dingos.view.infoobject.json_graph"),
-
 
 
     # Administration
@@ -76,6 +80,11 @@ urlpatterns = patterns('',
     url(r'^Action/AddMarking$',
         SimpleMarkingAdditionView.as_view(),
         name= "url.dingos.action.add_marking"),
+
+    url(r'^Action/AddTagging$',
+        TaggingAdditionView.as_view(),
+        name = "url.dingos.action.add_tagging"),
+
 
     # Searches
 
@@ -97,6 +106,22 @@ urlpatterns = patterns('',
     url(r'^Search/CustomFactSearch/?(?P<api_call>api_test)?$',
         views.CustomFactSearchView.as_view(),
         name="url.dingos.admin.customfactsearch"),
+
+    # Autocomplete
+    url(r'^autocomplete/', include('autocomplete_light.urls')),
+
+    # Tagging
+    url(r'^tagging/history/(?P<tag>[a-zA-Z0-9_\-]*)$',
+        TagHistoryView.as_view(),
+        name='url.dingos.tagging.history'),
+
+    url(r'^tagging/info/(?P<tag>[a-zA-Z0-9_\-]*)$',
+        views.TaggedObjectsView.as_view(),
+        name='url.dingos.tagging.tagged_things'),
+
+    url(r'^tagging/process$',
+        views.TaggingJSONView.as_view(),
+        name="url.dingos.tagging"),
 
     # Uncommenting below enables an edit view for InfoObjects
     # that will overwrite an InfoObject without creating an

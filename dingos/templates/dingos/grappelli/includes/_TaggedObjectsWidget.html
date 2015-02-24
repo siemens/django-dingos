@@ -1,0 +1,133 @@
+{% comment %}
+Copyright (c) Siemens AG, 2015
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+{% load dingos_tags %}
+{% block tagged_things %}
+
+
+<div class ="grp-module grp-collapse grp-{{ top_level_fold  }}">
+      <h2 class="grp-collapse-handler">{% block list_title %}InfoObjects and Facts tagged with "{{ tag }}"{% endblock %}</h2>
+        {% for model,items in model_objects_mapping.items %}
+        {% if items %}
+          <div class="grp-module grp-collapse grp-open">
+            <h3 class="grp-collapse-handler">
+            {% if model == 'Identifier' %}
+              Tagged InfoObjects
+                {% else %}
+              Tagged Facts
+                {% endif %}
+            </h3>
+              {% if model == 'Identifier' %}
+                <table>
+                    <thead>
+                    <tr>
+                    <th>
+                    Identifier
+                    </th>
+                    <th>Name</th>
+                    </tr>
+                    </thead>
+                <tbody>
+                {% for item in items %}
+                  <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+                  <td>
+                      <a href="{%url 'url.dingos.view.infoobject' pk=item.0 %}">
+                          {% show_namespace_image item.2 height='25' %}:{{ item.3 }}</a>
+                  </td>
+                  <td>
+                      {{ item.1 }}
+                  </td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+                </table>
+
+              {% elif model == "Fact" %}
+                {% if display == 'factdetails' %}
+                {% for item in items %}
+                  <div class="grp-module grp-collapse grp-open">
+                    <h3 class="grp-collapse-handler">
+                      {% if item.1 %}
+                         {{ item.0 }}@{{ item.1 }}
+                      {% else %}
+                         {{ item.0 }} = {{ item.2 }}
+                      {% endif %}
+                    </h3>
+                    <table>
+                      <tr>
+                        <td>Parent Infoobject </td>
+                        <td>Top-Level-Package</td>
+                      </tr>
+                      {% for parent_id in fact2parent|get_value:item.3 %}
+                      {% with parent_info=iobj2nodeinfo|get_value:parent_id %}
+                        <tr>
+                          <td>
+                            <a href="{%url 'url.dingos.view.infoobject' pk=parent_id %}">
+                            {% show_namespace_image parent_info.0 height='25' %}:{{ parent_info.1 }}</a>
+
+                            {{ parent_info.2 }}
+                          </td>
+                          <td>
+                            {% for toplevel_id in parent2toplevel|get_value:parent_id %}
+                            {% with toplevel_info=iobj2nodeinfo|get_value:toplevel_id %}
+                              <a href="{%url 'url.dingos.view.infoobject' pk=toplevel_id %}">{% show_namespace_image toplevel_info.0 height='25' %}:{{ toplevel_info.1 }}</a>
+                              {{ toplevel_info.2 }}
+                              {% if not forloop.last %},<br/>{% endif %}
+                            {% endwith %}
+                            {% endfor %}
+                          </td>
+                        </tr>
+                      {% endwith %}
+                      {% endfor %}
+                    </table>
+                  </div>
+                {% endfor %}
+
+                {% else %}
+                  <table>
+                    <thead>
+                    <tr>
+                        <th>Fact Term</th>
+                        <th>Value</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                  {% for item in items %}
+                    <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+                      <td>{{ item.0 }}{% if item.1 %}{{ item.1 }}{% endif %}</td>
+                      <td>{{ item.2 }}</td>
+                    </tr>
+
+                  {% endfor %}
+                  </tbody>
+                  </table>
+                {% endif %}
+              {% endif %}
+          </div>
+        {% endif %}
+        {% endfor %}
+
+    </div>
+
+
+
+
+
+{% endblock %}
+
+

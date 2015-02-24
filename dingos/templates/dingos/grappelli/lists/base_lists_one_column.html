@@ -41,7 +41,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     <div >
         <div class="c-1">
-
+            {% block right_column %}
             <div class="grp-module">
                 <h2>{% block tool_title %}Filter Parameters {% endblock %}</h2>
                 {%  block list-tools %}
@@ -72,6 +72,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
             </div>
         </div>
+        {% endblock %}
         <div class="c-2">
             {% block frontmatter %}{% endblock frontmatter %}
             <div class="grp-module">

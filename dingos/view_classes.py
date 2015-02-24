@@ -32,8 +32,13 @@ from django.core.paginator import PageNotAnInteger, Paginator, EmptyPage
 from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.http import urlquote_plus
 from django.views.generic import DetailView, ListView, TemplateView, View
+from django.views.generic.edit import UpdateView
 from django.views.generic.base import ContextMixin
 from django_filters.views import FilterView
+from django.http import Http404
+from django.core.urlresolvers import reverse
+from django.contrib.auth.models import User
+from django.template.loader import render_to_string
 
 from braces.views import LoginRequiredMixin, SelectRelatedMixin,PrefetchRelatedMixin
 
@@ -43,23 +48,46 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
                    DINGOS_SAVED_SEARCHES_TYPE_NAME, \
                    DINGOS_DEFAULT_SAVED_SEARCHES,\
                    DINGOS_SEARCH_POSTPROCESSOR_REGISTRY,\
-                   DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING
+                   DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING,\
+                   DINGOS_TAGGING_REGEX,\
+                   DINGOS_TAGGING_POSTPROCESSING
+
+
 
 from dingos import graph_traversal
 from dingos.core.template_helpers import ConfigDictWrapper
-from dingos.core.utilities import get_dict, replace_by_list
-from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm, PlaceholderForm
+from dingos.core.utilities import get_dict, replace_by_list, listify
+from dingos.forms import CustomQueryForm, BasicListActionForm, SimpleMarkingAdditionForm, PlaceholderForm, TaggingAdditionForm
 from dingos.queryparser.placeholder_parser import PlaceholderParser
-from dingos.models import InfoObject, UserData, Marking2X
+from dingos.models import InfoObject, UserData, Marking2X, Fact, dingos_class_map, TaggingHistory, Identifier, vIO2FValue
 
 from core.http_helpers import get_query_string
+from taggit.models import Tag
+from django.apps import apps
 
 POSTPROCESSOR_REGISTRY = {}
 
 
 for (postprocessor_key,postprocessor_data) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
-    my_module = importlib.import_module(postprocessor_data['module'])
-    POSTPROCESSOR_REGISTRY[postprocessor_key] = getattr(my_module,postprocessor_data['class'])
+    if 'module' in postprocessor_data:
+        try:
+            my_module = importlib.import_module(postprocessor_data['module'])
+        except:
+            my_module = None
+        if my_module:
+            POSTPROCESSOR_REGISTRY[postprocessor_key] = [getattr(my_module,postprocessor_data['class'])]
+    elif 'postprocessor_predicate' in postprocessor_data:
+        predicate = postprocessor_data['postprocessor_predicate']
+        postprocessor_list = []
+        for (postprocessor_key2,postprocessor_data2) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
+            if predicate(postprocessor_key2,postprocessor_data2) and 'module' in postprocessor_data2:
+                try:
+                    my_module = importlib.import_module(postprocessor_data2['module'])
+                except:
+                    my_module = None
+                if my_module:
+                    postprocessor_list.append(getattr(my_module,postprocessor_data2['class']))
+        POSTPROCESSOR_REGISTRY[postprocessor_key] = postprocessor_list
 
 
 class UncountingPaginator(Paginator):
@@ -125,12 +153,13 @@ class CommonContextMixin(ContextMixin):
 
     object_list_len = None
 
+    tags_dict = None
+
     def get_context_data(self, **kwargs):
 
         context = super(CommonContextMixin, self).get_context_data(**kwargs)
 
         context['title'] = self.title if hasattr(self, 'title') else '[TITLE MISSING]'
-
 
         context['list_actions'] = self.list_actions if hasattr(self, 'list_actions') else []
 
@@ -138,6 +167,17 @@ class CommonContextMixin(ContextMixin):
             self.object_list_len = len(list(context['object_list']))
         context['object_list_len'] = self.object_list_len
 
+
+        # Tagging configuration
+        context['tagging_conf'] = {}
+
+        context['tagging_conf']['object_list'] = {}
+        context['tagging_conf']['object_list']['tags_shown'] = False
+        context['tagging_conf']['object_list']['tags_editable'] = False
+
+        context['tagging_conf']['fact'] = {}
+        context['tagging_conf']['fact']['tags_shown'] = True
+        context['tagging_conf']['fact']['tags_editable'] = False
 
         user_data_dict = self.get_user_data()
 
@@ -164,8 +204,8 @@ class CommonContextMixin(ContextMixin):
         context['customization'] = wrapped_settings
         context['saved_searches'] = wrapped_saved_searches
 
-
         return context
+
 
 class ViewMethodMixin(object):
     """
@@ -337,6 +377,7 @@ class ViewMethodMixin(object):
                 return o
         return None
 
+
 class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListView):
     """
     Basic class for defining list views: includes the necessary mixins
@@ -362,7 +403,6 @@ class BasicListView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,ListVi
         return item_count
 
 
-
 class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,FilterView):
     """
     Basic class for defining filter views: includes the necessary mixins
@@ -377,7 +417,6 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
 
     """
 
-
     template_name = 'dingos/%s/lists/base_lists_two_column.html' % DINGOS_TEMPLATE_FAMILY
 
     breadcrumbs = ()
@@ -387,6 +426,15 @@ class BasicFilterView(CommonContextMixin,ViewMethodMixin,LoginRequiredMixin,Filt
     graph = None
 
     fields_for_api_call = ['name']
+
+    #list_actions = [
+    #
+    #            ('Mark', 'url.dingos.action.add_marking', 0),
+    #            ('Tag', 'url.dingos.action.add_tagging', 0)
+    #
+    #        ]
+
+    allow_save_search=True
 
     @property
     def paginator_class(self):
@@ -504,6 +552,8 @@ class BasicTemplateView(CommonContextMixin,
     )
 
 
+class BasicUpdateView(LoginRequiredMixin,UpdateView):
+    pass
 
 class BasicCustomQueryView(BasicListView):
     page_to_show = 1
@@ -730,7 +780,7 @@ class BasicCustomQueryView(BasicListView):
 
                         if result_format == 'table':
                             self.results = result
-                            print result
+
                             self.col_headers = col_specs['headers']
                             self.selected_cols = col_specs['selected_fields']
                             self.template_name = 'dingos/%s/searches/CustomSearch.html' % DINGOS_TEMPLATE_FAMILY
@@ -753,6 +803,7 @@ class BasicCustomQueryView(BasicListView):
 
         return super(BasicListView, self).get(request, *args, **kwargs)
 
+
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime.datetime):
@@ -761,8 +812,6 @@ class DateTimeEncoder(json.JSONEncoder):
             return obj.isoformat()
         else:
             return super(DateTimeEncoder, self).default(obj)
-
-
 
 
 class BasicJSONView(CommonContextMixin,
@@ -811,8 +860,6 @@ class BasicJSONView(CommonContextMixin,
                                   **httpresponse_kwargs)
 
 
-from django.http import Http404
-
 class BasicXMLView(CommonContextMixin,
                     ViewMethodMixin,
                     LoginRequiredMixin,
@@ -832,7 +879,6 @@ class BasicXMLView(CommonContextMixin,
                                      content_type='application/xml')
 
 
-
 class BasicView(CommonContextMixin,
                 ViewMethodMixin,
                 LoginRequiredMixin,
@@ -844,7 +890,6 @@ class BasicView(CommonContextMixin,
 
     def render_to_response(self, context):
         raise NotImplementedError("No render_to_response method implemented!")
-
 
 
 class BasicListActionView(BasicListView):
@@ -939,38 +984,22 @@ class BasicListActionView(BasicListView):
     queryset = None
 
     def _set_initial_form(self,*args,**kwargs):
-        object_set= self.request.POST.getlist('action_objects')
+        action_objects = self.request.POST.getlist('action_objects')
         if self.preprocess_action_objects:
-            object_set = self.preprocess_action_objects(object_set)
-        self.queryset = self.action_model_query.filter(pk__in = object_set)
-        # We create the form
-        kwargs['checked_objects_choices'] = object_set
-        self.form = self.form_class({# We need a way to remember all objects that can be selected;
-                                               # for this, we abuse a hidden field in which we collect a list
-                                               # of object pks.
-                                               'checked_objects_choices': ','.join(object_set),
-                                               # We also preset all objects as checked
-                                               'checked_objects' : object_set},
-                                              # The parameters below are used to create the field for
-                                              # selecting marking objects and the multiple choice field
-                                              # for selecting objects.
-                                              *args,
-                                              **kwargs)
-
+            action_objects = self.preprocess_action_objects(action_objects)
+        self.queryset = self.action_model_query.filter(id__in=action_objects)
+        kwargs['choices'] = action_objects
+        initial = {
+            'checked_objects' : action_objects,
+            'checked_objects_choices' : ','.join(action_objects)
+        }
+        self.form = self.form_class(initial=initial,*args,**kwargs)
 
     def _set_post_form(self,*args,**kwargs):
-        object_set =  self.request.POST.dict().get('checked_objects_choices').split(',')
-
-        # Set the queryset for redisplaying the view with these objects
-
-        self.queryset = self.action_model_query.filter(pk__in = object_set)
-
-        kwargs['checked_objects_choices'] = object_set
-
-        # Create the form object, this time from the POST data
-        self.form = self.form_class(
-                                    *args,
-                                    **kwargs)
+        choices =  self.request.POST.dict().get('checked_objects_choices').split(',')
+        self.queryset = self.action_model_query.filter(id__in=choices)
+        kwargs['choices'] = choices
+        self.form = self.form_class(self.request.POST,*args,**kwargs)
 
     def post(self, request, *args, **kwargs):
 
@@ -1049,7 +1078,10 @@ class SimpleMarkingAdditionView(BasicListActionView):
     # Specify either a Django queryset or a DINGOS custom query that selects the marking objects
     # that will be offered in the view
 
+
+
     marking_queryset = None # InfoObject.objects.filter(iobject_type__name='Marking')
+
 
     marking_query = None# """object: object_type.name = 'Marking' && identifier.namespace contains 'cert.siemens.com'"""
 
@@ -1292,5 +1324,246 @@ class SimpleMarkingAdditionView(BasicListActionView):
 
                 return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
             return super(SimpleMarkingAdditionView,self).get(request, *args, **kwargs)
+
+
+from dingos.templatetags.dingos_tags import show_TagDisplay
+def processTagging(data,**kwargs):
+
+    def _preprocess_tags(tags):
+        if isinstance(tags,set):
+            tags = list(tags)
+        else:
+            tags = listify(tags)
+
+        possible_tag_types = {
+            str : lambda tags: tags,
+            unicode : lambda tags: tags,
+            int : lambda tags: Tag.objects.filter(id__in=tags).values_list('name',flat=True)
+        }
+        type = tags[0].__class__
+        preprocess = possible_tag_types.get(type,None)
+        if preprocess is None:
+            raise TypeError("%s not a possible type for tags - possible types are %s") % (type,possible_tag_types.keys())
+        tags = preprocess(tags)
+
+        not_allowed = []
+        if DINGOS_TAGGING_REGEX:
+            for tag in tags:
+                if not any(regex.match(tag) for regex in DINGOS_TAGGING_REGEX):
+                    not_allowed.append(tag)
+                    tags.remove(tag)
+
+        return tags,not_allowed
+
+    action = data['action']
+    obj_pks = data['objects']
+    obj_type = data['obj_type']
+    tags = listify(data['tags'])
+    res = {}
+    ACTIONS = ['add', 'remove']
+    if action in ACTIONS:
+        tags_to_add,not_allowed_tags = _preprocess_tags(tags)
+        model = dingos_class_map.get(obj_type,None)
+        if model is None:
+            raise ObjectDoesNotExist('no suitable model found named %s') % (model)
+        user = kwargs.pop('user',None)
+        if user is None or not isinstance(user,User):
+            raise ObjectDoesNotExist('no user for this action provided')
+
+        objects = list(model.objects.filter(pk__in=obj_pks))
+        user_data = data.get('user_data',None)
+
+        if tags_to_add:
+            if action == 'add':
+                for object in objects:
+                    object.tags.add(*tags_to_add)
+                    if not kwargs['bulk']:
+                        tag = tags_to_add[0]
+                        curr_context = show_TagDisplay([tag],'dingos',isEditable=True)
+                        tag_html = render_to_string('dingos/%s/includes/_TagDisplay.html' % (DINGOS_TEMPLATE_FAMILY),curr_context)
+                        res['html'] = tag_html
+                        res['status'] = 0
+                    else:
+                        res['status'] = 0
+                comment = '' if not user_data else user_data
+                TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,comment)
+
+            elif action == 'remove':
+                if user_data is None:
+                    res['additional'] = {
+                        'dialog_id' : 'dialog-tagging-remove',
+                        'msg' : 'To delete a tag, a comment is required.'
+                    }
+                    res['status'] = 1
+                else:
+                    if user_data == '':
+                        res['status'] = -1
+                        res['err'] = "no comment provided - tag not deleted"
+                    else:
+                        for object in objects:
+                            object.tags.remove(*tags_to_add)
+                        TaggingHistory.bulk_create_tagging_history(action,tags_to_add,objects,user,user_data)
+                        res['status'] = 0
+            if obj_type in DINGOS_TAGGING_POSTPROCESSING:
+                mod_name, func_name = DINGOS_TAGGING_POSTPROCESSING[obj_type].rsplit('.',1)
+                mod = importlib.import_module(mod_name)
+                postprocessor = getattr(mod,func_name)
+                postprocessor(obj_pks,user=user)
+        else:
+            res['err'] = "tag not allowed: %s" % (not_allowed_tags)
+            res['status'] = -1
+    else:
+        raise NotImplementedError('%s not a possible action to perform') % (action)
+
+    return res
+
+
+class TaggingAdditionView(BasicListActionView):
+
+    # Override the following parameters in views inheriting from this view.
+
+    title = 'Bulk tagging'
+
+    description = """Manage tags on several objects. Be sure to enter a comment when deleting a tag."""
+
+    template_name = 'dingos/%s/actions/TagingAdditionView.html' % DINGOS_TEMPLATE_FAMILY
+
+    action_model_query = None
+
+    #select tag objects
+    tagging_queryset = Tag.objects.all().values_list('pk','name')
+
+    pk2tag_dict = dict(tagging_queryset)
+
+    allow_multiple_tags=True
+    form_class = TaggingAdditionForm
+
+    action_list = []
+    action_list.append({'action_predicate': lambda x : True,
+                        'action_function': processTagging})
+
+    def post(self, request, *args, **kwargs):
+        self.type = request.POST.get('type', None)
+        self.model_class = dingos_class_map.get(self.type,None)
+        if not self.model_class:
+            raise ObjectDoesNotExist("dingos model class does not exist: %s - check if there is a hidden type input field in html" % (self.type))
+        self.action_model_query = self.model_class.objects.all()
+
+        if 'action_objects' in request.POST:
+            self._set_initial_form(tags=self.tagging_queryset,allow_multiple_tags=self.allow_multiple_tags)
+            return super(TaggingAdditionView,self).get(request, *args, **kwargs)
+
+        else:
+            self._set_post_form(tags=self.tagging_queryset,allow_multiple_tags=self.allow_multiple_tags)
+
+            # React on a valid form
+            if self.form.is_valid():
+                form_data = self.form.cleaned_data
+            else:
+                return super(TaggingAdditionView,self).get(request, *args, **kwargs)
+            found_action = False
+            for action in self.action_list:
+                if found_action:
+                    break
+                action_predicate = action['action_predicate']
+                action_function = action['action_function']
+
+                if action_predicate(True):
+                    found_action = True
+
+                    if self.debug_action:
+                        (success,action_msg) = (True,"DEBUG: Action has not been carried out")
+                    else:
+                        action = request.POST['action'].split(" ")[0].lower()
+                        if self.type == 'InfoObject':
+                            objects = Identifier.objects.filter(iobject_set__id__in=form_data['checked_objects']).distinct('id').values_list('id',flat=True)
+                            curr_type = 'Identifier'
+                        else:
+                            objects = [int(x) for x in form_data['checked_objects']]
+                            curr_type = self.type
+                        data = {
+                            'action' : action,
+                            'objects' : objects,
+                            'obj_type' : curr_type,
+                            'tags' : map(lambda x: self.pk2tag_dict.get(x),[int(x) for x in form_data['tag_to_add']]),
+                            'user_data' : form_data['comment']
+                        }
+
+                        extra = {
+                            'user' : request.user,
+                            'bulk' : True
+                        }
+                        res = action_function(data,**extra)
+                        if res['status'] == -1:
+                            messages.error(self.request,res['err'])
+
+            if not found_action:
+                message = self.no_action_error_message
+                messages.error(self.request,message)
+
+                #Clear checkboxes by emptying the corresponding parameter in the form data and
+                #recreating the form object from this data
+
+                form_data['checked_objects'] = []
+                self._set_post_form(form_data,
+                                    tags=self.tagging_queryset,
+                                    allow_multiple_tags=self.allow_multiple_tags)
+
+                return super(TaggingAdditionView,self).get(request, *args, **kwargs)
+            return super(TaggingAdditionView,self).get(request, *args, **kwargs)
+
+    def fact_by_pk(self,pk):
+        for f in self.object_list:
+            if "%s" % f.pk == "%s" % pk:
+                return f
+        return None
+
+
+class TagHistoryView(BasicTemplateView):
+    template_name = 'dingos/%s/lists/TagHistoryList.html' % DINGOS_TEMPLATE_FAMILY
+
+    title = 'Tag History'
+
+    tag = None
+
+    possible_models = {
+            Fact : ['id','fact_term__term','fact_term__attribute','fact_values__value'],
+            Identifier : ['id','latest__name','uid','latest__id','namespace__uri']
+        }
+
+    def get_context_data(self, **kwargs):
+        context = super(TagHistoryView, self).get_context_data(**kwargs)
+
+        cols_history = ['tag__name','timestamp','action','user__username','content_type_id','object_id','comment']
+        sel_rel = ['tag','user','content_type']
+        if self.mode == 'contains':
+            history_q = list(TaggingHistory.objects.select_related(*sel_rel).filter(tag__name__contains=self.tag).order_by('timestamp').values(*cols_history))
+        else:
+            history_q = list(TaggingHistory.objects.select_related(*sel_rel).filter(tag__name=self.tag).order_by('timestamp').values(*cols_history))
+
+        obj_info_mapping = {}
+        for model,cols in self.possible_models.items():
+            content_id = ContentType.objects.get_for_model(model).id
+            setattr(self,'pks',set([x['object_id'] for x in history_q if x['content_type_id'] == content_id]))
+            model_q = model.objects.filter(id__in=self.pks).values(*cols)
+            current_model_map = obj_info_mapping.setdefault(content_id,{})
+            for obj in model_q:
+                current_model_map[obj['id']] = obj
+            del self.pks
+        context['mode'] = self.mode
+        context['tag'] = self.tag
+        context['history'] = history_q
+        context['map_objs'] = obj_info_mapping
+        context['map_action'] = TaggingHistory.ACTIONS
+        return context
+
+    def get(self, request, *args, **kwargs):
+        self.mode = request.GET.get('mode')
+        self.tag = kwargs.pop('tag',None)
+        if self.mode == 'contains':
+            self.title = "Timeline for tags containing string '%s'" % self.tag
+        else:
+            self.title = "Timeline for tag '%s'" % self.tag
+        return super(TagHistoryView,self).get(request, *args, **kwargs)
 
 
