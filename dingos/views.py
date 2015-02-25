@@ -726,9 +726,11 @@ class InfoObjectExportsView(BasicListView):
 
     # We provide an action view for tagging the displayed facts
 
-    list_actions = [
-                ('Tag', 'url.dingos.action.add_tagging', 0),
-            ]
+    # TODO: make below configurable
+
+    #list_actions = [
+    #            ('Tag', 'url.dingos.action.add_tagging', 0),
+    #        ]
 
     # We require the queryset in order to use the
     # action mechanism of the list view
@@ -756,6 +758,8 @@ class InfoObjectExportsView(BasicListView):
 
     def get(self,request,*args,**kwargs):
 
+
+
         raw_output = kwargs.get('raw_output',False)
 
         api_test = 'api_call' in request.GET
@@ -771,7 +775,11 @@ class InfoObjectExportsView(BasicListView):
 
         self.object = InfoObject.objects.get(pk=iobject_id)
 
-        exporter = self.kwargs.get('exporter', None)
+
+        if self.kwargs.get('investigate'):
+            exporter = 'cybox_all'
+        else:
+            exporter = self.kwargs.get('exporter', None)
 
 
         if not raw_output:
