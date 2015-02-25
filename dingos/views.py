@@ -871,11 +871,11 @@ class InfoObjectExportsView(BasicListView):
             self.result = cached_results['result']
             self.fact_ids = cached_results['fact_ids']
 
-
-
             if self.form.is_valid():
-                messages.info(self.request,"Everything is cool")
                 tag = cleaned_data.get('tag')
+                messages.info(self.request,"All indicators have been tagged with '%s'"
+                                           " and transferred into the backend" % tag)
+
                 facts_to_tag = Fact.objects.filter(pk__in=self.fact_ids)
                 for fact in facts_to_tag:
                     fact.tags.add(tag)
@@ -890,10 +890,8 @@ class InfoObjectExportsView(BasicListView):
                 async_export_to_actionables = getattr(mod,func_name)
                 async_export_to_actionables.delay(self.kwargs.get('pk'),self.result,user=self.request.user)
 
-
-
             else:
-                messages.error(self.request,"Yow, man, not cool")
+                messages.error(self.request,"Please enter a valid tag!!!")
             return super(InfoObjectExportsView, self).get(request, *args, **kwargs)
 
 
