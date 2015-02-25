@@ -507,11 +507,13 @@ def show_InfoObjectEmbeddings_vertical(context,iobject):
 
 
 
-@register.inclusion_tag('dingos/%s/includes/_InfoObjectIDDataDisplay.html'% DINGOS_TEMPLATE_FAMILY)
-def show_InfoObjectIDData(iobject, show_hyperlink=False,show_title=False):
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectIDDataDisplay.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
+def show_InfoObjectIDData(context,iobject, show_hyperlink=False,show_title=False):
+
     return {'object': iobject,
             'show_hyperlink': show_hyperlink,
-            'show_title': show_title}
+            'show_title': show_title,
+            'view':context.get('view')}
 
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectMarkingsListDisplayNoCount.html'% DINGOS_TEMPLATE_FAMILY)
@@ -663,6 +665,7 @@ def show_namespace_image(context,namespace, height=None, width=None):
         try:
             dummy = view.namespace_map
         except:
+            print namespace
             namespace_obj = IdentifierNameSpace.objects.get(uri=namespace)
             view.namespace_map = {namespace:namespace_obj}
         if namespace in view.namespace_map:

@@ -704,10 +704,11 @@ class CustomFactSearchView(BasicCustomQueryView):
 
 class InfoObjectExportsView(BasicListView):
 
+
     @property
     def title(self):
         if self.kwargs.get('investigate'):
-            return "Investigation"
+            return "Initiating investigation on indicators"
         else:
             exporter = self.kwargs.get('exporter', None)
 
@@ -768,6 +769,7 @@ class InfoObjectExportsView(BasicListView):
                                  )
         self.graph = graph
 
+        self.object = InfoObject.objects.get(pk=iobject_id)
 
         exporter = self.kwargs.get('exporter', None)
 
@@ -858,6 +860,7 @@ class InfoObjectExportsView(BasicListView):
             return response
 
     def post(self, request, *args, **kwargs):
+        self.object = InfoObject.objects.get(pk=kwargs.get('pk'))
         self.template_name = 'dingos/%s/lists/ExportFactsForInvestigation.html' % DINGOS_TEMPLATE_FAMILY
         if self.kwargs.get('investigate'):
             self.form = InvestigationForm(request.POST.dict())
