@@ -1,0 +1,106 @@
+{% extends "dingos/grappelli/lists/base_lists_two_column.html" %}
+
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+{% load dingos_tags %}
+{% load tagging_widgets %}
+{% block right_column %}
+
+      {% show_InvestigationAction view.cache_session_key  %}
+
+{% endblock %}
+
+{% block content_frontmatter %}
+    {% show_InfoObjectIDData view.object show_hyperlink=True show_title=True%}
+{% endblock %}
+
+
+{% block list_title %}List of derived actionable information{% endblock %}
+
+{% block objects %}
+
+    <div class="grp-module grp-changelist-results o-visible">
+      <table id="result_list" cellspacing="0" class="grp-sortable">
+        {% for row in view.result %}
+          {% if forloop.first %}
+            <thead>
+            <tr>
+                <th>
+                    Actionable Type
+                </th>
+                <th>
+                    Actionable Subtype
+                </th>
+                <th>
+                    Actionable Info
+                </th>
+                {% comment %}
+                <th>
+                    Fact Term
+                </th>
+                <th>
+                    Value
+                </th>
+                {% endcomment %}
+                <th>
+                    Tags
+                </th>
+                <th></th>
+
+              </tr>
+            </thead>
+            <tbody>
+          {% endif %}
+            {% with pk=row|get_value:"fact.pk" %}
+            {% with fact_obj=object_list|get_obj:pk%}
+
+              <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+
+                <td><strong>{{ row|get_value:"actionable_type" }}</strong></td>
+                <td><strong>{{ row|get_value:"actionable_subtype" }}</strong></td>
+                <td><strong>{{ row|get_value:"actionable_info" }}</strong></td>
+                {% comment %}
+                <td>
+                {% with attribute=row|get_value:"attribute" %}
+                    {% if attribute %}
+                    {{ row|get_value:"term" }}@{{ attribute }}
+                    {%  else %}
+                    {{ row|get_value:"term" }}
+                    {% endif %}
+                {% endwith %}
+                </td>
+                <td>{{ row|get_value:"value" }}</td>
+                {% endcomment %}
+                  {% show_GenericTagRowDisplay fact_obj 1 False debug_pk=pk%}
+              </tr>
+            {% endwith %}
+            {% endwith %}
+
+        {% endfor %}
+            </tbody>
+      </table>
+      {% include "dingos/grappelli/includes/_TaggingDialogs.html" %}
+      {% if list_actions %}
+        <input type="hidden" name="type" value="Fact" />
+        </form>
+      {% endif %}
+    </div>
+
+{% include 'autocomplete_light/static.html' %}
+{% endblock %}
