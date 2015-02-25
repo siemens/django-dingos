@@ -168,7 +168,7 @@ class InvestigationForm(forms.Form):
         super(InvestigationForm, self).__init__(*args, **kwargs)
         self.fields['cache_session_key'] = forms.CharField(initial=cache_session_key,
                                                            widget=forms.widgets.HiddenInput())
-    tag = forms.CharField(widget =
+    investigation_tag = forms.CharField(widget =
                                          autocomplete_light.TextWidget('TagInvestigationAutocompleteDingos'
                                                                                 ),
                           validators= tag_validators

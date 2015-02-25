@@ -21,7 +21,7 @@ class InvestigationAutocompleteDingos(autocomplete_light.AutocompleteModelBase):
     choices = Tag.objects.all()
 
     attrs={
-        'placeholder': 'Type investigation here ...',
+        'placeholder': 'Type INVES nr here ...',
         'data-autocomplete-minimum-characters' : 2,
         'id' : "id_tag",
         'data-tag-type' : 'dingos'

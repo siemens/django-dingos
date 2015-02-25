@@ -880,7 +880,7 @@ class InfoObjectExportsView(BasicListView):
             self.fact_ids = cached_results['fact_ids']
 
             if self.form.is_valid():
-                tag = cleaned_data.get('tag')
+                tag = cleaned_data.get('investigation_tag')
                 messages.info(self.request,"All indicators have been tagged with '%s'"
                                            " and transferred into the backend" % tag)
 
