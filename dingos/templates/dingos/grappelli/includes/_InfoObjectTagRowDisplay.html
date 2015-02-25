@@ -24,11 +24,13 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
   {% endif %}
 </td>
 
-{% if isEditable %}
+
   <td class="w-1 nowrap middle" colspan="1">
+      {% if isEditable %}
     {% show_addTagInput identifier.id identifier|type %}
+      {% endif %}
   </td>
-{% endif %}
+
 
 
 

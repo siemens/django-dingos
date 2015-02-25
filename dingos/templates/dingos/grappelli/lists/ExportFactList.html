@@ -42,13 +42,14 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                 <th>
                     Actionable Info
                 </th>
+                {% comment %}
                 <th>
                     Fact Term
                 </th>
                 <th>
                     Value
                 </th>
-
+                {% endcomment %}
                 <th>
                     Tags
                 </th>
@@ -69,6 +70,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                 <td><strong>{{ row|get_value:"actionable_type" }}</strong></td>
                 <td><strong>{{ row|get_value:"actionable_subtype" }}</strong></td>
                 <td><strong>{{ row|get_value:"actionable_info" }}</strong></td>
+                {% comment %}
                 <td>
                 {% with attribute=row|get_value:"attribute" %}
                     {% if attribute %}
@@ -79,7 +81,8 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                 {% endwith %}
                 </td>
                 <td>{{ row|get_value:"value" }}</td>
-                  {% show_GenericTagRowDisplay fact_obj 1 True debug_pk=pk%}
+                {% endcomment %}
+                  {% show_GenericTagRowDisplay fact_obj 1 False debug_pk=pk%}
               </tr>
             {% endwith %}
             {% endwith %}

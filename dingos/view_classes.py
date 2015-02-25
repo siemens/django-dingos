@@ -172,8 +172,13 @@ class CommonContextMixin(ContextMixin):
         context['tagging_conf'] = {}
 
         context['tagging_conf']['object_list'] = {}
-        context['tagging_conf']['object_list']['tags_shown'] = False
+        context['tagging_conf']['object_list']['tags_shown'] = True
         context['tagging_conf']['object_list']['tags_editable'] = False
+
+        context['tagging_conf']['object_details'] = {}
+        context['tagging_conf']['object_details']['tags_shown'] = True
+        context['tagging_conf']['object_details']['tags_editable'] = False
+
 
         context['tagging_conf']['fact'] = {}
         context['tagging_conf']['fact']['tags_shown'] = True

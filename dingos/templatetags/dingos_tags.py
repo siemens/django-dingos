@@ -695,11 +695,22 @@ def getObject(obj_list,pk):
             return x
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectTagBlock.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
-def show_InfoObjectTagBlockDisplay(context, object, isEditable=False):
-    #context = {}
-    #context['tag_dict'] = getTags(object)
+def show_InfoObjectTagBlockDisplay(context, object, tags_shown=None, tags_editable=None):
+
+
     context['object'] = object
-    context['isEditable'] = isEditable
+
+    tagging_conf = context.get('tagging_conf',{})
+    if tags_shown != None:
+        context['tags_shown'] = tags_shown
+    else:
+        context['tags_shown'] = tagging_conf.get('object_details',{}).get('tags_shown')
+
+    if tags_editable != None:
+        context['tags_editable'] = tags_editable
+    else:
+        context['tags_editable'] = tagging_conf.get('object_details',{}).get('tags_editable')
+
     return context
 
 
