@@ -21,6 +21,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 <div class="grp-module grp-collapse grp-open" style="overflow: visible">
   <h2 class="grp-collapse-handler">Tagging Data</h2>
 
+ {% if tags_shown %}
   <table class="grp-full-width">
     <tbody>
       <tr>
@@ -28,12 +29,12 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
         <td id="tags" class="middle tag-block" data-obj-id="{{ object.identifier.id }}" data-obj-type="{{ object.identifier|type }}">
         {% with tags=tag_dict|get_value:'identifiers'|get_value:object.identifier.id %}
           {% if tags %}
-            {% show_TagDisplay tags 'dingos' isEditable %}
+            {% show_TagDisplay tags 'dingos' tags_editable %}
           {% endif %}
         {% endwith %}
         </td>
       </tr>
-      {% if isEditable %}
+      {% if tags_editable %}
       <tr>
         <th class="nowrap w-1 middle">Add tags: </th>
         <td>
@@ -44,6 +45,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     </tbody>
   </table>
   {% include "dingos/grappelli/includes/_TaggingDialogs.html" %}
+ {% endif %}
 </div>
 
 

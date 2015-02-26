@@ -17,6 +17,8 @@
 
 import json
 import re
+from uuid import uuid4
+
 from django import http
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import F
@@ -34,14 +36,19 @@ from provider.oauth2.models import Client
 
 from braces.views import SuperuserRequiredMixin
 
-from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact, Fact, dingos_class_map
+from dingos.models import Identifier, InfoObject2Fact, InfoObject, UserData, vIO2FValue, get_or_create_fact, Fact, dingos_class_map, TaggingHistory
 from dingos.view_classes import BasicJSONView, POSTPROCESSOR_REGISTRY
 from dingos.core.utilities import listify
+
 
 import csv
 
 from dingos.filter import InfoObjectFilter, CompleteInfoObjectFilter,FactTermValueFilter, IdSearchFilter , OrderedFactTermValueFilter
-from dingos.forms import EditSavedSearchesForm, EditInfoObjectFieldForm, OAuthInfoForm, OAuthNewClientForm
+from dingos.forms import EditSavedSearchesForm, \
+    EditInfoObjectFieldForm, \
+    OAuthInfoForm, \
+    OAuthNewClientForm, \
+    InvestigationForm
 
 from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_INTERNAL_IOBJECT_FAMILY_NAME, \
@@ -697,14 +704,18 @@ class CustomFactSearchView(BasicCustomQueryView):
 
 class InfoObjectExportsView(BasicListView):
 
+
     @property
     def title(self):
-        exporter = self.kwargs.get('exporter', None)
+        if self.kwargs.get('investigate'):
+            return "Initiating investigation on indicators"
+        else:
+            exporter = self.kwargs.get('exporter', None)
 
 
-        iobject_name =  self.graph.node[int(self.kwargs.get('pk'))]['name']
-        exporter_name = DINGOS_SEARCH_POSTPROCESSOR_REGISTRY[exporter]['name']
-        return "%s on '%s'" % (exporter_name,iobject_name)
+            iobject_name =  self.graph.node[int(self.kwargs.get('pk'))]['name']
+            exporter_name = DINGOS_SEARCH_POSTPROCESSOR_REGISTRY[exporter]['name']
+            return "%s on '%s'" % (exporter_name,iobject_name)
 
     skip_terms = [
         # We do not want to follow 'Related Object' links and similar
@@ -715,9 +726,11 @@ class InfoObjectExportsView(BasicListView):
 
     # We provide an action view for tagging the displayed facts
 
-    list_actions = [
-                ('Tag', 'url.dingos.action.add_tagging', 0),
-            ]
+    # TODO: make below configurable
+
+    #list_actions = [
+    #            ('Tag', 'url.dingos.action.add_tagging', 0),
+    #        ]
 
     # We require the queryset in order to use the
     # action mechanism of the list view
@@ -745,6 +758,8 @@ class InfoObjectExportsView(BasicListView):
 
     def get(self,request,*args,**kwargs):
 
+
+
         raw_output = kwargs.get('raw_output',False)
 
         api_test = 'api_call' in request.GET
@@ -758,8 +773,13 @@ class InfoObjectExportsView(BasicListView):
                                  )
         self.graph = graph
 
+        self.object = InfoObject.objects.get(pk=iobject_id)
 
-        exporter = self.kwargs.get('exporter', None)
+
+        if self.kwargs.get('investigate'):
+            exporter = 'cybox_all'
+        else:
+            exporter = self.kwargs.get('exporter', None)
 
 
         if not raw_output:
@@ -827,8 +847,19 @@ class InfoObjectExportsView(BasicListView):
             self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
             return super(InfoObjectExportsView, self).get(request, *args, **kwargs)
         elif not raw_output:
-            self.template_name = 'dingos/%s/lists/ExportFactList.html' % DINGOS_TEMPLATE_FAMILY
             self.fact_ids = map(lambda x: x.get('fact.pk'),self.result)
+
+            if self.kwargs.get('investigate'):
+                self.cache_session_key = "%s" % uuid4()
+                self.request.session[self.cache_session_key] = {'result':self.result,
+                                                                'fact_ids': self.fact_ids
+                                                               }
+
+                self.template_name = 'dingos/%s/lists/ExportFactsForInvestigation.html' % DINGOS_TEMPLATE_FAMILY
+            else:
+                self.template_name = 'dingos/%s/lists/ExportFactList.html' % DINGOS_TEMPLATE_FAMILY
+
+
 
             return super(InfoObjectExportsView, self).get(request, *args, **kwargs)
         else:
@@ -836,6 +867,40 @@ class InfoObjectExportsView(BasicListView):
             response.write(combined_result)
             return response
 
+    def post(self, request, *args, **kwargs):
+        self.object = InfoObject.objects.get(pk=kwargs.get('pk'))
+        self.template_name = 'dingos/%s/lists/ExportFactsForInvestigation.html' % DINGOS_TEMPLATE_FAMILY
+        if self.kwargs.get('investigate'):
+            self.form = InvestigationForm(request.POST.dict())
+            form_valid = self.form.is_valid()
+            cleaned_data = self.form.cleaned_data
+            self.cache_session_key = cleaned_data.get('cache_session_key')
+            cached_results = request.session.get(self.cache_session_key)
+            self.result = cached_results['result']
+            self.fact_ids = cached_results['fact_ids']
+
+            if self.form.is_valid():
+                tag = cleaned_data.get('investigation_tag')
+                messages.info(self.request,"All indicators have been tagged with '%s'"
+                                           " and transferred into the backend" % tag)
+
+                facts_to_tag = Fact.objects.filter(pk__in=self.fact_ids)
+                for fact in facts_to_tag:
+                    fact.tags.add(tag)
+                info_object_to_tag = InfoObject.objects.get(pk=self.kwargs.get('pk'))
+                info_object_to_tag.identifier.tags.add(tag)
+                TaggingHistory.bulk_create_tagging_history('add',
+                                                           [tag],
+                                                           facts_to_tag,self.request.user,
+                                                           "Export called on %s for investigation %s" % (info_object_to_tag.name, tag))
+                mod_name, func_name = DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT.rsplit('.',1)
+                mod = importlib.import_module(mod_name)
+                async_export_to_actionables = getattr(mod,func_name)
+                async_export_to_actionables.delay(self.kwargs.get('pk'),self.result,user=self.request.user)
+
+            else:
+                messages.error(self.request,"Please enter a valid tag!!!")
+            return super(InfoObjectExportsView, self).get(request, *args, **kwargs)
 
 
 class InfoObjectJSONGraph(BasicJSONView):

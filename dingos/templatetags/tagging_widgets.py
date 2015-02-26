@@ -12,6 +12,15 @@ from dingos import DINGOS_TEMPLATE_FAMILY
 register = template.Library()
 
 from django.core.exceptions import ObjectDoesNotExist
+from dingos.forms import InvestigationForm
+
+@register.inclusion_tag('dingos/%s/includes/_InfoObjectTagAndExportToActionables.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
+def show_InvestigationAction(context,cache_session_key):
+    try:
+        form = context['view'].form
+    except:
+        form = InvestigationForm(cache_session_key=cache_session_key)
+    return {'form': form}
 
 @register.inclusion_tag('dingos/%s/includes/_TaggedObjectsWidget.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def show_TaggedThings(context,tag,mode='precise',display='factdetail', top_level_fold = 'open'):

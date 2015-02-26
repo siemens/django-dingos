@@ -19,6 +19,10 @@ from django import forms
 
 from django.forms import widgets
 
+from django.core.validators import RegexValidator
+
+from dingos import DINGOS_TAGGING_REGEX
+
 from dingos.queryparser.placeholder_parser import PlaceholderException
 
 from taggit.models import Tag
@@ -138,8 +142,37 @@ class OAuthNewClientForm(forms.Form):
     """
     new_client = forms.CharField(required=True, max_length=100, widget=widgets.TextInput(attrs={'size': '100', 'class': 'vTextField'}))
 
+
+
+
 class TagForm(autocomplete_light.ModelForm):
-    tag = autocomplete_light.ChoiceField(widget = autocomplete_light.TextWidget('TagAutocompleteDingos'))
+    tag = autocomplete_light.ChoiceField(widget =
+                                         autocomplete_light.TextWidget('TagAutocompleteDingos'
+                                                                       #,attrs={'placeholder': 'Aha'}
+                                                                                ),
+                                         )
     class Meta:
         model = Tag
         exclude = ['slug', 'name']
+
+tag_validators = []
+
+for regex in DINGOS_TAGGING_REGEX:
+    tag_validators.append(RegexValidator(regex,"Not a valid tag"))
+
+
+class InvestigationForm(forms.Form):
+
+    def __init__(self,*args,**kwargs):
+        cache_session_key = kwargs.pop('cache_session_key',"")
+        super(InvestigationForm, self).__init__(*args, **kwargs)
+        self.fields['cache_session_key'] = forms.CharField(initial=cache_session_key,
+                                                           widget=forms.widgets.HiddenInput())
+    investigation_tag = forms.CharField(widget =
+                                         autocomplete_light.TextWidget('TagInvestigationAutocompleteDingos'
+                                                                                ),
+                          validators= tag_validators
+                                         )
+    #class Meta:
+    #    model = Tag
+    #    exclude = ['slug', 'name']

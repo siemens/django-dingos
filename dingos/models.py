@@ -2425,6 +2425,7 @@ class TaggingHistory(DingoModel):
 
     @classmethod
     def bulk_create_tagging_history(cls,action,tags,objects,user,comment):
+        logger.info("Bulk history creation called")
         action = getattr(cls,action.upper())
         if tags:
             if not isinstance(list(tags)[0],Tag):
@@ -2433,6 +2434,7 @@ class TaggingHistory(DingoModel):
                 else:
                     tags = Tag.objects.filter(name__in=tags)
 
+            logger.info("Creating history for tags %s and objects %s" % (tags,objects))
             entry_list = []
             for object in objects:
                     entry_list.extend([TaggingHistory(action=action,user=user,comment=comment,tobject=object,tag=x) for x in tags])

@@ -508,9 +508,9 @@
           }});
         });
       //if tag is selected via autocomplete (return or mouse click), add it immediately
-      $(document).bind('selectChoice', function(e, choice, autocomplete) {
-        add_tag(e);
-      });
+      //$(document).bind('selectChoice', function(e, choice, autocomplete) {
+      //  add_tag(e);
+      //});
 
       //register removeHandler for all tags
       add_removeHandler();
