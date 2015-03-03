@@ -16,8 +16,6 @@
 #
 
 
-
-
 from datetime import datetime
 from urlparse import urlparse
 import StringIO
@@ -28,7 +26,7 @@ from dingos.core.utilities import set_dict, get_dict
 from django.core.urlresolvers import reverse
 from dingos.core.utilities import get_from_django_obj
 from dingos.graph_traversal import follow_references
-from dingos.graph_utils import dfs_preorder_nodes
+
 from dingos import DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING
 
 def extract_fqdn(uri):
@@ -229,24 +227,8 @@ class InfoObjectDetails(object):
         if self.exporter_name:
             result['exporter'] = self.exporter_name
 
-
-        if self.package_graph and iobject_pk:
-            # The user also wants info about the packages that contain the object in question
-            node_ids = list(dfs_preorder_nodes(self.package_graph, source=iobject_pk))
-
-            package_names = []
-            package_urls = []
-            for id in node_ids:
-                node = self.package_graph.node[id]
-                # TODO: Below is STIX-specific and should be factored out
-                # by making the iobject type configurable
-                if "STIX_Package" in node['iobject_type']:
-                    package_names.append(node['name'])
-                    package_urls.append(node['url'])
-            result['_package_names'] = "| ".join(package_names)
-            result['_package_urls'] = "| ".join(package_urls)
-
         return result
+
 
 
 
