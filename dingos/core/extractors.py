@@ -192,21 +192,25 @@ class InfoObjectDetails(object):
             io2fv = None
             iobject_pk = io2f.iobject_id
             fact_pk = io2f.fact_id
+            identifier_pk = None
         elif  isinstance(obj_or_io2f,vIO2FValue):
             iobject = None#obj_or_io2f.iobject
             io2fv = obj_or_io2f
             io2f = None
             iobject_pk = io2fv.iobject_id
             fact_pk = io2fv.fact_id
+            identifier_pk = io2fv.identifier_id
         else:
             iobject = obj_or_io2f
             iobject_pk = iobject.pk
             io2f = None
             io2fv = None
             fact_pk = None
+            identifier_pk = iobject.identifier_id
 
         result =  {'_object':iobject,
                    '_object_pk':iobject_pk,
+                   '_identifier_pk':identifier_pk,
                    '_io2f' : io2f,
                    '_io2fv' : io2fv,
                    'io2fv' : io2fv,
