@@ -179,8 +179,8 @@ class InfoObjectDetails(object):
 
         self.allowed_columns['object.url'] = ('Object URL','_object_url',[])
 
-        self.allowed_columns['package_names'] = ('Package Names','_package_names',[])
-        self.allowed_columns['package_urls'] = ('Package URLs','_package_urls',[])
+        #self.allowed_columns['package_names'] = ('Package Names','_package_names',[])
+        #self.allowed_columns['package_urls'] = ('Package URLs','_package_urls',[])
 
 
 
@@ -214,6 +214,9 @@ class InfoObjectDetails(object):
                    'actionable_type' : '',
                    'actionable_subtype' : '',
                    'actionable_info' : '',
+                   #'_package_names' : "",
+                   #'_package_urls' : "",
+
                    }
 
         if io2fv:
@@ -233,17 +236,18 @@ class InfoObjectDetails(object):
 
 
     def additional_calculations(self,columns):
-        if 'package_names' in columns or 'package_urls' in columns:
-            if not self.package_graph:
-                if self.object_list:
-                    pks = [one.pk for one in self.object_list]
-                else:
-                    pks = [one.iobject.pk for one in self.io2fs]
-                self.package_graph = follow_references(pks, direction= 'up')
+        return
+
+        #if 'package_names' in columns or 'package_urls' in columns:
+        #    if not self.package_graph:
+        #        if self.object_list:
+        #            pks = [one.pk for one in self.object_list]
+        #        else:
+        #            pks = [one.iobject.pk for one in self.io2fs]
+        #        self.package_graph = follow_references(pks, direction= 'up')
 
 
     def export(self,*args,**kwargs):
-
         #not working if [0] not commented out
         override_columns=kwargs.pop('override_columns',[None])
         if isinstance(override_columns,list):
@@ -254,9 +258,9 @@ class InfoObjectDetails(object):
             args = self.allowed_columns.keys()
         elif override_columns == 'ALMOST_ALL':
             # exclude expensive columns:
-            args = set(self.allowed_columns.keys()) - set(['package_urls','package_names'])
+            args = set(self.allowed_columns.keys())# - set(['package_urls','package_names'])
         elif override_columns == 'EXPORTER':
-            args = set(self.allowed_columns.keys()) -  set(['package_urls','package_names'])
+            args = set(self.allowed_columns.keys())# -  set(['package_urls','package_names'])
             args.update(set(['term','attribute','value']))
 
         self.additional_calculations(columns=args)
@@ -321,7 +325,7 @@ class InfoObjectDetails(object):
             format = kwargs.pop('format','json')
         output = []
 
-        if format in ['json','dict']:
+        if format in ['json','dict','exporter']:
 
 
             if not args:
@@ -333,7 +337,10 @@ class InfoObjectDetails(object):
 
             for result in self.results:
 
-                row = fill_row(result,columns,mode='json')
+                if format == 'exporter':
+                    row = result
+                else:
+                    row = fill_row(result,columns,mode='json')
                 output.append(row)
 
             if format == 'json':

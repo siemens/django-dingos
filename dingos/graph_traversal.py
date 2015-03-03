@@ -174,7 +174,8 @@ def follow_references(iobject_pks,
                                      'fact__value_iobject_id__latest__name', #13
                                      'fact__value_iobject_id__latest__iobject_type__name', #14
                                      'fact__value_iobject_id__latest__iobject_type__iobject_family__name', #15
-                                     'iobject__timestamp' #16
+                                     'iobject__timestamp', #16
+                                     'iobject__identifier_id' #17
 
 
         ]
@@ -238,7 +239,7 @@ def follow_references(iobject_pks,
                     rnode_dict = {}
 
 
-                    edge_dict['term'] = x[3],
+                    edge_dict['term'] = x[3]
                     edge_dict['attribute'] = x[4]
                     edge_dict['fact_node_id'] = x[5]
 
@@ -271,6 +272,7 @@ def follow_references(iobject_pks,
                     node_dict['iobject_type'] = x[9]
                     node_dict['iobject_type_family'] = x[10]
                     node_dict['timestamp'] = x[16]
+                    node_dict['identifier_pk'] = x[17]
 
 
                     graph.add_node(node,**node_dict)

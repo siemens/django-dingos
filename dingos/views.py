@@ -783,9 +783,11 @@ class InfoObjectExportsView(BasicListView):
 
 
         if not raw_output:
-            kwargs['format'] = 'dict'
+            kwargs['format'] = 'exporter'
         else:
             kwargs.update(self.request.GET)
+
+
 
         if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
             # If no format info has been given, json is the default
@@ -828,7 +830,7 @@ class InfoObjectExportsView(BasicListView):
             self.result = combined_result
 
             if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
-                combined_result = json.dumps(combined_result,indent=2)
+                combined_result = json.dumps(combined_result,indent=2,default= lambda x : "Not serializable")
                 content_type = 'application/json'
         else:
             content_type = None
