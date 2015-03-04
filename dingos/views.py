@@ -764,7 +764,7 @@ class InfoObjectExportsView(BasicListView):
 
         api_test = 'api_call' in request.GET
 
-        iobject_id = self.kwargs.get('pk', None)
+        iobject_id = int(self.kwargs.get('pk', None))
 
         graph= follow_references([iobject_id],
                                  skip_terms = self.skip_terms,
@@ -784,26 +784,27 @@ class InfoObjectExportsView(BasicListView):
 
         if not raw_output:
             kwargs['format'] = 'exporter'
-        else:
-            kwargs.update(self.request.GET)
-
-
-
-        if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
-            # If no format info has been given, json is the default
-            # Because we may need to work with the result, we first
-            # have a dictionary returned which we then convert into
-            # a json when everything is done
-
-            kwargs['format'] = 'dict'
             combined_result = []
         else:
+            kwargs.update(self.request.GET)
             combined_result = ''
 
-        if not raw_output:
-            # make sure that we get all information in the result items
-            # required by the exporter view
-            kwargs['override_columns'] = 'EXPORTER'
+
+        #if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
+        #    # If no format info has been given, json is the default
+        #    # Because we may need to work with the result, we first
+        #    # have a dictionary returned which we then convert into
+        #    # a json when everything is done
+
+        #    kwargs['format'] = 'dict'
+
+        #else:
+
+
+        #if not raw_output:
+        #    # make sure that we get all information in the result items
+        #    # required by the exporter view
+        #    kwargs['override_columns'] = 'EXPORTER'
 
         if exporter in POSTPROCESSOR_REGISTRY:
 
@@ -841,7 +842,10 @@ class InfoObjectExportsView(BasicListView):
         mod = importlib.import_module(mod_name)
         async_export_to_actionables = getattr(mod,func_name)
         #from .tasks import async_export_to_actionables
-        async_export_to_actionables.delay(iobject_id,self.result)
+        print self.result
+        async_export_to_actionables.delay(graph.node[iobject_id]['identifier_pk'],
+                                          iobject_id,
+                                          self.result)
 
         if api_test:
             self.api_result = combined_result
@@ -849,7 +853,7 @@ class InfoObjectExportsView(BasicListView):
             self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
             return super(InfoObjectExportsView, self).get(request, *args, **kwargs)
         elif not raw_output:
-            self.fact_ids = map(lambda x: x.get('fact.pk'),self.result)
+            self.fact_ids = map(lambda x: x.get('_fact_pk'),self.result)
 
             if self.kwargs.get('investigate'):
                 self.cache_session_key = "%s" % uuid4()

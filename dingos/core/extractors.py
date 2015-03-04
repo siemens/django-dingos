@@ -177,7 +177,7 @@ class InfoObjectDetails(object):
 
         self.allowed_columns.update(self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode])
 
-        self.allowed_columns['object.url'] = ('Object URL','_object_url',[])
+        self.allowed_columns['object.url'] = ('Object URL','object_url',[])
 
         #self.allowed_columns['package_names'] = ('Package Names','_package_names',[])
         #self.allowed_columns['package_urls'] = ('Package URLs','_package_urls',[])
@@ -192,6 +192,7 @@ class InfoObjectDetails(object):
             io2fv = None
             iobject_pk = io2f.iobject_id
             fact_pk = io2f.fact_id
+            value_pk = None
             identifier_pk = None
         elif  isinstance(obj_or_io2f,vIO2FValue):
             iobject = None#obj_or_io2f.iobject
@@ -199,6 +200,7 @@ class InfoObjectDetails(object):
             io2f = None
             iobject_pk = io2fv.iobject_id
             fact_pk = io2fv.fact_id
+            value_pk = io2fv.factvalue_id
             identifier_pk = io2fv.identifier_id
         else:
             iobject = obj_or_io2f
@@ -207,14 +209,17 @@ class InfoObjectDetails(object):
             io2fv = None
             fact_pk = None
             identifier_pk = iobject.identifier_id
+            value_pk = None
 
-        result =  {'_object':iobject,
-                   '_object_pk':iobject_pk,
+        result =  {'_iobject':iobject,
+                   '_iobject_pk':iobject_pk,
+                   '_fact_pk':fact_pk,
+                   '_value_pk':value_pk,
                    '_identifier_pk':identifier_pk,
-                   '_io2f' : io2f,
-                   '_io2fv' : io2fv,
-                   'io2fv' : io2fv,
-                   '_object_url': reverse('url.dingos.view.infoobject', args=[iobject_pk]),
+                   #'_io2f' : io2f,
+                   #'_io2fv' : io2fv,
+                   #'io2fv' : io2fv,
+                   'object_url': reverse('url.dingos.view.infoobject', args=[iobject_pk]),
                    'actionable_type' : '',
                    'actionable_subtype' : '',
                    'actionable_info' : '',
@@ -228,8 +233,6 @@ class InfoObjectDetails(object):
             result['attribute'] = io2fv.attribute
             result['value'] = io2fv.value
 
-        if io2f:
-            result['_fact_id'] = io2f.fact_id
 
         if self.exporter_name:
             result['exporter'] = self.exporter_name
