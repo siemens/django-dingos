@@ -718,9 +718,10 @@ class InfoObjectExportsView(BasicListView):
             return "%s on '%s'" % (exporter_name,iobject_name)
 
     skip_terms = [
-        # We do not want to follow 'Related Object' links and similar
-        {'term':'Related','operator':'icontains'},
+
+        #{'term':'Related_Object','operator':'icontains'},
         ]
+
 
     max_objects = None
 

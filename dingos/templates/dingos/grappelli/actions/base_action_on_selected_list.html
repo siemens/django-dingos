@@ -89,7 +89,39 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     {% elif view.type ==  "Fact" %}
         {% include "dingos/grappelli/includes/_FactActionListView.html" %}
     {% else %}
-        No type found
+       <div class="grp-module grp-changelist-results">
+
+    <table id="result_list" cellspacing="0" class="grp-sortable">
+
+        {% block header_row %}
+
+
+        {% endblock %}
+
+        <div id="id_checked_objects">
+
+
+       <tbody>
+
+       {% for checkbox in view.form.checked_objects %}
+         {% with pk=checkbox.choice_label %}
+         {% obj_by_pk pk as obj %}
+
+
+           <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
+               <td> {{ checkbox.tag }}</td>
+               {% block instance_columns %}
+
+               {% endblock %}
+
+           </tr>
+
+         {% endwith %}
+       {% endfor %}
+       </tbody>
+     </div>
+ </table>
+</div>
     {% endif %}
 {% endblock %}
 

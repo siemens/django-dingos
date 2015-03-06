@@ -216,9 +216,9 @@ class InfoObjectDetails(object):
                    '_fact_pk':fact_pk,
                    '_value_pk':value_pk,
                    '_identifier_pk':identifier_pk,
-                   #'_io2f' : io2f,
-                   #'_io2fv' : io2fv,
-                   #'io2fv' : io2fv,
+                   '_io2f' : io2f,
+                   '_io2fv' : io2fv,
+                   '_iobject' : iobject,
                    'object_url': reverse('url.dingos.view.infoobject', args=[iobject_pk]),
                    'actionable_type' : '',
                    'actionable_subtype' : '',
@@ -282,7 +282,7 @@ class InfoObjectDetails(object):
         def fill_row(result,columns,mode='json'):
 
             if self.query_mode == 'InfoObject':
-                model_key = '_object'
+                model_key = '_iobject'
             elif self.query_mode == 'InfoObject2Fact':
                 model_key = '_io2f'
             else:
