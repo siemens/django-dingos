@@ -587,6 +587,14 @@ def view_dict_lookup(context,dict_name,*keys):
     return get_dict(view_dict,*keys)
 
 @register.assignment_tag(takes_context=True)
+def view_apply(context,view_func,*args,**kwargs):
+    view_func = getattr(context['view'],view_func)
+    print args
+    return view_func(*args,**kwargs)
+
+
+
+@register.assignment_tag(takes_context=True)
 def context_dict_lookup(context,dict_name,*keys):
     return get_dict(context[dict_name],*keys)
 
@@ -697,6 +705,10 @@ def getObject(obj_list,pk):
     for x in obj_list:
         if x.id == int(pk):
             return x
+
+@register.filter(name='apply')
+def apply(fun,*args,**kwargs):
+    return fun(*args,**kwargs)
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectTagBlock.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
 def show_InfoObjectTagBlockDisplay(context, object, tags_shown=None, tags_editable=None):
