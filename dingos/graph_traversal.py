@@ -19,7 +19,7 @@ import networkx
 
 from django.db.models import Count, F, Q
 from django.core.urlresolvers import reverse
-from dingos.models import InfoObject2Fact, InfoObject
+from dingos.models import InfoObject2Fact, InfoObject, vIO2FValue
 
 from dingos import DINGOS_OBJECTTYPE_ICON_MAPPING
 
@@ -175,7 +175,10 @@ def follow_references(iobject_pks,
                                      'fact__value_iobject_id__latest__iobject_type__name', #14
                                      'fact__value_iobject_id__latest__iobject_type__iobject_family__name', #15
                                      'iobject__timestamp', #16
-                                     'iobject__identifier_id' #17
+                                     'iobject__identifier_id', #17
+
+                                     'fact__value_iobject_id__latest__timestamp', #18
+                                     'fact__value_iobject_id__latest__identifier_id', #19
 
 
         ]
@@ -273,6 +276,7 @@ def follow_references(iobject_pks,
                     node_dict['iobject_type_family'] = x[10]
                     node_dict['timestamp'] = x[16]
                     node_dict['identifier_pk'] = x[17]
+                    node_dict['iobject_pk'] = node
 
 
                     graph.add_node(node,**node_dict)
@@ -290,6 +294,10 @@ def follow_references(iobject_pks,
                         rnode_dict['name'] = x[13]
                         rnode_dict['iobject_type'] = x[14]
                         rnode_dict['iobject_type_family'] = x[15]
+                        rnode_dict['timestamp'] = x[18]
+                        rnode_dict['identifier_pk'] = x[19]
+                        rnode_dict['iobject_pk'] = rnode
+
 
                     graph.add_node(rnode,**rnode_dict)
 
@@ -364,9 +372,72 @@ def follow_references(iobject_pks,
             node_dict['iobject_type'] = node_info.iobject_type.name
             node_dict['iobject_type_family'] = node_info.iobject_type.iobject_family.name
             node_dict['timestamp'] = node_info.timestamp
+            node_dict['identifier_pk'] = node_info.identifier.pk
+            node_dict['iobject_pk'] = node_info.pk
+
             graph.add_node(node_info.pk,node_dict)
 
     return graph
 
 
+def annotate_graph(G):
+
+    for node in G.nodes_iter():
+        G.node[node]['facts'] = []
+
+
+    # TODO: The vIO2FValue view is such that empty objects lead to entries with no fact info in them ...,
+    # which leads to problems below -- here we get rid of such spurious lines by checking for node_id__isnull=False
+
+    pref_rel = ['iobject','referenced_iobject_identifier__latest','identifier']
+    io2fvs= vIO2FValue.objects.filter(iobject__id__in=G.nodes(),node_id__isnull=False).order_by('iobject__id','node_id').prefetch_related(*pref_rel)
+                                                               #                         'iobject__identifier',
+                                                               #                         'iobject__identifier__namespace',
+                                                               #                         'iobject__iobject_family',
+                                                               #                         'iobject__iobject_type',
+                                                               #                         'fact__fact_term',
+                                                               #                         'fact__fact_values',
+                                                               #                         'fact__fact_values__fact_data_type',
+                                                               #                         'fact__value_iobject_id',
+                                                               #                         'fact__value_iobject_id__latest',
+                                                               #                         'fact__value_iobject_id__latest__iobject_type',
+                                                               #                         'node_id').order_by('iobject__id','node_id__name')
+
+
+
+    last_obj_id = None
+
+    last_io2fv= None
+
+    value_list = []
+
+    for io2fv in io2fvs:
+        if last_io2fv:
+            if last_io2fv.node_id == io2fv.node_id and last_obj_id == io2fv.iobject_id:
+                value_list.append(io2fv.value)
+            else:
+                last_io2fv.value_list = value_list
+                value_list = []
+        last_io2fv = io2fv
+        last_obj_id = last_io2fv.iobject_id
+
+        value_list.append(io2fv.value)
+
+    last_io2fv.value_list = value_list
+
+    # TODO: The vIO2FValue view is such that empty objects lead to entries with no fact info in them ...,
+    # which leads to problems below -- here we get rid of such spurious lines by checking above node_id__isnull=False
+    # But if we have no facts, we cannot extract the object below, so we have to
+    # get it by hand.
+
+    for node in G.nodes_iter():
+        G.node[node]['facts'] = [x for x in io2fvs if x.iobject_id == node and 'value_list' in dir(x)]
+        if G.node[node]['facts']:
+            G.node[node]['iobject'] = G.node[node]['facts'][0].iobject
+        else:
+            G.node[node]['iobject'] = InfoObject.objects.get(pk=node)
+
+    G.graph['io2fvs'] = io2fvs
+
+    return G
 

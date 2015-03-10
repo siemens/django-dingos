@@ -43,6 +43,9 @@ import dingos.read_settings
 
 import dingos
 
+
+
+
 from dingos import *
 
 from dingos.core.datastructures import DingoObjDict,ExtendedSortedDict,dict2DingoObjDict
@@ -1698,7 +1701,8 @@ class InfoObject(DingoModel):
                         graph_traversal_kargs = None
                         ):
 
-        from .graph_traversal import follow_references
+        from .graph_traversal import follow_references, annotate_graph
+
         if not graph_traversal_kargs:
             graph_traversal_kargs = {'max_nodes':1000,
                                      'direction':'down'}
@@ -1709,61 +1713,7 @@ class InfoObject(DingoModel):
         for node in G.nodes_iter():
             G.node[node]['facts'] = []
 
-
-        # TODO: The vIO2FValue view is such that empty objects lead to entries with no fact info in them ..., 
-        # which leads to problems below -- here we get rid of such spurious lines by checking for node_id__isnull=False
-
-        pref_rel = ['iobject','referenced_iobject_identifier__latest','identifier']
-        io2fvs= vIO2FValue.objects.filter(iobject__id__in=G.nodes(),node_id__isnull=False).order_by('iobject__id','node_id').prefetch_related(*pref_rel)
-                                                                   #                         'iobject__identifier',
-                                                                   #                         'iobject__identifier__namespace',
-                                                                   #                         'iobject__iobject_family',
-                                                                   #                         'iobject__iobject_type',
-                                                                   #                         'fact__fact_term',
-                                                                   #                         'fact__fact_values',
-                                                                   #                         'fact__fact_values__fact_data_type',
-                                                                   #                         'fact__value_iobject_id',
-                                                                   #                         'fact__value_iobject_id__latest',
-                                                                   #                         'fact__value_iobject_id__latest__iobject_type',
-                                                                   #                         'node_id').order_by('iobject__id','node_id__name')
-
-
-
-        last_obj_id = None
-
-        last_io2fv= None
-
-        value_list = []
-
-        for io2fv in io2fvs:
-            if last_io2fv:
-                if last_io2fv.node_id == io2fv.node_id and last_obj_id == io2fv.iobject_id:
-                    value_list.append(io2fv.value)
-                else:
-                    last_io2fv.value_list = value_list
-                    value_list = []
-            last_io2fv = io2fv
-            last_obj_id = last_io2fv.iobject_id
-
-            value_list.append(io2fv.value)
-
-        last_io2fv.value_list = value_list
-
-        # TODO: The vIO2FValue view is such that empty objects lead to entries with no fact info in them ..., 
-        # which leads to problems below -- here we get rid of such spurious lines by checking above node_id__isnull=False
-        # But if we have no facts, we cannot extract the object below, so we have to 
-        # get it by hand.
-
-        for node in G.nodes_iter():
-            G.node[node]['facts'] = [x for x in io2fvs if x.iobject_id == node and 'value_list' in dir(x)]
-            if G.node[node]['facts']:
-                G.node[node]['iobject'] = G.node[node]['facts'][0].iobject
-            else:
-                G.node[node]['iobject'] = InfoObject.objects.get(pk=node)
-
-        G.graph['io2fvs'] = io2fvs
-
-        return G
+        return annotate_graph(G)
 
     @property
     def view_link(self):

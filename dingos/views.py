@@ -59,7 +59,8 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_INFOOBJECT_GRAPH_TYPES, \
     DINGOS_SEARCH_POSTPROCESSOR_REGISTRY, \
     DINGOS_TAGGING_PROCESSING, \
-    DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT
+    DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT, \
+    DINGOS_EXPORT_VIEW_TAG_TRANSFER
 
 
 from braces.views import LoginRequiredMixin
@@ -843,7 +844,6 @@ class InfoObjectExportsView(BasicListView):
         mod = importlib.import_module(mod_name)
         async_export_to_actionables = getattr(mod,func_name)
         #from .tasks import async_export_to_actionables
-        print self.result
         async_export_to_actionables.delay(graph.node[iobject_id]['identifier_pk'],
                                           iobject_id,
                                           self.result)
@@ -858,8 +858,17 @@ class InfoObjectExportsView(BasicListView):
 
             if self.kwargs.get('investigate'):
                 self.cache_session_key = "%s" % uuid4()
-                self.request.session[self.cache_session_key] = {'result':self.result,
-                                                                'fact_ids': self.fact_ids
+
+                session_result = json.loads(json.dumps(self.result,
+                                                       indent=2,
+                                                       default= lambda x : "Not serializable"))
+                print "SESSION Result"
+                print session_result
+
+                self.request.session[self.cache_session_key] = {# Encode and then decode result in json in order to
+                                                                # avoid errors regarding non-serialization
+                                                                'result': session_result,
+                                                                'fact_ids': self.fact_ids,
                                                                }
 
                 self.template_name = 'dingos/%s/lists/ExportFactsForInvestigation.html' % DINGOS_TEMPLATE_FAMILY
@@ -886,6 +895,7 @@ class InfoObjectExportsView(BasicListView):
             self.result = cached_results['result']
             self.fact_ids = cached_results['fact_ids']
 
+
             if self.form.is_valid():
                 tag = cleaned_data.get('investigation_tag')
                 messages.info(self.request,"All indicators have been tagged with '%s'"
@@ -900,10 +910,10 @@ class InfoObjectExportsView(BasicListView):
                                                            [tag],
                                                            facts_to_tag,self.request.user,
                                                            "Export called on %s for investigation %s" % (info_object_to_tag.name, tag))
-                mod_name, func_name = DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT.rsplit('.',1)
+                mod_name, func_name = DINGOS_EXPORT_VIEW_TAG_TRANSFER.rsplit('.',1)
                 mod = importlib.import_module(mod_name)
-                async_export_to_actionables = getattr(mod,func_name)
-                async_export_to_actionables.delay(self.kwargs.get('pk'),self.result,user=self.request.user)
+                async_tag_transfer = getattr(mod,func_name)
+                async_tag_transfer.delay(self.fact_ids)
 
             else:
                 messages.error(self.request,"Please enter a valid tag!!!")

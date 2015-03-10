@@ -263,6 +263,7 @@ def get_key(value, arg):
 #TODO refactor all dict get filters
 @register.filter
 def get_value(coll, key):
+    print coll
     if coll:
         if isinstance(coll,list) and isinstance(key,int):
             try:

@@ -416,3 +416,8 @@ DINGOS_TAGGING_POSTPROCESSING = {'Fact':'mantis_actionables.mantis_import.update
 
 DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT = 'mantis_actionables.tasks.async_export_to_actionables'
 
+DINGOS_EXPORT_VIEW_TAG_TRANSFER = 'mantis_actionables.tasks.async_tag_transfer_into_actionables'
+
+
+
+
