@@ -846,7 +846,8 @@ class InfoObjectExportsView(BasicListView):
         #from .tasks import async_export_to_actionables
         async_export_to_actionables.delay(graph.node[iobject_id]['identifier_pk'],
                                           iobject_id,
-                                          self.result)
+                                          self.result,
+                                          graph = self.graph)
 
         if api_test:
             self.api_result = combined_result
@@ -862,8 +863,6 @@ class InfoObjectExportsView(BasicListView):
                 session_result = json.loads(json.dumps(self.result,
                                                        indent=2,
                                                        default= lambda x : "Not serializable"))
-                print "SESSION Result"
-                print session_result
 
                 self.request.session[self.cache_session_key] = {# Encode and then decode result in json in order to
                                                                 # avoid errors regarding non-serialization

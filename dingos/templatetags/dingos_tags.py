@@ -263,7 +263,7 @@ def get_key(value, arg):
 #TODO refactor all dict get filters
 @register.filter
 def get_value(coll, key):
-    print coll
+
     if coll:
         if isinstance(coll,list) and isinstance(key,int):
             try:
@@ -589,7 +589,7 @@ def view_dict_lookup(context,dict_name,*keys):
 @register.assignment_tag(takes_context=True)
 def view_apply(context,view_func,*args,**kwargs):
     view_func = getattr(context['view'],view_func)
-    print args
+
     return view_func(*args,**kwargs)
 
 
@@ -674,7 +674,7 @@ def show_namespace_image(context,namespace, height=None, width=None):
         try:
             dummy = view.namespace_map
         except:
-            print namespace
+
             namespace_obj = IdentifierNameSpace.objects.get(uri=namespace)
             view.namespace_map = {namespace:namespace_obj}
         if namespace in view.namespace_map:

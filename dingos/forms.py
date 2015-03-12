@@ -167,12 +167,15 @@ class InvestigationForm(forms.Form):
         cache_session_key = kwargs.pop('cache_session_key',"")
         super(InvestigationForm, self).__init__(*args, **kwargs)
         self.fields['cache_session_key'] = forms.CharField(initial=cache_session_key,
+                                                           required=False,
                                                            widget=forms.widgets.HiddenInput())
     investigation_tag = forms.CharField(widget =
                                          autocomplete_light.TextWidget('TagInvestigationAutocompleteDingos'
                                                                                 ),
                           validators= tag_validators
                                          )
+
+
     #class Meta:
     #    model = Tag
     #    exclude = ['slug', 'name']

@@ -15,7 +15,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from dingos.forms import InvestigationForm
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectTagAndExportToActionables.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
-def show_InvestigationAction(context,cache_session_key):
+def show_InvestigationAction(context,cache_session_key=None):
     try:
         form = context['view'].form
     except:
