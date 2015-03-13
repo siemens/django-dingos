@@ -31,7 +31,8 @@ from django.db.models import F
 
 from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY,\
     DINGOS_TEMPLATE_FAMILY, \
-    DINGOS_MANTIS_ACTIONABLES_CONTEXT_TAG_REGEX
+    DINGOS_MANTIS_ACTIONABLES_CONTEXT_TAG_REGEX, \
+    DINGOS_EXPORT_VIEW_TOP_LEVEL_TYPES_THAT_TRIGGER_TRANSFER
 
 from dingos.core import http_helpers
 from dingos.views import getTags, getTagsbyModel
@@ -552,6 +553,7 @@ postprocessor_list = [x for x in sorted(DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.ite
 @register.inclusion_tag('dingos/%s/includes/_ExporterListDisplayBox.html'% DINGOS_TEMPLATE_FAMILY)
 def show_ExporterList(iobject):
     return {'exporters': postprocessor_list,
+            'investigatable_types' : DINGOS_EXPORT_VIEW_TOP_LEVEL_TYPES_THAT_TRIGGER_TRANSFER,
             'object': iobject}
 
 

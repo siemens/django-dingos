@@ -60,7 +60,8 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_SEARCH_POSTPROCESSOR_REGISTRY, \
     DINGOS_TAGGING_PROCESSING, \
     DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT, \
-    DINGOS_EXPORT_VIEW_TAG_TRANSFER
+    DINGOS_EXPORT_VIEW_TAG_TRANSFER, \
+    DINGOS_EXPORT_VIEW_TOP_LEVEL_TYPES_THAT_TRIGGER_TRANSFER
 
 
 from braces.views import LoginRequiredMixin
@@ -844,10 +845,12 @@ class InfoObjectExportsView(BasicListView):
         mod = importlib.import_module(mod_name)
         async_export_to_actionables = getattr(mod,func_name)
         #from .tasks import async_export_to_actionables
-        async_export_to_actionables.delay(graph.node[iobject_id]['identifier_pk'],
-                                          iobject_id,
-                                          self.result,
-                                          graph = self.graph)
+        if graph.node[iobject_id]['iobject_type'] in DINGOS_EXPORT_VIEW_TOP_LEVEL_TYPES_THAT_TRIGGER_TRANSFER:
+
+            async_export_to_actionables.delay(graph.node[iobject_id]['identifier_pk'],
+                                              iobject_id,
+                                              self.result,
+                                              graph = self.graph)
 
         if api_test:
             self.api_result = combined_result

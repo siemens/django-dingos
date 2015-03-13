@@ -21,7 +21,7 @@ from django.forms import widgets
 
 from django.core.validators import RegexValidator
 
-from dingos import DINGOS_TAGGING_REGEX
+from dingos import DINGOS_TAGGING_REGEX, DINGOS_MANTIS_MUTUAL_EXCLUSIVE_TAGS_FUNCTION
 
 from dingos.queryparser.placeholder_parser import PlaceholderException
 
@@ -144,21 +144,43 @@ class OAuthNewClientForm(forms.Form):
 
 
 
+tag_validators = []
+
+for regex in DINGOS_TAGGING_REGEX:
+    tag_validators.append(RegexValidator(regex,"Not a valid tag"))
+
 
 class TagForm(autocomplete_light.ModelForm):
     tag = autocomplete_light.ChoiceField(widget =
                                          autocomplete_light.TextWidget('TagAutocompleteDingos'
                                                                        #,attrs={'placeholder': 'Aha'}
                                                                                 ),
+                                         validators= tag_validators
                                          )
     class Meta:
         model = Tag
         exclude = ['slug', 'name']
 
-tag_validators = []
+    def clean(self):
+        cleaned_data = super(InvestigationForm, self).clean()
+        investigation_tag = cleaned_data.get("investigation_tag")
+        mutually_exclusive_sibling = DINGOS_MANTIS_MUTUAL_EXCLUSIVE_TAGS_FUNCTION(investigation_tag)
+        if mutually_exclusive_sibling:
+            existing_tags = Tag.objects.filter(name=mutually_exclusive_sibling)
+            if existing_tags:
+                raise forms.ValidationError("Cannot apply tag %s, because mutually exclusive tag %s already exists" % (investigation_tag,mutually_exclusive_sibling))
+            try:
+                from mantis_actionables.models import Context
+                existing_tags = Context.objects.filter(name=mutually_exclusive_sibling)
+                if existing_tags:
+                    raise forms.ValidationError("Cannot apply tag %s, because mutually exclusive tag %s already exists" % (investigation_tag,mutually_exclusive_sibling))
+            except:
+                pass
 
-for regex in DINGOS_TAGGING_REGEX:
-    tag_validators.append(RegexValidator(regex,"Not a valid tag"))
+        return cleaned_data
+
+
+
 
 
 class InvestigationForm(forms.Form):
@@ -174,6 +196,24 @@ class InvestigationForm(forms.Form):
                                                                                 ),
                           validators= tag_validators
                                          )
+
+    def clean(self):
+        cleaned_data = super(InvestigationForm, self).clean()
+        investigation_tag = cleaned_data.get("investigation_tag")
+        mutually_exclusive_sibling = DINGOS_MANTIS_MUTUAL_EXCLUSIVE_TAGS_FUNCTION(investigation_tag)
+        if mutually_exclusive_sibling:
+            existing_tags = Tag.objects.filter(name=mutually_exclusive_sibling)
+            if existing_tags:
+                raise forms.ValidationError("Cannot apply tag %s, because mutually exclusive tag %s already exists" % (investigation_tag,mutually_exclusive_sibling))
+            try:
+                from mantis_actionables.models import Context
+                existing_tags = Context.objects.filter(name=mutually_exclusive_sibling)
+                if existing_tags:
+                    raise forms.ValidationError("Cannot apply tag %s, because mutually exclusive tag %s already exists" % (investigation_tag,mutually_exclusive_sibling))
+            except:
+                pass
+
+        return cleaned_data
 
 
     #class Meta:
