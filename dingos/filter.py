@@ -98,11 +98,15 @@ class InfoObjectFilter(django_filters.FilterSet):
     #    filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
   
 
-    # The query below is a lot faster
+    # The query below is faster but still too slow. We need caching
 
     iobject_type_qs_a = InfoObject.objects.values('iobject_type__id').distinct()
-    iobject_type_qs = InfoObjectType.objects.exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME).\
-                      filter(pk__in=iobject_type_qs_a.filter()).order_by('iobject_family__name','name').prefetch_related('iobject_family')
+    #iobject_type_qs = iobject_type_qs_a
+    #iobject_type_qs = InfoObjectType.objects.exclude(iobject_family__name__exact=DINGOS_INTERNAL_IOBJECT_FAMILY_NAME).\
+    #                  filter(pk__in=iobject_type_qs_a.filter()).order_by('iobject_family__name','name').prefetch_related('iobject_family')
+
+    iobject_type_qs = InfoObjectType.objects.order_by('iobject_family__name','name').prefetch_related('iobject_family')
+
 
 
     iobject_type =  django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
@@ -165,12 +169,12 @@ class CompleteInfoObjectFilter(django_filters.FilterSet):
     #    filter(num_objects__gt=0).prefetch_related('iobject_family').order_by('iobject_family__name','name')
   
 
-    # The query below is a lot faster
+    # The query below is still to slow. We need caching.
 
     iobject_type_qs_a = InfoObject.objects.values('iobject_type__id').distinct()
-    iobject_type_qs = InfoObjectType.objects.\
-                      filter(pk__in=iobject_type_qs_a.filter()).order_by('iobject_family__name','name').prefetch_related('iobject_family')
-
+    #iobject_type_qs = InfoObjectType.objects.\
+    #                  filter(pk__in=iobject_type_qs_a.filter()).order_by('iobject_family__name','name').prefetch_related('iobject_family')
+    iobject_type_qs = InfoObjectType.objects.order_by('iobject_family__name','name').prefetch_related('iobject_family')
 
     iobject_type =  django_filters.ModelChoiceFilter(queryset= iobject_type_qs,
                                                     required=None,
