@@ -15,7 +15,7 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
+import logging
 from datetime import datetime
 from urlparse import urlparse
 import StringIO
@@ -38,6 +38,8 @@ def extract_fqdn(uri):
     except:
         return None
 
+
+logger = logging.getLogger(__name__)
 
 class InfoObjectDetails(object):
     """
@@ -406,6 +408,12 @@ class InfoObjectDetails(object):
         walker = None
 
         for io2fv in self.io2fs:
+            if not io2fv.term:
+                io2fv.term = ''
+            if not io2fv.value:
+                io2fv.value = ''
+            if not io2fv.value:
+                io2fv.value = ''
             if not current_node or current_node != io2fv.iobject_id:
                 current_node = io2fv.iobject_id
                 walker = [io2fv]
@@ -461,12 +469,19 @@ class InfoObjectDetails(object):
             self.node_map = {}
 
             for io2f in self.io2fs:
+                if io2f.node_id:
+                    set_dict(self.node_map,io2f,'set_value', io2f.iobject_id, *io2f.node_id.split(':'))
+                else:
+                    logger.error("No node_id for io2f with pk %s -- iobject pk %s" % (io2f.id, io2f.iobject_id))
 
-                set_dict(self.node_map,io2f,'set_value', io2f.iobject_id, *io2f.node_id.split(':'))
 
     def get_attributed(self,io2f):
         self.set_node_map()
-        node_id = io2f.node_id.split(':')
+        node_id = io2f.node_id
+        if node_id:
+            node_id = io2f.node_id.split(':')
+        else:
+            node_id = []
         results = []
         walker = get_dict(self.node_map,io2f.iobject_id,*node_id[0:-1])
 
@@ -485,7 +500,11 @@ class InfoObjectDetails(object):
 
     def get_attributes(self,io2f):
         self.set_node_map()
-        node_id = io2f.node_id.split(':')
+        node_id = io2f.node_id
+        if node_id:
+            node_id = io2f.node_id.split(':')
+        else:
+            node_id = []
         results = {}
 
         def get_attributes_rec(node_id,walker,results):
@@ -515,13 +534,17 @@ class InfoObjectDetails(object):
     def get_siblings(self,io2f):
         if not self._sibling_map:
             for vio2f in self.io2fs:
-                node_id = vio2f.node_id.split(':')
+                node_id = vio2f.node_id
                 if node_id:
+                    node_id = vio2f.node_id.split(':')
                     parent_id = ":".join(node_id[0:-1])
                     set_dict(self._sibling_map,vio2f,"append",vio2f.iobject_id,parent_id)
 
-
-        return self._sibling_map.get(io2f.iobject_id,{}).get(":".join(io2f.node_id.split(':')[0:-1]),[])
+        node_id = io2f.node_id
+        if node_id:
+            return self._sibling_map.get(io2f.iobject_id,{}).get(":".join(io2f.node_id.split(':')[0:-1]),[])
+        else:
+            return []
 
 class csv_export(InfoObjectDetails):
 
