@@ -832,6 +832,10 @@ class BasicJSONView(CommonContextMixin,
 
     request = None
 
+    @property
+    def api_result_truncated(self):
+        return ("%s ..." % self.api_result)[0:4096]
+
     def get(self, request, *args, **kwargs):
         self.request= request
         context = self.get_context_data(**kwargs)
