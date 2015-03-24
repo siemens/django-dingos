@@ -31,7 +31,8 @@ from django.db.models import F
 
 from dingos import DINGOS_SEARCH_POSTPROCESSOR_REGISTRY,\
     DINGOS_TEMPLATE_FAMILY, \
-    DINGOS_MANTIS_ACTIONABLES_CONTEXT_TAG_REGEX
+    DINGOS_MANTIS_ACTIONABLES_CONTEXT_TAG_REGEX, \
+    DINGOS_EXPORT_VIEW_TOP_LEVEL_TYPES_THAT_TRIGGER_TRANSFER
 
 from dingos.core import http_helpers
 from dingos.views import getTags, getTagsbyModel
@@ -263,6 +264,7 @@ def get_key(value, arg):
 #TODO refactor all dict get filters
 @register.filter
 def get_value(coll, key):
+
     if coll:
         if isinstance(coll,list) and isinstance(key,int):
             try:
@@ -551,6 +553,7 @@ postprocessor_list = [x for x in sorted(DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.ite
 @register.inclusion_tag('dingos/%s/includes/_ExporterListDisplayBox.html'% DINGOS_TEMPLATE_FAMILY)
 def show_ExporterList(iobject):
     return {'exporters': postprocessor_list,
+            'investigatable_types' : DINGOS_EXPORT_VIEW_TOP_LEVEL_TYPES_THAT_TRIGGER_TRANSFER,
             'object': iobject}
 
 
@@ -584,6 +587,14 @@ def dict_lookup(dict, key):
 def view_dict_lookup(context,dict_name,*keys):
     view_dict = getattr(context['view'],dict_name)
     return get_dict(view_dict,*keys)
+
+@register.assignment_tag(takes_context=True)
+def view_apply(context,view_func,*args,**kwargs):
+    view_func = getattr(context['view'],view_func)
+
+    return view_func(*args,**kwargs)
+
+
 
 @register.assignment_tag(takes_context=True)
 def context_dict_lookup(context,dict_name,*keys):
@@ -665,7 +676,7 @@ def show_namespace_image(context,namespace, height=None, width=None):
         try:
             dummy = view.namespace_map
         except:
-            print namespace
+
             namespace_obj = IdentifierNameSpace.objects.get(uri=namespace)
             view.namespace_map = {namespace:namespace_obj}
         if namespace in view.namespace_map:
@@ -696,6 +707,10 @@ def getObject(obj_list,pk):
     for x in obj_list:
         if x.id == int(pk):
             return x
+
+@register.filter(name='apply')
+def apply(fun,*args,**kwargs):
+    return fun(*args,**kwargs)
 
 @register.inclusion_tag('dingos/%s/includes/_InfoObjectTagBlock.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
 def show_InfoObjectTagBlockDisplay(context, object, tags_shown=None, tags_editable=None):

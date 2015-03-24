@@ -396,14 +396,31 @@ DINGOS_INFOOBJECT_GRAPH_TYPES = [{'info_object_family_re':   r'.*',
 
 #if tags should match specific requirements, add regex to check here
 DINGOS_TAGGING_REGEX = [
-     re.compile(r"^INVES-[0-9]+(-[A-Za-z0-9]+)?$")
+    re.compile(r"(?:^INVES-[0-9]+$)|(?:^IR-[0-9]+$)|(?:^CERT-[0-9]+$)")
 ]
 
 
 DINGOS_MANTIS_ACTIONABLES_CONTEXT_TAG_REGEX = [
-    re.compile(r"^INVES-[0-9]+(-[A-Za-z0-9]+)?$")
+    re.compile(r"(?:^INVES-[0-9]+$)|(?:^IR-[0-9]+$)|(?:^CERT-[0-9]+$)")
 ]
 
+
+
+def mutually_exclusive_sibling(tag_name):
+    format_re = re.compile(r"^(?P<kind>[a-zA-Z]+)-(?P<number>[0-9]+)$")
+    m = format_re.match(tag_name)
+    if m:
+        kind = m.groupdict()['kind']
+        number = m.groupdict()['number']
+
+    if kind == 'INVES':
+        return "IR-%s" % number
+    elif kind == 'IR':
+        return "INVES-%s" % number
+
+    return None
+
+DINGOS_MANTIS_MUTUAL_EXCLUSIVE_TAGS_FUNCTION = mutually_exclusive_sibling
 
 DINGOS_TAGGING_PROCESSING = {
     'dingos' : 'dingos.view_classes.processTagging',
@@ -414,5 +431,11 @@ DINGOS_TAGGING_PROCESSING = {
 
 DINGOS_TAGGING_POSTPROCESSING = {'Fact':'mantis_actionables.mantis_import.update_and_transfer_tags'}
 
+
 DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT = 'mantis_actionables.tasks.async_export_to_actionables'
+
+DINGOS_EXPORT_VIEW_TAG_TRANSFER = 'mantis_actionables.tasks.async_tag_transfer_into_actionables'
+
+DINGOS_EXPORT_VIEW_TOP_LEVEL_TYPES_THAT_TRIGGER_TRANSFER = ['STIX_Package']
+
 

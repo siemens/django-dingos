@@ -67,7 +67,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             </thead>
             <tbody>
           {% endif %}
-            {% with pk=row|get_value:"fact.pk" %}
+            {% with pk=row|get_value:"_fact_pk" %}
             {% with fact_obj=object_list|get_obj:pk%}
 
               <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">

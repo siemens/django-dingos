@@ -21,14 +21,19 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <div class ="grp-module grp-collapse">
 <h2 class="grp-collapse-handler">Indicator Handling</h2>
-<div class="grp-module grp-collapse grp-open">
-<h3 class="grp-collapse-handler">Actions</h3>
+    {% if object.iobject_type.name in investigatable_types %}
+    <div class="grp-module grp-collapse grp-open">
+
+    <h3 class="grp-collapse-handler">Actions</h3>
+
                     <div class="grp-row">
 
                         <a href={% url 'url.dingos.view.infoobject.investigate' object.pk %}> Investigate </a>
 
                     </div>
+
     </div>
+    {%endif %}
 <div class="grp-module grp-collapse grp-closed">
 <h3 class="grp-collapse-handler">Exporters</h3>
 

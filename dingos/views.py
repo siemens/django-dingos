@@ -59,7 +59,9 @@ from dingos import DINGOS_TEMPLATE_FAMILY, \
     DINGOS_INFOOBJECT_GRAPH_TYPES, \
     DINGOS_SEARCH_POSTPROCESSOR_REGISTRY, \
     DINGOS_TAGGING_PROCESSING, \
-    DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT
+    DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT, \
+    DINGOS_EXPORT_VIEW_TAG_TRANSFER, \
+    DINGOS_EXPORT_VIEW_TOP_LEVEL_TYPES_THAT_TRIGGER_TRANSFER
 
 
 from braces.views import LoginRequiredMixin
@@ -718,9 +720,10 @@ class InfoObjectExportsView(BasicListView):
             return "%s on '%s'" % (exporter_name,iobject_name)
 
     skip_terms = [
-        # We do not want to follow 'Related Object' links and similar
-        {'term':'Related','operator':'icontains'},
+
+        #{'term':'Related_Object','operator':'icontains'},
         ]
+
 
     max_objects = None
 
@@ -764,7 +767,7 @@ class InfoObjectExportsView(BasicListView):
 
         api_test = 'api_call' in request.GET
 
-        iobject_id = self.kwargs.get('pk', None)
+        iobject_id = int(self.kwargs.get('pk', None))
 
         graph= follow_references([iobject_id],
                                  skip_terms = self.skip_terms,
@@ -783,25 +786,28 @@ class InfoObjectExportsView(BasicListView):
 
 
         if not raw_output:
-            kwargs['format'] = 'dict'
-        else:
-            kwargs.update(self.request.GET)
-
-        if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
-            # If no format info has been given, json is the default
-            # Because we may need to work with the result, we first
-            # have a dictionary returned which we then convert into
-            # a json when everything is done
-
-            kwargs['format'] = 'dict'
+            kwargs['format'] = 'exporter'
             combined_result = []
         else:
+            kwargs.update(self.request.GET)
             combined_result = ''
 
-        if not raw_output:
-            # make sure that we get all information in the result items
-            # required by the exporter view
-            kwargs['override_columns'] = 'EXPORTER'
+
+        #if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
+        #    # If no format info has been given, json is the default
+        #    # Because we may need to work with the result, we first
+        #    # have a dictionary returned which we then convert into
+        #    # a json when everything is done
+
+        #    kwargs['format'] = 'dict'
+
+        #else:
+
+
+        #if not raw_output:
+        #    # make sure that we get all information in the result items
+        #    # required by the exporter view
+        #    kwargs['override_columns'] = 'EXPORTER'
 
         if exporter in POSTPROCESSOR_REGISTRY:
 
@@ -828,7 +834,7 @@ class InfoObjectExportsView(BasicListView):
             self.result = combined_result
 
             if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
-                combined_result = json.dumps(combined_result,indent=2)
+                combined_result = json.dumps(combined_result,indent=2,default= lambda x : "Not serializable")
                 content_type = 'application/json'
         else:
             content_type = None
@@ -839,7 +845,12 @@ class InfoObjectExportsView(BasicListView):
         mod = importlib.import_module(mod_name)
         async_export_to_actionables = getattr(mod,func_name)
         #from .tasks import async_export_to_actionables
-        async_export_to_actionables.delay(iobject_id,self.result)
+        if graph.node[iobject_id]['iobject_type'] in DINGOS_EXPORT_VIEW_TOP_LEVEL_TYPES_THAT_TRIGGER_TRANSFER:
+
+            async_export_to_actionables.delay(graph.node[iobject_id]['identifier_pk'],
+                                              iobject_id,
+                                              self.result,
+                                              graph = self.graph)
 
         if api_test:
             self.api_result = combined_result
@@ -847,12 +858,19 @@ class InfoObjectExportsView(BasicListView):
             self.template_name = 'dingos/%s/searches/API_Search_Result.html' % DINGOS_TEMPLATE_FAMILY
             return super(InfoObjectExportsView, self).get(request, *args, **kwargs)
         elif not raw_output:
-            self.fact_ids = map(lambda x: x.get('fact.pk'),self.result)
+            self.fact_ids = map(lambda x: x.get('_fact_pk'),self.result)
 
             if self.kwargs.get('investigate'):
                 self.cache_session_key = "%s" % uuid4()
-                self.request.session[self.cache_session_key] = {'result':self.result,
-                                                                'fact_ids': self.fact_ids
+
+                session_result = json.loads(json.dumps(self.result,
+                                                       indent=2,
+                                                       default= lambda x : "Not serializable"))
+
+                self.request.session[self.cache_session_key] = {# Encode and then decode result in json in order to
+                                                                # avoid errors regarding non-serialization
+                                                                'result': session_result,
+                                                                'fact_ids': self.fact_ids,
                                                                }
 
                 self.template_name = 'dingos/%s/lists/ExportFactsForInvestigation.html' % DINGOS_TEMPLATE_FAMILY
@@ -879,6 +897,7 @@ class InfoObjectExportsView(BasicListView):
             self.result = cached_results['result']
             self.fact_ids = cached_results['fact_ids']
 
+
             if self.form.is_valid():
                 tag = cleaned_data.get('investigation_tag')
                 messages.info(self.request,"All indicators have been tagged with '%s'"
@@ -893,10 +912,10 @@ class InfoObjectExportsView(BasicListView):
                                                            [tag],
                                                            facts_to_tag,self.request.user,
                                                            "Export called on %s for investigation %s" % (info_object_to_tag.name, tag))
-                mod_name, func_name = DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT.rsplit('.',1)
+                mod_name, func_name = DINGOS_EXPORT_VIEW_TAG_TRANSFER.rsplit('.',1)
                 mod = importlib.import_module(mod_name)
-                async_export_to_actionables = getattr(mod,func_name)
-                async_export_to_actionables.delay(self.kwargs.get('pk'),self.result,user=self.request.user)
+                async_tag_transfer = getattr(mod,func_name)
+                async_tag_transfer.delay(self.fact_ids)
 
             else:
                 messages.error(self.request,"Please enter a valid tag!!!")

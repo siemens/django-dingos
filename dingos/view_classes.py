@@ -14,6 +14,7 @@
 # this program; if not, write to the Free Software Foundation, Inc., 51
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+import logging
 
 import csv, collections, copy, json, StringIO, importlib
 from queryparser.queryparser import QueryParser
@@ -65,7 +66,11 @@ from core.http_helpers import get_query_string
 from taggit.models import Tag
 from django.apps import apps
 
+logger = logging.getLogger(__name__)
+
 POSTPROCESSOR_REGISTRY = {}
+
+
 
 
 for (postprocessor_key,postprocessor_data) in DINGOS_SEARCH_POSTPROCESSOR_REGISTRY.items():
@@ -542,6 +547,13 @@ class BasicDetailView(CommonContextMixin,
                    ('View',None),
     )
 
+    title = "BasicDetailView"
+
+    def get(self, request, *args, **kwargs):
+        logger.info("Received GET request for %s from user %s" % (self.title,request.user))
+        return super(BasicDetailView,self).get(request,*args,**kwargs)
+
+
     @property
     def paginate_by(self):
         return self.lookup_customization('dingos','view','pagination','lines',default=20)
@@ -555,6 +567,14 @@ class BasicTemplateView(CommonContextMixin,
     breadcrumbs = (('Dingo',None),
                    ('View',None),
     )
+
+
+    title = "Unknown"
+
+    def get(self, request, *args, **kwargs):
+        logger.info("Received GET request for %s from user %s" % (self.title,request.user))
+        return super(BasicTemplateView,self).get(request,*args,**kwargs)
+
 
 
 class BasicUpdateView(LoginRequiredMixin,UpdateView):
@@ -832,7 +852,15 @@ class BasicJSONView(CommonContextMixin,
 
     request = None
 
+    title = "BasicJSONView"
+
+    @property
+    def api_result_truncated(self):
+        return ("%s ..." % self.api_result)[0:4096]
+
     def get(self, request, *args, **kwargs):
+        logger.info("Received GET request for %s from user %s" % (self.title,request.user))
+
         self.request= request
         context = self.get_context_data(**kwargs)
         if request.GET.get('test_call'):

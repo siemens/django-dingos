@@ -15,9 +15,7 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
-
-
+import logging
 from datetime import datetime
 from urlparse import urlparse
 import StringIO
@@ -28,7 +26,7 @@ from dingos.core.utilities import set_dict, get_dict
 from django.core.urlresolvers import reverse
 from dingos.core.utilities import get_from_django_obj
 from dingos.graph_traversal import follow_references
-from dingos.graph_utils import dfs_preorder_nodes
+
 from dingos import DINGOS_SEARCH_EXPORT_MAX_OBJECTS_PROCESSING
 
 def extract_fqdn(uri):
@@ -40,6 +38,8 @@ def extract_fqdn(uri):
     except:
         return None
 
+
+logger = logging.getLogger(__name__)
 
 class InfoObjectDetails(object):
     """
@@ -179,10 +179,10 @@ class InfoObjectDetails(object):
 
         self.allowed_columns.update(self.DINGOS_QUERY_ALLOWED_COLUMNS[self.query_mode])
 
-        self.allowed_columns['object.url'] = ('Object URL','_object_url',[])
+        self.allowed_columns['object.url'] = ('Object URL','object_url',[])
 
-        self.allowed_columns['package_names'] = ('Package Names','_package_names',[])
-        self.allowed_columns['package_urls'] = ('Package URLs','_package_urls',[])
+        #self.allowed_columns['package_names'] = ('Package Names','_package_names',[])
+        #self.allowed_columns['package_urls'] = ('Package URLs','_package_urls',[])
 
 
 
@@ -194,28 +194,40 @@ class InfoObjectDetails(object):
             io2fv = None
             iobject_pk = io2f.iobject_id
             fact_pk = io2f.fact_id
+            value_pk = None
+            identifier_pk = None
         elif  isinstance(obj_or_io2f,vIO2FValue):
             iobject = None#obj_or_io2f.iobject
             io2fv = obj_or_io2f
             io2f = None
             iobject_pk = io2fv.iobject_id
             fact_pk = io2fv.fact_id
+            value_pk = io2fv.factvalue_id
+            identifier_pk = io2fv.identifier_id
         else:
             iobject = obj_or_io2f
             iobject_pk = iobject.pk
             io2f = None
             io2fv = None
             fact_pk = None
+            identifier_pk = iobject.identifier_id
+            value_pk = None
 
-        result =  {'_object':iobject,
-                   '_object_pk':iobject_pk,
+        result =  {'_iobject':iobject,
+                   '_iobject_pk':iobject_pk,
+                   '_fact_pk':fact_pk,
+                   '_value_pk':value_pk,
+                   '_identifier_pk':identifier_pk,
                    '_io2f' : io2f,
                    '_io2fv' : io2fv,
-                   'io2fv' : io2fv,
-                   '_object_url': reverse('url.dingos.view.infoobject', args=[iobject_pk]),
+                   '_iobject' : iobject,
+                   'object_url': reverse('url.dingos.view.infoobject', args=[iobject_pk]),
                    'actionable_type' : '',
                    'actionable_subtype' : '',
                    'actionable_info' : '',
+                   #'_package_names' : "",
+                   #'_package_urls' : "",
+
                    }
 
         if io2fv:
@@ -223,45 +235,28 @@ class InfoObjectDetails(object):
             result['attribute'] = io2fv.attribute
             result['value'] = io2fv.value
 
-        if io2f:
-            result['_fact_id'] = io2f.fact_id
 
         if self.exporter_name:
             result['exporter'] = self.exporter_name
-
-
-        if self.package_graph and iobject_pk:
-            # The user also wants info about the packages that contain the object in question
-            node_ids = list(dfs_preorder_nodes(self.package_graph, source=iobject_pk))
-
-            package_names = []
-            package_urls = []
-            for id in node_ids:
-                node = self.package_graph.node[id]
-                # TODO: Below is STIX-specific and should be factored out
-                # by making the iobject type configurable
-                if "STIX_Package" in node['iobject_type']:
-                    package_names.append(node['name'])
-                    package_urls.append(node['url'])
-            result['_package_names'] = "| ".join(package_names)
-            result['_package_urls'] = "| ".join(package_urls)
 
         return result
 
 
 
+
     def additional_calculations(self,columns):
-        if 'package_names' in columns or 'package_urls' in columns:
-            if not self.package_graph:
-                if self.object_list:
-                    pks = [one.pk for one in self.object_list]
-                else:
-                    pks = [one.iobject.pk for one in self.io2fs]
-                self.package_graph = follow_references(pks, direction= 'up')
+        return
+
+        #if 'package_names' in columns or 'package_urls' in columns:
+        #    if not self.package_graph:
+        #        if self.object_list:
+        #            pks = [one.pk for one in self.object_list]
+        #        else:
+        #            pks = [one.iobject.pk for one in self.io2fs]
+        #        self.package_graph = follow_references(pks, direction= 'up')
 
 
     def export(self,*args,**kwargs):
-
         #not working if [0] not commented out
         override_columns=kwargs.pop('override_columns',[None])
         if isinstance(override_columns,list):
@@ -272,9 +267,9 @@ class InfoObjectDetails(object):
             args = self.allowed_columns.keys()
         elif override_columns == 'ALMOST_ALL':
             # exclude expensive columns:
-            args = set(self.allowed_columns.keys()) - set(['package_urls','package_names'])
+            args = set(self.allowed_columns.keys())# - set(['package_urls','package_names'])
         elif override_columns == 'EXPORTER':
-            args = set(self.allowed_columns.keys()) -  set(['package_urls','package_names'])
+            args = set(self.allowed_columns.keys())# -  set(['package_urls','package_names'])
             args.update(set(['term','attribute','value']))
 
         self.additional_calculations(columns=args)
@@ -289,7 +284,7 @@ class InfoObjectDetails(object):
         def fill_row(result,columns,mode='json'):
 
             if self.query_mode == 'InfoObject':
-                model_key = '_object'
+                model_key = '_iobject'
             elif self.query_mode == 'InfoObject2Fact':
                 model_key = '_io2f'
             else:
@@ -339,7 +334,7 @@ class InfoObjectDetails(object):
             format = kwargs.pop('format','json')
         output = []
 
-        if format in ['json','dict']:
+        if format in ['json','dict','exporter']:
 
 
             if not args:
@@ -351,7 +346,10 @@ class InfoObjectDetails(object):
 
             for result in self.results:
 
-                row = fill_row(result,columns,mode='json')
+                if format == 'exporter':
+                    row = result
+                else:
+                    row = fill_row(result,columns,mode='json')
                 output.append(row)
 
             if format == 'json':
@@ -410,6 +408,12 @@ class InfoObjectDetails(object):
         walker = None
 
         for io2fv in self.io2fs:
+            if not io2fv.term:
+                io2fv.term = ''
+            if not io2fv.value:
+                io2fv.value = ''
+            if not io2fv.value:
+                io2fv.value = ''
             if not current_node or current_node != io2fv.iobject_id:
                 current_node = io2fv.iobject_id
                 walker = [io2fv]
@@ -465,12 +469,19 @@ class InfoObjectDetails(object):
             self.node_map = {}
 
             for io2f in self.io2fs:
+                if io2f.node_id:
+                    set_dict(self.node_map,io2f,'set_value', io2f.iobject_id, *io2f.node_id.split(':'))
+                else:
+                    logger.error("No node_id for io2f with pk %s -- iobject pk %s" % (io2f.id, io2f.iobject_id))
 
-                set_dict(self.node_map,io2f,'set_value', io2f.iobject_id, *io2f.node_id.split(':'))
 
     def get_attributed(self,io2f):
         self.set_node_map()
-        node_id = io2f.node_id.split(':')
+        node_id = io2f.node_id
+        if node_id:
+            node_id = io2f.node_id.split(':')
+        else:
+            node_id = []
         results = []
         walker = get_dict(self.node_map,io2f.iobject_id,*node_id[0:-1])
 
@@ -489,7 +500,11 @@ class InfoObjectDetails(object):
 
     def get_attributes(self,io2f):
         self.set_node_map()
-        node_id = io2f.node_id.split(':')
+        node_id = io2f.node_id
+        if node_id:
+            node_id = io2f.node_id.split(':')
+        else:
+            node_id = []
         results = {}
 
         def get_attributes_rec(node_id,walker,results):
@@ -519,13 +534,17 @@ class InfoObjectDetails(object):
     def get_siblings(self,io2f):
         if not self._sibling_map:
             for vio2f in self.io2fs:
-                node_id = vio2f.node_id.split(':')
+                node_id = vio2f.node_id
                 if node_id:
+                    node_id = vio2f.node_id.split(':')
                     parent_id = ":".join(node_id[0:-1])
                     set_dict(self._sibling_map,vio2f,"append",vio2f.iobject_id,parent_id)
 
-
-        return self._sibling_map.get(io2f.iobject_id,{}).get(":".join(io2f.node_id.split(':')[0:-1]),[])
+        node_id = io2f.node_id
+        if node_id:
+            return self._sibling_map.get(io2f.iobject_id,{}).get(":".join(io2f.node_id.split(':')[0:-1]),[])
+        else:
+            return []
 
 class csv_export(InfoObjectDetails):
 
