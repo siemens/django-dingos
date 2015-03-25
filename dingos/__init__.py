@@ -412,7 +412,8 @@ def mutually_exclusive_sibling(tag_name):
     if m:
         kind = m.groupdict()['kind']
         number = m.groupdict()['number']
-
+    else:
+        return None
     if kind == 'INVES':
         return "IR-%s" % number
     elif kind == 'IR':
