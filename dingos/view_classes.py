@@ -550,7 +550,7 @@ class BasicDetailView(CommonContextMixin,
     title = "BasicDetailView"
 
     def get(self, request, *args, **kwargs):
-        logger.info("Received GET request for %s from user %s" % (self.title,request.user))
+        logger.debug("Received GET request for %s from user %s" % (self.title,request.user))
         return super(BasicDetailView,self).get(request,*args,**kwargs)
 
 
@@ -572,7 +572,7 @@ class BasicTemplateView(CommonContextMixin,
     title = "Unknown"
 
     def get(self, request, *args, **kwargs):
-        logger.info("Received GET request for %s from user %s" % (self.title,request.user))
+        logger.debug("Received GET request for %s from user %s" % (self.title,request.user))
         return super(BasicTemplateView,self).get(request,*args,**kwargs)
 
 
@@ -859,7 +859,7 @@ class BasicJSONView(CommonContextMixin,
         return ("%s ..." % self.api_result)[0:4096]
 
     def get(self, request, *args, **kwargs):
-        logger.info("Received GET request for %s from user %s" % (self.title,request.user))
+        logger.debug("Received GET request for %s from user %s" % (self.title,request.user))
 
         self.request= request
         context = self.get_context_data(**kwargs)
