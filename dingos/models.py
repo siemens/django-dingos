@@ -37,7 +37,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils.http import urlquote
 
 from taggit.managers import TaggableManager
-from taggit.models import Tag,TaggedItem
+from taggit.models import TaggedItem, Tag
 
 import dingos.read_settings
 
@@ -2371,7 +2371,7 @@ class TaggingHistory(DingoModel):
 
     tobject = generic.GenericForeignKey('content_type', 'object_id')
     comment = models.TextField(blank=True)
-    tag = models.ForeignKey(Tag,related_name='tag_history')
+    tag = models.ForeignKey(Tag, related_name='tag_history')
 
     @classmethod
     def bulk_create_tagging_history(cls,action,tags,objects,user,comment):
