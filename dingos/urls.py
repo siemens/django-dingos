@@ -66,6 +66,13 @@ urlpatterns = patterns('',
     url(r'^View/InfoObject/(?P<pk>\d*)(/specific)?/graph$', views.InfoObjectJSONGraph.as_view(), name= "url.dingos.view.infoobject.json_graph"),
 
 
+
+    url(r'^View/InfoObject/(?P<pk>\d*)/investigate/?$',
+views.InfoObjectExportsView.as_view(),
+    kwargs = {'investigate':True},
+    name= "url.dingos.view.infoobject.investigate"),
+
+
     # Administration
 
     url(r'^Admin/ViewUserPrefs/?$',
