@@ -840,7 +840,6 @@ class DateTimeEncoder(json.JSONEncoder):
 
 class UnAuthenticatedJSONView(
                     ViewMethodMixin,
-                    LoginRequiredMixin,
                     TemplateView):
 
     indent = 2
@@ -891,7 +890,9 @@ class UnAuthenticatedJSONView(
                                   content_type='application/json',
                                   **httpresponse_kwargs)
 
-class BasicJSONView(CommonContextMixin,UnAuthenticatedJSONView):
+class BasicJSONView(CommonContextMixin,                     
+                    LoginRequiredMixin,
+                    UnAuthenticatedJSONView):
     pass
 
 
