@@ -838,8 +838,7 @@ class DateTimeEncoder(json.JSONEncoder):
         else:
             return super(DateTimeEncoder, self).default(obj)
 
-
-class BasicJSONView(CommonContextMixin,
+class UnAuthenticatedJSONView(
                     ViewMethodMixin,
                     LoginRequiredMixin,
                     TemplateView):
@@ -891,6 +890,9 @@ class BasicJSONView(CommonContextMixin,
          return http.HttpResponse(content,
                                   content_type='application/json',
                                   **httpresponse_kwargs)
+
+class BasicJSONView(CommonContextMixin,UnAuthenticatedJSONView):
+    pass
 
 
 class BasicXMLView(CommonContextMixin,
