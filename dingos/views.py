@@ -86,11 +86,14 @@ def getTagsbyModel(things,model=None):
         cols = ['id','tag_through__tag__name']
         tags_q = model.objects.filter(id__in = obj_pks).filter(tag_through__isnull=False).values(*cols)
         return tags_q
-    tags_q = _simple_q(things,model=model)
+    things = [ x for x in things if x]
     tag_map = {}
-    for tag in tags_q:
-        tag_list = tag_map.setdefault(tag['id'],[])
-        tag_list.append(tag['tag_through__tag__name'])
+    if things:
+        tags_q = _simple_q(things,model=model)
+
+        for tag in tags_q:
+            tag_list = tag_map.setdefault(tag['id'],[])
+            tag_list.append(tag['tag_through__tag__name'])
 
     return tag_map
 
