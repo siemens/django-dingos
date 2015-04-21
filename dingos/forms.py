@@ -155,9 +155,25 @@ def check_tag_validity(tag,
                        run_regexp_checks=False,
                        raise_exception_on_problem=True):
     """
-    Check validity -- if something is amiss, an exception is raised
+    Checks the validity of a tag by performing the following actions:
 
-    ATTENTION: This function is used in the import task of dingos_authoring!!!
+    - check against regular expressions configured in list 'DINGOS_TAGGING_REGEX'
+    - checks whether the provided tag has a mutually exclusive tag (defined
+      via function DINGOS_MANTIS_MUTUAL_EXCLUSIVE_TAGS_FUNCTION). If so,
+      the function checks, whether the mutually exclusive tag does already
+      exist. If that is the case, then validation fails.
+
+    With the argument ``raise_exception_on_problem``, we can configure,
+    whether a validation error is raised if problems occur.
+    if ``raise_exception_on_problem`` is set to ``False``, the behavior
+    is as follows:
+
+    - if the regex check fails, ``None`` is returned
+    - if a mutually exclusive tag exists, that tag is returned rather
+      that the tag provided to the user. Hence, the existing mutually
+      exclusive tag is used.
+
+    ATTENTION: This function is used in the import task of mantis_authoring!!!
 
     """
     if run_regexp_checks:
@@ -215,9 +231,6 @@ class TagForm(autocomplete_light.ModelForm):
         return cleaned_data
 
 
-
-
-
 class InvestigationForm(forms.Form):
 
     def __init__(self,*args,**kwargs):
@@ -229,7 +242,7 @@ class InvestigationForm(forms.Form):
     investigation_tag = forms.CharField(widget =
                                          autocomplete_light.TextWidget('TagInvestigationAutocompleteDingos'
                                                                                 ),
-                          validators= tag_validators
+                                         validators= tag_validators
                                          )
 
     def clean(self):
