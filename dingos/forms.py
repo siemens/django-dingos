@@ -160,7 +160,6 @@ def check_tag_validity(tag,
     ATTENTION: This function is used in the import task of dingos_authoring!!!
 
     """
-
     if run_regexp_checks:
         valid = False
         for regex in DINGOS_TAGGING_REGEX:
@@ -175,12 +174,12 @@ def check_tag_validity(tag,
                 # Tag is invalid and cannot be used
                 return None
 
-    mutually_exclusive_sibling = DINGOS_MANTIS_MUTUAL_EXCLUSIVE_TAGS_FUNCTION(investigation_tag)
+    mutually_exclusive_sibling = DINGOS_MANTIS_MUTUAL_EXCLUSIVE_TAGS_FUNCTION(tag)
     if mutually_exclusive_sibling:
         existing_tags = Tag.objects.filter(name=mutually_exclusive_sibling)
         if existing_tags:
             if raise_exception_on_problem:
-                raise forms.ValidationError("Cannot apply tag %s, because mutually exclusive tag %s already exists" % (investigation_tag,mutually_exclusive_sibling))
+                raise forms.ValidationError("Cannot apply tag %s, because mutually exclusive tag %s already exists" % (tag,mutually_exclusive_sibling))
             else:
                 # Use mutually exclusive sibling instead
                 return mutually_exclusive_sibling
@@ -188,10 +187,12 @@ def check_tag_validity(tag,
         existing_tags = Context.objects.filter(name=mutually_exclusive_sibling)
         if existing_tags:
             if raise_exception_on_problem:
-                raise forms.ValidationError("Cannot apply tag %s, because mutually exclusive tag %s already exists" % (investigation_tag,mutually_exclusive_sibling))
+                raise forms.ValidationError("Cannot apply tag %s, because mutually exclusive tag %s already exists" % (tag,mutually_exclusive_sibling))
             else:
                 # Use mutually exclusive sibling instead
                 return mutually_exclusive_sibling
+
+    return tag
 
 class TagForm(autocomplete_light.ModelForm):
     tag = autocomplete_light.ChoiceField(widget =
@@ -209,7 +210,8 @@ class TagForm(autocomplete_light.ModelForm):
         investigation_tag = cleaned_data.get("investigation_tag")
         check_tag_validity(investigation_tag,
                            # Regexp validators have already been run by form
-                           run_regexp_checks=False)
+                           run_regexp_checks=False,
+                           raise_exception_on_problem=True)
         return cleaned_data
 
 
@@ -233,22 +235,9 @@ class InvestigationForm(forms.Form):
     def clean(self):
         cleaned_data = super(InvestigationForm, self).clean()
         investigation_tag = cleaned_data.get("investigation_tag","")
-        mutually_exclusive_sibling = DINGOS_MANTIS_MUTUAL_EXCLUSIVE_TAGS_FUNCTION(investigation_tag)
-        if mutually_exclusive_sibling:
-            existing_tags = Tag.objects.filter(name=mutually_exclusive_sibling)
-            if existing_tags:
-                raise forms.ValidationError("Cannot apply tag %s, because mutually exclusive tag %s already exists" % (investigation_tag,mutually_exclusive_sibling))
-            try:
-                from mantis_actionables.models import Context
-                existing_tags = Context.objects.filter(name=mutually_exclusive_sibling)
-                if existing_tags:
-                    raise forms.ValidationError("Cannot apply tag %s, because mutually exclusive tag %s already exists" % (investigation_tag,mutually_exclusive_sibling))
-            except:
-                pass
+
+        check_tag_validity(investigation_tag,
+                           run_regexp_checks=False,
+                           raise_exception_on_problem=True)
 
         return cleaned_data
-
-
-    #class Meta:
-    #    model = Tag
-    #    exclude = ['slug', 'name']
