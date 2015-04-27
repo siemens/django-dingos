@@ -1,5 +1,9 @@
-{% if list_actions %}
+{% if list_actions or view.show_checkboxes%}
     <td class="action-input">
-        <input class="action-select" name="action_objects" value="{{obj.pk}}" type="checkbox">
+        <input class="action-select" name="action_objects" value="{{obj.pk}}" type="checkbox"
+                {% if view.show_checkboxes.checked %} checked="checked" {% endif %}>
     </td>
+{% else %}
+<td/>
 {% endif %}
+

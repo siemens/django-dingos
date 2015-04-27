@@ -274,6 +274,10 @@ def get_value(coll, key):
 
         return coll.get(key,None)
 
+@register.inclusion_tag('dingos/%s/includes/_CheckboxByLabel.html' % DINGOS_TEMPLATE_FAMILY)
+def checkbox_by_label(field,label,hide_choices=False):
+    return {'field':field,'label':label,'hide_choices':hide_choices}
+
 @register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_table_ordering(context, index, title):
     """
@@ -582,6 +586,10 @@ def show_InfoObjectField(oneObject, field):
 @register.simple_tag
 def dict_lookup(dict, key):
     return dict.get(key,'ERROR')
+
+@register.assignment_tag()
+def dict_lookup_as(obj,attr):
+    return obj.get(attr)
 
 @register.assignment_tag(takes_context=True)
 def view_dict_lookup(context,dict_name,*keys):

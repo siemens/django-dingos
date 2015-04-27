@@ -14,8 +14,8 @@
 # this program; if not, write to the Free Software Foundation, Inc., 51
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
 from django import forms
+
 
 from django.forms import widgets
 
@@ -231,19 +231,42 @@ class TagForm(autocomplete_light.ModelForm):
         return cleaned_data
 
 
-class InvestigationForm(forms.Form):
+class ResultActionForm(forms.Form):
+    """
 
+
+    """
     def __init__(self,*args,**kwargs):
         cache_session_key = kwargs.pop('cache_session_key',"")
-        super(InvestigationForm, self).__init__(*args, **kwargs)
+        result_len = kwargs.pop('result_len',0)
+        hide_choices = kwargs.pop('hide_choices',False)
+
+        if hide_choices:
+            checked_item_widget = forms.widgets.MultipleHiddenInput()
+        else:
+            checked_item_widget = forms.CheckboxSelectMultiple(attrs={'class':'action-select'})
+
+        super(ResultActionForm, self).__init__(*args, **kwargs)
+
         self.fields['cache_session_key'] = forms.CharField(initial=cache_session_key,
                                                            required=False,
                                                            widget=forms.widgets.HiddenInput())
+        self.fields['result_len'] = forms.IntegerField(initial=result_len,
+                                                       required=False,
+                                                       widget=forms.widgets.HiddenInput())
+        self.fields['checked_items'] = forms.MultipleChoiceField(
+                                                                 map(lambda x: (x,x), range(0,result_len)),
+                                                                 required=False,
+                                                                 initial=range(0,result_len),
+                                                                 widget=checked_item_widget)
+
+class InvestigationForm(ResultActionForm):
+
     investigation_tag = forms.CharField(widget =
-                                         autocomplete_light.TextWidget('TagInvestigationAutocompleteDingos'
-                                                                                ),
+                                         autocomplete_light.TextWidget('TagInvestigationAutocompleteDingos'                                                                                ),
                                          validators= tag_validators
                                          )
+
 
     def clean(self):
         cleaned_data = super(InvestigationForm, self).clean()
