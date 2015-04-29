@@ -154,7 +154,9 @@ class InfoObjectFilter(django_filters.FilterSet):
         order_by = create_order_keyword_list(['identifier__uid','timestamp','create_timestamp','name','iobject_type'])
         model = InfoObject
         fields = ['iobject_type','iobject_type__name','iobject_type__iobject_family','name',
-                  'identifier__namespace__uri','identifier__uid','timestamp', 'create_timestamp','marking_thru__marking__identifier__uid']
+                  'identifier__namespace__uri','identifier__uid','timestamp', 'create_timestamp',
+                  'marking_thru__marking__identifier__uid']
+
 
 
 
@@ -246,7 +248,6 @@ class FactTermValueFilter(django_filters.FilterSet):
 
     fact__fact_term__attribute = django_filters.CharFilter(lookup_type='regex',
                                                      label='Attribute matches')
-
 
     iobject__name = django_filters.CharFilter(lookup_type='icontains',
                                                      label='Object name contains')

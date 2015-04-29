@@ -276,6 +276,8 @@ def get_value(coll, key):
 
 @register.inclusion_tag('dingos/%s/includes/_CheckboxByLabel.html' % DINGOS_TEMPLATE_FAMILY)
 def checkbox_by_label(field,label,hide_choices=False):
+    label = "%s" % label
+
     return {'field':field,'label':label,'hide_choices':hide_choices}
 
 @register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)

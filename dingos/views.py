@@ -911,7 +911,7 @@ class InfoObjectExportsView(BasicListView):
         self.object = InfoObject.objects.get(pk=kwargs.get('pk'))
         self.template_name = 'dingos/%s/lists/ExportFactsForInvestigation.html' % DINGOS_TEMPLATE_FAMILY
         if self.kwargs.get('investigate'):
-            print request.POST
+
             self.form = InvestigationForm(request.POST,
                                           result_len=int(request.POST.dict().get('result_len',0)),
                                           hide_choices=self.hide_choices)

@@ -239,6 +239,7 @@ class ResultActionForm(forms.Form):
     def __init__(self,*args,**kwargs):
         cache_session_key = kwargs.pop('cache_session_key',"")
         result_len = kwargs.pop('result_len',0)
+        result_pks = kwargs.pop('result_pks',[])
         hide_choices = kwargs.pop('hide_choices',False)
 
         if hide_choices:
@@ -254,11 +255,20 @@ class ResultActionForm(forms.Form):
         self.fields['result_len'] = forms.IntegerField(initial=result_len,
                                                        required=False,
                                                        widget=forms.widgets.HiddenInput())
-        self.fields['checked_items'] = forms.MultipleChoiceField(
-                                                                 map(lambda x: (x,x), range(0,result_len)),
-                                                                 required=False,
-                                                                 initial=range(0,result_len),
-                                                                 widget=checked_item_widget)
+
+        if result_len:
+            self.fields['checked_items'] = forms.MultipleChoiceField(
+                                                                     map(lambda x: (x,x), range(0,result_len)),
+                                                                     required=False,
+                                                                     initial=range(0,result_len),
+                                                                     widget=checked_item_widget)
+        elif result_pks:
+            self.fields['checked_items'] = forms.MultipleChoiceField(
+                                                                     map(lambda x: (x,x), result_pks),
+                                                                     required=False,
+                                                                     initial=range(0,result_len),
+                                                                     widget=checked_item_widget)
+
 
 class InvestigationForm(ResultActionForm):
 
