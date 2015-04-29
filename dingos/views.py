@@ -730,12 +730,6 @@ class InfoObjectExportsView(BasicListView):
 
     max_objects = None
 
-    hide_choices = True
-
-    show_checkboxes = (not hide_choices)
-
-
-
     # We provide an action view for tagging the displayed facts
 
     # TODO: make below configurable
@@ -771,6 +765,7 @@ class InfoObjectExportsView(BasicListView):
     def get(self,request,*args,**kwargs):
 
 
+
         raw_output = kwargs.get('raw_output',False)
 
         api_test = 'api_call' in request.GET
@@ -791,7 +786,6 @@ class InfoObjectExportsView(BasicListView):
             exporter = 'cybox_all'
         else:
             exporter = self.kwargs.get('exporter', None)
-
 
 
         if not raw_output:
@@ -872,16 +866,6 @@ class InfoObjectExportsView(BasicListView):
             if self.kwargs.get('investigate'):
                 self.cache_session_key = "%s" % uuid4()
 
-                row_counter = 0
-                result_wo_pk = self.result
-                self.result = []
-
-                for row in result_wo_pk:
-                    row['field_select_id'] = "%s" % row_counter
-                    row_counter +=1
-                    self.result.append(row)
-
-
                 session_result = json.loads(json.dumps(self.result,
                                                        indent=2,
                                                        default= lambda x : "Not serializable"))
@@ -892,9 +876,6 @@ class InfoObjectExportsView(BasicListView):
                                                                 'fact_ids': self.fact_ids,
                                                                }
 
-                self.form = InvestigationForm(cache_session_key=self.cache_session_key,
-                                              result_len=len(self.result),
-                                              hide_choices=self.hide_choices)
                 self.template_name = 'dingos/%s/lists/ExportFactsForInvestigation.html' % DINGOS_TEMPLATE_FAMILY
             else:
                 self.template_name = 'dingos/%s/lists/ExportFactList.html' % DINGOS_TEMPLATE_FAMILY
@@ -911,33 +892,21 @@ class InfoObjectExportsView(BasicListView):
         self.object = InfoObject.objects.get(pk=kwargs.get('pk'))
         self.template_name = 'dingos/%s/lists/ExportFactsForInvestigation.html' % DINGOS_TEMPLATE_FAMILY
         if self.kwargs.get('investigate'):
-
-            self.form = InvestigationForm(request.POST,
-                                          result_len=int(request.POST.dict().get('result_len',0)),
-                                          hide_choices=self.hide_choices)
+            self.form = InvestigationForm(request.POST.dict())
             form_valid = self.form.is_valid()
             cleaned_data = self.form.cleaned_data
             self.cache_session_key = cleaned_data.get('cache_session_key')
             cached_results = request.session.get(self.cache_session_key)
             self.result = cached_results['result']
-
-            #if self.show_checkboxes:
-            #    self.fact_ids = map(lambda x: int(x), self.request.POST.getlist('action_objects'))
-            #else:
             self.fact_ids = cached_results['fact_ids']
+
 
             if self.form.is_valid():
                 tag = cleaned_data.get('investigation_tag')
+                messages.info(self.request,"All indicators have been tagged with '%s'"
+                                           " and transferred into the backend" % tag)
 
-                if self.hide_choices:
-                    messages.info(self.request,"All indicators have been tagged with '%s'" % tag)
-                else:
-                    messages.info(self.request,"The selected indicators have been tagged with '%s'" % tag)
-                selected_rows = set(cleaned_data['checked_items'])
-
-                facts_to_tag_pks = set([ x['_fact_pk'] for x in self.result if x['field_select_id'] in selected_rows])
-
-                facts_to_tag =  Fact.objects.filter(pk__in=facts_to_tag_pks)# self.fact_ids)
+                facts_to_tag = Fact.objects.filter(pk__in=self.fact_ids)
                 for fact in facts_to_tag:
                     fact.tags.add(tag)
                 info_object_to_tag = InfoObject.objects.get(pk=self.kwargs.get('pk'))

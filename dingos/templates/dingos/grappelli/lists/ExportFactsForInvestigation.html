@@ -20,15 +20,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 {% load dingos_tags %}
 {% load tagging_widgets %}
-
-{% block content_frontmatter %}
-{{ block.super }}
-<form id="investigation" action="" method="POST">
-{% endblock %}
-
 {% block right_column %}
 
-      {% show_InvestigationAction view.cache_session_key result=view.result render_form_element=False hide_choices=view.hide_choices %}
+      {% show_InvestigationAction view.cache_session_key  %}
 
 {% endblock %}
 
@@ -43,16 +37,10 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
     <div class="grp-module grp-changelist-results o-visible">
       <table id="result_list" cellspacing="0" class="grp-sortable">
-        {% for obj in view.result %}
+        {% for row in view.result %}
           {% if forloop.first %}
             <thead>
             <tr>
-                {% if view.hide_choices %}
-                    <th></th>
-                {% else %}
-
-                    {% include "dingos/grappelli/includes/CheckboxActionHeaderColumn.html" %}
-                {% endif %}
                 <th>
                     Actionable Type
                 </th>
@@ -79,17 +67,14 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             </thead>
             <tbody>
           {% endif %}
-            {% with fact_pk=obj|get_value:"_fact_pk" %}
-            {% with fact_obj=object_list|get_obj:fact_pk%}
+            {% with pk=row|get_value:"_fact_pk" %}
+            {% with fact_obj=object_list|get_obj:pk%}
 
               <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
-              <td>
-                  {% checkbox_by_label view.form.checked_items obj.field_select_id hide_choices=view.hide_choices %}
-              </td>
 
-                <td><strong>{{ obj|get_value:"actionable_type" }}</strong></td>
-                <td><strong>{{ obj|get_value:"actionable_subtype" }}</strong></td>
-                <td><strong>{{ obj|get_value:"actionable_info" }}</strong></td>
+                <td><strong>{{ row|get_value:"actionable_type" }}</strong></td>
+                <td><strong>{{ row|get_value:"actionable_subtype" }}</strong></td>
+                <td><strong>{{ row|get_value:"actionable_info" }}</strong></td>
                 {% comment %}
                 <td>
                 {% with attribute=row|get_value:"attribute" %}
@@ -102,11 +87,10 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                 </td>
                 <td>{{ row|get_value:"value" }}</td>
                 {% endcomment %}
-                  {% show_GenericTagRowDisplay fact_obj 1 False debug_pk=fact_pk%}
+                  {% show_GenericTagRowDisplay fact_obj 1 False debug_pk=pk%}
               </tr>
             {% endwith %}
             {% endwith %}
-
 
         {% endfor %}
             </tbody>
@@ -119,9 +103,4 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     </div>
 
 {% include 'autocomplete_light/static.html' %}
-{% endblock %}
-
-{% block content_backmatter %}
-{{ block.super }}
-</form>
 {% endblock %}
