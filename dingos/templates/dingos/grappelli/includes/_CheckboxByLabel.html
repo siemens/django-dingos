@@ -1,0 +1,7 @@
+{% if not hide_choices %}
+      {% for option in field %}
+                  {% if option.choice_label == label %}
+                    {{ option.tag }}
+                  {% endif %}
+                  {% endfor %}
+{% endif %}
