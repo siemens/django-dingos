@@ -112,6 +112,7 @@
 
         }
     </script>
+    {% if list_actions %}
     <footer class="grp-module grp-submit-row grp-fixed-footer" id="submit">
         <header style="display:none"><h1>Submit Options</h1></header>
         <ul>
@@ -124,9 +125,9 @@
                         {% endfor %}
                     </select>
                     <input type="hidden" value="0" name="select_across" class="select-across">
-                    <script type="text/javascript">var _actions_icnt="{{ request.session.customization.dingos.view.pagination.lines }}";</script>
+                    <script type="text/javascript">var _actions_icnt="{{ object_list.count }}";</script>
                     <ul class="grp-horizontal-list grp-float-left">
-                        <li class="grp-action-counter"><span class="grp-button grp-button-state-inactive grp-action-counter">0 of {{ request.session.customization.dingos.view.pagination.lines }} selected</span></li>
+                        <li class="grp-action-counter"><span class="grp-button grp-button-state-inactive grp-action-counter">0 of {{ object_list.count }} selected</span></li>
                     </ul>
                 </div>
             </li>
@@ -134,4 +135,7 @@
         </ul>
 
     </footer>
+        {% else %}
+        <script type="text/javascript">var _actions_icnt="0";</script>
+        {% endif %}
 {% endif %}
