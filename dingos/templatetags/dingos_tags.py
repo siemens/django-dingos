@@ -842,3 +842,8 @@ def content_type_match(id,obj_string):
 @register.filter(name='zip')
 def zip_lists(a, b):
   return zip(a, b)
+
+@register.filter(name='range')
+def range_list(length):
+    return range(length)
+
