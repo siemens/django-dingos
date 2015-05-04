@@ -14,8 +14,14 @@
 # this program; if not, write to the Free Software Foundation, Inc., 51
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+import re
+
 from django import forms
 
+from django.template import Context, Template
+
+from django.utils.safestring import mark_safe
 
 from django.forms import widgets
 
@@ -231,11 +237,37 @@ class TagForm(autocomplete_light.ModelForm):
         return cleaned_data
 
 
-class ResultActionForm(forms.Form):
+
+
+class MCFieldAccessForm(forms.Form):
+    mc_field_by_value = {}
+
+    def init_mc_field_dict(self,field_name):
+        result = {}
+        self.mc_field_by_value[field_name] = result
+        context = Context({'form':self})
+        all_checked_item_fields = Template(""" {%% for option in form.%s %%}
+                {{ option.tag }}
+              {%% endfor %%}""" % field_name).render(context)
+        for match in re.finditer("""(?P<field_start><input.*?value=")(?P<pk>[0-9]+)(?P<field_end>.*?/>)""",all_checked_item_fields):
+            match_dict = match.groupdict()
+            try:
+                pk = int(match_dict['pk'])
+            except:
+                pk = match_dict['pk']
+            result[pk] = mark_safe("%s%s%s" % (match_dict['field_start'],
+            match_dict['pk'],
+            match_dict['field_end']))
+
+
+
+
+class ResultActionForm(MCFieldAccessForm):
     """
 
 
     """
+
     def __init__(self,*args,**kwargs):
         cache_session_key = kwargs.pop('cache_session_key',"")
         result_len = kwargs.pop('result_len',0)
@@ -268,6 +300,11 @@ class ResultActionForm(forms.Form):
                                                                      required=False,
                                                                      initial=range(0,result_len),
                                                                      widget=checked_item_widget)
+
+        self.init_mc_field_dict('checked_items')
+
+
+
 
 
 class InvestigationForm(ResultActionForm):

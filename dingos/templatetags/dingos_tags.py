@@ -274,12 +274,6 @@ def get_value(coll, key):
 
         return coll.get(key,None)
 
-@register.inclusion_tag('dingos/%s/includes/_CheckboxByLabel.html' % DINGOS_TEMPLATE_FAMILY)
-def checkbox_by_label(field,label,hide_choices=False):
-    label = "%s" % label
-
-    return {'field':field,'label':label,'hide_choices':hide_choices}
-
 @register.inclusion_tag('dingos/%s/includes/_TableOrdering.html' % DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def render_table_ordering(context, index, title):
     """
@@ -603,8 +597,6 @@ def view_apply(context,view_func,*args,**kwargs):
     view_func = getattr(context['view'],view_func)
 
     return view_func(*args,**kwargs)
-
-
 
 @register.assignment_tag(takes_context=True)
 def context_dict_lookup(context,dict_name,*keys):
