@@ -43,6 +43,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
                     <div class="grp-row">
 
                         <a href={% url 'url.dingos.view.infoobject.exports' object.pk exporter.0 %}>{{ exporter.1.name }}</a>
+                        [<a href={% url 'url.dingos.view.infoobject.exports.raw' object.pk exporter.0 %}>JSON</a>]
 
                     </div>
 

@@ -111,7 +111,12 @@ class InfoObjectDetails(object):
     }
 
     _default_columns =  [('object.url', 'InfoObject URL'),
-        ('exporter','Exporter')]
+        ('exporter','Exporter'),
+        ('object.identifier.namespace','InfoObject Namespace'),
+        ('actionable_type','Indicator Type'),
+        ('actionable_subtype','Indicator Subtype'),
+        ('actionable_info','Actionable'),
+        ]
 
     exporter_name = None
 
@@ -184,9 +189,6 @@ class InfoObjectDetails(object):
         #self.allowed_columns['package_names'] = ('Package Names','_package_names',[])
         #self.allowed_columns['package_urls'] = ('Package URLs','_package_urls',[])
 
-
-
-
     def init_result_dict(self,obj_or_io2f):
         if isinstance(obj_or_io2f,InfoObject2Fact):
             iobject = None#obj_or_io2f.iobject
@@ -196,6 +198,7 @@ class InfoObjectDetails(object):
             fact_pk = io2f.fact_id
             value_pk = None
             identifier_pk = None
+            #iobject_namespace = None
         elif  isinstance(obj_or_io2f,vIO2FValue):
             iobject = None#obj_or_io2f.iobject
             io2fv = obj_or_io2f
@@ -204,6 +207,7 @@ class InfoObjectDetails(object):
             fact_pk = io2fv.fact_id
             value_pk = io2fv.factvalue_id
             identifier_pk = io2fv.identifier_id
+            #iobject_namespace = io2fv.iobject_identifier_uri
         else:
             iobject = obj_or_io2f
             iobject_pk = iobject.pk
@@ -212,6 +216,7 @@ class InfoObjectDetails(object):
             fact_pk = None
             identifier_pk = iobject.identifier_id
             value_pk = None
+            #iobject_namespace = iobject.identifier.namespace.uri
 
         result =  {'_iobject':iobject,
                    '_iobject_pk':iobject_pk,
@@ -227,14 +232,13 @@ class InfoObjectDetails(object):
                    'actionable_info' : '',
                    #'_package_names' : "",
                    #'_package_urls' : "",
-
                    }
 
         if io2fv:
             result['term'] = io2fv.term
             result['attribute'] = io2fv.attribute
             result['value'] = io2fv.value
-
+            result['object.identifier.namespace'] = io2fv.iobject_identifier_uri
 
         if self.exporter_name:
             result['exporter'] = self.exporter_name
