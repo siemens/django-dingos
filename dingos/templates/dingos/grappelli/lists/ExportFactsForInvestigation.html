@@ -42,6 +42,9 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             <thead>
             <tr>
                 <th>
+                    Object Namespace
+                </th>
+                <th>
                     Actionable Type
                 </th>
                 <th>
@@ -71,7 +74,7 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
             {% with fact_obj=object_list|get_obj:pk%}
 
               <tr class="grp-row grp-row-{% cycle 'odd' 'even' %}">
-
+                <td><strong>{{ row|get_value:"object.identifier.namespace" }}</strong></td>
                 <td><strong>{{ row|get_value:"actionable_type" }}</strong></td>
                 <td><strong>{{ row|get_value:"actionable_subtype" }}</strong></td>
                 <td><strong>{{ row|get_value:"actionable_info" }}</strong></td>

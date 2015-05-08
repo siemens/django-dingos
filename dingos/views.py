@@ -768,6 +768,7 @@ class InfoObjectExportsView(BasicListView):
 
         raw_output = kwargs.get('raw_output',False)
 
+
         api_test = 'api_call' in request.GET
 
         iobject_id = int(self.kwargs.get('pk', None))
@@ -792,8 +793,11 @@ class InfoObjectExportsView(BasicListView):
             kwargs['format'] = 'exporter'
             combined_result = []
         else:
-            kwargs.update(self.request.GET)
-            combined_result = ''
+            #kwargs.update(self.request.GET)
+            kwargs['format'] = 'dict'
+
+
+            combined_result = []
 
 
         #if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
@@ -836,6 +840,7 @@ class InfoObjectExportsView(BasicListView):
 
             self.result = combined_result
 
+
             if (not 'format' in self.request.GET) or self.request.GET['format'] == 'json':
                 combined_result = json.dumps(combined_result,indent=2,default= lambda x : "Not serializable")
                 content_type = 'application/json'
@@ -844,16 +849,16 @@ class InfoObjectExportsView(BasicListView):
             combined_result = 'NO EXPORTER %s DEFINED' % exporter
             self.result = combined_result
 
-        mod_name, func_name = DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT.rsplit('.',1)
-        mod = importlib.import_module(mod_name)
-        async_export_to_actionables = getattr(mod,func_name)
+        #mod_name, func_name = DINGOS_EXPORT_VIEW_ACTIONABLES_EXPORT.rsplit('.',1)
+        #mod = importlib.import_module(mod_name)
+        #async_export_to_actionables = getattr(mod,func_name)
         #from .tasks import async_export_to_actionables
-        if graph.node[iobject_id]['iobject_type'] in DINGOS_EXPORT_VIEW_TOP_LEVEL_TYPES_THAT_TRIGGER_TRANSFER:
+        #if graph.node[iobject_id]['iobject_type'] in DINGOS_EXPORT_VIEW_TOP_LEVEL_TYPES_THAT_TRIGGER_TRANSFER:
 
-            async_export_to_actionables.delay(graph.node[iobject_id]['identifier_pk'],
-                                              iobject_id,
-                                              self.result,
-                                              graph = self.graph)
+        #    async_export_to_actionables.delay(graph.node[iobject_id]['identifier_pk'],
+        #                                      iobject_id,
+        #                                      self.result,
+        #                                      graph = self.graph)
 
         if api_test:
             self.api_result = combined_result
@@ -885,6 +890,10 @@ class InfoObjectExportsView(BasicListView):
             return super(InfoObjectExportsView, self).get(request, *args, **kwargs)
         else:
             response = HttpResponse(content_type=content_type)
+            return http.HttpResponse("%s" % combined_result,
+                                   content_type='application/json',
+                                  )
+
             response.write(combined_result)
             return response
 
