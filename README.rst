@@ -2,6 +2,10 @@
 Dingos
 =============================
 
+**WARNING: Mantis is not maintained anymore: by now, the excellent MISP platform
+(http://www.misp-project.org/)
+offers all the functionality (and much more) that had been required when
+MANTIS was created but could then not be found in any other tool.**
 
 A Django app that provides a generic framework for managing structured information in a generic way.
 
